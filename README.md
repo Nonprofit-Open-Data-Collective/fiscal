@@ -3,7 +3,9 @@
 An R package for calculating nonprofit fiscal health accounting metrics from IRS 990 data. 
 
 <br>
+
 ---------------------
+
 <br>
 
 ## Install the package
@@ -12,7 +14,7 @@ An R package for calculating nonprofit fiscal health accounting metrics from IRS
 devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
 ```
 
----------------
+<br>
 
 ```r
 library( fiscal )
