@@ -21,8 +21,13 @@ x2 <- rnorm(1000,200,30)
 x2[ c(15,300,600) ] <- 0
 dat <- data.frame(x1,x2)
 
-d <- get_dar( df=dat, debt="x1", assets="x2" )
-head( d )
+dat <- get_dar( df=dat, debt="x1", assets="x2" )
+head( dat ) # fiscal health metrics added to dataframe
+
+# piping enabled 
+dat <- 
+  dat %>% 
+  get_dar( debt="x1", assets="x2" )
 ```
 
 **Notes on package creation** (internal use during package development) 
