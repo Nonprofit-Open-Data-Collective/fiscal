@@ -15,14 +15,17 @@ devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
 library( fiscal )
 help( get_dar )  # function documentation 
 
-# test the debt-to-asset ration function
+# create test data: x1=debt, x2=assets
 x1 <- rnorm(1000,100,30)
 x2 <- rnorm(1000,200,30)
 x2[ c(15,300,600) ] <- 0
 dat <- data.frame(x1,x2)
 
+# test the debt-to-asset ration function
 dat <- get_dar( df=dat, debt="x1", assets="x2" )
-head( dat ) # fiscal health metrics added to dataframe
+
+# fiscal health metrics added to dataframe
+head( dat ) 
 
 # piping enabled 
 dat <- 
