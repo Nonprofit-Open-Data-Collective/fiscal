@@ -2,6 +2,9 @@
 
 An R package for calculating nonprofit fiscal health accounting metrics from IRS 990 data. 
 
+<br>
+---------------------
+<br>
 
 ## Install the package
 
@@ -24,14 +27,27 @@ dat <- data.frame(x1,x2)
 # test the debt-to-asset ration function
 dat <- get_dar( df=dat, debt="x1", assets="x2" )
 
-# fiscal health metrics added to dataframe
+# [1] "Assets cannot be zero: 3 cases have been replaced with NA."
+#
+#       dar               dar.w             dar.z              dar.p       
+#  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  
+#  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  
+#  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  
+#  Mean   : 0.51315   Mean   :0.51254   Mean   : 0.00000   Mean   : 50.35  
+#  3rd Qu.: 0.62853   3rd Qu.:0.62853   3rd Qu.: 0.64995   3rd Qu.: 75.00  
+#  Max.   : 1.24623   Max.   :1.00150   Max.   : 2.73988   Max.   :100.00  
+#  NA's   :3          NA's   :3         NA's   :3          NA's   :3
+
+# fiscal health metrics have been appended to the original dataframe
 head( dat ) 
 
-# piping enabled 
+# the function is piping enabled 
 dat <- 
   dat %>% 
   get_dar( debt="x1", assets="x2" )
 ```
+
+<br>
 
 ## Results 
 
@@ -66,8 +82,11 @@ dat <- get_dar( df=dat, debt="x1", assets="x2" )
 -----------------
 
 <br>
+<br>
+<br>
 
-**Notes on package creation** (internal use during package development) 
+
+_**Notes on package creation**_ (internal use during package development) 
 
 ```r
 library(devtools)
