@@ -37,7 +37,7 @@ dat <-
 
 The functions are designed to create multiple versions of the fiscal health metric, print summary statistics, and visualize the density distribution. The four versions are added back to the original dataset. 
 
-For example, the Debt to Asset Ratio function **get_dar()**: 
+For example, the Debt to Asset Ratio function **get_dar()** creates the following: 
 
 * dar = the debt-to-asset ratio (DAR) 
 * dar.w = the winsorized version of DAR 
