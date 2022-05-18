@@ -53,7 +53,7 @@ get_dar <- function( df, debt, assets, winsorize=0.98 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
 
   # can't divide by zero
-  print( paste0( "Assets cannot be zero: ", sum(assets==0), " cases have been replaced with NA." ) )
+  print( paste0( "Assets cannot be zero: ", sum(a==0), " cases have been replaced with NA." ) )
   a[ a == 0 ] <- NA 
 
   dar <- d / a
