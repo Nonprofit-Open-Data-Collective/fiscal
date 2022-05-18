@@ -25,7 +25,7 @@ d <- get_dar( df=dat, debt="x1", assets="x2" )
 head( d )
 ```
 
-## Notes on package creation
+**Notes on package creation** (internal use during package development) 
 
 ```r
 library(devtools)
