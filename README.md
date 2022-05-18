@@ -41,7 +41,7 @@ For example, the Debt to Asset Ratio function **get_dar()** creates the followin
 
 * dar = the debt-to-asset ratio (DAR) 
 * dar.w = the winsorized version of DAR 
-* dar.n = the standard normal (z-score) version of DAR 
+* dar.z = the standard normal (z-score) version of DAR 
 * dar.p = the DAR as percentiles  
 
 ```r
@@ -49,7 +49,7 @@ dat <- get_dar( df=dat, debt="x1", assets="x2" )
 
 # [1] "Assets cannot be zero: 3 cases have been replaced with NA."
 #
-#       dar               dar.w             dar.n              dar.p       
+#       dar               dar.w             dar.z              dar.p       
 #  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  
 #  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  
 #  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  
