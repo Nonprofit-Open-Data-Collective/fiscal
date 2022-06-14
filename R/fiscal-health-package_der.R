@@ -19,14 +19,14 @@
 #' @param equity Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the debt to asset ratio (`der`), 
-#'  a winsorized version (`der.w`), a standerdized z-score version (`der.z`), 
+#' @return The original dataframe appended with the debt to equity ratio (`der`), 
+#'  a winsorized version (`der.w`), a standardized z-score version (`der.z`), 
 #'  and a percentile version (`der.p`).   
 #'
-#' @details Debt to Equity Ratio is a a leverage ratio that defines the total amount of debt relative to the unrestricted assets owned by an organization.
-#' This metric shows the big picture view of how much an organization owes relative to what it owns. 
-#' Higher values mean it is more highly leveraged, meaning it has low capacity for future borrowing. 
-#' As an example: if an organization has a total-debt-to-net-assets ratio of 0.4, 40% of its assets 
+#' @details Debt to Equity Ratio is a a leverage ratio that defines the total amount of debt relative to the 
+#' unrestricted assets owned by an organization.This metric shows the big picture view of how much an organization 
+#' owes relative to what it owns.Higher values mean it is more highly leveraged, meaning it has low capacity for future 
+#' borrowing. As an example: if an organization has a total-debt-to-net-assets ratio of 0.4, 40% of its assets 
 #' are financed by creditors, and 60% are its own unrestricted, available equity. As this percentage 
 #' creeps above the 50% mark, it can call into question the organization’s ability to manage debt, 
 #' which could jeopardize the delivery of programs and services. However, for developers, extremely 
@@ -57,7 +57,7 @@ get_der <- function( df, debt, equity, winsorize=0.98 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
   # can't divide by zero
-  print( paste0( "Assets cannot be zero: ", sum(a==0), " cases have been replaced with NA." ) )
+  print( paste0( "Unrestricted net assets cannot be zero: ", sum(a==0), " cases have been replaced with NA." ) )
   e[ e == 0 ] <- NA 
   
   der <- d / e
@@ -81,7 +81,7 @@ get_der <- function( df, debt, equity, winsorize=0.98 )
   par( mfrow=c(2,2) )
   plot( density(der,   na.rm=T), main="Debt to Equity Ratio (DER)" )
   plot( density(der.w, na.rm=T), main="DER Winsorized" )
-  plot( density(der.n, na.rm=T), main="DER Standerdized as Z" )
+  plot( density(der.n, na.rm=T), main="DER Standardized as Z" )
   plot( density(der.p, na.rm=T), main="DER as Percentile" )
   
   df.der <- cbind( df, DER )

@@ -15,7 +15,7 @@
 #' @description
 #' Calculate the days of operating cash on hand and append it to the dataframe. 
 #'
-#' @param f.cash Cash, EOY(On 990: (Part X, line 1B)); On EZ:Part I, line 22 (cash and short-term investments only)).
+#' @param f.cash Cash, EOY (On 990: (Part X, line 1B)); On EZ:Part I, line 22 (cash and short-term investments only)).
 #' @param f.si Short-term investments, EOY (On 990: (Part X, line 2B).
 #' @param f.pr Pledges and grant receivables, EOY (On 990: (Part X, line 3B).
 #' @param f.ar Accounts receivables, EOY (On 990: (Part X, line 4B).
@@ -25,7 +25,7 @@
 #' @param ez.toe Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the debt to asset ratio (`doch`), 
+#' @return The original dataframe appended with the days of operating cash on hand (`doch`), 
 #'  a winsorized version (`doch.w`), a standardized z-score version (`doch.z`), 
 #'  and a percentile version (`doch.p`).   
 #'
@@ -78,38 +78,38 @@ get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
   # check that data is coming from either F990 or the F990EZ, but not both
-  if( (is.null(f.cash)==F | is.null(f.si)==F | is.null(f.pr)==F | is.null(f.ar)==F |
-       is.null(f.tfe)==F | is.null(f.dda)==F) & (is.null(ez.csi)==F | is.null(ez.toe)==F) )
+  if( (is.null( f.cash )==F | is.null( f.si )==F | is.null( f.pr )==F | is.null( f.ar )==F |
+       is.null( f.tfe )==F | is.null( f.dda )==F) & (is.null( ez.csi )==F | is.null( ez.toe )==F) )
     { stop( "Data fields must come from one of: i. F990 or ii. F990EZ, but not both. Ensure you have accurately passed the data field to the correct arguments." ) }
 
-  if ( (length( c(f.cash, f.si, f.pr, f.ar, f.tfe, f.dda) ) < 6)==T & (is.null(ez.csi)==T | is.null(ez.toe)==T) )
+  if ( (length( c(f.cash, f.si, f.pr, f.ar, f.tfe, f.dda) ) < 6)==T & (is.null( ez.csi )==T | is.null( ez.toe )==T) )
   { stop( "Missing at least one data field from the F990 data. Ensure you are passing the correct data field to the correct argument." ) }
 
-  if (length( c(ez.toe, ez.csi) ) < 2 & (is.null(f.cash)==T | is.null(f.si)==T | is.null(f.pr)==T | is.null(f.ar)==T |
-                                         is.null(f.tfe)==T | is.null(f.dda)==T) )
+  if (length( c(ez.toe, ez.csi) ) < 2 & (is.null( f.cash )==T | is.null( f.si )==T | is.null( f.pr )==T | is.null( f.ar )==T |
+                                         is.null( f.tfe )==T | is.null( f.dda )==T) )
   { stop( "Missing at least one data field from the F990EZ data. Ensure you are passing the correct data field to the correct argument." ) }
   
   # pass with F990 form
-  if( (is.null(f.cash)==F & is.null(f.si)==F & is.null(f.pr)==F & is.null(f.ar)==F &
-      is.null(f.tfe)==F & is.null(f.dda)==F) )
+  if( (is.null( f.cash )==F & is.null( f.si )==F & is.null( f.pr )==F & is.null( f.ar )==F &
+      is.null( f.tfe )==F & is.null( f.dda )==F) )
   {
-    n <- df[[ f.cash ]] + df[[ f.si ]] + df[[ f.pr ]] + df[[f.ar]]
-    d <- ( df[[ f.tfe ]] + df[[ f.dda ]] ) / 365    
+    num <- df[[ f.cash ]] + df[[ f.si ]] + df[[ f.pr ]] + df[[f.ar]]
+    den <- ( df[[ f.tfe ]] + df[[ f.dda ]] ) / 365    
   }
   
   # pass with 990-EZ
-  else if( (is.null(ez.csi)==F | is.null(ez.toe)==F) )
+  else if( ( is.null( ez.csi )==F | is.null( ez.toe )==F ) )
   {
-    n <- df[[ ez.csi ]]
-    d <- ( df[[ ez.toe ]] ) / 365    
+    num <- df[[ ez.csi ]]
+    den <- ( df[[ ez.toe ]] ) / 365    
   }
   
   
   # can't divide by zero
-  print( paste0( "Assets cannot be zero: ", sum(d==0), " cases have been replaced with NA." ) )
-  d[ d == 0 ] <- NA 
+  print( paste0( "Denominator cannot be zero: ", sum(den==0), " cases have been replaced with NA." ) )
+  den[ den == 0 ] <- NA 
 
-  doch <- n / d
+  doch <- num / den
 
   top.p    <- 1 - (1-winsorize)/2
   bottom.p <- 0 + (1-winsorize)/2
@@ -128,10 +128,10 @@ get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
   print( summary( DOCH ) )
 
   par( mfrow=c(2,2) )
-  plot( density(doch,   na.rm=T), main="Days of Operating Cash on Hand (DOCH)" )
-  plot( density(doch.w, na.rm=T), main="DOCH Winsorized" )
-  plot( density(doch.n, na.rm=T), main="DOCH Standardized as Z" )
-  plot( density(doch.p, na.rm=T), main="DOCH as Percentile" )
+  plot( density( doch,   na.rm=T ), main="Days of Operating Cash on Hand (DOCH)" )
+  plot( density( doch.w, na.rm=T ), main="DOCH Winsorized" )
+  plot( density( doch.n, na.rm=T ), main="DOCH Standardized as Z" )
+  plot( density( doch.p, na.rm=T ), main="DOCH as Percentile" )
 
   df.doch <- cbind( df, DOCH )
   return( df.doch )
