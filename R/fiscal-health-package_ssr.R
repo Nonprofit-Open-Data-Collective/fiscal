@@ -15,8 +15,8 @@
 #' @description
 #' Calculate the self sufficiency and append it to the dataframe. 
 #'
-#' @param ei Earned income, EOY (On 990: Part 8, Line 2g; On EZ: On EZ: Part 1, Line 2).
-#' @param te Total expenses, EOY (On 990: Part 9, line 25A; On EZ: Part 1, Line 17).
+#' @param debt Total debt, EOY (On 990: Part X, line 17B; On EZ: On EZ: Not Available).
+#' @param una Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the self sufficiency ratio (`ssr`), 
@@ -35,28 +35,28 @@
 #' x1 <- rnorm(1000,100,30)
 #' x2 <- rnorm(1000,200,30)
 #' x2[ c(15,300,600) ] <- 0
-#' dat <- data.frame(x1,x2)
-#' d <- get_ssr( df=dat, debt="x1", equity="x2" )
+#' dat<-data.frame(x1,x2)
+#' d <- get_ssr( df=dat, debt='x1', net.assets='x2' )
 #' head( d )
 #'
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_ssr( df=dat, ei="x1", te="x2", winsorize=0.95 )
+#' d <- get_ssr( df=dat, debt='x1', net.assets='x2', winsorize=0.95 )
 #' 
 #' @export
-get_ssr <- function( df, ei, te, winsorize=0.98 )
+get_ssr <- function( df, debt, net.assets, winsorize=0.98 )
 {
   
-  d <- df[[ ei ]]
-  e <- df[[ te ]]
+  td <- df[[ debt ]]
+  ua <- df[[ net.assets ]]
   
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
   # can't divide by zero
-  print( paste0( "Total expenses cannot be zero: ", sum(a==0), " cases have been replaced with NA." ) )
-  e[ e == 0 ] <- NA 
+  print( paste0( "Unrestricted net assets cannot be zero: ", sum(ua==0), " cases have been replaced with NA." ) )
+  ua[ ua == 0 ] <- NA 
   
-  ssr <- d / e
+  ssr <- td / ua
   
   top.p    <- 1 - (1-winsorize)/2
   bottom.p <- 0 + (1-winsorize)/2
@@ -70,26 +70,21 @@ get_ssr <- function( df, ei, te, winsorize=0.98 )
   
   ssr.p <- dplyr::ntile( ssr, 100 )
   
-  DER <- data.frame( ssr, ssr.w, ssr.n, ssr.p )
+  SSR <- data.frame( ssr, ssr.w, ssr.n, ssr.p )
   
-  print( summary( DER ) )
+  print( summary( SSR ) )
   
   par( mfrow=c(2,2) )
-  plot( density(ssr,   na.rm=T), main="Debt to Equity Ratio (DER)" )
-  plot( density(ssr.w, na.rm=T), main="DER Winsorized" )
-  plot( density(ssr.n, na.rm=T), main="DER Stanssrdized as Z" )
-  plot( density(ssr.p, na.rm=T), main="DER as Percentile" )
+  plot( density(ssr,   na.rm=T), main="Self Sufficiency Ratio (SSR)" )
+  plot( density(ssr.w, na.rm=T), main="SSR Winsorized" )
+  plot( density(ssr.n, na.rm=T), main="SSR Standardized as Z" )
+  plot( density(ssr.p, na.rm=T), main="SSR as Percentile" )
   
-  df.ssr <- cbind( df, DER )
+  df.ssr <- cbind( df, SSR )
   return( df.ssr )
 }
 
-
-# x1 <- rnorm(1000,100,30)
-# x2 <- rnorm(1000,200,30)
-# x2[ c(15,300,600) ] <- 0
-# d <- get_ssr( debt=x1, equity=x2 )
-
+  
 
 
 
