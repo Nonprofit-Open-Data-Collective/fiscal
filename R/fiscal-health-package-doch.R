@@ -40,34 +40,31 @@
 #' updates.
 #' 
 #' @examples
-#' x1 <- rnorm(1000,100,30)
-#' x2 <- rnorm(1000,200,30)
-#' x3 <- rnorm(1000,200,30)
-#' x4 <- rnorm(1000,200,30)
-#' x5 <- rnorm(1000,200,30)
-#' x6 <- rnorm(1000,200,30)
-#' dat<-data.frame(x1,x2,x3,x4,x5,x6)
-#' a <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
-#'              f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6')
+#' x1 <- rnorm( 1000,100,30 )
+#' x2 <- rnorm( 1000,200,30 )
+#' x3 <- rnorm( 1000,200,30 )
+#' x4 <- rnorm( 1000,200,30 )
+#' x5 <- rnorm( 1000,200,30 )
+#' x6 <- rnorm( 1000,200,30 )
+#' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
+#' a <- get_doch( df=dat, f.cash='x1', f.si = x2',
+#'              f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6' )
 #' 
-# incorrectly specified arguments
-#' b <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
-#'               f.pr='x3', f.ar='x4', ez.toe='x5',f.dda='x6')
+# #incorrectly specified arguments
+#' b <- get_doch( df=dat, f.cash='x1', f.si='x2',
+#'               f.pr='x3', f.ar='x4', ez.toe='x5', f.dda='x6' )
 #' 
-# zero in the denominator
-#' x5[c(1:10)]<-0
-#' x6[c(1:10)]<-0
-#' dat<-data.frame(x1,x2,x3,x4,x5,x6)
+# #zero in the denominator
+#' x5[ c(1:10) ] <- 0
+#' x6[ c(1:10) ] <- 0
+#' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
 #' 
-#' c <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
-#'               f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6')
+#' c <- get_doch( df=dat, f.cash='x1', f.si='x2',
+#'               f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6' )
 #' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
-#'               f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6', winsorize=0.95 )
-#'
-#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_doch( df=dat, debt="x1", assets="x2", winsorize=0.95 )
+#' d <- get_doch( df=dat, f.cash='x1', f.si='x2',
+#'               f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6', winsorize=0.95 )
 #' 
 #' @export
 get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NULL, f.dda=NULL, ez.csi=NULL, ez.toe=NULL,winsorize=0.98 )
@@ -106,7 +103,7 @@ get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
   
   
   # can't divide by zero
-  print( paste0( "Denominator cannot be zero: ", sum(den==0), " cases have been replaced with NA." ) )
+  print( paste0( "Denominator cannot be zero: ", sum( den==0 ), " cases have been replaced with NA." ) )
   den[ den == 0 ] <- NA 
 
   doch <- num / den
@@ -136,34 +133,3 @@ get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
   df.doch <- cbind( df, DOCH )
   return( df.doch )
 }
-
-
-
-
- # x1 <- rnorm(1000,100,30)
- # x2 <- rnorm(1000,200,30)
- # x3 <- rnorm(1000,200,30)
- # x4 <- rnorm(1000,200,30)
- # x5 <- rnorm(1000,200,30)
- # x6 <- rnorm(1000,200,30)
- # dat<-data.frame(x1,x2,x3,x4,x5,x6)
- # a <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
- #          f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6')
- # 
- # # incorrectly specified arguments
- # b <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
- #           f.pr='x3', f.ar='x4', ez.toe='x5',f.dda='x6')
- # 
- # # zero in the denominator
- # x5[c(1:10)]<-0
- # x6[c(1:10)]<-0
- # dat<-data.frame(x1,x2,x3,x4,x5,x6)
- # 
- # c <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
- #          f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6')
- # 
- # # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
- # d <- get_doch(df=dat, f.cash='x1', f.si = 'x2',
- #                          f.pr='x3', f.ar='x4', f.tfe='x5',f.dda='x6', winsorize=0.95 )
-
-                 

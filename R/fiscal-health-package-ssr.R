@@ -13,14 +13,14 @@
 #' Self Sufficiency Ratio 
 #'
 #' @description
-#' Calculate the self sufficiency and append it to the dataframe. 
+#' Calculate the self sufficiency ratio and append it to the dataframe. 
 #'
 #' @param debt Total debt, EOY (On 990: Part X, line 17B; On EZ: On EZ: Not Available).
-#' @param una Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
+#' @param net.assets Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the self sufficiency ratio (`ssr`), 
-#'  a winsorized version (`ssr.w`), a stanssrdized z-score version (`ssr.z`), 
+#'  a winsorized version (`ssr.w`), a standardized z-score version (`ssr.z`), 
 #'  and a percentile version (`ssr.p`).   
 #'
 #' @details The Self Sufficiency Ratio measures the proportion of operating expenses that are covered by earned income.
@@ -32,10 +32,10 @@
 #' grows. In the early stages, these ratios tend to be lower but the goal is to make them as high as possible.
 #' 
 #' @examples
-#' x1 <- rnorm(1000,100,30)
-#' x2 <- rnorm(1000,200,30)
+#' x1 <- rnorm( 1000,100,30 )
+#' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
-#' dat<-data.frame(x1,x2)
+#' dat <- data.frame( x1,x2 )
 #' d <- get_ssr( df=dat, debt='x1', net.assets='x2' )
 #' head( d )
 #'
@@ -53,7 +53,7 @@ get_ssr <- function( df, debt, net.assets, winsorize=0.98 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
   # can't divide by zero
-  print( paste0( "Unrestricted net assets cannot be zero: ", sum(ua==0), " cases have been replaced with NA." ) )
+  print( paste0( "Unrestricted net assets cannot be zero: ", sum( ua==0 ), " cases have been replaced with NA." ) )
   ua[ ua == 0 ] <- NA 
   
   ssr <- td / ua
