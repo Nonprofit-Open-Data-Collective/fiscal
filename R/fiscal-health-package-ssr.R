@@ -15,7 +15,7 @@
 #' @description
 #' Calculate the self sufficiency ratio and append it to the dataframe. 
 #'
-#' @param debt Total debt, EOY (On 990: Part X, line 17B; On EZ: On EZ: Not Available).
+#' @param debt Total debt, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param net.assets Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
