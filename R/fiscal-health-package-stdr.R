@@ -23,11 +23,12 @@
 #'  a winsorized version (`stdr.w`), a standardized z-score version (`stdr.z`), 
 #'  and a percentile version (`stdr.p`).   
 #'
-#' @details This metric indicates how well an organization can cover its liabilities with its readily 
-#' available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current 
-#' liabilities. This also indicates that the organization can pay off its current debts without selling its 
-#' long-term assets. If an organization has a quick ratio higher than 1, this means that it owns more quick 
-#' assets than current liabilities.
+#' @details This metric indicates how well an organization can cover its immediate liabilities with its equity. 
+#' Low values are better as they indicate that an organization has lower levels of leverage and more flexibility 
+#' to dispense its assets as needed or as opportunities arise. When an organization has a Short Term Debt Ratio 
+#' of 1, its liabilities are fully equal to the assets it owns. If an organization has a ratio higher than 1, it 
+#' indicates that it is over leveraged. A value close to zero indicates low levels of liability, and a negative 
+#' value indicates that an organization has overpaid on their liabilities.
 #' 
 #' @examples
 #' x1 <- rnorm( 1000,100,30 )
