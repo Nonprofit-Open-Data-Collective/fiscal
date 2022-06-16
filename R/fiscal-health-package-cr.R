@@ -7,7 +7,7 @@
 #' Current Ratio
 #' 
 #' @description 
-#' Calculate the current ratio.
+#' Calculate the current ratio and append it to the dataframe.
 #' 
 #' @param assets Current Assets (On 990: (Part X, line 1B) + (Part X, line 2B) + (Part X, line 3B) + (Part X, line 4B) + (Part X, line 8B) + (Part X, line 9B); On EZ: Part I, line 22 (cash and short-term investments only).
 #' @param liabilities Current Liabilities (On 990: (Part X, line 17B) + (Part X, line 18B); On EZ: Not available).
@@ -24,8 +24,8 @@
 #' with a ratio of 1.0 would have one dollar of assets to pay for every dollar of current liabilities.
 #'   
 #' @examples 
-#' x1 <- rnorm(1000,100,30)
-#' x2 <- rnorm(1000,200,30)
+#' x1 <- rnorm( 1000,100,30 )
+#' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
 #' dat<-data.frame( x1,x2 )
 #' d <- get_ssr( df=dat, assets='x1', liabilities='x2' )

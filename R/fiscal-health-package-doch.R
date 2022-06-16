@@ -15,13 +15,13 @@
 #' @description
 #' Calculate the days of operating cash on hand and append it to the dataframe. 
 #'
-#' @param f.cash Cash, EOY (On 990: (Part X, line 1B)); On EZ:Part I, line 22 (cash and short-term investments only)).
-#' @param f.si Short-term investments, EOY (On 990: (Part X, line 2B).
-#' @param f.pr Pledges and grant receivables, EOY (On 990: (Part X, line 3B).
-#' @param f.ar Accounts receivables, EOY (On 990: (Part X, line 4B).
-#' @param f.tfe Total functional expenses (On 990: Part IX, line 25A).
-#' @param f.dda Depreciation, depletion, and amortization (On 990: Part IX, line 22A).
-#' @param ez.csi Cash, savings, and investment, EOY (On EZ:Part II, line 22B (cash and short-term investments only)).
+#' @param f.cash Cash, EOY (On 990: Part X, line 1B; On EZ:Part I, line 22 (cash and short-term investments only)).
+#' @param f.si Short-term investments, EOY (On 990: Part X, line 2B; On EZ: Not Available).
+#' @param f.pr Pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available).
+#' @param f.ar Accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).
+#' @param f.tfe Total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
+#' @param f.dda Depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available).
+#' @param ez.csi Cash, savings, and investment, EOY On EZ:Part II, line 22B (cash and short-term investments only)).
 #' @param ez.toe Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
