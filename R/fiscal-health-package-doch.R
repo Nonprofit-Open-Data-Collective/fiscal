@@ -91,7 +91,7 @@ get_doch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
       is.null( f.tfe )==F & is.null( f.dda )==F) )
   {
     num <- df[[ f.cash ]] + df[[ f.si ]] + df[[ f.pr ]] + df[[f.ar]]
-    den <- ( df[[ f.tfe ]] + df[[ f.dda ]] ) / 365    
+    den <- ( df[[ f.tfe ]] - df[[ f.dda ]] ) / 365    
   }
   
   # pass with 990-EZ
