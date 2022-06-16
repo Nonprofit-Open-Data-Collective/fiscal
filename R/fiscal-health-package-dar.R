@@ -15,6 +15,7 @@
 #' @description
 #' Calculate the debt to asset ratio and append it to the dataframe. 
 #'
+#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param debt Total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B).
 #' @param assets Total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
@@ -32,15 +33,15 @@
 #' 
 #' 
 #' @examples
-#' x1 <- rnorm(1000,100,30)
-#' x2 <- rnorm(1000,200,30)
+#' #' x1 <- rnorm( 1000,100,30 )
+#' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
-#' dat <- data.frame(x1,x2)
-#' d <- get_dar( df=dat, debt="x1", assets="x2" )
+#' dat <- data.frame( x1,x2 )
+#' d <- get_der( df=dat, debt="x1", equity="x2" )
 #' head( d )
 #'
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_dar( df=dat, debt="x1", assets="x2", winsorize=0.95 )
+#' d <- get_der( df=dat, debt="x1", assets="x2", winsorize=0.95 )
 #' 
 #' @export
 get_dar <- function( df, debt, assets, winsorize=0.98 )
@@ -53,7 +54,7 @@ get_dar <- function( df, debt, assets, winsorize=0.98 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
 
   # can't divide by zero
-  print( paste0( "Assets cannot be zero: ", sum(a==0), " cases have been replaced with NA." ) )
+  print( paste0( "Assets cannot be zero: ", sum( a==0 ), " cases have been replaced with NA." ) )
   a[ a == 0 ] <- NA 
 
   dar <- d / a
