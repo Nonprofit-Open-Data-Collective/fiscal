@@ -15,6 +15,7 @@
 #' @description
 #' Calculate the debt to asset ratio and append it to the dataframe. 
 #'
+#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param debt Total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B).
 #' @param assets Total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
