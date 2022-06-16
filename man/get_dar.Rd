@@ -11,7 +11,7 @@ get_dar(df, debt, assets, winsorize = 0.98)
 
 \item{assets}{Total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B).}
 
-\item{winsorize}{The winsorization value,}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
 }
 \value{
 The original dataframe appended with the debt to asset ratio (\code{dar}),
