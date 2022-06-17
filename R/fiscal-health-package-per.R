@@ -13,7 +13,7 @@
 #' Program Efficiency Ratio
 #'
 #' @description
-#' Calculate the assets the program efficiency ratio and append it to the dataframe. 
+#' Calculate the program efficiency ratio and append it to the dataframe. 
 #'
 #' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param pse A character string indicating the column name for program service expenses (On 990: Part 9, Line 25B; On EZ: Pt II, Line 25B).

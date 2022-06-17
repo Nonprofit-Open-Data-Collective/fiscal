@@ -13,7 +13,7 @@
 #' Assets to Revenues Ratio
 #'
 #' @description
-#' Calculate the assets the revenues ratio and append it to the dataframe. 
+#' Calculate the assets to revenues ratio and append it to the dataframe. 
 #'
 #' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param total.assets A character string indicating the column name for total assets (On 990: Part X, Line 16B; On EZ: Pt II, Line 25B).
