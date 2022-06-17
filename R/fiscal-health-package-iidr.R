@@ -26,11 +26,10 @@
 #'  a winsorized version (`iidr.w`), a standardized z-score version (`iidr.z`), 
 #'  and a percentile version (`iidr.p`).   
 #'
-#' @details This metric shows how much of an organization’s total revenues come from contributions, government 
-#' grants, and special event reveues. High levels in this indicator are undesirable since that means that an 
-#' organization’s revenues are volatile insofar as it is dependent on contributions that are highly likely to 
-#' contract during economic downturns. Low values in this indicator mean an organization is not dependent on 
-#' donations.
+#' @details This metric shows how much of an organization’s total revenues come from investment income 
+#' (interest, dividents, gains/losses on sales of securities or other assets). High levels in this metric 
+#' indicate an organization is more depenent on investment income (and thus vulnerable to market downturns), 
+#' and low values indicate their income comes more from donations or earned income.
 #' 
 #' @examples
 #' x1<-rnorm( 1000,100,30 )
