@@ -33,14 +33,16 @@
 #' donations.
 #' 
 #' @examples
-#' x1 <- rnorm( 1000,100,30 )
-#' x2 <- rnorm( 1000,200,30 )
-#' x3 <- rnorm( 1000,200,30 )
-#' x3[ c(1,10,100)] <- 0
+#' x1<-rnorm( 1000,100,30 )
+#' x2<-rnorm( 1000,200,30 )
+#' x3<-rnorm( 1000,200,30 )
+#' x4<-rnorm( 1000,100,30 )
+#' x5<-rnorm( 1000,200,30 )
+#' x5[ c(1,10,100) ] <- 0
 #'
-#' dat <- data.frame( x1, x2, x3 )
+#' dat<-data.frame( x1, x2, x3, x4, x5 )
 #'
-#' a <- get_eidr( df=dat, total.contributions='x1', fund.income='x2', total.revenue='x3', winsorize=0.98 )
+#' a<-get_eidr( df=dat, prog.service.rev='x1', memb.dues='x2', royalties='x3', other.revenue='x4', total.revenue='x5', winsorize=0.98)
 #'
 #' head( a )
 #' 
