@@ -40,7 +40,7 @@
 #' head( a )
 #' 
 #' @export
-get_ggr <- function( df, invest.income, bond.proceeds, rent.income, other.income, total.revenue, winsorize=0.98 )
+get_ggr <- function( df, ggc, total.revenue, winsorize=0.98 )
 {
   
   # checks
