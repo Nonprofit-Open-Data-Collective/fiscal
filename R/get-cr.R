@@ -56,9 +56,9 @@
 #' # run with default column names
 #' dat_01 <- dat
 #'
-#' colnames( dat_01 ) <- c( 'ASSET_CASH_EOY', 'ASSET_SAVING_EOY', 'ASSET_PLEDGE_NET_BOY', 
-#'                        'ASSET_ACC_NET_EOY', 'ASSET_INV_SALE_EOY', 'ASSET_EXP_PREPAID_EOY', 
-#'                        'LIAB_ACC_PAYABLE_EOY', 'LIAB_GRANT_PAYABLE_EOY' )
+#' colnames( dat_01 ) <- c( 'F9_10_ASSET_CASH_EOY', 'F9_10_ASSET_SAVING_EOY', 'F9_10_ASSET_PLEDGE_NET_EOY', 
+#'                        'F9_10_ASSET_ACC_NET_EOY', 'F9_10_ASSET_INV_SALE_EOY', 'F9_10_ASSET_EXP_PREPAID_EOY', 
+#'                        'F9_10_LIAB_ACC_PAYABLE_EOY', 'F9_10_LIAB_GRANT_PAYABLE_EOY' )
 #'
 #' d <- get_cr( dat_01 )
 #' 
@@ -119,7 +119,15 @@
 #'        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, numerator = 'x.num', denominator = NULL )
 #'
 #'@export
-get_cr<-function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY', pledges.receive = 'ASSET_PLEDGE_NET_BOY', accounts.receive = 'ASSET_ACC_NET_EOY', inventories.sale = 'ASSET_INV_SALE_EOY', prepaid.expenses = 'ASSET_EXP_PREPAID_EOY', accounts.payable = 'LIAB_ACC_PAYABLE_EOY', grants.payable = 'LIAB_GRANT_PAYABLE_EOY', numerator = NULL, denominator = NULL, winsorize=0.98 )
+get_cr<-function( df, cash = 'F9_10_ASSET_CASH_EOY', 
+                  short.invest = 'F9_10_ASSET_SAVING_EOY', 
+                  pledges.receive = 'F9_10_ASSET_PLEDGE_NET_BOY', 
+                  accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
+                  inventories.sale = 'F9_10_ASSET_INV_SALE_EOY', 
+                  prepaid.expenses = 'F9_10_ASSET_EXP_PREPAID_EOY', 
+                  accounts.payable = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
+                  grants.payable = 'F9_10_LIAB_GRANT_PAYABLE_EOY', 
+                  numerator = NULL, denominator = NULL, winsorize=0.98 )
 {
   # checks
   if ( winsorize > 1 | winsorize < 0 )

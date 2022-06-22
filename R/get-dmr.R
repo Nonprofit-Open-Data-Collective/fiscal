@@ -39,7 +39,7 @@
 #' # run with default column names
 #' dat_01 <- dat
 #' 
-#' colnames( dat_01 ) <- c( 'LIAB_TOT_EOY', 'NAFB_UNRESTRICT_EOY' )
+#' colnames( dat_01 ) <- c( 'F9_10_LIAB_TOT_EOY', 'F9_10_NAFB_UNRESTRICT_EOY' )
 #'
 #' d <- get_dmr( dat_01 )
 #' 
@@ -60,7 +60,7 @@
 #' d <- get_dmr( df = dat, liabilities = NULL, net.assets = NULL )
 #' 
 #' @export
-get_dmr <- function( df, liabilities = 'LIAB_TOT_EOY', net.assets = 'NAFB_UNRESTRICT_EOY', winsorize=0.98 )
+get_dmr <- function( df, liabilities = 'F9_10_LIAB_TOT_EOY', net.assets = 'F9_10_NAFB_UNRESTRICT_EOY', winsorize=0.98 )
 {
   # checks
   if( winsorize > 1 | winsorize < 0 )

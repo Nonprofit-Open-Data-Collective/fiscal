@@ -41,7 +41,7 @@
 #' # run with default column names
 #' dat_01 <- dat
 #' 
-#' colnames( dat_01 ) <- c( 'LIAB_TOT_EOY', 'ASSET_TOT_EOY' )
+#' colnames( dat_01 ) <- c( 'F9_10_LIAB_TOT_EOY', 'F9_10_ASSET_TOT_EOY' )
 #'
 #' d <- get_dar( dat_01 )
 #' 
@@ -61,7 +61,7 @@
 #' # neither numerator nor denominator specified
 #' d <- get_dar( df = dat, debt = NULL, assets = NULL )
 #' @export
-get_dar <- function( df, debt = 'LIAB_TOT_EOY', assets = 'ASSET_TOT_EOY', winsorize=0.98 )
+get_dar <- function( df, debt = 'F9_10_LIAB_TOT_EOY', assets = 'F9_10_ASSET_TOT_EOY', winsorize=0.98 )
 {
   # checks
   if( winsorize > 1 | winsorize < 0 )

@@ -54,8 +54,8 @@
 #' # run with default column names
 #' dat_01 <- dat
 #' 
-#' colnames( dat_01 ) <- c( 'ASSET_CASH_EOY', 'ASSET_SAVING_EOY', 'ASSET_PLEDGE_NET_BOY', 
-#'                         'ASSET_ACC_NET_EOY', 'EXP_TOT_TOT','EXP_DEPREC_TOT' )
+#' colnames( dat_01 ) <- c( 'F9_10_ASSET_CASH_EOY', 'F9_10_ASSET_SAVING_EOY', 'F9_10_ASSET_PLEDGE_NET_BOY', 
+#'                         'F9_10_ASSET_ACC_NET_EOY', 'F9_09_EXP_TOT_TOT','F9_09_EXP_DEPREC_TOT' )
 #'
 #' 
 #' d <- get_moch( dat_01 )
@@ -121,7 +121,12 @@
 #'           tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = NULL )
 #' 
 #' @export
-get_moch <- function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY', pledges.receive = 'ASSET_PLEDGE_NET_BOY', accounts.receive = 'ASSET_ACC_NET_EOY', tot.func.exp = 'EXP_TOT_TOT', dda = 'EXP_DEPREC_TOT', numerator = NULL, denominator = NULL, winsorize = 0.98 )
+get_moch <- function( df, cash = 'F9_10_ASSET_CASH_EOY', 
+                      short.invest = 'F9_10_ASSET_SAVING_EOY', 
+                      pledges.receive = 'F9_10_ASSET_PLEDGE_NET_BOY', 
+                      accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
+                      tot.func.exp = 'F9_09_EXP_TOT_TOT', 
+                      dda = 'F9_09_EXP_DEPREC_TOT', numerator = NULL, denominator = NULL, winsorize = 0.98 )
 {
   
   # checks

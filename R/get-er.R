@@ -41,7 +41,7 @@
 #' # run with default column names
 #' dat_01 <- dat
 #' 
-#' colnames( dat_01 ) <- c( 'NAFB_TOT_EOY', 'ASSET_TOT_EOY' )
+#' colnames( dat_01 ) <- c( 'F9_10_NAFB_TOT_EOY', 'F9_10_ASSET_TOT_EOY' )
 #' 
 #' d <- get_er( dat_01 )
 #' 
@@ -62,7 +62,7 @@
 #' d <- get_er( df = dat, net.assets = NULL, total.assets = NULL )
 #' 
 #' @export
-get_er <- function( df, net.assets = 'NAFB_TOT_EOY', total.assets = 'ASSET_TOT_EOY', winsorize=0.98 )
+get_er <- function( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize=0.98 )
 {
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
