@@ -18,8 +18,8 @@
 #' @param prepaid.expense A character string indicating the column name for prepaid expenses and deferred charges, EOY (On 990: Part X, line 9B; On EZ: Not Available) with the default name supplied.
 #' @param accounts.payable A character string indicating the column name for accounts payable, EOY (On 990: (Part X, line 17B); On EZ: Not available) with the default name supplied.
 #' @param grants.payable A character string indicating the column name for grants payable, EOY (On 990: (Part X, line 18B); On EZ: Not available) with the default name supplied.
-#' @param current.assets A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expense`).
-#' @param current.liabilities A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expense`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe with the current ratio (`cr`),
@@ -49,7 +49,7 @@
 #'
 #' # specify own column names
 #' d <- get_cr( df = dat, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'             inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', current.assets = NULL, current.liabilities = NULL )
+#'             inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', numerator = NULL, denominator = NULL )
 #'
 #'head( d )
 #'
@@ -71,14 +71,14 @@
 #' dat_02 <- cbind( dat, x.den, x.num)
 #'
 #' d <- get_cr( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'            inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, current.assets = 'x.num', current.liabilities = 'x.den' )
+#'            inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, numerator = 'x.num', denominator = 'x.den' )
 #' 
 #' head ( d )
 #'
 #' # specify column names for mixture of aggregated (denominator) and individual variables (numerator)
 #' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #' d <- get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'              inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, current.assets = NULL, current.liabilities = 'x.den', winsorize=0.95 )
+#'              inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, numerator = NULL, denominator = 'x.den', winsorize=0.95 )
 #'
 #' head ( d )
 #'
@@ -86,7 +86,7 @@
 #' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #'
 #' d <- get_cr( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'              inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = 'x7', grants.payable = 'x8', current.assets = 'x.num', current.liabilities = NULL, winsorize=0.95 )
+#'              inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = 'x7', grants.payable = 'x8', numerator = 'x.num', denominator = NULL, winsorize=0.95 )
 #' head ( d )
 #'
 #'
@@ -94,58 +94,58 @@
 #'
 #' # incorrectly specify denominator
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = 'x8', current.assets = NULL, current.liabilities = NULL, winsorize=0.98 )
+#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = 'x8', numerator = NULL, denominator = NULL, winsorize=0.98 )
 #' 
 #' # incorrectly specify numerator with conflicting arguments
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, current.assets = 'x.num', current.liabilities = 'x.den' )
+#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, numerator = 'x.num', denominator = 'x.den' )
 #'
 #' # incorrectly specify numerator with conflicting arguments
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', current.assets = NULL, current.liabilities = 'x.den' )
+#'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', numerator = NULL, denominator = 'x.den' )
 #'
 #' # supplying no arguments for the numerator
 #' get_cr( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = 'x7', grants.payable = 'x8', current.assets = NULL, current.liabilities = NULL )
+#'        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = 'x7', grants.payable = 'x8', numerator = NULL, denominator = NULL )
 #'
 #' get_cr( df = dat_03, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'         inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, current.assets = NULL, current.liabilities = 'x.den' )
+#'         inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, numerator = NULL, denominator = 'x.den' )
 #'
 #' # supplying no arguments for the denominator
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-#'        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, current.assets = NULL, current.liabilities = NULL )
+#'        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, numerator = NULL, denominator = NULL )
 #'
 #' get_cr( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, current.assets = 'x.num', current.liabilities = NULL )
+#'        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = NULL, grants.payable = NULL, numerator = 'x.num', denominator = NULL )
 #'
 #'@export
-get_cr<-function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY', pledges.receive = 'ASSET_PLEDGE_NET_BOY', accounts.receive = 'ASSET_ACC_NET_EOY', inventories.sale = 'ASSET_INV_SALE_EOY', prepaid.expenses = 'ASSET_EXP_PREPAID_EOY', accounts.payable = 'LIAB_ACC_PAYABLE_EOY', grants.payable = 'LIAB_GRANT_PAYABLE_EOY', current.assets = NULL, current.liabilities = NULL, winsorize=0.98 )
+get_cr<-function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY', pledges.receive = 'ASSET_PLEDGE_NET_BOY', accounts.receive = 'ASSET_ACC_NET_EOY', inventories.sale = 'ASSET_INV_SALE_EOY', prepaid.expenses = 'ASSET_EXP_PREPAID_EOY', accounts.payable = 'LIAB_ACC_PAYABLE_EOY', grants.payable = 'LIAB_GRANT_PAYABLE_EOY', numerator = NULL, denominator = NULL, winsorize=0.98 )
 {
   # checks
   if ( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
 
-  if ( ( ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) < 6 )==F | is.null( current.assets )==F ) &
+  if ( ( ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) < 6 )==F | is.null( numerator )==F ) &
        ( ( is.null( accounts.payable )==T | is.null( grants.payable )==T) &
-         is.null( current.liabilities )==T ) )
+         is.null( denominator )==T ) )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if ( ( ( length( c( accounts.payable, grants.payable ) ) < 2 )==F | is.null( current.liabilities )==F ) &
+  if ( ( ( length( c( accounts.payable, grants.payable ) ) < 2 )==F | is.null( denominator )==F ) &
        ( ( is.null( cash )==T | is.null( short.invest )==T | 
            is.null( pledges.receive )==T | is.null( accounts.receive )==T |
            is.null( inventories.sale )==T | is.null( prepaid.expenses )==T) &
-           is.null( current.assets )==T ) )
+           is.null( numerator )==T ) )
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
   if ( ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) <= 6 ) &
        ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) >= 1 ) & 
-    ( is.null( current.assets )==F ) )
+    ( is.null( numerator )==F ) )
   { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
 
   if ( ( length( c( accounts.payable, grants.payable ) ) <= 2 ) &
        ( length( c( accounts.payable, grants.payable ) ) >= 1 ) & 
-       ( is.null( current.liabilities )==F ) )
+       ( is.null( denominator )==F ) )
   { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
   
@@ -155,18 +155,18 @@ get_cr<-function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY'
   l <- df[[ accounts.payable ]]+ df[[ grants.payable ]] 
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) < 6 ) ==F & ( is.null( accounts.payable )==T & is.null( grants.payable )==T & is.null( current.liabilities )==F ) ){
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) < 6 ) ==F & ( is.null( accounts.payable )==T & is.null( grants.payable )==T & is.null( denominator )==F ) ){
     a <- df[[ cash ]] + df[[ short.invest ]] + df[[ pledges.receive ]] + df[[ accounts.receive ]] + df[[ inventories.sale ]] + df[[ prepaid.expenses ]]
-  l <- df[[ current.liabilities ]]
+  l <- df[[ denominator ]]
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) == 0 ) ==T & ( is.null( accounts.payable )==T & is.null( grants.payable )==T & is.null( current.liabilities )==F & is.null( current.assets )==F ) ){
-    a <- df[[ current.assets ]]
-  l <- df[[ current.liabilities ]] 
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) == 0 ) ==T & ( is.null( accounts.payable )==T & is.null( grants.payable )==T & is.null( denominator )==F & is.null( numerator )==F ) ){
+    a <- df[[ numerator ]]
+  l <- df[[ denominator ]] 
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) == 0 ) ==T & ( is.null( accounts.payable )==F & is.null( grants.payable )==F & is.null( current.liabilities )==T & is.null( current.assets )==F ) ){
-    a <- df[[ current.assets ]]
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) == 0 ) ==T & ( is.null( accounts.payable )==F & is.null( grants.payable )==F & is.null( denominator )==T & is.null( numerator )==F ) ){
+    a <- df[[ numerator ]]
     l <- df[[ accounts.payable ]]+ df[[ grants.payable ]] 
   }
             

@@ -15,8 +15,8 @@
 #' @param accounts.receive A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available) with the default name supplied.
 #' @param tot.func.exp A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available) with the default name supplied.
 #' @param dda A character string indicating the column name for depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available) with the default name supplied.
-#' @param ez.csi A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`). Users may also use this argument to supply the column variable for EZ-filers: cash, savings, and investment, EOY On EZ: Part II, line 22B (cash and short-term investments only)).
-#' @param ez.toe A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (`tot.func.exp`, `dda`). Users may also use this argument to supply the column variable for EZ-filers: Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`). Users may also use this argument to supply the column variable for EZ-filers: cash, savings, and investment, EOY On EZ: Part II, line 22B (cash and short-term investments only)).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (`tot.func.exp`, `dda`). Users may also use this argument to supply the column variable for EZ-filers: Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the days of operating cash on hand (`doch`), 
@@ -49,15 +49,15 @@
 #' 
 #' # specify own column names
 #' d <- get_doch( df = dat, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'                tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = NULL )
+#'                tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = NULL )
 #' 
 #' head( d )
 #' 
 #' # run with default column names
 #' dat_01 <- dat
 #' 
-#' colnames( dat_01 ) <- c( 'name1', 'name2', 'name3', 
-#'                          'name4', 'name5', 'name6' )
+#'colnames( dat_01 ) <- c( 'ASSET_CASH_EOY', 'ASSET_SAVING_EOY', 'ASSET_PLEDGE_NET_BOY', 
+#'                         'ASSET_ACC_NET_EOY', 'EXP_TOT_TOT','EXP_DEPREC_TOT' )
 #' 
 #' d <- get_doch( dat_01 )
 #' 
@@ -70,14 +70,14 @@
 #' dat_02 <- cbind( dat, x.den, x.num )
 #' 
 #' d <- get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'                tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = 'x.den' )
+#'                tot.func.exp = NULL, dda = NULL, numerator = 'x.num', denominator = 'x.den' )
 #' 
 #' head ( d )
 #' 
 #' # specify column names for mixture of aggregated (denominator) and individual variables (numerator)
 #' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #' d <- get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'                tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = 'x.den', winsorize=0.95 )
+#'                tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = 'x.den', winsorize=0.95 )
 #' 
 #' head ( d )
 #' 
@@ -85,7 +85,7 @@
 #' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #' 
 #' d <- get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'                tot.func.exp = 'x5', dda = 'x6', ez.csi = 'x.num', ez.toe = NULL, winsorize=0.95 )
+#'                tot.func.exp = 'x5', dda = 'x6', numerator = 'x.num', denominator = NULL, winsorize=0.95 )
 #' head ( d )
 #' 
 #' 
@@ -93,36 +93,36 @@
 #' 
 #' # incorrectly specify denominator
 #' get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'           tot.func.exp = NULL, dda = 'x6', ez.csi = NULL, ez.toe = NULL, winsorize=0.98 )
+#'           tot.func.exp = NULL, dda = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
 #' 
 #' # incorrectly specify numerator with conflicting arguments
 #' get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'           tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = 'x.den' )
+#'           tot.func.exp = NULL, dda = NULL, numerator = 'x.num', denominator = 'x.den' )
 #' 
 #' # incorrectly specify numerator with conflicting arguments
 #' get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'           tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = 'x.den' )
+#'           tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = 'x.den' )
 #' 
 #' # supplying no arguments for the numerator
 #' get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'           tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = NULL )
+#'           tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = NULL )
 #' 
 #' get_doch( df = dat_03, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = 'x.den' )
+#'           tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = 'x.den' )
 #' 
 #' # supplying no arguments for the denominator
 #' get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
-#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = NULL )
+#'           tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = NULL )
 #' 
 #' get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'           tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = NULL )
+#'           tot.func.exp = NULL, dda = NULL, numerator = 'x.num', denominator = NULL )
 #' 
 #' # supplying no arguments at all
 #' get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
-#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = NULL )
+#'           tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = NULL )
 #' 
 #' @export
-get_doch <- function( df, cash = 'name1', short.invest = 'name2', pledges.receive = 'name3', accounts.receive = 'name4', tot.func.exp = 'name5', dda = 'name6', ez.csi = NULL, ez.toe = NULL,winsorize = 0.98 )
+get_doch <- function( df, cash = 'ASSET_CASH_EOY', short.invest = 'ASSET_SAVING_EOY', pledges.receive = 'ASSET_PLEDGE_NET_BOY', accounts.receive = 'ASSET_ACC_NET_EOY', tot.func.exp = 'EXP_TOT_TOT', dda = 'EXP_DEPREC_TOT', numerator = NULL, denominator = NULL, winsorize = 0.98 )
 {
   
   # checks
@@ -130,30 +130,30 @@ get_doch <- function( df, cash = 'name1', short.invest = 'name2', pledges.receiv
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
   
-  if ( ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 )==F | is.null( ez.csi )==F ) &
+  if ( ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 )==F | is.null( numerator )==F ) &
        ( ( is.null( tot.func.exp )==T | is.null( dda )==T) &
-         is.null( ez.toe )==T ) )
+         is.null( denominator )==T ) )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if ( ( ( length( c( tot.func.exp, dda ) ) < 2 )==F | is.null( ez.toe )==F ) &
+  if ( ( ( length( c( tot.func.exp, dda ) ) < 2 )==F | is.null( denominator )==F ) &
        ( ( is.null( cash )==T | is.null( short.invest )==T | 
            is.null( pledges.receive )==T | is.null( accounts.receive )==T ) &
-         is.null( ez.csi )==T ) )
+         is.null( numerator )==T ) )
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
   if ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) <= 4 ) &
        ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) >= 1 ) & 
-       ( is.null( ez.csi )==F ) )
+       ( is.null( numerator )==F ) )
   { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
   if ( ( length( c( tot.func.exp, dda ) ) <= 2 ) &
        ( length( c( tot.func.exp, dda ) ) >= 1 ) & 
-       ( is.null( ez.toe )==F ) )
+       ( is.null( denominator )==F ) )
   { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
 
   if ( ( length( c( tot.func.exp, dda ) ) == 0 ) &
        ( length( c( tot.func.exp, dda ) ) == 0 ) & 
-       ( is.null( ez.toe )==T & is.null ( ez.csi )==T ) )
+       ( is.null( denominator )==T & is.null ( numerator )==T ) )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
   
@@ -163,18 +163,18 @@ get_doch <- function( df, cash = 'name1', short.invest = 'name2', pledges.receiv
     den <- ( df[[ tot.func.exp ]] + df[[ dda ]] ) / 365
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 ) ==F & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( ez.toe )==F ) ){
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 ) ==F & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( denominator )==F ) ){
     num <- df[[ cash ]] + df[[ short.invest ]] + df[[ pledges.receive ]] + df[[ accounts.receive ]]
-    den <- df[[ ez.toe ]] / 365
+    den <- df[[ denominator ]] / 365
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( ez.toe )==F & is.null( ez.csi )==F ) ){
-    num <- df[[ ez.csi ]]
-    den <- df[[ ez.toe ]] / 365
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( denominator )==F & is.null( numerator )==F ) ){
+    num <- df[[ numerator ]]
+    den <- df[[ denominator ]] / 365
   }
   
-  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==F & is.null( dda )==F & is.null( ez.toe )==T & is.null( ez.csi )==F ) ){
-    num <- df[[ ez.csi ]]
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==F & is.null( dda )==F & is.null( denominator )==T & is.null( numerator )==F ) ){
+    num <- df[[ numerator ]]
     den <- ( df[[ tot.func.exp ]]+ df[[ dda ]] ) / 365
   }
   
@@ -183,7 +183,7 @@ get_doch <- function( df, cash = 'name1', short.invest = 'name2', pledges.receiv
     stop( 'winsorize argument must be 0 < w < 1' )
   }
   
-  print( paste0('Denominator cannot be equal to zero: ',sum( den==0 ),' cases have been replaced with NA' ))
+  print( paste0( 'Denominator cannot be equal to zero: ',sum( den==0 ),' cases have been replaced with NA' ))
   
   den[ den==0 ] <- NA
   
