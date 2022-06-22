@@ -8,8 +8,8 @@
 #' @description
 #' Calculate the self sufficiency ratio and append it to the dataframe. 
 #'
-#' @param debt Total debt, EOY (On 990: Part X, line 17B; On EZ: Not Available).
-#' @param net.assets Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
+#' @param prog.serv.rev Program service revenue, EOY (Part 8, Line 2g(A); On EZ: Part 1, Line 2).
+#' @param total.expense total expenses, EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the self sufficiency ratio (`ssr`), 
@@ -28,28 +28,61 @@
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
+#' 
 #' dat <- data.frame( x1,x2 )
-#' d <- get_ssr( df=dat, debt='x1', net.assets='x2' )
+#' 
+#' # specify own column names
+#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x2" )
+#' 
 #' head( d )
-#'
+#' 
+#' # run with default column names
+#' dat_01 <- dat
+#' 
+#' colnames( dat_01 ) <- c( 'F9_08_REV_PROG_TOT_TOT', 'F9_09_EXP_TOT_TOT' )
+#' 
+#' d <- get_ssr( dat_01 )
+#' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_ssr( df=dat, debt='x1', net.assets='x2', winsorize=0.95 )
+#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense ="x2", winsorize=0.95 )
+#' 
+#' d <- get_ssr( dat_01, winsorize = 0.95 )
+#' 
+#' ## errors ##
+#' 
+#' # numerator not specified
+#' d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = 'x2' )
+#' 
+#' # denominator not specified
+#' d <- get_ssr( df = dat, prog.serv.rev = 'x1', total.expense = NULL )
+#' 
+#' # neither numerator nor denominator specified
+#' d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = NULL )
 #' 
 #' @export
-get_ssr <- function( df, debt, net.assets, winsorize=0.98 )
+get_ssr <- function( df, prog.serv.rev = 'F9_08_REV_PROG_TOT_TOT', total.expense = 'F9_09_EXP_TOT_TOT', winsorize=0.98 )
 {
-  
-  td <- df[[ debt ]]
-  ua <- df[[ net.assets ]]
-  
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  # can't divide by zero
-  print( paste0( "Unrestricted net assets cannot be zero: ", sum( ua==0 ), " cases have been replaced with NA." ) )
-  ua[ ua == 0 ] <- NA 
+  if( is.null( prog.serv.rev )==T & is.null( total.expense )==F )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  ssr <- td / ua
+  if( is.null( prog.serv.rev )==F & is.null( total.expense )==T )
+  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( is.null( prog.serv.rev )==T & is.null( total.expense )==T )
+  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  
+  p <- df[[ prog.serv.rev ]]
+  e <- df[[ total.expense ]]
+  
+
+  # can't divide by zero
+  print( paste0( "Total expenses cannot be equal to zero: ", sum( e==0 ), " cases have been replaced with NA." ) )
+  e[ e == 0 ] <- NA 
+  
+  ssr <- p / e
   
   top.p    <- 1 - (1-winsorize)/2
   bottom.p <- 0 + (1-winsorize)/2
