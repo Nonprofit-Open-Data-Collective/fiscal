@@ -27,28 +27,63 @@
 #' 
 #' 
 #' @examples
-#' #' x1 <- rnorm( 1000,100,30 )
+#' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
+#' 
 #' dat <- data.frame( x1,x2 )
-#' d <- get_der( df=dat, debt="x1", equity="x2" )
+#' 
+#' # specify own column names
+#' d <- get_dar( df = dat, debt="x1", assets="x2" )
+#' 
 #' head( d )
+#' 
+#' # run with default column names
+#' dat_01 <- dat
+#' 
+#' colnames( dat_01 ) <- c( 'LIAB_TOT_EOY', 'ASSET_TOT_EOY' )
 #'
+#' d <- get_dar( dat_01 )
+#' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_der( df=dat, debt="x1", assets="x2", winsorize=0.95 )
+#' d <- get_dar( df = dat, debt = "x1", assets ="x2", winsorize=0.95 )
+#' 
+#' d <- get_dar( dat_01, winsorize = 0.95 )
+#' 
+#' ## Errors ##
+#' 
+#' # numerator not specified
+#' d <- get_dar( df = dat, debt = 'x1', assets = NULL )
+#' 
+#' # denominator not specified
+#' d <- get_dar( df = dat, debt = NULL, assets = 'x2' )
+#' 
+#' # neither numerator nor denominator specified
+#' d <- get_dar( df = dat, debt = NULL, assets = NULL )
 #' 
 #' @export
 get_dar <- function( df, debt = 'LIAB_TOT_EOY', assets = 'ASSET_TOT_EOY', winsorize=0.98 )
 {
-
+  # checks
+  if( winsorize > 1 | winsorize < 0 )
+  { stop( "winsorize argument must be 0 < w < 1" ) }
+  
+  if( is.null( debt )==T & is.null( assets )==F )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( is.null( debt )==F & is.null( assets )==T )
+  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( is.null( debt )==T & is.null( assets )==T )
+  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  
   d <- df[[ debt ]]
   a <- df[[ assets ]]
 
-  if( winsorize > 1 | winsorize < 0 )
-  { stop( "winsorize argument must be 0 < w < 1" ) }
-
+    
   # can't divide by zero
   print( paste0( "Assets cannot be zero: ", sum( a==0 ), " cases have been replaced with NA." ) )
+  
   a[ a == 0 ] <- NA 
 
   dar <- d / a

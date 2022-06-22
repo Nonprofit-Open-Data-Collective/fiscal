@@ -44,7 +44,7 @@
 #' x7[ c(15,300,600) ] <- 0
 #' x8[ c(15,300,600) ] <- 0
 #'
-#' dat<-data.frame( x1,x2, x3, x4, x5, x6, x7, x8)
+#' dat <- data.frame( x1,x2, x3, x4, x5, x6, x7, x8)
 #'
 #' # specify own column names
 #' d <- get_cr( df=dat, cash = 'x1', short.invest = 'x2', pledges.recieve = 'x3', accounts.recieve = 'x4', 
@@ -55,7 +55,7 @@
 #' # run with default column names
 #' dat_01 <- dat
 #'
-#' colnames( dat_01) <- c( 'ASSET_CASH_EOY', 'ASSET_SAVING_EOY', 'ASSET_PLEDGE_NET_BOY', 
+#' colnames( dat_01 ) <- c( 'ASSET_CASH_EOY', 'ASSET_SAVING_EOY', 'ASSET_PLEDGE_NET_BOY', 
 #'                        'ASSET_ACC_NET_EOY', 'ASSET_INV_SALE_EOY', 'ASSET_EXP_PREPAID_EOY', 
 #'                        'LIAB_ACC_PAYABLE_EOY', 'LIAB_GRANT_PAYABLE_EOY' )
 #'
