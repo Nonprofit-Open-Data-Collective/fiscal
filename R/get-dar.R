@@ -9,8 +9,8 @@
 #' Calculate the debt to asset ratio and append it to the dataframe. 
 #'
 #' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param debt Total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B).
-#' @param assets Total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B).
+#' @param debt A character string indicating the column name for total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
+#' @param assets A character string indicating the column name for total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the debt to asset ratio (`dar`), 
@@ -23,6 +23,7 @@
 #'  in the same industry. This information can reflect how financially stable 
 #'  a company is. The higher the ratio, the higher the degree of leverage (DoL) and, 
 #'  consequently, the higher the risk (\href{Investopedia}{https://www.investopedia.com/terms/t/totaldebttototalassets.asp}).
+#'  Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
 #' 
 #' @examples
@@ -37,7 +38,7 @@
 #' d <- get_der( df=dat, debt="x1", assets="x2", winsorize=0.95 )
 #' 
 #' @export
-get_dar <- function( df, debt, assets, winsorize=0.98 )
+get_dar <- function( df, debt = 'LIAB_TOT_EOY', assets = 'ASSET_TOT_EOY', winsorize=0.98 )
 {
 
   d <- df[[ debt ]]
@@ -78,10 +79,5 @@ get_dar <- function( df, debt, assets, winsorize=0.98 )
   return( df.dar )
 }
 
-
-# x1 <- rnorm(1000,100,30)
-# x2 <- rnorm(1000,200,30)
-# x2[ c(15,300,600) ] <- 0
-# d <- get_dar( debt=x1, assets=x2 )
 
 
