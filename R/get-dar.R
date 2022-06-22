@@ -34,7 +34,7 @@
 #' dat <- data.frame( x1,x2 )
 #' 
 #' # specify own column names
-#' d <- get_dar( df = dat, debt="x1", assets="x2" )
+#' d <- get_dar( df = dat, debt = "x1", assets = "x2" )
 #' 
 #' head( d )
 #' 
@@ -53,14 +53,13 @@
 #' ## Errors ##
 #' 
 #' # numerator not specified
-#' d <- get_dar( df = dat, debt = 'x1', assets = NULL )
+#' d <- get_dar( df = dat, debt = NULL, assets = 'x2' )
 #' 
 #' # denominator not specified
-#' d <- get_dar( df = dat, debt = NULL, assets = 'x2' )
+#' d <- get_dar( df = dat, debt = 'x1', assets = NULL )
 #' 
 #' # neither numerator nor denominator specified
 #' d <- get_dar( df = dat, debt = NULL, assets = NULL )
-#' 
 #' @export
 get_dar <- function( df, debt = 'LIAB_TOT_EOY', assets = 'ASSET_TOT_EOY', winsorize=0.98 )
 {
@@ -82,7 +81,7 @@ get_dar <- function( df, debt = 'LIAB_TOT_EOY', assets = 'ASSET_TOT_EOY', winsor
 
     
   # can't divide by zero
-  print( paste0( "Assets cannot be zero: ", sum( a==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Assets cannot be equal to zero: ", sum( a==0 ), " cases have been replaced with NA." ) )
   
   a[ a == 0 ] <- NA 
 

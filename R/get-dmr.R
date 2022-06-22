@@ -32,7 +32,7 @@
 #' dat <- data.frame( x1,x2 )
 #' 
 #' # specify own column names
-#' d <- get_dmr( df = dat, liabilities="x1", net.assets="x2" )
+#' d <- get_dmr( df = dat, liabilities = "x1", net.assets = "x2" )
 #' 
 #' head( d )
 #' 
@@ -50,11 +50,11 @@
 #' 
 #' ## Errors ##
 #' 
-#' # numerator not specified
-#' d <- get_dmr( df = dat, liabilities = 'x1', net.assets = NULL )
+# numerator not specified
+#' d <- get_dmr( df = dat, liabilities = NULL, net.assets = 'x2' )
 #' 
 #' # denominator not specified
-#' d <- get_dmr( df = dat, liabilities = NULL, net.assets = 'x2' )
+#' d <- get_dmr( df = dat, liabilities = 'x1', net.assets = NULL )
 #' 
 #' # neither numerator nor denominator specified
 #' d <- get_dmr( df = dat, liabilities = NULL, net.assets = NULL )
