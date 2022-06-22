@@ -8,14 +8,15 @@
 #' @description
 #' Calculate the months of operating cash on hand and append it to the dataframe. 
 #'
-#' @param f.cash Cash, EOY (On 990: Part X, line 1B; On EZ:Part I, line 22 (cash and short-term investments only)).
-#' @param f.si Short-term investments, EOY (On 990: Part X, line 2B; On EZ: Not Available).
-#' @param f.pr Pledges and grant receivables, EOY (On 990: Part X, line 3B; On EZ: Not Available).
-#' @param f.ar Accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).
-#' @param f.tfe Total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
-#' @param f.dda Depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available).
-#' @param ez.csi Cash, savings, and investment, EOY (On EZ:Part II, line 22B (cash and short-term investments only)).
-#' @param ez.toe Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
+#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param cash A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ: Part II, line 22B (cash and short-term investments only)) with the default name supplied.
+#' @param short.invest A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B; On EZ: Part II, line 22B (cash and short-term investments only)) with the default name supplied.
+#' @param pledges.receive A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available) with the default name supplied.
+#' @param accounts.receive A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available) with the default name supplied.
+#' @param tot.func.exp A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available) with the default name supplied.
+#' @param dda A character string indicating the column name for depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available) with the default name supplied.
+#' @param ez.csi A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`). Users may also use this argument to supply the column variable for EZ-filers: cash, savings, and investment, EOY On EZ: Part II, line 22B (cash and short-term investments only)).
+#' @param ez.toe A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (`tot.func.exp`, `dda`). Users may also use this argument to supply the column variable for EZ-filers: Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return The original dataframe appended with the months of operating cash on hand (`moch`), 
@@ -34,71 +35,157 @@
 #' @examples
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
-#' x3 <- rnorm( 1000,200,30 )
+#' x3 <- rnorm( 1000,100,30 )
 #' x4 <- rnorm( 1000,200,30 )
-#' x5 <- rnorm( 1000,200,30 )
+#' x5 <- rnorm( 1000,100,30 )
 #' x6 <- rnorm( 1000,200,30 )
-#' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
-#' a <- get_moch( df=dat, f.cash='x1', f.si='x2',
-#'              f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6' )
 #' 
-# #incorrectly specified arguments
-#' b <- get_moch( df=dat, f.cash='x1', f.si = 'x2',
-#'               f.pr='x3', f.ar='x4', ez.toe='x5', f.dda='x6' )
+#' x5[ c(15,300,600) ] <- 0
+#' x6[ c(15,300,600) ] <- 0
 #' 
-# #zero in the denominator
-#' x5[ c(1:10) ] <- 0
-#' x6[ c(1:10) ] <- 0
-#' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
+#' dat <- data.frame( x1,x2, x3, x4, x5 , x6)
 #' 
-#' c <- get_moch( df=dat, f.cash='x1', f.si='x2',
-#'               f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6' )
+#' # specify own column names
+#' d <- get_moch( df = dat, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'                tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = NULL )
 #' 
-#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_moch( df=dat, f.cash='x1', f.si='x2',
-#'               f.pr='x3', f.ar='x4', f.tfe='x5', f.dda='x6', winsorize=0.95 )
-#'
+#' head( d )
+#' 
+#' # run with default column names
+#' dat_01 <- dat
+#' 
+#' colnames( dat_01 ) <- c( 'name1', 'name2', 'name3', 
+#'                          'name4', 'name5', 'name6' )
+#' 
+#' d <- get_moch( dat_01 )
+#' 
+#' head( d )
+#' 
+#' # specify column names for aggregated variables only
+#' x.den <- x5 + x6
+#' x.num <- x1 + x2 + x3 + x4
+#' 
+#' dat_02 <- cbind( dat, x.den, x.num )
+#' 
+#' d <- get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'                tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = 'x.den' )
+#' 
+#' head ( d )
+#' 
+#' # specify column names for mixture of aggregated (denominator) and individual variables (numerator)
+#' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
+#' d <- get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'                tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = 'x.den', winsorize=0.95 )
+#' 
+#' head ( d )
+#' 
+#' # specify column names for mixture of aggregated (numerator) and individual variables (denominator)
+#' # and winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
+#' 
+#' d <- get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'                tot.func.exp = 'x5', dda = 'x6', ez.csi = 'x.num', ez.toe = NULL, winsorize=0.95 )
+#' head ( d )
+#' 
+#' 
+#' ## Errors ##
+#' 
+#' # incorrectly specify denominator
+#' get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'           tot.func.exp = NULL, dda = 'x6', ez.csi = NULL, ez.toe = NULL, winsorize=0.98 )
+#' 
+#' # incorrectly specify numerator with conflicting arguments
+#' get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'           tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = 'x.den' )
+#' 
+#' # incorrectly specify numerator with conflicting arguments
+#' get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'           tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = 'x.den' )
+#' 
+#' # supplying no arguments for the numerator
+#' get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'           tot.func.exp = 'x5', dda = 'x6', ez.csi = NULL, ez.toe = NULL )
+#' 
+#' get_moch( df = dat_03, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = 'x.den' )
+#' 
+#' # supplying no arguments for the denominator
+#' get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4',
+#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = NULL )
+#' 
+#' get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'           tot.func.exp = NULL, dda = NULL, ez.csi = 'x.num', ez.toe = NULL )
+#' 
+#' # supplying no arguments at all
+#' get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL,
+#'           tot.func.exp = NULL, dda = NULL, ez.csi = NULL, ez.toe = NULL )
+#' 
 #' @export
-get_moch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NULL, f.dda=NULL, ez.csi=NULL, ez.toe=NULL,winsorize=0.98 )
+get_moch <- function( df, cash = 'name1', short.invest = 'name2', pledges.receive = 'name3', accounts.receive = 'name4', tot.func.exp = 'name5', dda = 'name6', ez.csi = NULL, ez.toe = NULL,winsorize = 0.98 )
 {
   
   # checks
-  if( winsorize > 1 | winsorize < 0 )
+  if ( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  # check that data is coming from either F990 or the F990EZ, but not both
-  if( (is.null( f.cash )==F | is.null( f.si )==F | is.null( f.pr )==F | is.null( f.ar )==F |
-       is.null( f.tfe )==F | is.null( f.dda )==F) & (is.null( ez.csi )==F | is.null( ez.toe )==F) )
-  { stop( "Data fields must come from one of: i. F990 or ii. F990EZ, but not both. Ensure you have accurately passed the data field to the correct arguments." ) }
   
-  if ( (length( c(f.cash, f.si, f.pr, f.ar, f.tfe, f.dda) ) < 6)==T & (is.null( ez.csi )==T | is.null( ez.toe )==T) )
-  { stop( "Missing at least one data field from the F990 data. Ensure you are passing the correct data field to the correct argument." ) }
+  if ( ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 )==F | is.null( ez.csi )==F ) &
+       ( ( is.null( tot.func.exp )==T | is.null( dda )==T) &
+         is.null( ez.toe )==T ) )
+  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if (length( c(ez.toe, ez.csi) ) < 2 & (is.null( f.cash )==T | is.null( f.si )==T | is.null( f.pr )==T | is.null( f.ar )==T |
-                                         is.null( f.tfe )==T | is.null( f.dda )==T) )
-  { stop( "Missing at least one data field from the F990EZ data. Ensure you are passing the correct data field to the correct argument." ) }
+  if ( ( ( length( c( tot.func.exp, dda ) ) < 2 )==F | is.null( ez.toe )==F ) &
+       ( ( is.null( cash )==T | is.null( short.invest )==T | 
+           is.null( pledges.receive )==T | is.null( accounts.receive )==T ) &
+         is.null( ez.csi )==T ) )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  # pass with F990 form
-  if( (is.null( f.cash )==F & is.null( f.si )==F & is.null( f.pr )==F & is.null( f.ar )==F &
-       is.null( f.tfe )==F & is.null( f.dda )==F) )
-  {
-    num <- df[[ f.cash ]] + df[[ f.si ]] + df[[ f.pr ]] + df[[f.ar]]
-    den <- ( df[[ f.tfe ]] - df[[ f.dda ]] ) / 12    
+  if ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) <= 4 ) &
+       ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) >= 1 ) & 
+       ( is.null( ez.csi )==F ) )
+  { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if ( ( length( c( tot.func.exp, dda ) ) <= 2 ) &
+       ( length( c( tot.func.exp, dda ) ) >= 1 ) & 
+       ( is.null( ez.toe )==F ) )
+  { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if ( ( length( c( tot.func.exp, dda ) ) == 0 ) &
+       ( length( c( tot.func.exp, dda ) ) == 0 ) & 
+       ( is.null( ez.toe )==T & is.null ( ez.csi )==T ) )
+  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  
+  
+  
+  if ( ( length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 ) ==F & ( is.null( tot.func.exp )==F & is.null( dda )==F ) ){
+    num <- df[[ cash ]] + df[[ short.invest ]] + df[[ pledges.receive ]] + df[[ accounts.receive ]]
+    den <- ( df[[ tot.func.exp ]] + df[[ dda ]] ) / 12
   }
   
-  # pass with 990-EZ
-  else if( ( is.null( ez.csi )==F | is.null( ez.toe )==F ) )
-  {
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) < 4 ) ==F & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( ez.toe )==F ) ){
+    num <- df[[ cash ]] + df[[ short.invest ]] + df[[ pledges.receive ]] + df[[ accounts.receive ]]
+    den <- df[[ ez.toe ]] / 12
+  }
+  
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==T & is.null( dda )==T & is.null( ez.toe )==F & is.null( ez.csi )==F ) ){
     num <- df[[ ez.csi ]]
-    den <- ( df[[ ez.toe ]] ) / 12    
+    den <- df[[ ez.toe ]] / 12
+  }
+  
+  else if ( (length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) ==T & ( is.null( tot.func.exp )==F & is.null( dda )==F & is.null( ez.toe )==T & is.null( ez.csi )==F ) ){
+    num <- df[[ ez.csi ]]
+    den <- ( df[[ tot.func.exp ]]+ df[[ dda ]] ) / 12
   }
   
   
-  # can't divide by zero
-  print( paste0( "Denominator cannot be zero: ", sum( den==0 ), " cases have been replaced with NA." ) )
-  den[ den == 0 ] <- NA 
+  if( winsorize > 1 | winsorize < 0 ){
+    stop( 'winsorize argument must be 0 < w < 1' )
+  }
   
-  moch <- num / den
+  print( paste0('Denominator cannot be equal to zero: ',sum( den==0 ),' cases have been replaced with NA' ))
+  
+  den[ den==0 ] <- NA
+  
+  moch <- num/den
   
   top.p    <- 1 - (1-winsorize)/2
   bottom.p <- 0 + (1-winsorize)/2
@@ -114,14 +201,15 @@ get_moch <- function( df, f.cash=NULL, f.si=NULL, f.pr=NULL, f.ar=NULL, f.tfe=NU
   
   MOCH <- data.frame( moch, moch.w, moch.n, moch.p )
   
-  print( summary( moch ) )
+  print( summary( MOCH ) )
   
   par( mfrow=c(2,2) )
-  plot( density( moch,   na.rm=T ), main="Months of Operating Cash on Hand (MOCH)" )
-  plot( density( moch.w, na.rm=T ), main="MOCH Winsorized" )
-  plot( density( moch.n, na.rm=T ), main="MOCH Standardized as Z" )
-  plot( density( moch.p, na.rm=T ), main="MOCH as Percentile" )
+  plot( density(moch,   na.rm=T), main="Months of Operating Cash on Hand (MOCH)" )
+  plot( density(moch.w, na.rm=T), main="MOCH Winsorized" )
+  plot( density(moch.n, na.rm=T), main="MOCH Standardized as Z" )
+  plot( density(moch.p, na.rm=T), main="MOCH as Percentile" )
   
   df.moch <- cbind( df, MOCH )
   return( df.moch )
+  
 }
