@@ -8,12 +8,12 @@
 #' @description
 #' Calculate the equity ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset with the default name supplied.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset with the default name supplied.
 #' @param net.assets A character string indicating the column name for net assets, EOY (On 990: Part X, Line 33B; On EZ: Part I, Line 21) with the default name supplied.
 #' @param total.assets A character string indicating the column name for total assets, EOY (On 990: Part X, Line 16B; On EZ: Part II, Line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the equity ratio (`er`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the equity ratio (`er`), 
 #'  a winsorized version (`er.w`), a standardized z-score version (`er.z`), 
 #'  and a percentile version (`er.p`).   
 #'
@@ -110,6 +110,6 @@ get_er <- function( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10
   plot( density(er.n, na.rm=T), main="ER Standardized as Z" )
   plot( density(er.p, na.rm=T), main="ER as Percentile" )
   
-  df.er <- cbind( df, ER )
+  df.er <- data.frame( cbind( df, ER ) )
   return( df.er )
 }

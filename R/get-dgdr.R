@@ -8,12 +8,12 @@
 #' @description
 #' Calculate the donation/grant dependence ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param total.contributions A character string indicating the column name for total contributions (On 990: Part VIII, Line 1h(A); On EZ: Not Available).
 #' @param fund.income A character string indicating the column name for fundraising income (On 990: Part VIII, Line 8c(A); On EZ: Not Available).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: Part VIII, Line 12A; On EZ: Part I, Line 9).
 #' 
-#' @return The original dataframe appended with the donation/grant dependence ratio (`dgdr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the donation/grant dependence ratio (`dgdr`), 
 #'  a winsorized version (`dgdr.w`), a standardized z-score version (`dgdr.z`), 
 #'  and a percentile version (`dgdr.p`).   
 #'
@@ -74,6 +74,6 @@ get_dgdr <- function( df, total.contributions, fund.income, total.revenue, winso
   plot( density( dgdr.n, na.rm=T ), main="DGDR Standardized as Z" )
   plot( density( dgdr.p, na.rm=T ), main="DGDR as Percentile" )
   
-  df.dgdr <- cbind( df, DGDR )
+  df.dgdr <- data.frame( cbind( df, DGDR ) )
   return( df.dgdr )
 }

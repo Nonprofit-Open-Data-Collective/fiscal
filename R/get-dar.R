@@ -8,12 +8,12 @@
 #' @description
 #' Calculate the debt to asset ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param debt A character string indicating the column name for total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
 #' @param assets A character string indicating the column name for total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the debt to asset ratio (`dar`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the debt to asset ratio (`dar`), 
 #'  a winsorized version (`dar.w`), a standardized z-score version (`dar.z`), 
 #'  and a percentile version (`dar.p`).   
 #'
@@ -109,7 +109,7 @@ get_dar <- function( df, debt = 'F9_10_LIAB_TOT_EOY', assets = 'F9_10_ASSET_TOT_
   plot( density(dar.z, na.rm=T), main="DAR Standardized as Z" )
   plot( density(dar.p, na.rm=T), main="DAR as Percentile" )
 
-  df.dar <- cbind( df, DAR )
+  df.dar <- data.frame( cbind( df, DAR ) )
   return( df.dar )
 }
 

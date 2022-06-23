@@ -8,12 +8,12 @@
 #' @description
 #' Calculate the debt to equity ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param debt A character string indicating the column name for total debt, EOY (On 990: Part X, line 17B; On EZ: Not Available) with the default name supplied.
 #' @param equity A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the debt to equity ratio (`der`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the debt to equity ratio (`der`), 
 #'  a winsorized version (`der.w`), a standardized z-score version (`der.z`), 
 #'  and a percentile version (`der.p`).   
 #'
@@ -116,7 +116,7 @@ get_der <- function( df, debt = 'F9_10_LIAB_ACC_PAYABLE_EOY', equity = 'F9_10_NA
   plot( density(der.n, na.rm=T), main="DER Standardized as Z" )
   plot( density(der.p, na.rm=T), main="DER as Percentile" )
   
-  df.der <- cbind( df, DER )
+  df.der <- data.frame( cbind( df, DER ) )
   return( df.der )
 }
 

@@ -8,11 +8,11 @@
 #' @description
 #' Calculate the operating margin and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param equity.eoy Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param equity.boy Unrestricted net assets, BOY (On 990: Part X, line 27A; On EZ: Not Available).
 #' 
-#' @return The original dataframe appended with the operating margin (`or`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the operating margin (`or`), 
 #'  a winsorized version (`or.w`), a standardized z-score version (`or.z`), 
 #'  and a percentile version (`or.p`).   
 #'
@@ -69,6 +69,6 @@ get_or <- function( df, equity.eoy, equity.boy, winsorize=0.98 )
   plot( density( or.n, na.rm=T ), main="OR Standardized as Z" )
   plot( density( or.p, na.rm=T ), main="OR as Percentile" )
   
-  df.or <- cbind( df, OR )
+  df.or <- data.frame( cbind( df, OR ) )
   return( df.or )
 }

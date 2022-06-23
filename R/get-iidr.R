@@ -8,14 +8,14 @@
 #' @description
 #' Calculate the investment income dependence ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param invest.income A character string indicating the column name for investment income (On 990: Part VIII, Line 3(A); On EZ: Not Available).
 #' @param bond.proceeds A character string indicating the column name for investment income from tax-exempt bond proceeds (On 990: Part VIII, Line 4(A); On EZ: Not Available).
 #' @param rent.income A character string indicating the column name for gross rent income (On 990: Part VIII, Line 6(A); On EZ: Not Available).
 #' @param other.income A character string indicating the column name for gross income from sales of assets other than inventory  (On 990: Part VIII, Line 7(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
-#' @return The original dataframe appended with the investment income dependence ratio (`iidr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the investment income dependence ratio (`iidr`), 
 #'  a winsorized version (`iidr.w`), a standardized z-score version (`iidr.z`), 
 #'  and a percentile version (`iidr.p`).   
 #'
@@ -77,6 +77,6 @@ get_iidr <- function( df, invest.income, bond.proceeds, rent.income, other.incom
   plot( density( iidr.n, na.rm=T ), main="IIDR Standardized as Z" )
   plot( density( iidr.p, na.rm=T ), main="IIDR as Percentile" )
   
-  df.iidr <- cbind( df, IIDR )
+  df.iidr <- data.frame( cbind( df, IIDR ) )
   return( df.iidr )
 }

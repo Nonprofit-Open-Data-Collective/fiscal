@@ -1,4 +1,4 @@
 ###---------------------------------------------------
-###   ADD PIPE OAERATOR TO THE PACKAGE
+###   ADD PIPE OPERATOR TO THE PACKAGE
 ###---------------------------------------------------
 #' @importFrom magrittr "%>%"

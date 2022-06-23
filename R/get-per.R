@@ -8,11 +8,11 @@
 #' @description
 #' Calculate the program efficiency ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param pse A character string indicating the column name for program service expenses (On 990: Part 9, Line 25B; On EZ: Pt II, Line 25B).
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 1, Line 18(B); On EZ: Part 1, Line 17).
 #' 
-#' @return The original dataframe appended with the program efficiency ratio (`per`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the program efficiency ratio (`per`), 
 #'  a winsorized version (`per.w`), a standardized z-score version (`per.z`), 
 #'  and a percentile version (`per.p`).   
 #'
@@ -74,6 +74,6 @@ get_per <- function( df, pse, total.expense, winsorize=0.98 )
   plot( density( per.n, na.rm=T ), main="PER Standardized as Z" )
   plot( density( per.p, na.rm=T ), main="PER as Percentile" )
   
-  df.per <- cbind( df, PER )
+  df.per <- data.frame( cbind( df, PER ) )
   return( df.per )
 }

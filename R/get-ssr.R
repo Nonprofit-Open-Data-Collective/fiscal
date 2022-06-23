@@ -8,11 +8,12 @@
 #' @description
 #' Calculate the self sufficiency ratio and append it to the dataframe. 
 #'
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param prog.serv.rev Program service revenue, EOY (Part 8, Line 2g(A); On EZ: Part 1, Line 2).
 #' @param total.expense total expenses, EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the self sufficiency ratio (`ssr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the self sufficiency ratio (`ssr`), 
 #'  a winsorized version (`ssr.w`), a standardized z-score version (`ssr.z`), 
 #'  and a percentile version (`ssr.p`).   
 #'
@@ -106,7 +107,7 @@ get_ssr <- function( df, prog.serv.rev = 'F9_08_REV_PROG_TOT_TOT', total.expense
   plot( density(ssr.n, na.rm=T), main="SSR Standardized as Z" )
   plot( density(ssr.p, na.rm=T), main="SSR as Percentile" )
   
-  df.ssr <- cbind( df, SSR )
+  df.ssr <- data.frame( cbind( df, SSR ) )
   return( df.ssr )
 }
 

@@ -3,16 +3,17 @@
 ###---------------------------------------------------
 
 #' @title
-#' Self Sufficiency Ratio 
+#' Lands to Assets Ratio
 #'
 #' @description
-#' Calculate the self sufficiency ratio and append it to the dataframe. 
+#' Calculate the lands to assets ratio and append it to the dataframe. 
 #'
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param land Land, buildings, and equipment (Part X, line 10b; On EZ: On EZ: Not Available).
 #' @param assets Total assets (On 990: Part X, Line 16B; On EZ: Part II, line 25B).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the self sufficiency ratio (`lar`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the lands to assets ratio (`lar`), 
 #'  a winsorized version (`lar.w`), a standardized z-score version (`lar.z`), 
 #'  and a percentile version (`lar.p`).   
 #'
@@ -66,11 +67,11 @@ get_lar <- function( df, land, assets, winsorize=0.98 )
   print( summary( lar ) )
   
   par( mfrow=c(2,2) )
-  plot( density(lar,   na.rm=T), main="Self Sufficiency Ratio (LAR)" )
+  plot( density(lar,   na.rm=T), main="Lands to Assets Ratio (LAR)" )
   plot( density(lar.w, na.rm=T), main="LAR Winsorized" )
   plot( density(lar.n, na.rm=T), main="LAR Standardized as Z" )
   plot( density(lar.p, na.rm=T), main="LAR as Percentile" )
   
-  df.lar <- cbind( df, LAR )
+  df.lar <- data.frame( cbind( df, LAR ) )
   return( df.lar )
 }

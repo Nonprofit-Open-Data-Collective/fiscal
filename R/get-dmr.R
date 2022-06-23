@@ -8,12 +8,12 @@
 #' @description
 #' Calculate the debt management ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param liabilities A character string indicating the column name for total liabilities, EOY (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
 #' @param net.assets A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe appended with the debt management ratio (`dmr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the debt management ratio (`dmr`), 
 #'  a winsorized version (`dmr.w`), a standardized z-score version (`dmr.z`), 
 #'  and a percentile version (`dmr.p`).   
 #'
@@ -109,6 +109,6 @@ get_dmr <- function( df, liabilities = 'F9_10_LIAB_TOT_EOY', net.assets = 'F9_10
   plot( density(dmr.n, na.rm=T), main="DMR Standardized as Z" )
   plot( density(dmr.p, na.rm=T), main="DMR as Percentile" )
   
-  df.dmr <- cbind( df, DMR )
+  df.dmr <- data.frame( cbind( df, DMR ) )
   return( df.dmr )
 }

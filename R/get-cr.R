@@ -9,7 +9,7 @@
 #' @description 
 #' Calculate the current ratio and append it to the dataframe.
 #' 
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param cash A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ:Part I, line 22 (cash and short-term investments only)) with the default name supplied.
 #' @param short.invest A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B; On EZ:Part I, line 22 (cash and short-term investments only)) with the default name supplied.
 #' @param pledges.receive A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available) with the default name supplied.
@@ -22,7 +22,7 @@
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @return The original dataframe with the current ratio (`cr`),
+#' @return Object of class \code{data.frame}: the original dataframe with the current ratio (`cr`),
 #' a winsorized version (`cr.w`), a standardized z-score version (`cr.z`), 
 #' and a percentile version (`cr.p`).  
 #'  
@@ -211,7 +211,7 @@ get_cr<-function( df, cash = 'F9_10_ASSET_CASH_EOY',
   plot( density(cr.n, na.rm=T), main="CR Standardized as Z" )
   plot( density(cr.p, na.rm=T), main="CR as Percentile" )
   
-  df.cr <- cbind( df, CR )
+  df.cr <- data.frame( cbind( df, CR ) )
   return( df.cr )
 }
 
