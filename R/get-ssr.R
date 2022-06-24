@@ -9,8 +9,8 @@
 #' Calculate the self sufficiency ratio and append it to the dataframe. 
 #'
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param prog.serv.rev Program service revenue, EOY (Part 8, Line 2g(A); On EZ: Part 1, Line 2).
-#' @param total.expense total expenses, EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17).
+#' @param prog.serv.rev Column name for program service revenue (can be quoted or unquoted), EOY (Part 8, Line 2g(A); On EZ: Part 1, Line 2).
+#' @param total.expense Column name for total expenses (can be quoted or unquoted), EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the self sufficiency ratio (`ssr`), 
