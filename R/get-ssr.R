@@ -86,6 +86,7 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
   if( !is.null( substitute( prog.serv.rev ) ) )   prog.serv.rev   <- rm_quote( deparse( substitute( prog.serv.rev ) ) )
   if( !is.null( substitute( total.expense ) ) )   total.expense   <- rm_quote( deparse( substitute( total.expense ) ) )
   
+  # function checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
@@ -127,8 +128,8 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
   else if ( length( prog.serv.rev )==2 & length( total.expense )==1 ) {
     
     # create a column that concatenates two denominator variables into single column
-    dat[ is.na( dat[ prog.serv.rev[2] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
-    dat[ is.na( dat[ prog.serv.rev[1] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), prog.serv.rev[1] ]
+    dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
+    dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), prog.serv.rev[1] ]
     
     
     p <- dat[[ 'p' ]]
@@ -138,8 +139,8 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
   else if ( length( prog.serv.rev )==1 & length( total.expense )==2 ) {
     
     # create a column that concatenates two numerator variables into single column
-    dat[ is.na( dat[ total.expense[2] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[2] ] )==F ), total.expense[2] ]
-    dat[ is.na( dat[ total.expense[1] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[1] ] )==F ), total.expense[1] ]
+    dat[ which( is.na( dat[ total.expense[2] ] )==F ), 'e' ] <- dat[ which( is.na( dat[ total.expense[2] ] )==F ), total.expense[2] ]
+    dat[ which( is.na( dat[ total.expense[1] ] )==F ), 'e' ] <- dat[ which( is.na( dat[ total.expense[1] ] )==F ), total.expense[1] ]
     
     
     p <- dat[[ prog.serv.rev ]]
