@@ -61,7 +61,9 @@
 #' d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = NULL )
 #' 
 #' @export
-get_ssr <- function( df, prog.serv.rev = 'F9_08_REV_PROG_TOT_TOT', total.expense = 'F9_09_EXP_TOT_TOT', winsorize=0.98 )
+get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV_PROG_TOT_CY' ), 
+                     total.expense = c( 'F9_09_EXP_TOT_TOT', 'F9_01_EXP_TOT_CY' ), 
+                     winsorize=0.98 )
 {
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
@@ -75,10 +77,60 @@ get_ssr <- function( df, prog.serv.rev = 'F9_08_REV_PROG_TOT_TOT', total.expense
   if( is.null( prog.serv.rev )==T & is.null( total.expense )==T )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
-  p <- df[[ prog.serv.rev ]]
-  e <- df[[ total.expense ]]
+  if( length( prog.serv.rev ) > 2 | length( prog.serv.rev ) < 1 )
+  { stop( "`prog.serv.rev` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
   
-
+  if( length( total.expense ) > 2 | length( total.expense ) < 1 )
+  { stop( "`total.expense` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
+  
+  # copy data
+  dat <- df
+  
+  
+  if ( length( prog.serv.rev )==2 & length( total.expense )==2 ) {
+    
+    # create a column that concatenates two numerator variables into single column
+    dat[ is.na( dat[ prog.serv.rev[2] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
+    dat[ is.na( dat[ prog.serv.rev[1] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), prog.serv.rev[1] ]
+    
+    # create a column that concatenates two denominator variables into single column
+    dat[ is.na( dat[ total.expense[2] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[2] ] )==F ), total.expense[2] ]
+    dat[ is.na( dat[ total.expense[1] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[1] ] )==F ), total.expense[1] ]
+    
+    
+    p <- dat[[ 'p' ]]
+    e <- dat[[ 'e' ]]
+  }
+  
+  else if ( length( prog.serv.rev )==2 & length( total.expense )==1 ) {
+    
+    # create a column that concatenates two denominator variables into single column
+    dat[ is.na( dat[ prog.serv.rev[2] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
+    dat[ is.na( dat[ prog.serv.rev[1] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), prog.serv.rev[1] ]
+    
+    
+    p <- dat[[ 'p' ]]
+    e <- dat[[ total.expense ]]
+  }
+  
+  else if ( length( prog.serv.rev )==1 & length( total.expense )==2 ) {
+    
+    # create a column that concatenates two numerator variables into single column
+    dat[ is.na( dat[ total.expense[2] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[2] ] )==F ), total.expense[2] ]
+    dat[ is.na( dat[ total.expense[1] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[1] ] )==F ), total.expense[1] ]
+    
+    
+    p <- dat[[ prog.serv.rev ]]
+    e <- dat[[ 'e' ]]
+  }
+  
+  else if ( length( prog.serv.rev )==1 & length( total.expense )==1 ) {
+    
+    p <- dat[[ prog.serv.rev ]]
+    e <- dat[[ total.expense ]]
+  }
+  
+  
   # can't divide by zero
   print( paste0( "Total expenses cannot be equal to zero: ", sum( e==0 ), " cases have been replaced with NA." ) )
   e[ e == 0 ] <- NA 
@@ -110,6 +162,11 @@ get_ssr <- function( df, prog.serv.rev = 'F9_08_REV_PROG_TOT_TOT', total.expense
   df.ssr <- data.frame( cbind( df, SSR ) )
   return( df.ssr )
 }
+
+
+d <-get_ssr( part010810, prog.serv.rev = 'F9_01_REV_PROG_TOT_CY', 
+             total.expense = 'F9_01_EXP_TOT_CY')
+
 
   
 
