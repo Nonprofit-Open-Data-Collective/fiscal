@@ -5,7 +5,7 @@
 
 # remove double quotes
 rm_quote <- function( x ) {
-  gsub( "\"", "", string )
+  gsub( "\"", "", x )
 }
 
 # %notin% operator
