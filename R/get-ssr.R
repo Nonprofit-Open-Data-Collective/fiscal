@@ -35,7 +35,7 @@
 #' dat <- data.frame( x1, x2 )
 #' 
 #' # specify own column names
-#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x4" )
+#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x2" )
 #' 
 #' head( d )
 #' 
@@ -108,8 +108,49 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
   # copy data
   dat <- df
   
+  # check to ensure both sets of variable names are included in input data when not specifying column names.
+  # edge cases
+  if ( sum(prog.serv.rev %in% c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV_PROG_TOT_CY' ) )==2 & sum(total.expense %in% c( 'F9_09_EXP_TOT_TOT', 'F9_01_EXP_TOT_CY' ) ) ==2 ) {
+    
+    
+    # if at least one of the columns in missing from the input dataset, use only the column that is present
+    if ( length( which( colnames( dat ) %in% prog.serv.rev ) )==1 | length( which( colnames( dat ) %in% total.expense ) )==1 ) {
+      
+     if ( length( which(colnames( dat ) %in% prog.serv.rev ) )==2 ){
+    # create a column that concatenates two numerator variables into single column
+    dat[ is.na( dat[ prog.serv.rev[2] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
+    dat[ is.na( dat[ prog.serv.rev[1] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[1] ] )==F ), prog.serv.rev[1] ]
+     }
+      else if ( length( which( colnames( dat ) %in% prog.serv.rev ) )==1 ){
+        
+        this <- which( colnames( dat ) %in% prog.serv.rev )
+        
+        dat[ , 'p' ] <- dat[ , this ]
+      }
+      
+      
+      if ( length( which( colnames( dat ) %in% total.expense ) )==2 ){
+    # create a column that concatenates two denominator variables into single column
+    dat[ is.na( dat[ total.expense[2] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[2] ] )==F ), total.expense[2] ]
+    dat[ is.na( dat[ total.expense[1] ] )==F, 'e' ] <- dat[ which( is.na( dat[ total.expense[1] ] )==F ), total.expense[1] ]
+      }
+      
+      else if ( length( which( colnames( dat ) %in% total.expense )==1 ) ){
+        # if the 
+        this <- which( colnames( dat ) %in% total.expense )
+        
+        dat[ , 'e' ] <- dat[ , this ]
+      }
+      
+      # now, assign p and e, respectively
+    p <- dat[[ 'p' ]]
+    e <- dat[[ 'e' ]]
+    }
+    
+    # if all four columns are present, exit if statement
+  }
   
-  if ( length( prog.serv.rev )==2 & length( total.expense )==2 ) {
+ else{ if ( length( prog.serv.rev )==2 & length( total.expense )==2 ) {
     
     # create a column that concatenates two numerator variables into single column
     dat[ is.na( dat[ prog.serv.rev[2] ] )==F, 'p' ] <- dat[ which( is.na( dat[ prog.serv.rev[2] ] )==F ), prog.serv.rev[2] ]
@@ -151,7 +192,7 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
     p <- dat[[ prog.serv.rev ]]
     e <- dat[[ total.expense ]]
   }
-  
+ }
   
   # can't divide by zero
   print( paste0( "Total expenses cannot be equal to zero: ", sum( e==0 ), " cases have been replaced with NA." ) )
