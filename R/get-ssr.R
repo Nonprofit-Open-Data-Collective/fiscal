@@ -26,66 +26,63 @@
 #' grows. In the early stages, these ratios tend to be lower but the goal is to make them as high as possible.
 #' 
 #' @examples
-# x1 <- rnorm( 1000,100,30 )
-# x2 <- rnorm( 1000,200,30 )
-# x2[ c(15,300,600) ] <- 0
-# 
-# dat <- data.frame( x1, x2 )
-# 
-# # specify own column names
-# d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x4" )
-# 
-# head( d )
-# 
-# # run with default column names
-# x3 <- rnorm( 1000,100,30 )
-# x4 <- rnorm( 1000,200,30 )
-# x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
-# x4[ seq( from = 1, to = 1000, 71 ) ] <- NA
-# 
-# dat_01 <- data.frame( x1, x2, x3, x4 )
-# 
-# colnames( dat_01 ) <- c( 'F9_08_REV_PROG_TOT_TOT', 'F9_09_EXP_TOT_TOT',
-#                          'F9_01_REV_PROG_TOT_CY', 'F9_01_EXP_TOT_CY')
-# 
-# # run only with 990 variable names
-# d <- get_ssr( dat_01, prog.serv.rev = "F9_08_REV_PROG_TOT_TOT", total.expense = "F9_09_EXP_TOT_TOT" )
-# 
-# #run only with 990-EZ variable names
-# d <- get_ssr( dat_01, prog.serv.rev = "F9_01_REV_PROG_TOT_CY", total.expense = "F9_01_EXP_TOT_CY" )
-# 
-# 
-# # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-# d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense ="x2", winsorize=0.95 )
-# 
-# d <- get_ssr( dat_01, winsorize = 0.95 )
-# 
-# ## errors ##
-# 
-# # numerator not specified
-# d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = 'x2' )
-# 
-# # denominator not specified
-# d <- get_ssr( df = dat, prog.serv.rev = 'x1', total.expense = NULL )
-# 
-# # neither numerator nor denominator specified
-# d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = NULL )
-# 
-# # column names vector not of correct length
-# d <- get_ssr( df = dat, prog.serv.rev = c('a','b','c'), total.expense = 'a' )
-# 
-# # column names vector not of correct length
-# d <- get_ssr( df = dat, prog.serv.rev = 'a', total.expense = c( 'a', 'b', 'c' ) )
+#' x1 <- rnorm( 1000,100,30 )
+#' x2 <- rnorm( 1000,200,30 )
+#' x2[ c(15,300,600) ] <- 0
+#' 
+#' dat <- data.frame( x1, x2 )
+#' 
+#' # specify own column names
+#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x4" )
+#' 
+#' head( d )
+#' 
+#' # run with default column names
+#' x3 <- rnorm( 1000,100,30 )
+#' x4 <- rnorm( 1000,200,30 )
+#' x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
+#' x4[ seq( from = 1, to = 1000, 71 ) ] <- NA
+#' 
+#' dat_01 <- data.frame( x1, x2, x3, x4 )
+#' 
+#' colnames( dat_01 ) <- c( 'F9_08_REV_PROG_TOT_TOT', 'F9_09_EXP_TOT_TOT',
+#'                          'F9_01_REV_PROG_TOT_CY', 'F9_01_EXP_TOT_CY')
+#' 
+#' # run only with 990 variable names
+#' d <- get_ssr( dat_01, prog.serv.rev = "F9_08_REV_PROG_TOT_TOT", total.expense = "F9_09_EXP_TOT_TOT" )
+#' 
+#' #run only with 990-EZ variable names
+#' d <- get_ssr( dat_01, prog.serv.rev = "F9_01_REV_PROG_TOT_CY", total.expense = "F9_01_EXP_TOT_CY" )
+#' 
+#' 
+#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
+#' d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense ="x2", winsorize=0.95 )
+#' 
+#' d <- get_ssr( dat_01, winsorize = 0.95 )
+#' 
+#' ## errors ##
+#' 
+#' # numerator not specified
+#' d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = 'x2' )
+#' 
+#' # denominator not specified
+#' d <- get_ssr( df = dat, prog.serv.rev = 'x1', total.expense = NULL )
+#' 
+#' # neither numerator nor denominator specified
+#' d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = NULL )
+#' 
+#' # column names vector not of correct length
+#' d <- get_ssr( df = dat, prog.serv.rev = c('a','b','c'), total.expense = 'a' )
+#' 
+#' # column names vector not of correct length
+#' d <- get_ssr( df = dat, prog.serv.rev = 'a', total.expense = c( 'a', 'b', 'c' ) )
 #' 
 #' @export
 get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV_PROG_TOT_CY' ), 
                      total.expense = c( 'F9_09_EXP_TOT_TOT', 'F9_01_EXP_TOT_CY' ), 
                      winsorize=0.98 )
 {
-  # quoted/unquoted arguments
-  if( !is.null( substitute( prog.serv.rev ) ) )   prog.serv.rev   <- rm_quote( deparse( substitute( prog.serv.rev ) ) )
-  if( !is.null( substitute( total.expense ) ) )   total.expense   <- rm_quote( deparse( substitute( total.expense ) ) )
-  
+
   # function checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
@@ -186,9 +183,6 @@ get_ssr <- function( df, prog.serv.rev = c( 'F9_08_REV_PROG_TOT_TOT', 'F9_01_REV
   return( df.ssr )
 }
 
-
-d <-get_ssr( part010810, prog.serv.rev = 'F9_01_REV_PROG_TOT_CY', 
-             total.expense = 'F9_01_EXP_TOT_CY')
 
 
   
