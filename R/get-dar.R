@@ -105,23 +105,7 @@ get_dar <- function( df,
   # copy data
   dat <- df
   
-  ## ensure variable classes are numeric ##
-  
-  #check
-  num.numeric <- sum( sapply( dat[debt], function(x) is.numeric(x) ) )
-  den.numeric <- sum( sapply( dat[assets], function(x) is.numeric(x) ) )
-  
-  # coerce
-  if(  num.numeric < length(debt) ){
-    warning(paste0("At least one of the provided numerator variables was not of object class numeric. ", length(debt)-num.numeric, " variables were (was) coerced to numeric." ) )
-    
-    dat[ debt ] <- data.frame( sapply( df[ debt ], function(x) as.numeric( as.character (x) ) ) )
-  }
-  if(  den.numeric < length(debt) ){
-    warning(paste0("At least one of the provided denominator variables was not of object class numeric. ", length(debt)-den.numeric, " variables were (was) coerced to numeric." ) )    
-    dat[ assets ] <- data.frame( sapply( df[ assets ], function(x) as.numeric( as.character (x) ) ) )
-  }
-  
+   
   # check to ensure both sets of variable names are included in input data when not specifying column names.
   # edge cases
   
@@ -142,7 +126,7 @@ get_dar <- function( df,
         dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- as.numeric( as.character( dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ] ) )
       }
       # if at least one of the numerator columns in missing from the input dataset, use only the column that is present
-      else if ( length( which( colnames( dat ) %in% debt ) )==1 ){
+       if ( length( which( colnames( dat ) %in% debt ) )==1 ){
         
         this <- which( colnames( dat ) %in% debt )
         
@@ -156,7 +140,7 @@ get_dar <- function( df,
         dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- as.numeric( as.character( dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ] ) )
       }
       # if at least one of the denominator columns in missing from the input dataset, use only the column that is present
-      else if ( length( which( colnames( dat ) %in% assets )==1 ) ){
+       if ( length( which( colnames( dat ) %in% assets ))==1  ){
         
         this <- which( colnames( dat ) %in% assets )
         
@@ -170,6 +154,20 @@ get_dar <- function( df,
     }
     
     # if all four columns are present, exit conditional
+    if ( length( debt )==2 & length( assets )==2 & length(which( colnames( dat ) %in% debt ) )==2 & length(which( colnames( dat ) %in% assets ) )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ]
+      dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ]
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ]
+      dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ]
+      
+      
+      d <- dat[[ "d"]]
+      a <- dat[[ "a"]]
+    }
   }
   # END first outer conditional
   
@@ -177,6 +175,7 @@ get_dar <- function( df,
   
   # all other cases are nested in the following conditionals
   
+ if ( sum( debt %in% c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") )!=2 & sum( assets %in% c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY") )!=2 ){          
     
     if ( length( debt )==2 & length( assets )==2 ) {
       
@@ -222,7 +221,7 @@ get_dar <- function( df,
     }
   
   
-    
+ }
   # can't divide by zero
   print( paste0( "Assets cannot be equal to zero: ", sum( a==0 , na.rm=T), " cases have been replaced with NA." ) )
   
