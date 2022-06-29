@@ -38,6 +38,7 @@
 #' # specify own column names
 #' d <- get_dar( df = dat, debt = "x1", assets = "x2" )
 #' 
+#' 
 #' head( d )
 #' 
 #' # run with default column names
@@ -48,13 +49,19 @@
 #' 
 #' dat_01 <- data.frame( x1, x2, x3, x4 )
 #' 
-#' colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_10_ASSET_TOT_EOY",
+#' colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
 #'                          "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
 #' 
 #' d <- get_dar( dat_01 )
 #' 
+#' # specify only PC variables
 #' d <- get_dar( dat_01, debt = "F9_10_LIAB_TOT_EOY", assets = "F9_10_ASSET_TOT_EOY" )
-#' #' 
+#' 
+#' # coerce one column to factor
+#' dat_01$F9_10_LIAB_TOT_EOY <- as.factor( dat_01$F9_10_LIAB_TOT_EOY )
+#' 
+#' d <- get_dar( dat_01 )
+#' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #' d <- get_dar( df = dat, debt = "x1", assets ="x2", winsorize=0.95 )
 #' 
@@ -63,16 +70,28 @@
 #' # assume only one PC variable for the numerator or denominator is present in the dataset and we run with default parameters
 #' dat_02 <- dat_01
 #' 
-#' colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_09_EXP_TOT_TOT",
-#'                          "x", "F9_01_EXP_TOT_CY")
+#' colnames( dat_02 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
+#'                          "x", "F9_01_NAFB_ASSET_TOT_EOY")
 #' 
-#' d <- get_ssr( dat_02, winsorize = 0.95 )
 #' 
-#' colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_09_EXP_TOT_TOT",
-#'                          "F9_01_REV_PROG_TOT_CY", "x")
+#' d <- get_dar( dat_02, winsorize = 0.95 )
 #' 
-#' d <- get_ssr( dat_02, winsorize = 0.95 )
-#'
+#' colnames( dat_02 ) <- c( "F9_10_LIAB_TOT_EOY", "x",
+#'                          "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
+#' 
+#' d <- get_dar( dat_02, winsorize = 0.95 )
+#' 
+#' 
+#' # using 990 data
+#' 
+#' d <- get_dar(df=part010810)
+#' 
+#' # now coerce one of the variables to numeric
+#' part010810$F9_01_NAFB_ASSET_TOT_EOY <- as.character( part010810$F9_01_NAFB_ASSET_TOT_EOY )
+#' 
+#' d <- get_dar(df=part010810)
+#' 
+#' 
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -81,7 +100,7 @@
 #' # denominator not specified
 #' d <- get_dar( df = dat, debt = "x1", assets = NULL )
 #' 
-#' # neither numerator nor denominator specified
+# neither numerator nor denominator specified
 #' d <- get_dar( df = dat, debt = NULL, assets = NULL )
 #' @export
 get_dar <- function( df, 
@@ -106,6 +125,33 @@ get_dar <- function( df,
   dat <- df
   
    
+  
+  ## ensure variable classes are numeric ##
+  
+  #check
+  this.n <- which( colnames( dat ) %in% debt )
+  this.d <- which( colnames( dat ) %in% assets )
+  
+  num.numeric <- sum( sapply( dat[this.n], function(x) is.numeric(x) ) )
+  den.numeric <- sum( sapply( dat[this.d], function(x) is.numeric(x) ) )
+  
+  # coerce
+  if(  num.numeric < length( this.n ) ){
+    warning(paste0("At least one of the provided numerator variables was not of object class numeric. ", length( this.n )-num.numeric, " variables were (was) coerced to numeric." ) )
+    
+    dat[ debt ] <- data.frame( sapply( df[ debt ], function(x) as.numeric( as.character (x) ) ) )
+  }
+  if(  den.numeric < length( this.d ) ){
+    warning(paste0("At least one of the provided denominator variables was not of object class numeric. ", length( this.d )-den.numeric, " variables were (was) coerced to numeric." ) )    
+    dat[ assets ] <- data.frame( sapply( df[ assets ], function(x) as.numeric( as.character (x) ) ) )
+  }
+  
+  
+  
+  
+  
+  
+  
   # check to ensure both sets of variable names are included in input data when not specifying column names.
   # edge cases
   
@@ -192,7 +238,7 @@ get_dar <- function( df,
       a <- dat[[ "a"]]
     }
     
-    else if ( length( debt )==2 & length( assets )==1 ) {
+     else if ( length( debt )==2 & length( assets )==1 ) {
       
       # create a column that concatenates two denominator variables into single column
       dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ]
@@ -203,7 +249,7 @@ get_dar <- function( df,
       a <- dat[[ assets ]]
     }
     
-    else if ( length( debt )==1 & length( assets )==2 ) {
+     else if ( length( debt )==1 & length( assets )==2 ) {
       
       # create a column that concatenates two numerator variables into single column
       dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ]
@@ -214,7 +260,7 @@ get_dar <- function( df,
       a <- dat[[ "a"]]
     }
     
-    else if ( length( debt )==1 & length( assets )==1 ) {
+     else if ( length( debt )==1 & length( assets )==1 ) {
       
       d <- dat[[ debt ]]
       a <- dat[[ assets ]]
