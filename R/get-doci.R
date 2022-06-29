@@ -8,7 +8,7 @@
 #' @description
 #' Calculate the days of operating cash and investments and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field fdoci computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param equity A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param invest A character string indicating the column name for investment income (On 990: Part X, Line 8(A); On EZ: Not Available).
 #' @param lbe A character string indicating the column name for lands, buildings, and equipment (On 990: Part X, Line 10(c)(B); On EZ: Not Available).
@@ -16,7 +16,7 @@
 #' @param daily.av.exp A character string indicating the column name for daily average expenses or total expenses (On 990: Part IX, Line 25(A); On EZ: Not Available).
 #' @param dda Depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available).
 #'
-#' @return The original dataframe appended with the days of operating cash and investments (`doci`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the days of operating cash and investments (`doci`), 
 #'  a winsorized version (`doci.w`), a standardized z-score version (`doci.z`), 
 #'  and a percentile version (`doci.p`).   
 #'
@@ -95,6 +95,6 @@ get_doci <- function( df, equity, invest, lbe, mnp, daily.av.exp, dda, winsorize
   plot( density( doci.n, na.rm=T ), main="DOCI Standardized as Z" )
   plot( density( doci.p, na.rm=T ), main="DOCI as Percentile" )
   
-  df.doci <- cbind( df, DOCI )
+  df.doci <- data.frame( cbind( df, DOCI ) )
   return( df.doci )
 }

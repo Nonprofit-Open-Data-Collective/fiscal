@@ -8,11 +8,12 @@
 #' @description
 #' Calculate the pre-depreciation profitability margin and append it to the dataframe. 
 #'
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
 #' @param depreciation A character string indicating the column name for depreciation expenses (On 990: Part X, line 2B; On EZ:Not available).
 #' @param revenue A character string indicating the column name for total revenue (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
 #' 
-#' @return The original dataframe appended with the pre-depreciation profitability margin (`predpm`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the pre-depreciation profitability margin (`predpm`), 
 #'  a winsorized version (`predpm.w`), a standardized z-score version (`predpm.z`), 
 #'  and a percentile version (`predpm.p`).   
 #'
@@ -75,6 +76,6 @@ get_predpm <- function( df, expenses, depreciation, revenue, winsorize=0.98 )
   plot( density( predpm.n, na.rm=T ), main="PREDPM Standardized as Z" )
   plot( density( predpm.p, na.rm=T ), main="PREDPM as Percentile" )
   
-  df.predpm <- cbind( df, PREDPM )
+  df.predpm <- data.frame( cbind( df, PREDPM ) )
   return( df.predpm )
 }

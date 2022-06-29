@@ -8,6 +8,7 @@
 #' @description
 #' Calculate the quick ratio and append it to the dataframe. 
 #'
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param cash A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ: Not Available).
 #' @param si A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B;On EZ: Not Available).
 #' @param pr A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available).
@@ -15,9 +16,9 @@
 #' @param ap A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
 #' 
-#' #' @return The original dataframe appended with the quick ratio (`qr`), 
-#'  a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
-#'  and a percentile version (`qr.p`).   
+#' @return Object of class \code{data.frame}: the original dataframe appended with the quick ratio (`qr`), 
+#' a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
+#' and a percentile version (`qr.p`).   
 #'
 #' @details This metric indicates how well an organization can cover its liabilities with its readily 
 #' available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current 
@@ -75,6 +76,6 @@ get_qr <- function( df, cash, si, pr, ar, ap, gp, winsorize=0.98 )
   plot( density( qr.n, na.rm=T ), main="QR Standardized as Z" )
   plot( density( qr.p, na.rm=T ), main="QR as Percentile" )
   
-  df.qr <- cbind( df, QR )
+  df.qr <- data.frame( cbind( df, QR ) )
   return( df.qr )
 }

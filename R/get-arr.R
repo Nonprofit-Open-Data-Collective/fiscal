@@ -8,11 +8,11 @@
 #' @description
 #' Calculate the assets to revenues ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param total.assets A character string indicating the column name for total assets (On 990: Part X, Line 16B; On EZ: Pt II, Line 25B).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
-#' @return The original dataframe appended with the assets to revenues ratio (`arr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the assets to revenues ratio (`arr`), 
 #'  a winsorized version (`arr.w`), a standardized z-score version (`arr.z`), 
 #'  and a percentile version (`arr.p`).   
 #'
@@ -70,6 +70,6 @@ get_arr <- function( df, total.assets, total.revenue, winsorize=0.98 )
   plot( density( arr.n, na.rm=T ), main="ARR Standardized as Z" )
   plot( density( arr.p, na.rm=T ), main="ARR as Percentile" )
   
-  df.arr <- cbind( df, ARR )
+  df.arr <- data.frame( cbind( df, ARR ) )
   return( df.arr )
 }

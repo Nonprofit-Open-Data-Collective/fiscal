@@ -8,14 +8,14 @@
 #' @description
 #' Calculate the earned income dependence ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param prog.service.rev A character string indicating the column name for program service revenue (On 990: Part VIII, Line 2g(A); On EZ: Not Available).
 #' @param memb.dues A character string indicating the column name for membership dues (On 990: Part VIII, Line 1b(A); On EZ: Not Available).
 #' @param royalties A character string indicating the column name for royalties (On 990: Part VIII, Line 5(A); On EZ: Not Available).
 #' @param other.revenue A character string indicating the column name for all other revenue (On 990: Part VIII, Line 11d(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
-#' @return The original dataframe appended with the earned income dependence ratio (`eidr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the earned income dependence ratio (`eidr`), 
 #'  a winsorized version (`eidr.w`), a standardized z-score version (`eidr.z`), 
 #'  and a percentile version (`eidr.p`).   
 #'
@@ -78,6 +78,6 @@ get_eidr <- function( df, prog.service.rev, memb.dues, royalties, other.revenue,
   plot( density( eidr.n, na.rm=T ), main="EIDR Standardized as Z" )
   plot( density( eidr.p, na.rm=T ), main="EIDR as Percentile" )
   
-  df.eidr <- cbind( df, EIDR )
+  df.eidr <- data.frame( cbind( df, EIDR ) )
   return( df.eidr )
 }

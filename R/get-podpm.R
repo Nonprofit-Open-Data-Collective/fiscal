@@ -7,11 +7,12 @@
 #'
 #' @description
 #' Calculate the post-depreciation profitability margin and append it to the dataframe. 
-#'
+#' 
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
 #' @param revenue A character string indicating the column name for total revenue, (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
 #' 
-#' @return The original dataframe appended with the post-depreciation profitability margin (`podpm`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the post-depreciation profitability margin (`podpm`), 
 #'  a winsorized version (`podpm.w`), a standardized z-score version (`podpm.z`), 
 #'  and a percentile version (`podpm.p`).   
 #'
@@ -69,6 +70,6 @@ get_podpm <- function( df, expenses, revenue, winsorize=0.98 )
   plot( density( podpm.n, na.rm=T ), main="PODPM Standardized as Z" )
   plot( density( podpm.p, na.rm=T ), main="PODPM as Percentile" )
   
-  df.podpm <- cbind( df, PODPM )
+  df.podpm <- data.frame( cbind( df, PODPM ) )
   return( df.podpm )
 }

@@ -8,11 +8,12 @@
 #' @description
 #' Calculate the short term debt ratio and append it to the dataframe. 
 #'
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param ap A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
 #' @param net.assets A character string indicating the column name for net assets, EOY (On 990: Part X, Line 33B; On EZ: Part I, Line 21).
 #' 
-#' @return The original dataframe appended with the short term debt ratio (`stdr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the short term debt ratio (`stdr`), 
 #'  a winsorized version (`stdr.w`), a standardized z-score version (`stdr.z`), 
 #'  and a percentile version (`stdr.p`).   
 #'
@@ -71,6 +72,6 @@ get_stdr <- function( df, ap, gp, net.assets, winsorize=0.98 )
   plot( density( stdr.n, na.rm=T ), main="STDR Standardized as Z" )
   plot( density( stdr.p, na.rm=T ), main="STDR as Percentile" )
   
-  df.stdr <- cbind( df, STDR )
+  df.stdr <- data.frame( cbind( df, STDR ) )
   return( df.stdr )
 }

@@ -8,11 +8,11 @@
 #' @description
 #' Calculate the administration expense ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param mgmt.ge A character string indicating the column name for management and general expenses (On 990: Part 9, Line 25(C); On EZ: Not Available.
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 9, Line 25(A); On EZ: Part 1, Line 17).
 #' 
-#' @return The original dataframe appended with the administration expense ratio (`aer`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the administration expense ratio (`aer`), 
 #'  a winsorized version (`aer.w`), a standardized z-score version (`aer.z`), 
 #'  and a percentile version (`aer.p`).   
 #'
@@ -73,6 +73,6 @@ get_aer <- function( df, mgmt.ge, total.expense, winsorize=0.98 )
   plot( density( aer.n, na.rm=T ), main="AER Standardized as Z" )
   plot( density( aer.p, na.rm=T ), main="AER as Percentile" )
   
-  df.aer <- cbind( df, AER )
+  df.aer <- data.frame( cbind( df, AER ) )
   return( df.aer )
 }

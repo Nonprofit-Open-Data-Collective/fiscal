@@ -8,11 +8,11 @@
 #' @description
 #' Calculate the government grants ratio and append it to the dataframe. 
 #'
-#' @param df A dataframe containing the required field for computing the metric. The metric will be appended to this dataset.
+#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param ggc A character string indicating the column name for government grant contributions (On 990: Part VIII, Line 1(E); On EZ: Not Available).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
-#' @return The original dataframe appended with the government grants ratio (`ggr`), 
+#' @return Object of class \code{data.frame}: the original dataframe appended with the government grants ratio (`ggr`), 
 #'  a winsorized version (`ggr.w`), a standardized z-score version (`ggr.z`), 
 #'  and a percentile version (`ggr.p`).   
 #'
@@ -71,6 +71,6 @@ get_ggr <- function( df, ggc, total.revenue, winsorize=0.98 )
   plot( density( ggr.n, na.rm=T ), main="GGR Standardized as Z" )
   plot( density( ggr.p, na.rm=T ), main="GGR as Percentile" )
   
-  df.ggr <- cbind( df, GGR )
+  df.ggr <- data.frame( cbind( df, GGR ) )
   return( df.ggr )
 }
