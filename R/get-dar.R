@@ -9,9 +9,11 @@
 #' Calculate the debt to asset ratio and append it to the dataframe. 
 #'
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param debt A character string indicating the column name for total liabilities (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
-#' @param assets A character string indicating the column name for total assets, EOY (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
+#' @param debt Column name(s) for total liabilities (must be quoted). (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
+#' @param assets Column name(s) for total assets, EOY (must be quoted). (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
+#' 
+#' @usage get_dar( df, c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") , assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY"), winsorize = 0.98 )
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the debt to asset ratio (`dar`), 
 #'  a winsorized version (`dar.w`), a standardized z-score version (`dar.z`), 
@@ -39,29 +41,53 @@
 #' head( d )
 #' 
 #' # run with default column names
-#' dat_01 <- dat
+#' x3 <- rnorm( 1000,100,30 )
+#' x4 <- rnorm( 1000,200,30 )
+#' x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
+#' x4[ seq( from = 1, to = 1000, 71 ) ] <- NA
 #' 
-#' colnames( dat_01 ) <- c( 'F9_10_LIAB_TOT_EOY', 'F9_10_ASSET_TOT_EOY' )
-#'
+#' dat_01 <- data.frame( x1, x2, x3, x4 )
+#' 
+#' colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_10_ASSET_TOT_EOY",
+#'                          "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
+#' 
 #' d <- get_dar( dat_01 )
 #' 
+#' d <- get_dar( dat_01, debt = "F9_10_LIAB_TOT_EOY", assets = "F9_10_ASSET_TOT_EOY" )
+#' #' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
 #' d <- get_dar( df = dat, debt = "x1", assets ="x2", winsorize=0.95 )
 #' 
 #' d <- get_dar( dat_01, winsorize = 0.95 )
 #' 
+#' # assume only one PC variable for the numerator or denominator is present in the dataset and we run with default parameters
+#' dat_02 <- dat_01
+#' 
+#' colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_09_EXP_TOT_TOT",
+#'                          "x", "F9_01_EXP_TOT_CY")
+#' 
+#' d <- get_ssr( dat_02, winsorize = 0.95 )
+#' 
+#' colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_09_EXP_TOT_TOT",
+#'                          "F9_01_REV_PROG_TOT_CY", "x")
+#' 
+#' d <- get_ssr( dat_02, winsorize = 0.95 )
+#'
 #' ## Errors ##
 #' 
 #' # numerator not specified
-#' d <- get_dar( df = dat, debt = NULL, assets = 'x2' )
+#' d <- get_dar( df = dat, debt = NULL, assets = "x2")
 #' 
 #' # denominator not specified
-#' d <- get_dar( df = dat, debt = 'x1', assets = NULL )
+#' d <- get_dar( df = dat, debt = "x1", assets = NULL )
 #' 
 #' # neither numerator nor denominator specified
 #' d <- get_dar( df = dat, debt = NULL, assets = NULL )
 #' @export
-get_dar <- function( df, debt = 'F9_10_LIAB_TOT_EOY', assets = 'F9_10_ASSET_TOT_EOY', winsorize=0.98 )
+get_dar <- function( df, 
+                     debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") , 
+                     assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY"), 
+                     winsorize=0.98 )
 {
   # checks
   if( winsorize > 1 | winsorize < 0 )
@@ -76,12 +102,129 @@ get_dar <- function( df, debt = 'F9_10_LIAB_TOT_EOY', assets = 'F9_10_ASSET_TOT_
   if( is.null( debt )==T & is.null( assets )==T )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
-  d <- df[[ debt ]]
-  a <- df[[ assets ]]
-
+  # copy data
+  dat <- df
+  
+  ## ensure variable classes are numeric ##
+  
+  #check
+  num.numeric <- sum( sapply( dat[debt], function(x) is.numeric(x) ) )
+  den.numeric <- sum( sapply( dat[assets], function(x) is.numeric(x) ) )
+  
+  # coerce
+  if(  num.numeric < length(debt) ){
+    warning(paste0("At least one of the provided numerator variables was not of object class numeric. ", length(debt)-num.numeric, " variables were (was) coerced to numeric." ) )
+    
+    dat[ debt ] <- data.frame( sapply( df[ debt ], function(x) as.numeric( as.character (x) ) ) )
+  }
+  if(  den.numeric < length(debt) ){
+    warning(paste0("At least one of the provided denominator variables was not of object class numeric. ", length(debt)-den.numeric, " variables were (was) coerced to numeric." ) )    
+    dat[ assets ] <- data.frame( sapply( df[ assets ], function(x) as.numeric( as.character (x) ) ) )
+  }
+  
+  # check to ensure both sets of variable names are included in input data when not specifying column names.
+  # edge cases
+  
+  # BEGIN first outer conditional
+  # BEGIN first outer conditional
+  if ( sum( debt %in% c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") )==2 & sum( assets %in% c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY") )==2 ) {
+    
+    # BEGIN series of nested conditionals 
+    
+    
+    # if at least one of the columns in missing from the input dataset, use only the column that is present
+    if ( length( which( colnames( dat ) %in% debt ) )==1 | length( which( colnames( dat ) %in% assets ) )==1 ) {
+      
+      if ( length( which(colnames( dat ) %in% debt ) )==2 ){
+        
+        # create a column that concatenates two numerator variables into single column if both columns for numerator are present
+        dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- as.numeric( as.character( dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ] ) )
+        dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- as.numeric( as.character( dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ] ) )
+      }
+      # if at least one of the numerator columns in missing from the input dataset, use only the column that is present
+      else if ( length( which( colnames( dat ) %in% debt ) )==1 ){
+        
+        this <- which( colnames( dat ) %in% debt )
+        
+        dat[ , "d"] <- dat[ , this ]
+      }
+      
+      
+      if ( length( which( colnames( dat ) %in% assets ) )==2 ){
+        # create a column that concatenates two numerator variables into single column if both columns for denominator are present
+        dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- as.numeric( as.character( dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ] ) )
+        dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- as.numeric( as.character( dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ] ) )
+      }
+      # if at least one of the denominator columns in missing from the input dataset, use only the column that is present
+      else if ( length( which( colnames( dat ) %in% assets )==1 ) ){
+        
+        this <- which( colnames( dat ) %in% assets )
+        
+        dat[ , "a"] <- dat[ , this ]
+      }
+      # END series of nested conditionals 
+      
+      # now, assign p and e, respectively
+      d <- dat[[ "d"]]
+      a <- dat[[ "a"]]
+    }
+    
+    # if all four columns are present, exit conditional
+  }
+  # END first outer conditional
+  
+  
+  
+  # all other cases are nested in the following conditionals
+  
+    
+    if ( length( debt )==2 & length( assets )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ]
+      dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ]
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ]
+      dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ]
+      
+      
+      d <- dat[[ "d"]]
+      a <- dat[[ "a"]]
+    }
+    
+    else if ( length( debt )==2 & length( assets )==1 ) {
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ]
+      dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ]
+      
+      
+      d <- dat[[ "d"]]
+      a <- dat[[ assets ]]
+    }
+    
+    else if ( length( debt )==1 & length( assets )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ]
+      dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ]
+      
+      
+      d <- dat[[ debt ]]
+      a <- dat[[ "a"]]
+    }
+    
+    else if ( length( debt )==1 & length( assets )==1 ) {
+      
+      d <- dat[[ debt ]]
+      a <- dat[[ assets ]]
+    }
+  
+  
     
   # can't divide by zero
-  print( paste0( "Assets cannot be equal to zero: ", sum( a==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Assets cannot be equal to zero: ", sum( a==0 , na.rm=T), " cases have been replaced with NA." ) )
   
   a[ a == 0 ] <- NA 
 
