@@ -128,29 +128,10 @@ get_dar <- function( df,
   
   ## ensure variable classes are numeric ##
   
-  #check
-  this.n <- which( colnames( dat ) %in% debt )
-  this.d <- which( colnames( dat ) %in% assets )
-  
-  num.numeric <- sum( sapply( dat[this.n], function(x) is.numeric(x) ) )
-  den.numeric <- sum( sapply( dat[this.d], function(x) is.numeric(x) ) )
-  
-  # coerce
-  if(  num.numeric < length( this.n ) ){
-    warning(paste0("At least one of the provided numerator variables was not of object class numeric. ", length( this.n )-num.numeric, " variables were (was) coerced to numeric." ) )
-    
-    dat[ debt ] <- data.frame( sapply( df[ debt ], function(x) as.numeric( as.character (x) ) ) )
-  }
-  if(  den.numeric < length( this.d ) ){
-    warning(paste0("At least one of the provided denominator variables was not of object class numeric. ", length( this.d )-den.numeric, " variables were (was) coerced to numeric." ) )    
-    dat[ assets ] <- data.frame( sapply( df[ assets ], function(x) as.numeric( as.character (x) ) ) )
-  }
-  
-  
-  
-  
-  
-  
+  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
+  v <- c( colnames( dat )[which( colnames( dat ) %in% assets)], colnames( dat )[which( colnames( dat ) %in% debt)] )
+  dat <- coerce_numeric( d = dat, vars = v )
+
   
   # check to ensure both sets of variable names are included in input data when not specifying column names.
   # edge cases
