@@ -11,6 +11,7 @@
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param mgmt.ge A character string indicating the column name for management and general expenses (On 990: Part 9, Line 25(C); On EZ: Not Available.
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 9, Line 25(A); On EZ: Part 1, Line 17).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the administration expense ratio (`aer`), 
 #'  a winsorized version (`aer.w`), a standardized z-score version (`aer.z`), 
@@ -21,7 +22,8 @@
 #' expenses are going towards its management and general expenses (or overhead) while a lower number indicates 
 #' that an organization's funds are going towards program service or fundraising expenses. Charity Navigator 
 #' generally gives its highest rankings to organizations that spend less than 15% of expenses on overhead. The 
-#' Better Business Bureau’s Wise Giving Alliance recommends a ratio of less than 35%.
+#' Better Business Bureau’s Wise Giving Alliance recommends a ratio of less than 35%. Note: computation of this 
+#' metric is available to full 990 filers only.
 #' 
 #' @examples
 #' x1 <- rnorm( 1000, 100, 30 )

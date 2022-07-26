@@ -24,7 +24,7 @@
 #' available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current 
 #' liabilities. This also indicates that the organization can pay off its current debts without selling its 
 #' long-term assets. If an organization has a quick ratio higher than 1, this means that it owns more quick 
-#' assets than current liabilities.
+#' assets than current liabilities. Note: computation of this metric is available to full 990 filers only.
 #' 
 #' @examples
 #' x1 <- rnorm( 1000,100,30 )
@@ -34,22 +34,101 @@
 #' x5 <- rnorm( 1000,200,30 )
 #' x6 <- rnorm( 1000,200,30 )
 #' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
-#'
-#' a <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp='x6', winsorize=0.98 )
+#' 
+#' # specify own column names
+#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp='x6', winsorize=0.98 )
+#' 
+#' head( d )
+#' 
+#' # run with default column names
+#' dat_01 <- dat
+#' colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
+#'                          "F9_10_ASSET_ACC_NET_EOY", "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY")
+#' 
+#' 
+#' d <- get_qr( dat_01 )
+#' 
+#' # coerce one column to factor
+#' dat_01$F9_10_ASSET_CASH_EOY <- as.factor( dat_01$F9_10_ASSET_CASH_EOY )
+#' 
+#' d <- get_qr( dat_01 )
+#' 
+#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
+#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp='x6', winsorize = 0.95 )
+#' 
+#' d <- get_qr( dat_01, winsorize = 0.95 )
+#' 
+#' 
+#' # using 990 data
+#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' d <- get_qr( df = part010810 )
+#' 
+#' # now coerce one of the variables to numeric
+#' part010810$F9_10_LIAB_ACC_PAYABLE_EOY <- as.character( part010810$F9_10_LIAB_ACC_PAYABLE_EOY )
+#' 
+#' d <- get_qr( df = part010810 )
 #' 
 #' @export
-get_qr <- function( df, cash, si, pr, ar, ap, gp, winsorize=0.98 )
+get_qr <- function( df, 
+                    cash = "F9_10_ASSET_CASH_EOY", 
+                    si = "F9_10_ASSET_SAVING_EOY", 
+                    pr = "F9_10_ASSET_PLEDGE_NET_EOY",
+                    ar = "F9_10_ASSET_ACC_NET_EOY", 
+                    ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
+                    gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+                    winsorize=0.98 )
 {
   
   # checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  num <- df[[ cash ]] + df[[ si ]] + df[[ pr ]] + df[[ ar ]]
-  den <- df[[ ap ]] + df[[ gp ]]
+  if( is.null( cash )==T | is.null( si )==T | is.null( pr )==T | is.null( ar )==T )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( is.null( ap )==T | is.null( gp )==T )
+  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( is.null( ap )==T & is.null( gp )==T & is.null( cash )==T & is.null( si )==T & is.null( pr )==T & is.null( ar )==T )
+  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  
+  if( length( cash ) > 1 | length( cash ) < 1 )
+  { stop( "`cash` must be a single quoted string with a maximum length of one" ) }
+  
+  if( length( si ) > 1 | length( si ) < 1 )
+  { stop( "`si` must be a single quoted string with a maximum length of one" ) }
+  
+  if( length( pr ) > 1 | length( pr ) < 1 )
+  { stop( "`pr` must be a single quoted string with a maximum length of one" ) }
+ 
+  if( length( ar ) > 1 | length( ar ) < 1 )
+  { stop( "`ar` must be a single quoted string with a maximum length of one" ) }
+  
+  if( length( ap ) > 1 | length( ap ) < 1 )
+  { stop( "`ap` must be a single quoted string with a maximum length of one" ) }
+  
+  if( length( gp ) > 1 | length( gp ) < 1 )
+  { stop( "`gp` must be a single quoted string with a maximum length of one" ) }
+  
+  
+  # copy data
+  dat <- df
+  
+  ## ensure variable classes are numeric ##
+  
+  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
+  v <- c( colnames( dat )[which( colnames( dat ) %in% cash ) ], colnames( dat )[which( colnames( dat ) %in% si )],
+          colnames( dat )[which( colnames( dat ) %in% ar )], colnames( dat )[which( colnames( dat ) %in% pr )], 
+          colnames( dat )[which( colnames( dat ) %in% ap )],colnames( dat )[which( colnames( dat ) %in% gp )])
+  
+  dat <- coerce_numeric( d = dat, vars = v )
+  
+  
+  num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
+  den <- dat[[ ap ]] + dat[[ gp ]]
   
   # can't divide by zero
-  print( paste0( "Payables cannot be zero: ", sum( den==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Payables cannot be zero: ", sum( den==0, na.rm = T ), " cases have been replaced with NA." ) )
   den[ den == 0 ] <- NA 
   
   qr <- num / den
