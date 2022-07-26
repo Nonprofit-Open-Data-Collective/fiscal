@@ -149,8 +149,8 @@ get_dar <- function( df,
       if ( length( which(colnames( dat ) %in% debt ) )==2 ){
         
         # create a column that concatenates two numerator variables into single column if both columns for numerator are present
-        dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- as.numeric( as.character( dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ] ) )
-        dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- as.numeric( as.character( dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ] ) )
+        dat[ which( is.na( dat[ debt[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[2] ] )==F ), debt[2] ] 
+        dat[ which( is.na( dat[ debt[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ debt[1] ] )==F ), debt[1] ] 
       }
       # if at least one of the numerator columns in missing from the input dataset, use only the column that is present
        if ( length( which( colnames( dat ) %in% debt ) )==1 ){
@@ -163,8 +163,8 @@ get_dar <- function( df,
       
       if ( length( which( colnames( dat ) %in% assets ) )==2 ){
         # create a column that concatenates two numerator variables into single column if both columns for denominator are present
-        dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- as.numeric( as.character( dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ] ) )
-        dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- as.numeric( as.character( dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ] ) )
+        dat[ which( is.na( dat[ assets[2] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[2] ] )==F ), assets[2] ] 
+        dat[ which( is.na( dat[ assets[1] ] )==F ), "a"] <- dat[ which( is.na( dat[ assets[1] ] )==F ), assets[1] ] 
       }
       # if at least one of the denominator columns in missing from the input dataset, use only the column that is present
        if ( length( which( colnames( dat ) %in% assets ))==1  ){
