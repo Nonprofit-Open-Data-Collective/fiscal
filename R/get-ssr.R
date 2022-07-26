@@ -128,10 +128,10 @@ get_ssr <- function( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
   if( length( prog.serv.rev ) > 2 | length( prog.serv.rev ) < 1 )
-  { stop( "`prog.serv.rev` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
+  { stop( "`prog.serv.rev` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   if( length( total.expense ) > 2 | length( total.expense ) < 1 )
-  { stop( "`total.expense` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
+  { stop( "`total.expense` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   
   # copy data
@@ -151,7 +151,7 @@ get_ssr <- function( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV
   # BEGIN first outer conditional
   if ( sum( prog.serv.rev %in% c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY") )==2 & sum( total.expense %in% c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY") )==2 ) {
     
-    # BEGIN series of nestep conditionals 
+    # BEGIN series of nested conditionals 
     
     
     # if at least one of the columns in missing from the input dataset, use only the column that is present

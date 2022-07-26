@@ -97,8 +97,8 @@
 #' d <- get_der( df = dat, debt = "e", equity = c( "e", "b", "c") )
 #' @export
 get_der <- function( df, 
-                     debt = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
-                     equity = 'F9_10_NAFB_UNRESTRICT_EOY', 
+                     debt = "F9_10_LIAB_ACC_PAYABLE_EOY", 
+                     equity = "F9_10_NAFB_UNRESTRICT_EOY", 
                      winsorize=0.98 )
 {
   
@@ -116,10 +116,10 @@ get_der <- function( df,
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
   if( length( debt ) > 2 | length( debt ) < 1 )
-  { stop( "`debt` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
+  { stop( "`debt` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   if( length( equity ) > 2 | length( equity ) < 1 )
-  { stop( "`equity` must be a single quoted or unquoted string or a vector with a minimum length of one and maximum length of two." ) }
+  { stop( "`equity` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   
   # copy data
@@ -139,7 +139,7 @@ get_der <- function( df,
   # BEGIN first outer conditional
   if ( sum( debt %in% c( "F9_10_LIAB_ACC_PAYABLE_EOY") )==2 & sum( equity %in% c( "F9_10_NAFB_UNRESTRICT_EOY") )==2 ) {
     
-    # BEGIN series of nestep conditionals 
+    # BEGIN series of nested conditionals 
     
     
     # if at least one of the columns in missing from the input dataset, use only the column that is present

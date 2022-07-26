@@ -112,14 +112,20 @@ get_dar <- function( df,
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  if( is.null( debt )==T & is.null( assets )==F )
+  if( is.null( debt )==T & is.null( equity )==F )
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( is.null( debt )==F & is.null( assets )==T )
+  if( is.null( debt )==F & is.null( equity )==T )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( is.null( debt )==T & is.null( assets )==T )
+  if( is.null( debt )==T & is.null( equity )==T )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  
+  if( length( debt ) > 2 | length( debt ) < 1 )
+  { stop( "`debt` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
+  
+  if( length( equity ) > 2 | length( equity ) < 1 )
+  { stop( "`assets` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   # copy data
   dat <- df
