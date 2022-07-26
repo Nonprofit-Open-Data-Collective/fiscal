@@ -15,8 +15,8 @@
 #' @param ar A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).
 #' @param ap A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
-#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expense`).
-#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `si`,`pr`, `ar` ).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`ap`, `gp`).
 #'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the quick ratio (`qr`), 
 #' a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
@@ -26,7 +26,8 @@
 #' available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current 
 #' liabilities. This also indicates that the organization can pay off its current debts without selling its 
 #' long-term assets. If an organization has a quick ratio higher than 1, this means that it owns more quick 
-#' assets than current liabilities. Note: computation of this metric is available to full 990 filers only.
+#' assets than current liabilities. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers. 
+#' The default inputs use column names for variables available only to 990 filers.
 #' 
 #' @examples
 #' x1 <- rnorm( 1000,100,30 )
