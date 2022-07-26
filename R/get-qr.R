@@ -15,7 +15,9 @@
 #' @param ar A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).
 #' @param ap A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
-#' 
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expense`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
+#'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the quick ratio (`qr`), 
 #' a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
 #' and a percentile version (`qr.p`).   
@@ -58,6 +60,12 @@
 #' 
 #' d <- get_qr( dat_01, winsorize = 0.95 )
 #' 
+#' # aggregate variables into single numerator and denominator
+#' x.den <- x5 + x6
+#' x.num <- x1 + x2 + x3 + x4
+#' 
+#' dat_02 <- cbind( dat, x.den, x.num)
+#' 
 #' 
 #' # using 990 data
 #' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
@@ -68,6 +76,34 @@
 #' 
 #' d <- get_qr( df = part010810 )
 #' 
+#' # incorrectly specify denominator
+#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
+#'         ap = NULL, gp = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
+#' 
+#' # incorrectly specify numerator with conflicting arguments
+#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
+#'         ap = NULL, gp = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
+#' 
+#' 
+#' # incorrectly specify numerator with conflicting arguments
+#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
+#'         ap = 'x5', gp = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
+#' 
+#' # supplying no arguments for the numerator
+#' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
+#'         ap = 'x5', gp = 'x6', numerator = NULL, denominator = NULL , winsorize=0.98 )  
+#' 
+#' # supplying no arguments for the denominator
+#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
+#'         ap = NULL, gp = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
+#' 
+#' # supplying argument for one of the parameters in the numerator that is greater than length 1
+#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
+#'         ap = c( 'x5', 'x6' ), gp = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
+#' 
+#' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
+#'         ap = NULL, gp = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
+#' 
 #' @export
 get_qr <- function( df, 
                     cash = "F9_10_ASSET_CASH_EOY", 
@@ -76,6 +112,8 @@ get_qr <- function( df,
                     ar = "F9_10_ASSET_ACC_NET_EOY", 
                     ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
                     gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+                    numerator = NULL,
+                    denominator = NULL,
                     winsorize=0.98 )
 {
   
@@ -83,32 +121,52 @@ get_qr <- function( df,
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  if( is.null( cash )==T | is.null( si )==T | is.null( pr )==T | is.null( ar )==T )
-  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if( is.null( ap )==T | is.null( gp )==T )
+  if ( ( ( length( c( cash, si, pr, ar ) ) < 4 )==F | is.null( numerator )==F ) &
+       ( ( is.null( ap )==T | is.null( gp )==T ) &
+         is.null( denominator )==T ) )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( is.null( ap )==T & is.null( gp )==T & is.null( cash )==T & is.null( si )==T & is.null( pr )==T & is.null( ar )==T )
-  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
+  if ( ( ( length( c( ap, gp ) ) < 2 )==F | is.null( denominator )==F ) &
+       ( ( is.null( cash )==T | is.null( si )==T | 
+           is.null( pr )==T | is.null( ar )==T ) &
+         is.null( numerator )==T ) )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+
+    
+  if ( ( length( c( cash, si, pr, ar ) ) <= 4 ) &
+       ( length( c( cash, si, pr, ar ) ) >= 1 ) & 
+       ( is.null( numerator )==F ) )
+  { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( length( cash ) > 1 | length( cash ) < 1 )
-  { stop( "`cash` must be a single quoted string with a maximum length of one" ) }
+  if ( ( length( c( ap, gp ) ) <= 2 ) &
+       ( length( c( ap, gp ) ) >= 1 ) & 
+       ( is.null( denominator )==F ) )
+  { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( length( si ) > 1 | length( si ) < 1 )
-  { stop( "`si` must be a single quoted string with a maximum length of one" ) }
+  if( ( length( cash ) > 1 | length( cash ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`cash` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( length( pr ) > 1 | length( pr ) < 1 )
-  { stop( "`pr` must be a single quoted string with a maximum length of one" ) }
- 
-  if( length( ar ) > 1 | length( ar ) < 1 )
-  { stop( "`ar` must be a single quoted string with a maximum length of one" ) }
+  if( ( length( si ) > 1 | length( si ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`si` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( length( ap ) > 1 | length( ap ) < 1 )
-  { stop( "`ap` must be a single quoted string with a maximum length of one" ) }
+  if( ( length( pr ) > 1 | length( pr ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`pr` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( length( gp ) > 1 | length( gp ) < 1 )
-  { stop( "`gp` must be a single quoted string with a maximum length of one" ) }
+  if( ( length( ar ) > 1 | length( ar ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`ar` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( ap ) > 1 | length( ap ) < 1 ) & is.null( denominator ) == T ) 
+  { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
+
+  if( ( length( gp ) > 1 | length( gp ) < 1 ) & is.null( denominator ) == T ) 
+  { stop( "`gp` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( numerator ) > 1 & length( c( cash, si, pr, ar ) ) == 0 ) )
+  { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( denominator ) > 1 & length( c( ap, gp ) ) == 0 ) )
+  { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
+  
   
   
   # copy data
