@@ -262,7 +262,7 @@ get_ssr <- function( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV
   }  
   
   # can't divide by zero
-  print( paste0( "Total expenses cannot be equal to zero: ", sum( e==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Total expenses cannot be equal to zero: ", sum( e==0, na.rm = T ), " cases have been replaced with NA." ) )
   e[ e == 0 ] <- NA 
   
   ssr <- p / e
