@@ -39,25 +39,26 @@
 #' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
 #' 
 #' # specify own column names
-#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp='x6', winsorize=0.98 )
+#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize=0.98 )
 #' 
 #' head( d )
 #' 
 #' # run with default column names
 #' dat_01 <- dat
+#' 
 #' colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-#'                          "F9_10_ASSET_ACC_NET_EOY", "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY")
+#'                          "F9_10_ASSET_ACC_NET_EOY", "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY" )
 #' 
 #' 
 #' d <- get_qr( dat_01 )
 #' 
 #' # coerce one column to factor
-#' dat_01$F9_10_ASSET_CASH_EOY <- as.factor( dat_01$F9_10_ASSET_CASH_EOY )
+#' dat_01$F9_10_ASSET_ACC_NET_EOY <- as.factor( dat_01$F9_10_ASSET_ACC_NET_EOY )
 #' 
 #' d <- get_qr( dat_01 )
 #' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp='x6', winsorize = 0.95 )
+#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize = 0.95 )
 #' 
 #' d <- get_qr( dat_01, winsorize = 0.95 )
 #' 
@@ -67,6 +68,7 @@
 #' 
 #' dat_02 <- cbind( dat, x.den, x.num)
 #' 
+#' d <- get_qr( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
 #' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
@@ -79,7 +81,7 @@
 #' 
 #' # incorrectly specify denominator
 #' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = NULL, gp = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
+#'         ap = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
 #' 
 #' # incorrectly specify numerator with conflicting arguments
 #' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
@@ -104,7 +106,6 @@
 #' 
 #' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
 #'         ap = NULL, gp = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
-#' 
 #' @export
 get_qr <- function( df, 
                     cash = "F9_10_ASSET_CASH_EOY", 
@@ -118,12 +119,32 @@ get_qr <- function( df,
                     winsorize=0.98 )
 {
   
+  
   # checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
+  if( is.null( cash )==F & is.null( si )==F & is.null( pr )==F & is.null( ar )==F &
+      is.null( ap )==F & is.null( gp )==F ) {
+    
+    if( cash == "F9_10_ASSET_CASH_EOY" & si == "F9_10_ASSET_SAVING_EOY" &
+        pr == "F9_10_ASSET_PLEDGE_NET_EOY" & ar == "F9_10_ASSET_ACC_NET_EOY" & ap == "F9_10_LIAB_ACC_PAYABLE_EOY" &
+        gp == "F9_10_LIAB_GRANT_PAYABLE_EOY" & is.null( numerator )==F & is.null( denominator )==F ){
+      
+      warning( "Default argument inputs overridden with specified numerator and denominator arguments" ) 
+      
+      cash <- NULL
+      si <- NULL
+      pr <- NULL
+      ar <- NULL
+      ap <- NULL
+      
+    }
+    
+  } 
+
   if ( ( ( length( c( cash, si, pr, ar ) ) < 4 )==F | is.null( numerator )==F ) &
-       ( ( is.null( ap )==T | is.null( gp )==T ) &
+       ( ( is.null( ap )==T & is.null( gp )==T ) &
          is.null( denominator )==T ) )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
@@ -132,15 +153,14 @@ get_qr <- function( df,
            is.null( pr )==T | is.null( ar )==T ) &
          is.null( numerator )==T ) )
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-
-    
+  
+  
   if ( ( length( c( cash, si, pr, ar ) ) <= 4 ) &
        ( length( c( cash, si, pr, ar ) ) >= 1 ) & 
        ( is.null( numerator )==F ) )
   { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if ( ( length( c( ap, gp ) ) <= 2 ) &
-       ( length( c( ap, gp ) ) >= 1 ) & 
+  if ( ( length( c( ap, gp ) ) >= 2 ) & 
        ( is.null( denominator )==F ) )
   { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
   
@@ -158,40 +178,65 @@ get_qr <- function( df,
   
   if( ( length( ap ) > 1 | length( ap ) < 1 ) & is.null( denominator ) == T ) 
   { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
-
+  
   if( ( length( gp ) > 1 | length( gp ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`gp` must be a single quoted string or a vector with a maximum length of one." ) }
+  { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( numerator ) > 1 & length( c( cash, si, pr, ar ) ) == 0 ) )
   { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( ( length( denominator ) > 1 & length( c( ap, gp ) ) == 0 ) )
+  if( ( length( denominator ) > 1 & length( c( ap ) ) == 0 ) )
   { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  
+
   
   # copy data
   dat <- df
   
   ## ensure variable classes are numeric ##
-  
+
   # run coerce_numeric and loop through all variables required and that matched by the two input arguments
   v <- c( colnames( dat )[which( colnames( dat ) %in% cash ) ], colnames( dat )[which( colnames( dat ) %in% si )],
           colnames( dat )[which( colnames( dat ) %in% ar )], colnames( dat )[which( colnames( dat ) %in% pr )], 
-          colnames( dat )[which( colnames( dat ) %in% ap )],colnames( dat )[which( colnames( dat ) %in% gp )])
+          colnames( dat )[which( colnames( dat ) %in% ap )], colnames( dat )[which( colnames( dat ) %in% gp )],
+          colnames( dat )[which( colnames( dat ) %in% numerator )], colnames( dat )[which( colnames( dat ) %in% denominator )] )
   
   dat <- coerce_numeric( d = dat, vars = v )
+
+  if( is.null( numerator) == T & is.null( denominator ) == T ){
+    
+    num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
+    den <- dat[[ ap ]] + dat[[ gp ]]
+    
+  }
   
+  if( is.null( numerator) == F & is.null( denominator ) == T ){
+    
+    num <- dat[[ numerator ]]
+    den <- dat[[ ap ]] + dat[[ gp ]] 
+    
+  }
   
-  num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
-  den <- dat[[ ap ]] + dat[[ gp ]]
+  if( is.null( numerator) == T & is.null( denominator ) == F ){
+    
+    num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
+    den <- dat[[ denominator ]] 
+    
+  }
   
+  if( is.null( numerator) == F & is.null( denominator ) == F ){
+    
+    num <- dat[[ numerator ]]
+    den <- dat[[ denominator ]] 
+    
+  }
+
   # can't divide by zero
   print( paste0( "Payables cannot be zero: ", sum( den==0, na.rm = T ), " cases have been replaced with NA." ) )
   den[ den == 0 ] <- NA 
   
   qr <- num / den
-  
+
   top.p    <- 1 - (1-winsorize)/2
   bottom.p <- 0 + (1-winsorize)/2
   top      <- quantile( qr, top.p, na.rm=T )
@@ -217,3 +262,4 @@ get_qr <- function( df,
   df.qr <- data.frame( cbind( df, QR ) )
   return( df.qr )
 }
+
