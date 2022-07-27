@@ -84,7 +84,7 @@
 #'           total.revenue = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
 #' 
 #' 
-#' # incorrectly specify numerator with conflicting arguments
+#' # incorrectly specify denominator with conflicting arguments
 #' get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
 #'           total.revenue = 'x5', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
 #' 

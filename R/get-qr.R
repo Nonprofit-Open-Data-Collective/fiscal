@@ -88,7 +88,7 @@
 #'         ap = NULL, gp = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
 #' 
 #' 
-#' # incorrectly specify numerator with conflicting arguments
+#' # incorrectly specify denominator with conflicting arguments
 #' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
 #'         ap = 'x5', gp = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
 #' 
@@ -138,6 +138,7 @@ get_qr <- function( df,
       pr <- NULL
       ar <- NULL
       ap <- NULL
+      gp <- NULL
       
     }
     
