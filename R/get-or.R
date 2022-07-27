@@ -17,7 +17,9 @@
 #'  and a percentile version (`or.p`).   
 #'
 #' @details The operating margin measures what percent of an organizations unrestricted net assets (or free 
-#' cash) from the beginning of 2019 it had at the end of 2019. 
+#' cash) from the beginning of 2019 it had at the end of 2019. Note: computation of this metric is available 
+#' to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available 
+#' only to 990 filers.
 #' 
 #' @examples
 #' x1 <- rnorm( 1000, 100, 30 )
@@ -232,7 +234,7 @@ get_or <- function( df,
   }    
   
   # can't divide by zero
-  print( paste0( "equity.boy cannot be equal to zero: ", sum( e==0, na.rm = T ), " cases have been replaced with NA." ) )
+  print( paste0( "Equity (BOY) cannot be equal to zero: ", sum( e==0, na.rm = T ), " cases have been replaced with NA." ) )
   e[ e == 0 ] <- NA 
   
   or <- d / e
