@@ -245,7 +245,7 @@ get_eidr <- function( df,
   print( summary( EIDR ) )
   
   par( mfrow=c(2,2) )
-  plot( density( eidr,   na.rm=T ), main="Earned Income Dependence (EIDR)" )
+  plot( density( eidr,   na.rm=T ), main="Earned Income Dependence Ratio (EIDR)" )
   plot( density( eidr.w, na.rm=T ), main="EIDR Winsorized" )
   plot( density( eidr.n, na.rm=T ), main="EIDR Standardized as Z" )
   plot( density( eidr.p, na.rm=T ), main="EIDR as Percentile" )
