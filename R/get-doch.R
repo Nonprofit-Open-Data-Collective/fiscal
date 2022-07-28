@@ -182,12 +182,12 @@ get_doch <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
   { stop( "`tot.func.exp` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( dda ) > 1 | length( dda ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`tot.func.exp` must be a single quoted string or a vector with a maximum length of one." ) }
+  { stop( "`dda` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( numerator ) > 1 & length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) )
   { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( ( length( denominator ) > 1 & length( c( tot.func.exp ) ) == 0 ) )
+  if( ( length( denominator ) > 1 & length( c( tot.func.exp, dda ) ) == 0 ) )
   { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
   
   

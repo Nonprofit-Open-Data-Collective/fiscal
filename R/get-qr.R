@@ -181,12 +181,12 @@ get_qr <- function( df,
   { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( gp ) > 1 | length( gp ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
+  { stop( "`gp` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( numerator ) > 1 & length( c( cash, si, pr, ar ) ) == 0 ) )
   { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( ( length( denominator ) > 1 & length( c( ap ) ) == 0 ) )
+  if( ( length( denominator ) > 1 & length( c( ap, gp ) ) == 0 ) )
   { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
   
 

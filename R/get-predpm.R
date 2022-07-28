@@ -10,7 +10,7 @@
 #'
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
-#' @param depreciation A character string indicating the column name for depreciation expenses (On 990: Part X, line 2B; On EZ:Not available).
+#' @param depreciation A character string indicating the column name for depreciation expenses (On 990: Part IX, line 22A; On EZ:Not available).
 #' @param revenue A character string indicating the column name for total revenue (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the pre-depreciation profitability margin (`predpm`), 
@@ -30,26 +30,175 @@
 #' indicate the organization is functioning at a deficit.
 #' 
 #' @examples
-#' x1 <- rnorm( 1000,100,30 )
-#' x2 <- rnorm( 1000,200,30 )
-#' x3 <- rnorm( 1000,200,30 )
-#' dat <- data.frame( x1, x2, x3 )
-#' a <- get_predpm( df=dat, revenue='x1', depreciation='x2',
-#'              expenses='x3' )
+#' x1 <- rnorm( 1000, 100, 30 )
+#' x2 <- rnorm( 1000, 200, 30 )
+#' x3 <- rnorm( 1000, 200, 30 )
+#' x3[ c( 15, 300, 600 ) ] <- 0
 #' 
+#' dat <- data.frame( x1, x2, x3 )
+#' 
+#' # specify own column names
+#' d <- get_predpm( df = dat, expenses = "x1", depreciation = "x2", revenue = "x3" )
+#' 
+#' 
+#' head( d ) 
+#' 
+#' # run with default column names
+#' x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
+#' x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
+#' 
+#' dat_01 <- data.frame( x1, x2, x3 )
+#' 
+#' colnames( dat_01 ) <- c( "F9_09_EXP_TOT_TOT", "F9_09_EXP_DEPREC_TOT", "F9_08_REV_TOT_TOT" )
+#' 
+#' d <- get_predpm( dat_01 )
+#' 
+#' # coerce one column to factor
+#' dat_01$F9_09_EXP_TOT_TOT <- as.factor( dat_01$F9_09_EXP_TOT_TOT )
+#' 
+#' d <- get_predpm( dat_01 )
+#' 
+#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
+#' d <- get_predpm( df = dat, expenses = "x1", depreciation = "x2", revenue = "x3", winsorize = 0.95 )
+#' 
+#' d <- get_predpm( dat_01, winsorize = 0.95 )
+#' 
+#' 
+#' # using 990 data
+#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' d <- get_predpm( df = part010810 )
+#' 
+#' # now coerce one of the variables to numeric
+#' part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
+#' 
+#' d <- get_predpm( df = part010810 )
+#' 
+#' 
+#' ## Errors ##
+#' 
+#' # numerator not specified
+#' d <- get_predpm( df = dat, expenses = NULL, depreciation = NULL, revenue = "x3" )
+#' 
+#' # denominator not specified
+#' d <- get_predpm( df = dat, expenses = "x1", depreciation = "x2", revenue = NULL )
+#' 
+#' # neither numerator nor denominator specified
+#' d <- get_predpm( df = dat, expenses = NULL, depreciation = NULL, revenue = NULL )
+#' 
+#' # column names vector not of correct length
+#' d <- get_predpm( df = dat, expenses = c("e","b","c"), depreciation = "x2", revenue = "e")
+#' 
+#' # column names vector not of correct length
+#' d <- get_predpm( df = dat, expenses = "e", revenue = c( "e", "b", "c"), depreciation = "x2" )
 #' @export
-get_predpm <- function( df, expenses, depreciation, revenue, winsorize=0.98 )
+get_predpm <- function( df, 
+                        expenses = "F9_09_EXP_TOT_TOT",
+                        revenue = "F9_08_REV_TOT_TOT", 
+                        depreciation = "F9_09_EXP_DEPREC_TOT", 
+                        numerator = NULL,
+                        denominator = NULL,
+                        winsorize=0.98 )
 {
   
+  # checks
   # checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-     num <- df[[ revenue ]] - ( df[[ expenses ]] + df[[ depreciation ]] )
-     den <- df[[ revenue ]]  
-
+  if ( is.null( expenses )==F & is.null( depreciation )==F & is.null( revenue )==F ) {
+    
+    if ( expenses == "F9_09_EXP_TOT_TOT" & depreciation == "F9_09_EXP_DEPREC_TOT" &
+         revenue == "F9_08_REV_TOT_TOT" & is.null( numerator )==F & is.null( denominator )==F ){
+      
+      warning( "Default argument inputs overridden with specified numerator and denominator arguments" ) 
+      
+      expenses <- NULL
+      depreciation <- NULL
+      revenue <- NULL
+      
+    }
+    
+  } 
+  
+  if ( ( ( length( c( expenses, depreciation ) ) < 2 )==F | is.null( numerator )==F ) &
+       ( ( is.null( revenue )==T ) &
+         is.null( denominator )==T ) )
+  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if ( ( ( length( c( revenue ) ) == 0 )==F | is.null( denominator )==F ) &
+       ( ( is.null( expenses )==T | is.null( depreciation )==T ) &
+         is.null( numerator )==T ) )
+  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  
+  if ( ( length( c( expenses, depreciation ) ) <= 2 ) &
+       ( length( c( expenses, depreciation ) ) >= 1 ) & 
+       ( is.null( numerator )==F ) )
+  { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if ( ( length( c( revenue ) ) >= 1 ) & 
+       ( is.null( denominator )==F ) )
+  { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
+  
+  if( ( length( expenses ) > 1 | length( expenses ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`expenses` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( depreciation ) > 1 | length( depreciation ) < 1 ) & is.null( numerator ) == T ) 
+  { stop( "`depreciation` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( revenue ) > 1 | length( revenue ) < 1 ) & is.null( denominator ) == T ) 
+  { stop( "`revenue` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( numerator ) > 1 & length( c( expenses, depreciation ) ) == 0 ) )
+  { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  if( ( length( denominator ) > 1 & length( c( revenue ) ) == 0 ) )
+  { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
+  
+  
+  
+  # copy data
+  dat <- df
+  
+  ## ensure variable classes are numeric ##
+  
+  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
+  v <- c( colnames( dat )[which( colnames( dat ) %in% expenses ) ], colnames( dat )[which( colnames( dat ) %in% depreciation )],
+          colnames( dat )[which( colnames( dat ) %in% revenue )],colnames( dat )[which( colnames( dat ) %in% numerator )],
+          colnames( dat )[which( colnames( dat ) %in% denominator )] )
+  
+  dat <- coerce_numeric( d = dat, vars = v )
+  
+  if( is.null( numerator) == T & is.null( denominator ) == T ){
+    
+    num <- dat[[ revenue ]] - ( dat[[ expenses ]] - dat[[ depreciation ]] )
+    den <- dat[[ revenue ]]
+    
+  }
+  
+  if( is.null( numerator) == F & is.null( denominator ) == T ){
+    
+    num <- dat[[ numerator ]]
+    den <- dat[[ revenue ]]
+    
+  }
+  
+  if( is.null( numerator) == T & is.null( denominator ) == F ){
+    
+    num <- dat[[ revenue ]] - ( dat[[ expenses ]] - dat[[ depreciation ]] )
+    den <- dat[[ denominator ]]
+    
+  }
+  
+  if( is.null( numerator) == F & is.null( denominator ) == F ){
+    
+    num <- dat[[ numerator ]]
+    den <- dat[[ denominator ]]
+    
+  }
+  
   # can't divide by zero
-  print( paste0( "Revenue cannot be zero: ", sum( den==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Revenue cannot be zero: ", sum( den==0, na.rm = T ), " cases have been replaced with NA." ) )
   den[ den == 0 ] <- NA 
   
   predpm <- num / den
@@ -71,7 +220,7 @@ get_predpm <- function( df, expenses, depreciation, revenue, winsorize=0.98 )
   print( summary( PREDPM ) )
   
   par( mfrow=c(2,2) )
-  plot( density( predpm,   na.rm=T ), main="Pre-Depreciation Profitability Margin (PREDPM)" )
+  plot( density( predpm,   na.rm=T ), main="Pre-depreciation Profitability Margin (PREDPM)" )
   plot( density( predpm.w, na.rm=T ), main="PREDPM Winsorized" )
   plot( density( predpm.n, na.rm=T ), main="PREDPM Standardized as Z" )
   plot( density( predpm.p, na.rm=T ), main="PREDPM as Percentile" )
@@ -79,3 +228,4 @@ get_predpm <- function( df, expenses, depreciation, revenue, winsorize=0.98 )
   df.predpm <- data.frame( cbind( df, PREDPM ) )
   return( df.predpm )
 }
+  

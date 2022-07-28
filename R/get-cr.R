@@ -213,12 +213,12 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
   { stop( "`accounts.payable` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( grants.payable ) > 1 | length( grants.payable ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`accounts.payable` must be a single quoted string or a vector with a maximum length of one." ) }
+  { stop( "`grants.payable` must be a single quoted string or a vector with a maximum length of one." ) }
   
   if( ( length( numerator ) > 1 & length( c( cash, short.invest, pledges.receive, accounts.receive ) ) == 0 ) )
   { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
   
-  if( ( length( denominator ) > 1 & length( c( accounts.payable ) ) == 0 ) )
+  if( ( length( denominator ) > 1 & length( c( accounts.payable, grants.payable ) ) == 0 ) )
   { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
   
   
