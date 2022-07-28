@@ -12,6 +12,11 @@
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
 #' @param revenue A character string indicating the column name for total revenue, (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
 #' 
+#' @usage get_podpm( df, 
+#' expenses = "F9_09_EXP_TOT_TOT",
+#' revenue = "F9_08_REV_TOT_TOT", 
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the post-depreciation profitability margin (`podpm`), 
 #'  a winsorized version (`podpm.w`), a standardized z-score version (`podpm.z`), 
 #'  and a percentile version (`podpm.p`).   

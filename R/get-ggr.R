@@ -12,6 +12,11 @@
 #' @param ggc A character string indicating the column name for government grant contributions (On 990: Part VIII, Line 1(E); On EZ: Not Available).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
+#' @usage get_ggr( df, 
+#' ggc = "F9_08_REV_CONTR_GOVT_GRANT", 
+#' total.revenue = "F9_08_REV_TOT_TOT", 
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the government grants ratio (`ggr`), 
 #'  a winsorized version (`ggr.w`), a standardized z-score version (`ggr.z`), 
 #'  and a percentile version (`ggr.p`).   
@@ -86,7 +91,7 @@
 get_ggr <- function( df, 
                      ggc = "F9_08_REV_CONTR_GOVT_GRANT", 
                      total.revenue = "F9_08_REV_TOT_TOT", 
-                     winsorize=0.98 )
+                     winsorize = 0.98 )
 {
   
   # function checks

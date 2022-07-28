@@ -15,6 +15,16 @@
 #' @param other.revenue A character string indicating the column name for all other revenue (On 990: Part VIII, Line 11d(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
+#' @usage get_eidr( df, 
+#' prog.service.rev = "F9_08_REV_PROG_TOT_TOT", 
+#' memb.dues = "F9_08_REV_CONTR_MEMBSHIP_DUE", 
+#' royalties = "F9_08_REV_OTH_ROY_TOT", 
+#' other.revenue = "F9_08_REV_MISC_OTH_TOT", 
+#' total.revenue = "F9_08_REV_TOT_TOT", 
+#' numerator = NULL,
+#' denominator = NULL,
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the earned income dependence ratio (`eidr`), 
 #'  a winsorized vermemb.dueson (`eidr.w`), a standardized z-score vermemb.dueson (`eidr.z`), 
 #'  and a percentile vermemb.dueson (`eidr.p`).   
@@ -112,7 +122,7 @@ get_eidr <- function( df,
                       total.revenue = "F9_08_REV_TOT_TOT", 
                       numerator = NULL,
                       denominator = NULL,
-                      winsorize=0.98 )
+                      winsorize = 0.98 )
 {
   
   # checks

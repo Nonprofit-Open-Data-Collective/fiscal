@@ -13,6 +13,8 @@
 #' @param total.assets A character string indicating the column name for total assets, EOY (On 990: Part X, Line 16B; On EZ: Part II, Line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_er( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize = 0.98 )
+#'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the equity ratio (`er`), 
 #'  a winsorized version (`er.w`), a standardized z-score version (`er.z`), 
 #'  and a percentile version (`er.p`).   
@@ -87,7 +89,7 @@
 #' # column names vector not of correct length
 #' d <- get_er( df = dat, net.assets = "e", total.assets = c( "e", "b", "c") )
 #' @export
-get_er <- function( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize=0.98 )
+get_er <- function( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize = 0.98 )
 {
 
   # function checks

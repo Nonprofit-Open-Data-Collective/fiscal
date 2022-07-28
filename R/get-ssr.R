@@ -13,7 +13,9 @@
 #' @param total.expense Column name(s) for total expenses (must be quoted), EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17). If specifying column names for both PC and EZ scope variables, they must be specified as a vector of class character.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @usage get_ssr( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY"), total.expense = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY"), winsorize=0.98 )
+#' @usage get_ssr( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY"), 
+#' total.expense = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY"), 
+#' winsorize = 0.98 )
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the self sufficiency ratio (`ssr`), 
 #'  a winsorized version (`ssr.w`), a standardized z-score version (`ssr.z`), 
@@ -111,7 +113,7 @@
 #' @export
 get_ssr <- function( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY"), 
                      total.expense = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY"), 
-                     winsorize=0.98 )
+                     winsorize = 0.98 )
 {
 
   # function checks

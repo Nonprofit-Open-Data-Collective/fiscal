@@ -12,6 +12,11 @@
 #' @param pse A character string indicating the column name for program service expenses (On 990: Part 9, Line 25B; On EZ: Pt II, Line 25B).
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 1, Line 18(B); On EZ: Part 1, Line 17).
 #' 
+#' @usage get_per( df, 
+#' pse = c( "F9_09_EXP_TOT_PROG", "F9_10_ASSET_TOT_EOY" ), 
+#' total.expense = "F9_01_EXP_TOT_CY",
+#' winsorize = 0.98 )
+#'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the program efficiency ratio (`per`), 
 #'  a winsorized version (`per.w`), a standardized z-score version (`per.z`), 
 #'  and a percentile version (`per.p`).   

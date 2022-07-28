@@ -8,6 +8,9 @@
 #' @description
 #' Calculate the assets to revenues ratio and append it to the dataframe. 
 #'
+#'@usage get_arr( df, total.assets = "F9_10_ASSET_TOT_EOY", 
+#' total.revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ), winsorize = 0.98 )
+#' 
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param total.assets A character string indicating the column name for total assets (On 990: Part X, Line 16B; On EZ: Pt II, Line 25B).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
@@ -100,7 +103,7 @@
 #' 
 #' @export
 get_arr <- function( df, total.assets = "F9_10_ASSET_TOT_EOY", 
-                     total.revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ), winsorize=0.98 )
+                     total.revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ), winsorize = 0.98 )
 {
   # function checks
   if( winsorize > 1 | winsorize < 0 )

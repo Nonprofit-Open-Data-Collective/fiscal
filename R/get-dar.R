@@ -13,7 +13,10 @@
 #' @param assets Column name(s) for total assets, EOY (must be quoted). (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @usage get_dar( df, c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") , assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY"), winsorize = 0.98 )
+#' @usage get_dar( df, 
+#' debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ) , 
+#' assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ), 
+#' winsorize = 0.98 )
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the debt to asset ratio (`dar`), 
 #'  a winsorized version (`dar.w`), a standardized z-score version (`dar.z`), 
@@ -106,7 +109,7 @@
 get_dar <- function( df, 
                      debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") , 
                      assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY"), 
-                     winsorize=0.98 )
+                     winsorize = 0.98 )
 {
   # checks
   if( winsorize > 1 | winsorize < 0 )

@@ -15,6 +15,16 @@
 #' @param other.income A character string indicating the column name for gross income from sales of assets other than inventory  (On 990: Part VIII, Line 7(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
 #' 
+#' @usage get_iidr( df, 
+#' invest.income = "F9_08_REV_OTH_INVEST_INCOME_TOT", 
+#' bond.proceeds = "F9_08_REV_OTH_INVEST_BOND_TOT", 
+#' rent.income = "F9_08_REV_OTH_RENT_GRO_PERS", 
+#' other.income = "F9_08_REV_OTH_SALE_ASSET_OTH", 
+#' total.revenue = "F9_08_REV_TOT_TOT", 
+#' numerator = NULL,
+#' denominator = NULL,
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the investment income dependence ratio (`iidr`), 
 #'  a winsorized version (`iidr.w`), a standardized z-score version (`iidr.z`), 
 #'  and a percentile version (`iidr.p`).   
@@ -113,7 +123,7 @@ get_iidr <- function( df,
                       total.revenue = "F9_08_REV_TOT_TOT", 
                       numerator = NULL,
                       denominator = NULL,
-                      winsorize=0.98 )
+                      winsorize = 0.98 )
 {
   
   # checks

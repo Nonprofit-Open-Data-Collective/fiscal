@@ -18,6 +18,17 @@
 #' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `si`,`pr`, `ar` ).
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`ap`, `gp`).
 #'
+#'@usage get_qr( df, 
+#' cash = "F9_10_ASSET_CASH_EOY", 
+#' si = "F9_10_ASSET_SAVING_EOY", 
+#' pr = "F9_10_ASSET_PLEDGE_NET_EOY",
+#' ar = "F9_10_ASSET_ACC_NET_EOY", 
+#' ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
+#' gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+#' numerator = NULL,
+#' denominator = NULL,
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the quick ratio (`qr`), 
 #' a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
 #' and a percentile version (`qr.p`).   
@@ -116,7 +127,7 @@ get_qr <- function( df,
                     gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
                     numerator = NULL,
                     denominator = NULL,
-                    winsorize=0.98 )
+                    winsorize = 0.98 )
 {
   
   

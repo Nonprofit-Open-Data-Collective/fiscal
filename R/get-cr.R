@@ -22,6 +22,16 @@
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_cr( df, cash = 'F9_10_ASSET_CASH_EOY', 
+#' short.invest = 'F9_10_ASSET_SAVING_EOY', 
+#' pledges.receive = 'F9_10_ASSET_PLEDGE_NET_EOY', 
+#' accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
+#' inventories.sale = 'F9_10_ASSET_INV_SALE_EOY', 
+#' prepaid.expenses = 'F9_10_ASSET_EXP_PREPAID_EOY', 
+#' accounts.payable = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
+#' grants.payable = 'F9_10_LIAB_GRANT_PAYABLE_EOY', 
+#' numerator = NULL, denominator = NULL, winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe with the current ratio (`cr`),
 #' a winsorized version (`cr.w`), a standardized z-score version (`cr.z`), 
 #' and a percentile version (`cr.p`).  
@@ -137,7 +147,7 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
                   prepaid.expenses = 'F9_10_ASSET_EXP_PREPAID_EOY', 
                   accounts.payable = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
                   grants.payable = 'F9_10_LIAB_GRANT_PAYABLE_EOY', 
-                  numerator = NULL, denominator = NULL, winsorize=0.98 )
+                  numerator = NULL, denominator = NULL, winsorize = 0.98 )
 {
   
   # checks

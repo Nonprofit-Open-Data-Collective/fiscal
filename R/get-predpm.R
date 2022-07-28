@@ -13,6 +13,14 @@
 #' @param depreciation A character string indicating the column name for depreciation expenses (On 990: Part IX, line 22A; On EZ:Not available).
 #' @param revenue A character string indicating the column name for total revenue (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
 #' 
+#' @usage get_predpm( df, 
+#' expenses = "F9_09_EXP_TOT_TOT",
+#' revenue = "F9_08_REV_TOT_TOT", 
+#' depreciation = "F9_09_EXP_DEPREC_TOT", 
+#' numerator = NULL,
+#' denominator = NULL,
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the pre-depreciation profitability margin (`predpm`), 
 #'  a winsorized version (`predpm.w`), a standardized z-score version (`predpm.z`), 
 #'  and a percentile version (`predpm.p`).   
@@ -97,10 +105,9 @@ get_predpm <- function( df,
                         depreciation = "F9_09_EXP_DEPREC_TOT", 
                         numerator = NULL,
                         denominator = NULL,
-                        winsorize=0.98 )
+                        winsorize = 0.98 )
 {
   
-  # checks
   # checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }

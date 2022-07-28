@@ -13,6 +13,10 @@
 #' @param net.assets A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_dmr( df, liabilities = "F9_10_LIAB_TOT_EOY", 
+#' net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the debt management ratio (`dmr`), 
 #'  a winsorized version (`dmr.w`), a standardized z-score version (`dmr.z`), 
 #'  and a percentile version (`dmr.p`).   
@@ -87,7 +91,7 @@
 #' @export
 get_dmr <- function( df, liabilities = "F9_10_LIAB_TOT_EOY", 
                      net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
-                     winsorize=0.98 )
+                     winsorize = 0.98 )
 {
   # function checks
   if( winsorize > 1 | winsorize < 0 )

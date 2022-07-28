@@ -13,7 +13,7 @@
 #' @param equity A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
-#' @usage get_der( df, debt = 'F9_10_LIAB_ACC_PAYABLE_EOY', equity = 'F9_10_NAFB_UNRESTRICT_EOY', winsorize=0.98 )
+#' @usage get_der( df, debt = "F9_10_LIAB_ACC_PAYABLE_EOY", equity = "F9_10_NAFB_UNRESTRICT_EOY", winsorize = 0.98 )
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the debt to equity ratio (`der`), 
 #'  a winsorized version (`der.w`), a standardized z-score version (`der.z`), 
@@ -99,7 +99,7 @@
 get_der <- function( df, 
                      debt = "F9_10_LIAB_ACC_PAYABLE_EOY", 
                      equity = "F9_10_NAFB_UNRESTRICT_EOY", 
-                     winsorize=0.98 )
+                     winsorize = 0.98 )
 {
   
   # function checks

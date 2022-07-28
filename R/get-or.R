@@ -12,6 +12,11 @@
 #' @param equity.eoy Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param equity.boy Unrestricted net assets, BOY (On 990: Part X, line 27A; On EZ: Not Available).
 #' 
+#' @usage get_or( df, 
+#' equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
+#' equity.boy = "F9_10_NAFB_UNRESTRICT_BOY", 
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the operating margin (`or`), 
 #'  a winsorized version (`or.w`), a standardized z-score version (`or.z`), 
 #'  and a percentile version (`or.p`).   
@@ -84,7 +89,7 @@
 get_or <- function( df, 
                     equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
                     equity.boy = "F9_10_NAFB_UNRESTRICT_BOY", 
-                    winsorize=0.98 )
+                    winsorize = 0.98 )
 {
   # function checks
   if( winsorize > 1 | winsorize < 0 )

@@ -13,6 +13,8 @@
 #' @param assets Total assets (On 990: Part X, Line 16B; On EZ: Part II, line 25B).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_lar( df, land = "F9_10_ASSET_LAND_BLDG_DEPREC", assets = "F9_10_ASSET_TOT_EOY", winsorize = 0.98 )
+#'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the lands to assets ratio (`lar`), 
 #'  a winsorized version (`lar.w`), a standardized z-score version (`lar.z`), 
 #'  and a percentile version (`lar.p`).   
@@ -84,7 +86,7 @@
 #' # column names vector not of correct length
 #' d <- get_lar( df = dat, land = "e", assets = c( "e", "b", "c") )
 #' @export
-get_lar <- function( df, land = "F9_10_ASSET_LAND_BLDG_DEPREC", assets = "F9_10_ASSET_TOT_EOY", winsorize=0.98 )
+get_lar <- function( df, land = "F9_10_ASSET_LAND_BLDG_DEPREC", assets = "F9_10_ASSET_TOT_EOY", winsorize = 0.98 )
 {
   
   # function checks

@@ -13,6 +13,8 @@
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 9, Line 25(A); On EZ: Part 1, Line 17).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_aer( df, mgmt.ge = "F9_09_EXP_TOT_MGMT", total.expense = "F9_09_EXP_TOT_TOT", winsorize = 0.98 )
+#'
 #' @return Object of class \code{data.frame}: the original dataframe appended with the administration expense ratio (`aer`), 
 #'  a winsorized version (`aer.w`), a standardized z-score version (`aer.z`), 
 #'  and a percentile version (`aer.p`).   
@@ -85,7 +87,7 @@
 #' # column names vector not of correct length
 #' d <- get_aer( df = dat, mgmt.ge = "e", total.expense = c( "e", "b", "c") )
 #' @export
-get_aer <- function( df, mgmt.ge = "F9_09_EXP_TOT_MGMT", total.expense = "F9_09_EXP_TOT_TOT", winsorize=0.98 )
+get_aer <- function( df, mgmt.ge = "F9_09_EXP_TOT_MGMT", total.expense = "F9_09_EXP_TOT_TOT", winsorize = 0.98 )
 {
   # function checks
   if( winsorize > 1 | winsorize < 0 )

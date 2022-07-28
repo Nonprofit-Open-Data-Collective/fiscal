@@ -19,6 +19,13 @@
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (`tot.func.exp`, `dda`). Users may also use this argument to supply the column variable for EZ-filers: Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_doch( df, cash = 'F9_10_ASSET_CASH_EOY', 
+#' short.invest = 'F9_10_ASSET_SAVING_EOY', 
+#' pledges.receive = 'F9_10_ASSET_PLEDGE_NET_EOY', 
+#' accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
+#' tot.func.exp = 'F9_09_EXP_TOT_TOT', 
+#' dda = 'F9_09_EXP_DEPREC_TOT', numerator = NULL, denominator = NULL, winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the days of operating cash on hand (`doch`), 
 #'  a winsorized version (`doch.w`), a standardized z-score version (`doch.z`), 
 #'  and a percentile version (`doch.p`).   
@@ -208,14 +215,14 @@ get_doch <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
   if( is.null( numerator) == T & is.null( denominator ) == T ){
     
     num <- dat[[ cash ]] + dat[[ short.invest ]] + dat[[ pledges.receive ]] + dat[[ accounts.receive ]]
-    den <- ( dat[[ tot.func.exp ]] + dat[[ dda ]] ) / 365
+    den <- ( dat[[ tot.func.exp ]] - dat[[ dda ]] ) / 365
     
   }
   
   if( is.null( numerator) == F & is.null( denominator ) == T ){
     
     num <- dat[[ numerator ]]
-    den <- ( dat[[ tot.func.exp ]] + dat[[ dda ]] ) / 365
+    den <- ( dat[[ tot.func.exp ]] - dat[[ dda ]] ) / 365
     
   }
   
