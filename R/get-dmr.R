@@ -13,6 +13,10 @@
 #' @param net.assets A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
+#' @usage get_dmr( df, liabilities = "F9_10_LIAB_TOT_EOY", 
+#' net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
+#' winsorize = 0.98 )
+#' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the debt management ratio (`dmr`), 
 #'  a winsorized version (`dmr.w`), a standardized z-score version (`dmr.z`), 
 #'  and a percentile version (`dmr.p`).   
@@ -25,44 +29,71 @@
 #' Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
 #' @examples
-#' x1 <- rnorm( 1000,100,30 )
-#' x2 <- rnorm( 1000,200,30 )
-#' x2[ c(15,300,600) ] <- 0
+#' x1 <- rnorm( 1000, 100, 30 )
+#' x2 <- rnorm( 1000, 200, 30 )
+#' x2[ c( 15, 300, 600 ) ] <- 0
 #' 
-#' dat <- data.frame( x1,x2 )
+#' dat <- data.frame( x1, x2 )
 #' 
 #' # specify own column names
 #' d <- get_dmr( df = dat, liabilities = "x1", net.assets = "x2" )
 #' 
+#' 
 #' head( d )
 #' 
 #' # run with default column names
-#' dat_01 <- dat
+#' x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
+#' x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
 #' 
-#' colnames( dat_01 ) <- c( 'F9_10_LIAB_TOT_EOY', 'F9_10_NAFB_UNRESTRICT_EOY' )
-#'
+#' dat_01 <- data.frame( x1, x2 )
+#' 
+#' colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_10_NAFB_UNRESTRICT_EOY" )
+#' 
+#' d <- get_dmr( dat_01 )
+#' 
+#' # coerce one column to factor
+#' dat_01$F9_10_LIAB_TOT_EOY <- as.factor( dat_01$F9_10_LIAB_TOT_EOY )
+#' 
 #' d <- get_dmr( dat_01 )
 #' 
 #' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_dmr( df = dat, liabilities = "x1", net.assets ="x2", winsorize=0.95 )
+#' d <- get_dmr( df = dat, liabilities = "x1", net.assets = "x2", winsorize = 0.95 )
 #' 
 #' d <- get_dmr( dat_01, winsorize = 0.95 )
 #' 
+#' 
+#' # using 990 data
+#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' d <- get_dmr( df = part010810 )
+#' 
+#' # now coerce one of the variables to numeric
+#' part010810$F9_10_LIAB_TOT_EOY <- as.character( part010810$F9_10_LIAB_TOT_EOY )
+#' 
+#' d <- get_dmr( df = part010810 )
+#' 
+#' 
 #' ## Errors ##
 #' 
-# numerator not specified
-#' d <- get_dmr( df = dat, liabilities = NULL, net.assets = 'x2' )
+#' # numerator not specified
+#' d <- get_dmr( df = dat, liabilities = NULL, net.assets = "x2" )
 #' 
 #' # denominator not specified
-#' d <- get_dmr( df = dat, liabilities = 'x1', net.assets = NULL )
+#' d <- get_dmr( df = dat, liabilities = "x1", net.assets = NULL )
 #' 
 #' # neither numerator nor denominator specified
 #' d <- get_dmr( df = dat, liabilities = NULL, net.assets = NULL )
 #' 
+#' # column names vector not of correct length
+#' d <- get_dmr( df = dat, liabilities = c("e","b","c"), net.assets = "e")
+#' 
+#' # column names vector not of correct length
+#' d <- get_dmr( df = dat, liabilities = "e", net.assets = c( "e", "b", "c") )
 #' @export
-get_dmr <- function( df, liabilities = 'F9_10_LIAB_TOT_EOY', net.assets = 'F9_10_NAFB_UNRESTRICT_EOY', winsorize=0.98 )
+get_dmr <- function( df, liabilities = "F9_10_LIAB_TOT_EOY", 
+                     net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
+                     winsorize = 0.98 )
 {
-  # checks
+  # function checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
@@ -75,14 +106,142 @@ get_dmr <- function( df, liabilities = 'F9_10_LIAB_TOT_EOY', net.assets = 'F9_10
   if( is.null( liabilities )==T & is.null( net.assets )==T )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
-  l <- df[[ liabilities ]]
-  n <- df[[ net.assets ]]
+  if( length( liabilities ) > 2 | length( liabilities ) < 1 )
+  { stop( "`liabilities` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
-  if( winsorize > 1 | winsorize < 0 )
-  { stop( "winsorize argument must be 0 < w < 1" ) }
+  if( length( net.assets ) > 2 | length( net.assets ) < 1 )
+  { stop( "`net.assets` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
+  
+  # copy data
+  dat <- df
+  
+  ## ensure variable classes are numeric ##
+  
+  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
+  v <- c( colnames( dat )[which( colnames( dat ) %in% net.assets ) ], colnames( dat )[which( colnames( dat ) %in% liabilities )] )
+  dat <- coerce_numeric( d = dat, vars = v )
+  
+  
+  # check to ensure both sets of variable names are included in input data when not specifying column names.
+  # edge cases
+  
+  # BEGIN first outer conditional
+  # BEGIN first outer conditional
+  if ( sum( liabilities %in% c( "F9_10_LIAB_TOT_EOY") )==2 & sum( net.assets %in% c( "F9_10_NAFB_UNRESTRICT_EOY") )==2 ) {
+    
+    # BEGIN series of nested conditionals 
+    
+    
+    # if at least one of the columns in missing from the input dataset, use only the column that is present
+    if ( length( which( colnames( dat ) %in% liabilities ) )==1 | length( which( colnames( dat ) %in% net.assets ) )==1 ) {
+      
+      if ( length( which(colnames( dat ) %in% liabilities ) )==2 ){
+        
+        # create a column that concatenates two numerator variables into single column if both columns for numerator are present
+        dat[ which( is.na( dat[ liabilities[2] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[2] ] )==F ), liabilities[2] ] 
+        dat[ which( is.na( dat[ liabilities[1] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[1] ] )==F ), liabilities[1] ] 
+      }
+      # if at least one of the numerator columns in missing from the input dataset, use only the column that is present
+      if ( length( which( colnames( dat ) %in% liabilities ) )==1 ){
+        
+        this <- which( colnames( dat ) %in% liabilities )
+        
+        dat[ , "l"] <- dat[ , this ]
+      }
+      
+      
+      if ( length( which( colnames( dat ) %in% net.assets ) )==2 ){
+        # create a column that concatenates two numerator variables into single column if both columns for denominator are present
+        dat[ which( is.na( dat[ net.assets[2] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[2] ] )==F ), net.assets[2] ] 
+        dat[ which( is.na( dat[ net.assets[1] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[1] ] )==F ), net.assets[1] ] 
+      }
+      # if at least one of the denominator columns in missing from the input dataset, use only the column that is present
+      if ( length( which( colnames( dat ) %in% net.assets ))==1  ){
+        
+        this <- which( colnames( dat ) %in% net.assets )
+        
+        dat[ , "n"] <- dat[ , this ]
+      }
+      # ENp series of nestep conditionals 
+      
+      # now, assign p anp e, respectively
+      l <- dat[[ "l"]]
+      n <- dat[[ "n"]]
+    }
+    
+    # if all four columns are present, exit conditional
+    if ( length( liabilities )==2 & length( net.assets )==2 & length(which( colnames( dat ) %in% liabilities ) )==2 & length(which( colnames( dat ) %in% net.assets ) )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ liabilities[2] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[2] ] )==F ), liabilities[2] ]
+      dat[ which( is.na( dat[ liabilities[1] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[1] ] )==F ), liabilities[1] ]
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ net.assets[2] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[2] ] )==F ), net.assets[2] ]
+      dat[ which( is.na( dat[ net.assets[1] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[1] ] )==F ), net.assets[1] ]
+      
+      
+      l <- dat[[ "l"]]
+      n <- dat[[ "n"]]
+    }
+  }
+  # END first outer conditional
+  
+  
+  
+  # all other cases are nestep in the following conditionals
+  
+  if ( sum( liabilities %in% c( "F9_10_LIAB_TOT_EOY") )!=2 & sum( net.assets %in% c( "F9_10_NAFB_UNRESTRICT_EOY") )!=2 ){          
+    
+    if ( length( liabilities )==2 & length( net.assets )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ liabilities[2] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[2] ] )==F ), liabilities[2] ]
+      dat[ which( is.na( dat[ liabilities[1] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[1] ] )==F ), liabilities[1] ]
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ net.assets[2] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[2] ] )==F ), net.assets[2] ]
+      dat[ which( is.na( dat[ net.assets[1] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[1] ] )==F ), net.assets[1] ]
+      
+      
+      l <- dat[[ "l"]]
+      n <- dat[[ "n"]]
+    }
+    
+    else if ( length( liabilities )==2 & length( net.assets )==1 ) {
+      
+      # create a column that concatenates two denominator variables into single column
+      dat[ which( is.na( dat[ liabilities[2] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[2] ] )==F ), liabilities[2] ]
+      dat[ which( is.na( dat[ liabilities[1] ] )==F ), "l"] <- dat[ which( is.na( dat[ liabilities[1] ] )==F ), liabilities[1] ]
+      
+      
+      l <- dat[[ "l"]]
+      n <- dat[[ net.assets ]]
+    }
+    
+    else if ( length( liabilities )==1 & length( net.assets )==2 ) {
+      
+      # create a column that concatenates two numerator variables into single column
+      dat[ which( is.na( dat[ net.assets[2] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[2] ] )==F ), net.assets[2] ]
+      dat[ which( is.na( dat[ net.assets[1] ] )==F ), "n"] <- dat[ which( is.na( dat[ net.assets[1] ] )==F ), net.assets[1] ]
+      
+      
+      l <- dat[[ liabilities ]]
+      n <- dat[[ "n"]]
+    }
+    
+    else if ( length( liabilities )==1 & length( net.assets )==1 ) {
+      
+      l <- dat[[ liabilities ]]
+      n <- dat[[ net.assets ]]
+    }
+    
+    
+  }    
+ 
   # can't divide by zero
-  print( paste0( "Unrestricted net assets cannot be equal to zero: ", sum( n==0 ), " cases have been replaced with NA." ) )
+  print( paste0( "Unrestricted net assets cannot be equal to zero: ", sum( n==0, na.rm = T ), " cases have been replaced with NA." ) )
   n[ n == 0 ] <- NA 
   
   dmr <- l / n
