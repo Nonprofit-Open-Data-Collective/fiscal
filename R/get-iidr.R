@@ -14,6 +14,9 @@
 #' @param rent.income A character string indicating the column name for gross rent income (On 990: Part VIII, Line 6(A); On EZ: Not Available).
 #' @param other.income A character string indicating the column name for gross income from sales of assets other than inventory  (On 990: Part VIII, Line 7(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`invest.income`, `bond.proceeds`,`rent.income`, `other.income`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`total.revenue`). 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_iidr( df, 
 #' invest.income = "F9_08_REV_OTH_INVEST_INCOME_TOT", 
@@ -36,7 +39,12 @@
 #' available to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available 
 #' only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,200,30 )
@@ -78,14 +86,15 @@
 #' d <- get_iidr( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_iidr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
 #' part010810$F9_08_REV_OTH_INVEST_BOND_TOT <- as.character( part010810$F9_08_REV_OTH_INVEST_BOND_TOT )
 #' 
 #' d <- get_iidr( df = part010810 )
-#' 
+#' \dontrun{
+#' ## Errors ##
 #' # incorrectly specify denominator
 #' get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
 #'           total.revenue = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
@@ -113,6 +122,7 @@
 #' 
 #' get_iidr( df = dat_02, invest.income = NULL, bond.proceeds = NULL, rent.income = NULL, other.income = NULL, 
 #'           total.revenue = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
+#' }
 #' 
 #' @export
 get_iidr <- function( df, 

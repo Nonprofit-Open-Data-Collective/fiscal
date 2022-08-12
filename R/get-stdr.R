@@ -12,6 +12,9 @@
 #' @param accounts.payable A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
 #' @param grants.payable A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
 #' @param net.assets A character string indicating the column name for net assets, EOY (On 990: Part X, Line 33B; On EZ: Part I, Line 21).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`accounts.payable`, `grants.payable`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`net.assets`). 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_stdr( df, accounts.payable = "F9_10_LIAB_ACC_PAYABLE_EOY", grants.payable = "F9_10_LIAB_GRANT_PAYABLE_EOY", net.assets = "F9_10_NAFB_TOT_EOY", numerator = NULL, denominator = NULL, winsorize = 0.98 )
 #' 
@@ -28,7 +31,12 @@
 #' to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available only to 990 
 #' filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x3 <- rnorm( 1000, 200, 30 )
@@ -64,7 +72,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_stdr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -72,7 +80,7 @@
 #' 
 #' d <- get_stdr( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -89,6 +97,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_stdr( df = dat, accounts.payable = "e", net.assets = c( "e", "b", "c"), grants.payable = "x2" )
+#' }
 #' @export
 get_stdr <- function( df,
                       accounts.payable = "F9_10_LIAB_ACC_PAYABLE_EOY",

@@ -27,7 +27,13 @@
 #' Better Business Bureau’s Wise Giving Alliance recommends a ratio of less than 35%. Note: computation of this 
 #' metric is available to full 990 filers only.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#'
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -61,7 +67,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_aer( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -69,7 +75,7 @@
 #' 
 #' d <- get_aer( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -86,6 +92,8 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_aer( df = dat, mgmt.ge = "e", total.expense = c( "e", "b", "c") )
+#' }
+#' 
 #' @export
 get_aer <- function( df, mgmt.ge = "F9_09_EXP_TOT_MGMT", total.expense = "F9_09_EXP_TOT_TOT", winsorize = 0.98 )
 {

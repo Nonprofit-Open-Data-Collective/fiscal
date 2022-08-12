@@ -11,6 +11,7 @@
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
 #' @param revenue A character string indicating the column name for total revenue, (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_podpm( df, 
 #' expenses = "F9_09_EXP_TOT_TOT",
@@ -31,7 +32,12 @@
 #' metric is available to only 990 filers and not for 990-EZ filers. The default inputs use column names for 
 #' variables available only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -66,7 +72,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_podpm( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -74,7 +80,7 @@
 #' 
 #' d <- get_podpm( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -91,6 +97,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_podpm( df = dat, expenses = "e", revenue = c( "e", "b", "c") )
+#' }
 #' @export
 get_podpm <- function( df, 
                        expenses = "F9_09_EXP_TOT_TOT",

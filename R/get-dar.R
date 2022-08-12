@@ -30,8 +30,12 @@
 #'  consequently, the higher the risk (\href{Investopedia}{https://www.investopedia.com/terms/t/totaldebttototalassets.asp}).
 #'  Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
 #' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x2[ c(15,300,600) ] <- 0
@@ -87,6 +91,8 @@
 #' 
 #' # using 990 data
 #' 
+#' data( part010810 )
+#' 
 #' d <- get_dar(df=part010810)
 #' 
 #' # now coerce one of the variables to numeric
@@ -94,7 +100,7 @@
 #' 
 #' d <- get_dar(df=part010810)
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -105,6 +111,7 @@
 #' 
 # neither numerator nor denominator specified
 #' d <- get_dar( df = dat, debt = NULL, assets = NULL )
+#' }
 #' @export
 get_dar <- function( df, 
                      debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY") , 
@@ -115,19 +122,19 @@ get_dar <- function( df,
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize argument must be 0 < w < 1" ) }
   
-  if( is.null( debt )==T & is.null( equity )==F )
+  if( is.null( debt )==T & is.null( assets )==F )
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( is.null( debt )==F & is.null( equity )==T )
+  if( is.null( debt )==F & is.null( assets )==T )
   { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
-  if( is.null( debt )==T & is.null( equity )==T )
+  if( is.null( debt )==T & is.null( assets )==T )
   { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
   
   if( length( debt ) > 2 | length( debt ) < 1 )
   { stop( "`debt` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
-  if( length( equity ) > 2 | length( equity ) < 1 )
+  if( length( assets ) > 2 | length( assets ) < 1 )
   { stop( "`assets` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
   
   # copy data

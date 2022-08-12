@@ -17,6 +17,7 @@
 #' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
 #' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `si`,`pr`, `ar` ).
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`ap`, `gp`).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #'
 #'@usage get_qr( df, 
 #' cash = "F9_10_ASSET_CASH_EOY", 
@@ -40,7 +41,12 @@
 #' assets than current liabilities. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers. 
 #' The default inputs use column names for variables available only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,200,30 )
@@ -82,13 +88,16 @@
 #' d <- get_qr( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_qr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
 #' part010810$F9_10_LIAB_ACC_PAYABLE_EOY <- as.character( part010810$F9_10_LIAB_ACC_PAYABLE_EOY )
 #' 
 #' d <- get_qr( df = part010810 )
+#' 
+#' \dontrun{
+#' ## Errors ##
 #' 
 #' # incorrectly specify denominator
 #' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
@@ -117,6 +126,7 @@
 #' 
 #' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
 #'         ap = NULL, gp = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
+#'         }
 #' @export
 get_qr <- function( df, 
                     cash = "F9_10_ASSET_CASH_EOY", 

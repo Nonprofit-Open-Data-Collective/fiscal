@@ -12,7 +12,10 @@
 #' @param total.contributions Column name for total contributions (can be quoted or unquoted) (On 990: Part VIII, Line 1h(A); On EZ: Not Available) with the default name supplied.
 #' @param fund.income Column name for fundraising income (can be quoted or unquoted) (On 990: Part VIII, Line 8c(A); On EZ: Not Available) with the default name supplied.
 #' @param total.revenue Column name for fundraising income (can be quoted or unquoted) (On 990: Part VIII, Line 12A; On EZ: Part I, Line 9) with the default name supplied.
-#' 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (`total.contributions`, `fund.income`). 
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (`total.revenue`). 
+
 #' @usage get_dgdr( df, total.contributions = "F9_08_REV_CONTR_TOT", fund.income = "F9_08_REV_OTH_FUNDR_NET_TOT", total.revenue = "F9_08_REV_TOT_TOT", numerator = NULL, denominator = NULL, winsorize = 0.98 )
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the donation/grant dependence ratio (`dgdr`), 
@@ -26,7 +29,12 @@
 #' donations. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers. The default 
 #' inputs use column names for variables available only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x3 <- rnorm( 1000, 200, 30 )
@@ -62,7 +70,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_dgdr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -70,7 +78,7 @@
 #' 
 #' d <- get_dgdr( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -87,6 +95,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_dgdr( df = dat, total.contributions = "e", total.revenue = c( "e", "b", "c"), fund.income = "x2" )
+#' }
 #' 
 #' @export
 get_dgdr <- function( df, 

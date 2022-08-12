@@ -15,6 +15,9 @@
 #' @param mnp A character string indicating the column name for mortgages and notes payables (On 990: Part X, Line 23(B); On EZ: Not Available).
 #' @param tot.func.exp A character string indicating the column name for daily average expenses or total expenses (On 990: Part IX, Line 25(A); On EZ: Not Available).
 #' @param dda Depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`net.assets`, `invest`,`lbe`, `mnp`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`tot.func.exp`, `dda`). 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #'
 #' @usage get_doci( df, 
 #' net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
@@ -40,7 +43,12 @@
 #' is available to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables 
 #' available only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,200,30 )
@@ -82,7 +90,7 @@
 #' d <- get_doci( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_doci( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -90,6 +98,7 @@
 #' 
 #' d <- get_doci( df = part010810 )
 #' 
+#' \dontrun{
 #' #errors 
 #' 
 #' # incorrectly specify denominator
@@ -116,8 +125,7 @@
 #' # supplying argument for one of the parameters in the numerator that is greater than length 1
 #' get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
 #'           tot.func.exp = c( 'x5', 'x6' ), dda = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
-#' 
-#' get_doci( df = dat_02, net.assets = NULL, invest = NULL, lbe = NULL, mnp = NULL, 
+#' }
 #' @export
 get_doci <- function( df, 
                       net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 

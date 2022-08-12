@@ -15,10 +15,10 @@
 #' @param pledges.receive A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available) with the default name supplied.
 #' @param accounts.receive A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available) with the default name supplied.
 #' @param inventories.sale A character string indicating the column name for inventories for sale or use, EOY (On 990: Part X, line 8B; On EZ: Not Available) with the default name supplied.
-#' @param prepaid.expense A character string indicating the column name for prepaid expenses and deferred charges, EOY (On 990: Part X, line 9B; On EZ: Not Available) with the default name supplied.
+#' @param prepaid.expenses A character string indicating the column name for prepaid expenses and deferred charges, EOY (On 990: Part X, line 9B; On EZ: Not Available) with the default name supplied.
 #' @param accounts.payable A character string indicating the column name for accounts payable, EOY (On 990: (Part X, line 17B); On EZ: Not available) with the default name supplied.
 #' @param grants.payable A character string indicating the column name for grants payable, EOY (On 990: (Part X, line 18B); On EZ: Not available) with the default name supplied.
-#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expense`).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `short.invest`,`pledges.receive`, `accounts.receive`, `inventories.sale`, `prepaid.expenses`).
 #' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`accounts.payable`, `grants.payable`).
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
@@ -43,7 +43,12 @@
 #' of assets to pay for every dollar of current liabilities. Note: computation of this metric is available to only 990 filers
 #' not for 990-EZ filers. The default inputs use column names for variables available only to 990 filers.
 #'   
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples 
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,100,30 )
@@ -97,7 +102,7 @@
 #' d <- get_cr( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_cr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -105,6 +110,8 @@
 #' 
 #' d <- get_cr( df = part010810 )
 #' 
+#' \dontrun{
+#' ## Errors
 #' # incorrectly specify denominator
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
 #'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, 
@@ -138,6 +145,7 @@
 #' get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
 #'         inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = c( 'x7', 'x8' ), grants.payable = 'x8', 
 #'         numerator = NULL, denominator = NULL, winsorize=0.98 ) 
+#'         }
 #'@export
 get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY', 
                   short.invest = 'F9_10_ASSET_SAVING_EOY', 

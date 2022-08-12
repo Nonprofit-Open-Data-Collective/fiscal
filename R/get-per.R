@@ -11,6 +11,7 @@
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param pse A character string indicating the column name for program service expenses (On 990: Part 9, Line 25B; On EZ: Pt II, Line 25B).
 #' @param total.expense A character string indicating the column name for total expenses (On 990: Part 1, Line 18(B); On EZ: Part 1, Line 17).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_per( df, 
 #' pse = c( "F9_09_EXP_TOT_PROG", "F9_10_ASSET_TOT_EOY" ), 
@@ -29,7 +30,12 @@
 #' expenses. Other agencies, such as the Better Business Bureau’s Wise Giving Alliance, recommend a ratio of 
 #' 65% or higher. Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -65,7 +71,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_per( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -73,7 +79,7 @@
 #' 
 #' d <- get_per( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -90,6 +96,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_per( df = dat, pse = "e", total.expense = c( "e", "b", "c") ) 
+#' }
 #' @export
 get_per <- function( df, 
                      pse = c( "F9_09_EXP_TOT_PROG", "F9_10_ASSET_TOT_EOY" ), 

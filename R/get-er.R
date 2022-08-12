@@ -28,7 +28,12 @@
 #' leveraged and thus more vulnerable to shocks. However, low values also indicate that an organization may 
 #' be investing more of its equity for growth. Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -63,7 +68,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_er( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -71,7 +76,7 @@
 #' 
 #' d <- get_er( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -88,6 +93,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_er( df = dat, net.assets = "e", total.assets = c( "e", "b", "c") )
+#' }
 #' @export
 get_er <- function( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize = 0.98 )
 {

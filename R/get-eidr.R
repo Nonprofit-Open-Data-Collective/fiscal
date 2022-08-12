@@ -14,6 +14,9 @@
 #' @param royalties A character string indicating the column name for royalties (On 990: Part VIII, Line 5(A); On EZ: Not Available).
 #' @param other.revenue A character string indicating the column name for all other revenue (On 990: Part VIII, Line 11d(A); On EZ: Not Available). 
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`prog.service.rev`, `memb.dues`,`royalties`, `other.revenue`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`total.revenue`). 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_eidr( df, 
 #' prog.service.rev = "F9_08_REV_PROG_TOT_TOT", 
@@ -36,7 +39,12 @@
 #' vulnerable to the sentiments of donors or market forces. Note: computation of this metric is available to only 
 #' 990 filers and not for 990-EZ filers. The default inputs use column names for variables available only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,200,30 )
@@ -77,7 +85,7 @@
 #' d <- get_eidr( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_eidr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -85,6 +93,8 @@
 #' 
 #' d <- get_eidr( df = part010810 )
 #' 
+#' \dontrun{
+#' ## Errors ##
 #' # incorrectly specify denominator
 #' get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
 #'           total.revenue = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
@@ -112,6 +122,7 @@
 #' 
 #' get_eidr( df = dat_02, prog.service.rev = NULL, memb.dues = NULL, royalties = NULL, other.revenue = NULL, 
 #'           total.revenue = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
+#' }
 #' 
 #' @export
 get_eidr <- function( df, 

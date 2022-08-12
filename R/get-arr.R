@@ -14,6 +14,7 @@
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param total.assets A character string indicating the column name for total assets (On 990: Part X, Line 16B; On EZ: Pt II, Line 25B).
 #' @param total.revenue A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @return Object of class \code{data.frame}: the original dataframe appended with the assets to revenues ratio (`arr`), 
 #'  a winsorized version (`arr.w`), a stanarrdized z-score version (`arr.z`), 
@@ -24,7 +25,12 @@
 #' this ratio should be higher for organizations with large inventories of developments or large endowments.
 #' Note: computation of this metric is available to both 990 and 990-EZ filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,100,30 )
 #' 
@@ -81,7 +87,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_arr(df=part010810)
 #' 
 #' # now coerce one of the variables to numeric
@@ -89,7 +95,7 @@
 #' 
 #' d <- get_arr(df=part010810)
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -100,6 +106,7 @@
 #' 
 #' # neither numerator nor denominator specified
 #' d <- get_arr( df = dat, total.assets = NULL, total.revenue = NULL )
+#' }
 #' 
 #' @export
 get_arr <- function( df, total.assets = "F9_10_ASSET_TOT_EOY", 

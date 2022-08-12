@@ -41,7 +41,12 @@
 #' updates. Note: computation of this metric is available to both 990 and 990-EZ filers. The default inputs use 
 #' column names for variables available only to 990 filers. 
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000,100,30 )
 #' x2 <- rnorm( 1000,200,30 )
 #' x3 <- rnorm( 1000,200,30 )
@@ -83,13 +88,16 @@
 #' d <- get_doch( dat_02, numerator = "x.num", denominator = "x.den" )
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_doch( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
 #' part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
 #' 
 #' d <- get_doch( df = part010810 )
+#' 
+#' \dontrun{
+#' ## Errors ##
 #' 
 #' # incorrectly specify denominator
 #' get_doch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
@@ -117,7 +125,8 @@
 #'           tot.func.exp = c( 'x5', 'x6' ), dda = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
 #' 
 #' get_doch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-#'           tot.func.exp = NULL, dda = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
+#'           tot.func.exp = NULL, dda = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )
+#'           }  
 #' @export
 get_doch <- function( df, cash = 'F9_10_ASSET_CASH_EOY', 
                       short.invest = 'F9_10_ASSET_SAVING_EOY', 

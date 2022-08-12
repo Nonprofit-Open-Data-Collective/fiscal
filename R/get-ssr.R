@@ -29,7 +29,12 @@
 #' organizations have more autonomy and flexibility. They generally improve over time as an organization 
 #' grows. In the early stages, these ratios tend to be lower but the goal is to make them as high as possible.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -84,7 +89,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_ssr( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -92,7 +97,7 @@
 #' 
 #' d <- get_ssr( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -109,6 +114,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_ssr( df = dat, prog.serv.rev = "e", total.expense = c( "e", "b", "c") )
+#' }
 #' 
 #' @export
 get_ssr <- function( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY"), 

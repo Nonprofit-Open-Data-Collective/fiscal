@@ -12,6 +12,9 @@
 #' @param expenses A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).
 #' @param depreciation A character string indicating the column name for depreciation expenses (On 990: Part IX, line 22A; On EZ:Not available).
 #' @param revenue A character string indicating the column name for total revenue (On 990: Part VIII, line 12A; On EZ: Part I, line 9).
+#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`revenue`, `expenses`,`depreciation`).
+#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`revenue`). 
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_predpm( df, 
 #' expenses = "F9_09_EXP_TOT_TOT",
@@ -37,7 +40,12 @@
 #' an indicator of an organization’s cash flow. Values close to zero are normal, and negative numbers 
 #' indicate the organization is functioning at a deficit.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x3 <- rnorm( 1000, 200, 30 )
@@ -73,7 +81,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_predpm( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -81,7 +89,7 @@
 #' 
 #' d <- get_predpm( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -98,6 +106,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_predpm( df = dat, expenses = "e", revenue = c( "e", "b", "c"), depreciation = "x2" )
+#' }
 #' @export
 get_predpm <- function( df, 
                         expenses = "F9_09_EXP_TOT_TOT",

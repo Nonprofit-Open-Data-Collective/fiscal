@@ -11,6 +11,7 @@
 #' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
 #' @param equity.eoy Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
 #' @param equity.boy Unrestricted net assets, BOY (On 990: Part X, line 27A; On EZ: Not Available).
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
 #' 
 #' @usage get_or( df, 
 #' equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
@@ -26,7 +27,12 @@
 #' to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available 
 #' only to 990 filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -60,7 +66,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_or( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -68,7 +74,7 @@
 #' 
 #' d <- get_or( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -85,6 +91,8 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_or( df = dat, equity.eoy = "e", equity.boy = c( "e", "b", "c") )
+#' }
+#' 
 #' @export
 get_or <- function( df, 
                     equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 

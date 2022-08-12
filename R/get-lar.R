@@ -26,7 +26,12 @@
 #' represent a small share of what the organization’s activities and finances are tied up in. Note: computation of 
 #' this metric is available to full 990 filers only.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -60,7 +65,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_lar( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -68,7 +73,7 @@
 #' 
 #' d <- get_lar( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -85,6 +90,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_lar( df = dat, land = "e", assets = c( "e", "b", "c") )
+#' }
 #' @export
 get_lar <- function( df, land = "F9_10_ASSET_LAND_BLDG_DEPREC", assets = "F9_10_ASSET_TOT_EOY", winsorize = 0.98 )
 {

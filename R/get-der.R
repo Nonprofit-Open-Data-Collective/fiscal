@@ -35,7 +35,12 @@
 #' (which should be comparable for EZ filers and full 990 filers), but for Community Development Corporations, the 
 #' more important metric is unrestricted net assets, which isn’t available for EZ filers.
 #' 
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' 
 #' @examples
+#' library( fiscal )
 #' x1 <- rnorm( 1000, 100, 30 )
 #' x2 <- rnorm( 1000, 200, 30 )
 #' x2[ c( 15, 300, 600 ) ] <- 0
@@ -70,7 +75,7 @@
 #' 
 #' 
 #' # using 990 data
-#' load( '/Volumes/My Passport for Mac/Urban Institute/Summer Projects/Fiscal/fiscal/R/sysdata.rda' )
+#' data( part010810 )
 #' d <- get_der( df = part010810 )
 #' 
 #' # now coerce one of the variables to numeric
@@ -78,7 +83,7 @@
 #' 
 #' d <- get_der( df = part010810 )
 #' 
-#' 
+#' \dontrun{
 #' ## Errors ##
 #' 
 #' # numerator not specified
@@ -95,6 +100,7 @@
 #' 
 #' # column names vector not of correct length
 #' d <- get_der( df = dat, debt = "e", equity = c( "e", "b", "c") )
+#' }
 #' @export
 get_der <- function( df, 
                      debt = "F9_10_LIAB_ACC_PAYABLE_EOY", 
