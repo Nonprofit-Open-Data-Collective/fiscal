@@ -90,34 +90,41 @@ dat <- get_dar( df=dat, debt="x1", assets="x2" )
 <br>
 
 
-_**Notes on package creation**_ (internal use during package development) 
+**ADD ALL METRICS TO DATASET**
 
 ```r
-library(devtools)
-getwd()   # navigate to one level above "fiscal" folder
-
-# step 1
-usethis::create_package( "fiscal" )
-
-# step 2 move R script to montyhall/R folder
-# after completing documentation fields 
-
-# step 3
-setwd( "fiscal" )
-devtools::document()
-
-# step 4
-setwd( ".." )
-devtools::install( "fiscal" )
+library( dplyr )
 library( fiscal )
-help( get_dar )
 
-# test function
-x1 <- rnorm(1000,100,30)
-x2 <- rnorm(1000,200,30)
-x2[ c(15,300,600) ] <- 0
-dat <- data.frame(x1,x2)
-d <- get_dar( df=dat, debt="x1", assets="x2" )
-head( d )
+# IRS EFILE DATA - see irs990efile package
+
+d1 <- readRDS( "F9-P09-T00-EXPENSES-2018.rds" )
+d2 <- readRDS( "F9-P01-T00-SUMMARY-2018.rds" )
+d3 <- readRDS( "F9-P10-T00-BALANCE-SHEET-2018.rds" )
+df <- merge( d1, d2 )
+df <- merge( df, d3 )
+
+df <- get_aer( df )   #	Assets to Revenues Ratio
+df <- get_arr( df )   #	Assets to Revenues Ratio
+df <- get_cr( df )    # Current Ratio
+df <- get_dar( df )   #	Debt to Asset Ratio
+df <- get_der( df )   #	Debt to Equity Ratio
+df <- get_dgdr( df )  #	Donation/Grant Dependence Ratio
+df <- get_dmr( df )   #	Debt Management Ratio
+df <- get_doch( df )  #	Days of Operating Cash on Hand
+df <- get_doci( df )  #	Days of Operating Cash and Investments
+df <- get_eidr( df )  #	Earned Income Dependence Ratio
+df <- get_er( df )    #	Equity Ratio
+df <- get_ggr( df )   #	Government Grants Ratio
+df <- get_iidr( df )  #	Investment Income Dependence Ratio
+df <- get_lar( df )   #	Lands to Assets Ratio
+df <- get_moch( df )  #	Months of Operating Cash on Hand
+df <- get_or( df )    #	Operating Margin
+df <- get_per( df )   #	Program Efficiency Ratio
+df <- get_podpm( df ) #	Post-Depreciation Profitability Margin
+df <- get_predpm( df ) #	Pre-Depreciation Profitability Margin
+df <- get_qr( df )    #	Quick Ratio
+df <- get_ssr( df )   #	Self Sufficiency Ratio
+df <- get_stdr( df )  #	Short Term Debt Ratio
 ```
 
