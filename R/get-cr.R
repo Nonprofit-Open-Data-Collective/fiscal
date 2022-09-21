@@ -155,13 +155,16 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
                   prepaid.expenses = 'F9_10_ASSET_EXP_PREPAID_EOY', 
                   accounts.payable = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
                   grants.payable = 'F9_10_LIAB_GRANT_PAYABLE_EOY', 
-                  numerator = NULL, denominator = NULL, winsorize = 0.98 )
+                  numerator = NULL, denominator = NULL, winsorize = 0.98 )  # change to winsorize.p=c(0.01,0.99), winsorize.n=NULL
 {
   
   # checks
   if( winsorize > 1 | winsorize < 0 )
   { stop( "winsorize accounts.receivegument must be 0 < w < 1" ) }
   
+  # Case in which user does...
+  # Then return this... 
+
   if( is.null( cash )==F & is.null( short.invest )==F & is.null( pledges.receive )==F & is.null( accounts.receive )==F &
       is.null( inventories.sale )==F & is.null( prepaid.expenses )==F & is.null( accounts.payable )==F &
       is.null( grants.payable )==F ) {
@@ -200,6 +203,13 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
   { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
   
 
+  # sufficient.numerators <- length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) <= 6
+  # at.least.one.numerator <- length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) >= 1
+  # no.precalc.num <- is.null( numerator )==F
+  # if( at.least.one.numerator & sufficient.numerators & no.precalc.num )
+  # { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you accounts.receivee passhort.investng the correct data field to the correct argument." ) }
+  
+  
   if ( ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) <= 6 ) &
        ( length( c( cash, short.invest, pledges.receive, accounts.receive, inventories.sale, prepaid.expenses ) ) >= 1 ) & 
        ( is.null( numerator )==F ) )
@@ -253,6 +263,8 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
           colnames( dat )[which( colnames( dat ) %in% accounts.payable )], colnames( dat )[which( colnames( dat ) %in% grants.payable )],
           colnames( dat )[which( colnames( dat ) %in% numerator )], colnames( dat )[which( colnames( dat ) %in% denominator )] )
   
+  # v <- names(dat) %>% c( cash, short.invest,... )
+  
   dat <- coerce_numeric( d = dat, vars = v )
   
   if( is.null( numerator) == T & is.null( denominator ) == T ){
@@ -273,6 +285,15 @@ get_cr <- function( df, cash = 'F9_10_ASSET_CASH_EOY',
     
     num <- dat[[ cash ]] + dat[[ short.invest ]] + dat[[ pledges.receive ]] + dat[[ accounts.receive ]]+ dat[[ inventories.sale ]] + dat[[ prepaid.expenses ]]
     den <- dat[[ denominator ]] 
+    
+    # should NA be interpretted as missing or zero? 
+    # assumption is missing
+    # x1=c(2,NA,5)
+    # x2=c(3,5,7)
+    # x3=c(1,2,3)
+    # x1+x2+x3  # 6, NA, 15
+    # 
+    # x <- c( "3","7","" ) # introduces NA for ""
     
   }
   
