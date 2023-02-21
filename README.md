@@ -104,27 +104,27 @@ d3 <- readRDS( "F9-P10-T00-BALANCE-SHEET-2018.rds" )
 df <- merge( d1, d2 )
 df <- merge( df, d3 )
 
-df <- get_aer( df )   #	Assets to Revenues Ratio
-df <- get_arr( df )   #	Assets to Revenues Ratio
-df <- get_cr( df )    # Current Ratio
-df <- get_dar( df )   #	Debt to Asset Ratio
-df <- get_der( df )   #	Debt to Equity Ratio
-df <- get_dgdr( df )  #	Donation/Grant Dependence Ratio
-df <- get_dmr( df )   #	Debt Management Ratio
-df <- get_doch( df )  #	Days of Operating Cash on Hand
-df <- get_doci( df )  #	Days of Operating Cash and Investments
-df <- get_eidr( df )  #	Earned Income Dependence Ratio
-df <- get_er( df )    #	Equity Ratio
-df <- get_ggr( df )   #	Government Grants Ratio
-df <- get_iidr( df )  #	Investment Income Dependence Ratio
-df <- get_lar( df )   #	Lands to Assets Ratio
-df <- get_moch( df )  #	Months of Operating Cash on Hand
-df <- get_or( df )    #	Operating Margin
-df <- get_per( df )   #	Program Efficiency Ratio
-df <- get_podpm( df ) #	Post-Depreciation Profitability Margin
-df <- get_predpm( df ) #	Pre-Depreciation Profitability Margin
-df <- get_qr( df )    #	Quick Ratio
-df <- get_ssr( df )   #	Self Sufficiency Ratio
-df <- get_stdr( df )  #	Short Term Debt Ratio
+df <- get_aer( df )     #	Assets to Revenues Ratio
+df <- get_arr( df )     #	Assets to Revenues Ratio
+df <- get_cr( df )      # Current Ratio
+df <- get_dar( df )     #	Debt to Asset Ratio
+df <- get_der( df )     #	Debt to Equity Ratio
+df <- get_dgdr( df )    #	Donation/Grant Dependence Ratio
+df <- get_dmr( df )     #	Debt Management Ratio
+df <- get_doch( df )    #	Days of Operating Cash on Hand
+df <- get_doci( df )    #	Days of Operating Cash and Investments
+df <- get_eidr( df )    #	Earned Income Dependence Ratio
+df <- get_er( df )      #	Equity Ratio
+df <- get_ggr( df )     #	Government Grants Ratio
+df <- get_iidr( df )    #	Investment Income Dependence Ratio
+df <- get_lar( df )     #	Lands to Assets Ratio
+df <- get_moch( df )    #	Months of Operating Cash on Hand
+df <- get_or( df )      #	Operating Margin
+df <- get_per( df )     #	Program Efficiency Ratio
+df <- get_podpm( df )   #	Post-Depreciation Profitability Margin
+df <- get_predpm( df )  # Pre-Depreciation Profitability Margin
+df <- get_qr( df )      #	Quick Ratio
+df <- get_ssr( df )     #	Self Sufficiency Ratio
+df <- get_stdr( df )    #	Short Term Debt Ratio
 ```
 
