@@ -106,7 +106,7 @@ df <- merge( df, d3 )
 
 df <- get_aer( df )     #	Assets to Revenues Ratio
 df <- get_arr( df )     #	Assets to Revenues Ratio
-df <- get_cr( df )      # Current Ratio
+df <- get_cr( df )      #	Current Ratio
 df <- get_dar( df )     #	Debt to Asset Ratio
 df <- get_der( df )     #	Debt to Equity Ratio
 df <- get_dgdr( df )    #	Donation/Grant Dependence Ratio
@@ -122,8 +122,8 @@ df <- get_moch( df )    #	Months of Operating Cash on Hand
 df <- get_or( df )      #	Operating Margin
 df <- get_per( df )     #	Program Efficiency Ratio
 df <- get_podpm( df )   #	Post-Depreciation Profitability Margin
-df <- get_predpm( df )  # Pre-Depreciation Profitability Margin
-df <- get_qr( df )      # Quick Ratio
+df <- get_predpm( df )  #	Pre-Depreciation Profitability Margin
+df <- get_qr( df )      #	Quick Ratio
 df <- get_ssr( df )     #	Self Sufficiency Ratio
 df <- get_stdr( df )    #	Short Term Debt Ratio
 ```
