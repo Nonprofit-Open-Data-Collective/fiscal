@@ -123,7 +123,7 @@ df <- get_or( df )      #	Operating Margin
 df <- get_per( df )     #	Program Efficiency Ratio
 df <- get_podpm( df )   #	Post-Depreciation Profitability Margin
 df <- get_predpm( df )  # Pre-Depreciation Profitability Margin
-df <- get_qr( df )      #	Quick Ratio
+df <- get_qr( df )      # Quick Ratio
 df <- get_ssr( df )     #	Self Sufficiency Ratio
 df <- get_stdr( df )    #	Short Term Debt Ratio
 ```
