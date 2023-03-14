@@ -21,7 +21,32 @@ devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
 ```r
 library( fiscal )
 help( get_dar )  # function documentation 
+```
 
+**Description**
+Calculate the debt to asset ratio and append it to the dataframe.
+
+```
+dar = ( short term debt + long term debt ) / total assets 
+```
+
+**Usage**
+```
+  get_dar( df, 
+           debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ) , 
+           assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ), 
+           winsorize = 0.98 )
+```
+
+**Arguments**
+
+* df:  A data.frame containing the required field for computing the metric. The metric will be appended to this dataset.
+* debt:  Column name(s) for total liabilities (must be quoted). (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.
+* assets:  Column name(s) for total assets, EOY (must be quoted). (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.
+* winsorize:  The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.
+
+
+```r
 # create test data: x1=debt, x2=assets
 x1 <- rnorm(1000,100,30)
 x2 <- rnorm(1000,200,30)
