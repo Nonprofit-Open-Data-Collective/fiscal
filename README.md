@@ -17,6 +17,10 @@ devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
 ```
 
 <br>
+<hr>
+<br>
+
+## Example Ratio: DAR
 
 ```r
 library( fiscal )
@@ -77,6 +81,8 @@ dat <-
 ```
 
 <br>
+<hr>
+<br>
 
 ## Results 
 
@@ -111,7 +117,7 @@ dat <- get_dar( df=dat, debt="x1", assets="x2" )
 -----------------
 
 <br>
-<br>
+<hr>
 <br>
 
 
