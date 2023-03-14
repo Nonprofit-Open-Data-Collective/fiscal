@@ -112,9 +112,6 @@ dat <- get_dar( df=dat, debt="x1", assets="x2" )
 
 ![](assets/dar.png)
 
-<br> 
-
------------------
 
 <br>
 <hr>
