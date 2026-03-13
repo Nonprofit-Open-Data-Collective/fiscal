@@ -171,8 +171,7 @@ general administration.
 `administrative_expenses / total_expenses`
 
 **Variables** 
-- F9_09_EXP_TOT_MGMT: Management and general expenses
-(Part IX column C).
+- F9_09_EXP_TOT_MGMT: Management and general expenses (Part IX column C).
 - F9_09_EXP_TOT_TOT: Total functional expenses.
 
 **Calculated For:** 990 filers only
@@ -188,9 +187,10 @@ general administration.
 **Formula:**\
 `total_assets_eoy / total_revenue`
 
-**Variables** - F9_10_ASSET_TOT_EOY: Total assets end of year. -
-F9_08_REV_TOT_TOT: Total revenue from Part VIII. - F9_01_REV_TOT_CY:
-Total revenue reported in Part I.
+**Variables** 
+- F9_10_ASSET_TOT_EOY: Total assets end of year.
+- F9_08_REV_TOT_TOT: Total revenue from Part VIII.
+- F9_01_REV_TOT_CY: Total revenue reported in Part I.
 
 **Calculated For:** 990 + 990EZ
 
@@ -210,14 +210,15 @@ assets to current liabilities.
 
 `current_liabilities = accounts_payable + grants_payable`
 
-**Variables** - F9_10_ASSET_CASH_EOY: Cash on hand end of year. -
-F9_10_ASSET_SAVING_EOY: Savings and temporary cash investments. -
-F9_10_ASSET_PLEDGE_NET_EOY: Net pledges receivable. -
-F9_10_ASSET_ACC_NET_EOY: Accounts receivable net. -
-F9_10_ASSET_INV_SALE_EOY: Investments held for sale. -
-F9_10_ASSET_EXP_PREPAID_EOY: Prepaid expenses and deferred charges. -
-F9_10_LIAB_ACC_PAYABLE_EOY: Accounts payable and accrued expenses. -
-F9_10_LIAB_GRANT_PAYABLE_EOY: Grants and similar amounts payable.
+**Variables** 
+- F9_10_ASSET_CASH_EOY: Cash on hand end of year.
+- F9_10_ASSET_SAVING_EOY: Savings and temporary cash investments.
+- F9_10_ASSET_PLEDGE_NET_EOY: Net pledges receivable.
+- F9_10_ASSET_ACC_NET_EOY: Accounts receivable net.
+- F9_10_ASSET_INV_SALE_EOY: Investments held for sale.
+- F9_10_ASSET_EXP_PREPAID_EOY: Prepaid expenses and deferred charges.
+- F9_10_LIAB_ACC_PAYABLE_EOY: Accounts payable and accrued expenses.
+- F9_10_LIAB_GRANT_PAYABLE_EOY: Grants and similar amounts payable.
 
 **Calculated For:** 990 filers only
 
@@ -232,10 +233,11 @@ F9_10_LIAB_GRANT_PAYABLE_EOY: Grants and similar amounts payable.
 **Formula:**\
 `total_liabilities / total_assets`
 
-**Variables** - F9_10_LIAB_TOT_EOY: Total liabilities end of year. -
-F9_01_NAFB_LIAB_TOT_EOY: Total liabilities reported in Part I. -
-F9_10_ASSET_TOT_EOY: Total assets end of year. -
-F9_01_NAFB_ASSET_TOT_EOY: Total assets reported in Part I.
+**Variables** 
+- F9_10_LIAB_TOT_EOY: Total liabilities end of year.
+- F9_01_NAFB_LIAB_TOT_EOY: Total liabilities reported in Part I.
+- F9_10_ASSET_TOT_EOY: Total assets end of year.
+- F9_01_NAFB_ASSET_TOT_EOY: Total assets reported in Part I.
 
 **Calculated For:** 990 + 990EZ
 
@@ -250,8 +252,9 @@ F9_01_NAFB_ASSET_TOT_EOY: Total assets reported in Part I.
 **Formula:**\
 `net_assets / total_assets`
 
-**Variables** - F9_10_NAFB_TOT_EOY: Total net assets end of year. -
-F9_10_ASSET_TOT_EOY: Total assets end of year.
+**Variables** 
+- F9_10_NAFB_TOT_EOY: Total net assets end of year.
+- F9_10_ASSET_TOT_EOY: Total assets end of year.
 
 **Calculated For:** 990 + 990EZ
 
@@ -267,8 +270,9 @@ grants.
 **Formula:**\
 `government_grants / total_revenue`
 
-**Variables** - F9_08_REV_CONTR_GOVT_GRANT: Government grants and
-contributions. - F9_08_REV_TOT_TOT: Total revenue.
+**Variables** 
+- F9_08_REV_CONTR_GOVT_GRANT: Government grants and contributions.
+- F9_08_REV_TOT_TOT: Total revenue.
 
 **Calculated For:** 990 filers only
 
@@ -283,9 +287,9 @@ contributions. - F9_08_REV_TOT_TOT: Total revenue.
 **Formula:**\
 `(unrestricted_net_assets_eoy − unrestricted_net_assets_boy) / unrestricted_net_assets_boy`
 
-**Variables** - F9_10_NAFB_UNRESTRICT_EOY: Unrestricted net assets end
-of year. - F9_10_NAFB_UNRESTRICT_BOY: Unrestricted net assets beginning
-of year.
+**Variables** 
+- F9_10_NAFB_UNRESTRICT_EOY: Unrestricted net assets end of year.
+- F9_10_NAFB_UNRESTRICT_BOY: Unrestricted net assets beginning of year.
 
 **Calculated For:** 990 filers only
 
@@ -305,10 +309,10 @@ services.
 
 `total_expenses = total_functional_expenses`
 
-**Variables** - F9_09_EXP_TOT_PROG: Program service expenses. -
-F9_01_EXP_TOT_CY: Total expenses (Part I summary). -
-F9_10_ASSET_TOT_EOY: Total assets end of year (used as fallback in
-package).
+**Variables** 
+- F9_09_EXP_TOT_PROG: Program service expenses.
+- F9_01_EXP_TOT_CY: Total expenses (Part I summary).
+- F9_10_ASSET_TOT_EOY: Total assets end of year (used as fallback in package).
 
 **Calculated For:** 990 + 990EZ
 
