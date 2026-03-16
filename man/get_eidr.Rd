@@ -2,132 +2,92 @@
 % Please edit documentation in R/get-eidr.R
 \name{get_eidr}
 \alias{get_eidr}
-\title{Earned Income Dependence Ratio}
+\title{Earned Income Dependency Ratio}
 \usage{
-get_eidr( df, 
-prog.service.rev = "F9_08_REV_PROG_TOT_TOT", 
-memb.dues = "F9_08_REV_CONTR_MEMBSHIP_DUE", 
-royalties = "F9_08_REV_OTH_ROY_TOT", 
-other.revenue = "F9_08_REV_MISC_OTH_TOT", 
-total.revenue = "F9_08_REV_TOT_TOT", 
-numerator = NULL,
-denominator = NULL,
-winsorize = 0.98 )
+get_eidr( df,
+  program_service_rev = "F9_08_REV_PROG_TOT_TOT",
+  membership_dues     = "F9_08_REV_CONTR_MEMBSHIP_DUE",
+  royalties           = "F9_08_REV_OTH_ROY_TOT",
+  other_revenue       = "F9_08_REV_MISC_OTH_TOT",
+  total_revenue       = "F9_08_REV_TOT_TOT",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{prog.service.rev}{A character string indicating the column name for program service revenue (On 990: Part VIII, Line 2g(A); On EZ: Not Available).}
+\item{program_service_rev}{Program service revenue. (On 990: Part VIII, line 2g; \code{F9_08_REV_PROG_TOT_TOT})}
 
-\item{memb.dues}{A character string indicating the column name for membership dues (On 990: Part VIII, Line 1b(A); On EZ: Not Available).}
+\item{membership_dues}{Membership dues and assessments. (On 990: Part VIII, line 4; \code{F9_08_REV_CONTR_MEMBSHIP_DUE})}
 
-\item{royalties}{A character string indicating the column name for royalties (On 990: Part VIII, Line 5(A); On EZ: Not Available).}
+\item{royalties}{Royalties. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_ROY_TOT})}
 
-\item{other.revenue}{A character string indicating the column name for all other revenue (On 990: Part VIII, Line 11d(A); On EZ: Not Available).}
+\item{other_revenue}{Other miscellaneous revenue. (On 990: Part VIII, line 11e; \code{F9_08_REV_MISC_OTH_TOT})}
 
-\item{total.revenue}{A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).}
+\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (\code{prog.service.rev}, \code{memb.dues},\code{royalties}, \code{other.revenue}).}
+\item{numerator}{Optional. A pre-aggregated column for earned revenue. Cannot be combined
+with the individual component arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (\code{total.revenue}).}
+\item{denominator}{Optional. A pre-aggregated column for total revenue. Cannot be combined
+with \code{total_revenue}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the earned income dependence ratio (\code{eidr}),
-a winsorized vermemb.dueson (\code{eidr.w}), a standardized z-score vermemb.dueson (\code{eidr.z}),
-and a percentile vermemb.dueson (\code{eidr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{eidr}   — earned income dependency ratio (raw)
+\item \code{eidr_w} — winsorized version
+\item \code{eidr_z} — standardized z-score (based on winsorized values)
+\item \code{eidr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the earned income dependence ratio and append it to the dataframe.
+Share of total revenue derived from earned (non-donation) income sources.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{eidr = earned_revenue / total_revenue
+
+earned_revenue = program_service_revenue + membership_dues
+                 + royalties + other_revenue
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-This metric shows how much of an organization’s total revenues come from earned income (program
-service revenues, dues, assessments, profits from sales). High levels in this indicator are more dememb.duesrable
-memb.duesnce that means that an organization is fairly self-sustaining with its own activities. Low values in this
-indicator mean an organization is likely dependent on donations or investments for their revenues and thus more
-vulnerable to the sentiments of donors or market forces. Note: computation of this metric is available to only
-990 filers and not for 990-EZ filers. The default inputs use column names for variables available only to 990 filers.
+The earned income dependency ratio measures the share of total revenue from self-generated
+sources, excluding donations and government grants. Higher values indicate greater financial
+self-sufficiency.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev})
+\item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Membership dues (\code{membership_dues})
+\item \code{F9_08_REV_OTH_ROY_TOT}: Royalties (\code{royalties})
+\item \code{F9_08_REV_MISC_OTH_TOT}: Other miscellaneous revenue (\code{other_revenue})
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,200,30 )
-x4 <- rnorm( 1000,100,30 )
-x5 <- rnorm( 1000,200,30 )
-dat <- data.frame( x1, x2, x3, x4, x5 )
+data( dat10k )
 
-# specify own column names
-d <- get_eidr( df=dat, prog.service.rev='x1', memb.dues='x2', royalties='x3', other.revenue='x4', total.revenue='x5', winsorize=0.98 )
-
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_08_REV_CONTR_MEMBSHIP_DUE", "F9_08_REV_OTH_ROY_TOT",
-                         "F9_08_REV_MISC_OTH_TOT", "F9_08_REV_TOT_TOT" )
-
-
-d <- get_eidr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_08_REV_MISC_OTH_TOT <- as.factor( dat_01$F9_08_REV_MISC_OTH_TOT )
-
-d <- get_eidr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_eidr( df=dat, prog.service.rev='x1', memb.dues='x2', royalties='x3', other.revenue='x4', total.revenue='x5', winsorize = 0.95 )
-
-d <- get_eidr( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x5 
-x.num <- x1 + x2 + x3 + x4
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_eidr( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_eidr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_LIAB_ACC_PAYABLE_EOY <- as.character( part010810$F9_10_LIAB_ACC_PAYABLE_EOY )
-
-d <- get_eidr( df = part010810 )
-
-\dontrun{
-## Errors ##
-# incorrectly specify denominator
-get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
-          total.revenue = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
-          total.revenue = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-
-
-# incorrectly specify denominator with conflicting arguments
-get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
-          total.revenue = 'x5', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-
-# supplying no arguments for the numerator
-get_eidr( df = dat_02, prog.service.rev = NULL, memb.dues = NULL, royalties = NULL, other.revenue = NULL, 
-          total.revenue = 'x5', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying no arguments for the denominator
-get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
-          total.revenue = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_eidr( df = dat_02, prog.service.rev = 'x1', memb.dues = 'x2', royalties = 'x3', other.revenue = 'x4', 
-          total.revenue = c( 'x5', 'x6' ), numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-get_eidr( df = dat_02, prog.service.rev = NULL, memb.dues = NULL, royalties = NULL, other.revenue = NULL, 
-          total.revenue = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
-}
+d <- get_eidr( df = dat10k )
+head( d[ , c( "eidr", "eidr_w", "eidr_z", "eidr_p" ) ] )
 
 }

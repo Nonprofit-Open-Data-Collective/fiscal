@@ -2,132 +2,91 @@
 % Please edit documentation in R/get-iidr.R
 \name{get_iidr}
 \alias{get_iidr}
-\title{Investment Income Dependence Ratio}
+\title{Investment Income Dependency Ratio}
 \usage{
-get_iidr( df, 
-invest.income = "F9_08_REV_OTH_INVEST_INCOME_TOT", 
-bond.proceeds = "F9_08_REV_OTH_INVEST_BOND_TOT", 
-rent.income = "F9_08_REV_OTH_RENT_GRO_PERS", 
-other.income = "F9_08_REV_OTH_SALE_ASSET_OTH", 
-total.revenue = "F9_08_REV_TOT_TOT", 
-numerator = NULL,
-denominator = NULL,
-winsorize = 0.98 )
+get_iidr( df,
+  invest_income    = "F9_08_REV_OTH_INVEST_INCOME_TOT",
+  bond_proceeds    = "F9_08_REV_OTH_INVEST_BOND_TOT",
+  rent_income      = "F9_08_REV_OTH_RENT_GRO_PERS",
+  asset_sale_income= "F9_08_REV_OTH_SALE_ASSET_OTH",
+  total_revenue    = "F9_08_REV_TOT_TOT",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{invest.income}{A character string indicating the column name for investment income (On 990: Part VIII, Line 3(A); On EZ: Not Available).}
+\item{invest_income}{Investment income. (On 990: Part VIII, line 3; \code{F9_08_REV_OTH_INVEST_INCOME_TOT})}
 
-\item{bond.proceeds}{A character string indicating the column name for investment income from tax-exempt bond proceeds (On 990: Part VIII, Line 4(A); On EZ: Not Available).}
+\item{bond_proceeds}{Tax-exempt bond proceeds. (On 990: Part VIII, line 7a; \code{F9_08_REV_OTH_INVEST_BOND_TOT})}
 
-\item{rent.income}{A character string indicating the column name for gross rent income (On 990: Part VIII, Line 6(A); On EZ: Not Available).}
+\item{rent_income}{Gross rents from personal property. (On 990: Part VIII, line 6b; \code{F9_08_REV_OTH_RENT_GRO_PERS})}
 
-\item{other.income}{A character string indicating the column name for gross income from sales of assets other than inventory  (On 990: Part VIII, Line 7(A); On EZ: Not Available).}
+\item{asset_sale_income}{Net gain from sales of assets other than inventory. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_SALE_ASSET_OTH})}
 
-\item{total.revenue}{A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).}
+\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (\code{invest.income}, \code{bond.proceeds},\code{rent.income}, \code{other.income}).}
+\item{numerator}{Optional. A pre-aggregated column for investment income. Cannot be
+combined with the individual component arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (\code{total.revenue}).}
+\item{denominator}{Optional. A pre-aggregated column for total revenue. Cannot be
+combined with \code{total_revenue}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the investment income dependence ratio (\code{iidr}),
-a winsorized version (\code{iidr.w}), a standardized z-score version (\code{iidr.z}),
-and a percentile version (\code{iidr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{iidr}   — investment income dependency ratio (raw)
+\item \code{iidr_w} — winsorized version
+\item \code{iidr_z} — standardized z-score (based on winsorized values)
+\item \code{iidr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the investment income dependence ratio and append it to the dataframe.
+Measures reliance on investment-related revenue as a share of total revenue.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{iidr = investment_income / total_revenue
+
+investment_income = invest_income + bond_proceeds + rent_income + asset_sale_income
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-This metric shows how much of an organization’s total revenues come from investment income
-(interest, dividends, gains/losses on sales of securities or other assets). High levels in this metric
-indicate an organization is more dependent on investment income (and thus vulnerable to market downturns),
-and low values indicate their income comes more from donations or earned income. Note: computation of this metric is
-available to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available
-only to 990 filers.
+The investment income dependency ratio measures the share of total revenue derived from
+investment-related sources. Higher values may indicate a financially stable endowment
+base but also greater exposure to market fluctuations.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}: Investment income (\code{invest_income})
+\item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Bond proceeds (\code{bond_proceeds})
+\item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Rental income (\code{rent_income})
+\item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Asset sale income (\code{asset_sale_income})
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,200,30 )
-x4 <- rnorm( 1000,100,30 )
-x5 <- rnorm( 1000,200,30 )
-dat <- data.frame( x1, x2, x3, x4, x5 )
+data( dat10k )
 
-
-# specify own column names
-d <- get_iidr( df=dat, invest.income='x1', bond.proceeds='x2', rent.income='x3', other.income='x4', total.revenue='x5', winsorize=0.98 )
-
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_08_REV_OTH_INVEST_INCOME_TOT", "F9_08_REV_OTH_INVEST_BOND_TOT", "F9_08_REV_OTH_RENT_GRO_PERS",
-                         "F9_08_REV_OTH_SALE_ASSET_OTH", "F9_08_REV_TOT_TOT" )
-
-
-d <- get_iidr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_08_REV_OTH_INVEST_BOND_TOT <- as.factor( dat_01$F9_08_REV_OTH_INVEST_BOND_TOT )
-
-d <- get_iidr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_iidr( df=dat, invest.income='x1', bond.proceeds='x2', rent.income='x3', other.income='x4', total.revenue='x5', winsorize = 0.95 )
-
-d <- get_iidr( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x5 
-x.num <- x1 + x2 + x3 + x4
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_iidr( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_iidr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_08_REV_OTH_INVEST_BOND_TOT <- as.character( part010810$F9_08_REV_OTH_INVEST_BOND_TOT )
-
-d <- get_iidr( df = part010810 )
-\dontrun{
-## Errors ##
-# incorrectly specify denominator
-get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
-          total.revenue = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
-          total.revenue = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-
-
-# incorrectly specify denominator with conflicting arguments
-get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
-          total.revenue = 'x5', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-
-# supplying no arguments for the numerator
-get_iidr( df = dat_02, invest.income = NULL, bond.proceeds = NULL, rent.income = NULL, other.income = NULL, 
-          total.revenue = 'x5', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying no arguments for the denominator
-get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
-          total.revenue = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_iidr( df = dat_02, invest.income = 'x1', bond.proceeds = 'x2', rent.income = 'x3', other.income = 'x4', 
-          total.revenue = c( 'x5', 'x6' ), numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-get_iidr( df = dat_02, invest.income = NULL, bond.proceeds = NULL, rent.income = NULL, other.income = NULL, 
-          total.revenue = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
-}
+d <- get_iidr( df = dat10k )
+head( d[ , c( "iidr", "iidr_w", "iidr_z", "iidr_p" ) ] )
 
 }

@@ -4,117 +4,76 @@
 \alias{get_ssr}
 \title{Self Sufficiency Ratio}
 \usage{
-get_ssr( df, prog.serv.rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY"), 
-total.expense = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY"), 
-winsorize = 0.98 )
+get_ssr( df,
+  program_service_rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY" ),
+  total_expenses      = c( "F9_09_EXP_TOT_TOT",      "F9_01_EXP_TOT_CY"      ),
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{prog.serv.rev}{Column name(s) for program service revenue (must be quoted), EOY (Part 8, Line 2g(A); On EZ: Part 1, Line 2). If specifying column names for both PC and EZ scope variables, they must be specified as a vector of class character.}
+\item{program_service_rev}{Program service revenue. Accepts one or two column names;
+if two are provided they are coalesced with the 990 value taking priority over 990EZ.
+(On 990: Part VIII, line 2g; \code{F9_08_REV_PROG_TOT_TOT};
+On EZ: Part I, line 2; \code{F9_01_REV_PROG_TOT_CY})}
 
-\item{total.expense}{Column name(s) for total expenses (must be quoted), EOY (On 990: Part IX, line 25A; On EZ: Part 1, Line 17). If specifying column names for both PC and EZ scope variables, they must be specified as a vector of class character.}
+\item{total_expenses}{Total functional expenses. Accepts one or two column names.
+(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT};
+On EZ: Part I, line 17; \code{F9_01_EXP_TOT_CY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the self sufficiency ratio (\code{ssr}),
-a winsorized version (\code{ssr.w}), a standardized z-score version (\code{ssr.z}),
-and a percentile version (\code{ssr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{ssr}   — self sufficiency ratio (raw)
+\item \code{ssr_w} — winsorized version
+\item \code{ssr_z} — standardized z-score (based on winsorized values)
+\item \code{ssr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the self sufficiency ratio and append it to the dataframe.
+Measures whether program service revenue is sufficient to cover total expenses.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ssr = program_service_revenue / total_expenses
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-The Self Sufficiency Ratio measures the proportion of operating expenses that are covered by earned income.
-This metric is a good measure of how long an organization can survive without grants. Higher values
-mean it is more self-sufficient, meaning it could cover its costs longer without collecting any grants,
-rents, royalties, or sales of inventory. This ratio is primarily useful for organizations that have
-earned revenue through developers’ fees, management fees, memberships, or tuition. Higher values mean
-organizations have more autonomy and flexibility. They generally improve over time as an organization
-grows. In the early stages, these ratios tend to be lower but the goal is to make them as high as possible.
+The self sufficiency ratio measures the degree to which an organization can cover its
+total expenses through earned program service revenue alone, without relying on donations,
+grants, or investment income. A ratio at or above 1.0 indicates full self-sufficiency.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev}, 990)
+\item \code{F9_01_REV_PROG_TOT_CY}: Program service revenue from Part I (\code{program_service_rev}, 990EZ)
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, 990)
+\item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ)
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
-
-# specify own column names
-d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x2" )
-
-
-head( d )
-
-# run with default column names
-x3 <- rnorm( 1000, 100, 30 )
-x4 <- rnorm( 1000, 200, 30 )
-x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x4[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2, x3, x4 )
-
-colnames( dat_01 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY",
-                         "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY" )
-
-d <- get_ssr( dat_01 )
-
-# specify only PC variables
-d <- get_ssr( dat_01, prog.serv.rev = "F9_08_REV_PROG_TOT_TOT", total.expense = "F9_09_EXP_TOT_TOT" )
-
-# coerce one column to factor
-dat_01$F9_08_REV_PROG_TOT_TOT <- as.factor( dat_01$F9_08_REV_PROG_TOT_TOT )
-
-d <- get_ssr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = "x2", winsorize = 0.95 )
-
-d <- get_ssr( dat_01, winsorize = 0.95 )
-
-# assume only one PC variable for the numerator or denominator is present in the dataset and we run with default parameters
-dat_02 <- dat_01
-
-colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY",
-                         "x", "F9_01_EXP_TOT_CY" )
-
-
-d <- get_ssr( dat_02, winsorize = 0.95 )
-
-colnames( dat_02 ) <- c( "F9_08_REV_PROG_TOT_TOT", "x",
-                         "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY" )
-
-d <- get_ssr( dat_02, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_ssr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_01_EXP_TOT_CY <- as.character( part010810$F9_01_EXP_TOT_CY )
-
-d <- get_ssr( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = "x2" )
-
-# denominator not specified
-d <- get_ssr( df = dat, prog.serv.rev = "x1", total.expense = NULL )
-
-# neither numerator nor denominator specified
-d <- get_ssr( df = dat, prog.serv.rev = NULL, total.expense = NULL )
-
-# column names vector not of correct length
-d <- get_ssr( df = dat, prog.serv.rev = c("e","b","c"), total.expense = "e")
-
-# column names vector not of correct length
-d <- get_ssr( df = dat, prog.serv.rev = "e", total.expense = c( "e", "b", "c") )
-}
+d <- get_ssr( df = dat10k )
+head( d[ , c( "ssr", "ssr_w", "ssr_z", "ssr_p" ) ] )
 
 }

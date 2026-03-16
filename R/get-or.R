@@ -1,280 +1,127 @@
 ###---------------------------------------------------
-###   OPERATING MARGIN
+###   OPERATING RATIO
 ###---------------------------------------------------
 
 #' @title
-#' Operating Margin
+#' Operating Ratio
 #'
 #' @description
-#' Calculate the operating margin and append it to the dataframe. 
+#' Year-over-year change in total net assets, expressed as a proportion of beginning net assets.
 #'
-#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param equity.eoy Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).
-#' @param equity.boy Unrestricted net assets, BOY (On 990: Part X, line 27A; On EZ: Not Available).
-#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
-#' 
-#' @usage get_or( df, 
-#' equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
-#' equity.boy = "F9_10_NAFB_UNRESTRICT_BOY", 
-#' winsorize = 0.98 )
-#' 
-#' @return Object of class \code{data.frame}: the original dataframe appended with the operating margin (`or`), 
-#'  a winsorized version (`or.w`), a standardized z-score version (`or.z`), 
-#'  and a percentile version (`or.p`).   
+#' **Formula:**
+#' ```
+#' or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
+#' ```
 #'
-#' @details The operating margin measures what percent of an organizations unrestricted net assets (or free 
-#' cash) from the beginning of 2019 it had at the end of 2019. Note: computation of this metric is available 
-#' to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available 
-#' only to 990 filers.
-#' 
+#' **Calculated For:** 990 + 990EZ filers.
+#'
+#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param net_assets_eoy Total net assets, end of year. Accepts one or two column names;
+#'   if two are provided they are coalesced with the 990 value taking priority over 990EZ.
+#'   (On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY};
+#'   On EZ: Part II; \code{F9_01_NAFB_TOT_EOY})
+#' @param net_assets_boy Total net assets, beginning of year. Accepts one or two column names.
+#'   (On 990: Part X, line 33A; \code{F9_10_NAFB_TOT_BOY};
+#'   On EZ: Part II; \code{F9_01_NAFB_TOT_BOY})
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
+#'   winsorizes at the 1st and 99th percentiles.
+#'
+#' @usage
+#' get_or( df,
+#'   net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
+#'   net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
+#'   winsorize = 0.98,
+#'   sanitize  = TRUE,
+#'   summarize = FALSE )
+#'
+#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#'   new columns:
+#'   \itemize{
+#'     \item \code{or}   — operating ratio (raw)
+#'     \item \code{or_w} — winsorized version
+#'     \item \code{or_z} — standardized z-score (based on winsorized values)
+#'     \item \code{or_p} — percentile rank (1-100)
+#'   }
+#'
+#' @details
+#' The operating ratio measures financial performance as the percentage change in total net
+#' assets from the beginning to the end of the fiscal year. Positive values indicate a
+#' financial surplus; negative values indicate a deficit.
+#'
+#' **Variables used:**
+#' \itemize{
+#'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets_eoy}, 990)
+#'   \item \code{F9_01_NAFB_TOT_EOY}: Total net assets, EOY from Part I (\code{net_assets_eoy}, 990EZ)
+#'   \item \code{F9_10_NAFB_TOT_BOY}: Total net assets, BOY (\code{net_assets_boy}, 990)
+#'   \item \code{F9_01_NAFB_TOT_BOY}: Total net assets, BOY from Part I (\code{net_assets_boy}, 990EZ)
+#' }
+#'
+#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#'   the financial input columns are imputed to zero before the ratio is computed,
+#'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+#'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+#'   The returned dataframe always contains the original unmodified input columns.
+#'
+#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#'   the results and plots density curves for all four output columns
+#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'
 #' @import dplyr
 #' @import stringr
 #' @import magrittr
-#' 
+#'
 #' @examples
 #' library( fiscal )
-#' x1 <- rnorm( 1000, 100, 30 )
-#' x2 <- rnorm( 1000, 200, 30 )
-#' x2[ c( 15, 300, 600 ) ] <- 0
-#' 
-#' dat <- data.frame( x1, x2 )
-#' 
-#' # specify own column names
-#' d <- get_or( df = dat, equity.eoy = "x1", equity.boy = "x2" )
-#' 
-#' head( d )
-#' 
-#' # run with default column names
-#' x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-#' x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-#' 
-#' dat_01 <- data.frame( x1, x2 )
-#' 
-#' colnames( dat_01 ) <- c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_10_NAFB_UNRESTRICT_BOY" )
-#' 
-#' d <- get_or( dat_01 )
-#' 
-#' # coerce one column to factor
-#' dat_01$F9_10_NAFB_UNRESTRICT_EOY <- as.factor( dat_01$F9_10_NAFB_UNRESTRICT_EOY )
-#' 
-#' d <- get_or( dat_01 )
-#' 
-#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_or( df = dat, equity.eoy = "x1", equity.boy = "x2", winsorize = 0.95 )
-#' 
-#' d <- get_or( dat_01, winsorize = 0.95 )
-#' 
-#' 
-#' # using 990 data
-#' data( part010810 )
-#' d <- get_or( df = part010810 )
-#' 
-#' # now coerce one of the variables to numeric
-#' part010810$F9_10_NAFB_UNRESTRICT_EOY <- as.character( part010810$F9_10_NAFB_UNRESTRICT_EOY )
-#' 
-#' d <- get_or( df = part010810 )
-#' 
-#' \dontrun{
-#' ## Errors ##
-#' 
-#' # numerator not specified
-#' d <- get_or( df = dat, equity.eoy = NULL, equity.boy = "x2" )
-#' 
-#' # denominator not specified
-#' d <- get_or( df = dat, equity.eoy = "x1", equity.boy = NULL )
-#' 
-#' # neither numerator nor denominator specified
-#' d <- get_or( df = dat, equity.eoy = NULL, equity.boy = NULL )
-#' 
-#' # column names vector not of correct length
-#' d <- get_or( df = dat, equity.eoy = c("e","b","c"), equity.boy = "e")
-#' 
-#' # column names vector not of correct length
-#' d <- get_or( df = dat, equity.eoy = "e", equity.boy = c( "e", "b", "c") )
-#' }
-#' 
+#' data( dat10k )
+#'
+#' d <- get_or( df = dat10k )
+#' head( d[ , c( "or", "or_w", "or_z", "or_p" ) ] )
+#'
 #' @export
-get_or <- function( df, 
-                    equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
-                    equity.boy = "F9_10_NAFB_UNRESTRICT_BOY", 
-                    winsorize = 0.98 )
+get_or <- function( df,
+                    net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
+                    net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
+                    winsorize = 0.98 ,
+                     sanitize  = TRUE,
+                     summarize = FALSE )
 {
-  # function checks
-  if( winsorize > 1 | winsorize < 0 )
-  { stop( "winsorize argument must be 0 < w < 1" ) }
-  
-  if( is.null( equity.eoy )==T & is.null( equity.boy )==F )
-  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if( is.null( equity.eoy )==F & is.null( equity.boy )==T )
-  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if( is.null( equity.eoy )==T & is.null( equity.boy )==T )
-  { stop( "The argument fields are empty. Please supply column names for each argument or execute the function with default inputs." ) }
-  
-  if( length( equity.eoy ) > 2 | length( equity.eoy ) < 1 )
-  { stop( "`equity.eoy` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
-  
-  if( length( equity.boy ) > 2 | length( equity.boy ) < 1 )
-  { stop( "`equity.boy` must be a single quoted string or a vector with a minimum length of one and maximum length of two." ) }
-  
-  
-  # copy data
-  dat <- df
-  
-  ## ensure variable classes are numeric ##
-  
-  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
-  v <- c( colnames( dat )[which( colnames( dat ) %in% equity.boy ) ], colnames( dat )[which( colnames( dat ) %in% equity.eoy )] )
-  dat <- coerce_numeric( d = dat, vars = v )
-  
-  
-  # check to ensure both sets of variable names are included in input data when not specifying column names.
-  # edge cases
-  
-  # BEGIN first outer conditional
-  # BEGIN first outer conditional
-  if ( sum( equity.eoy %in% c( "F9_10_NAFB_UNRESTRICT_EOY") )==2 & sum( equity.boy %in% c( "F9_10_NAFB_UNRESTRICT_BOY") )==2 ) {
-    
-    # BEGIN series of nested conditionals 
-    
-    
-    # if at least one of the columns in missing from the input dataset, use only the column that is present
-    if ( length( which( colnames( dat ) %in% equity.eoy ) )==1 | length( which( colnames( dat ) %in% equity.boy ) )==1 ) {
-      
-      if ( length( which(colnames( dat ) %in% equity.eoy ) )==2 ){
-        
-        # create a column that concatenates two numerator variables into single column if both columns for numerator are present
-        dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), "d" ] <- dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), equity.eoy[2] ] 
-        dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), "d" ] <- dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), equity.eoy[1] ] 
-      }
-      # if at least one of the numerator columns in missing from the input dataset, use only the column that is present
-      if ( length( which( colnames( dat ) %in% equity.eoy ) )==1 ){
-        
-        this <- which( colnames( dat ) %in% equity.eoy )
-        
-        dat[ , "d" ] <- dat[ , this ]
-      }
-      
-      
-      if ( length( which( colnames( dat ) %in% equity.boy ) )==2 ){
-        # create a column that concatenates two numerator variables into single column if both columns for denominator are present
-        dat[ which( is.na( dat[ equity.boy[2] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[2] ] )==F ), equity.boy[2] ] 
-        dat[ which( is.na( dat[ equity.boy[1] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[1] ] )==F ), equity.boy[1] ] 
-      }
-      # if at least one of the denominator columns in missing from the input dataset, use only the column that is present
-      if ( length( which( colnames( dat ) %in% equity.boy ))==1  ){
-        
-        this <- which( colnames( dat ) %in% equity.boy )
-        
-        dat[ , "e" ] <- dat[ , this ]
-      }
-      # END series of nested conditionals 
-      
-      # now, assign p and e, respectively
-      d <- dat[[ "d" ]]
-      e <- dat[[ "e" ]]
-    }
-    
-    # if all four columns are present, exit conditional
-    if ( length( equity.eoy )==2 & length( equity.boy )==2 & length(which( colnames( dat ) %in% equity.eoy ) )==2 & length(which( colnames( dat ) %in% equity.boy ) )==2 ) {
-      
-      # create a column that concatenates two numerator variables into single column
-      dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), "d" ] <- dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), equity.eoy[2] ]
-      dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), "d" ] <- dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), equity.eoy[1] ]
-      
-      # create a column that concatenates two denominator variables into single column
-      dat[ which( is.na( dat[ equity.boy[2] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[2] ] )==F ), equity.boy[2] ]
-      dat[ which( is.na( dat[ equity.boy[1] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[1] ] )==F ), equity.boy[1] ]
-      
-      
-      d <- dat[[ "d"]]
-      e <- dat[[ "e"]]
-    }
-  }
-  # END first outer conditional
-  
-  
-  
-  # all other cases are nestep in the following conditionals
-  
-  if ( sum( equity.eoy %in% c( "F9_10_NAFB_UNRESTRICT_EOY") )!=2 & sum( equity.boy %in% c( "F9_10_NAFB_UNRESTRICT_BOY") )!=2 ){          
-    
-    if ( length( equity.eoy )==2 & length( equity.boy )==2 ) {
-      
-      # create a column that concatenates two numerator variables into single column
-      dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), equity.eoy[2] ]
-      dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), equity.eoy[1] ]
-      
-      # create a column that concatenates two denominator variables into single column
-      dat[ which( is.na( dat[ equity.boy[2] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[2] ] )==F ), equity.boy[2] ]
-      dat[ which( is.na( dat[ equity.boy[1] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[1] ] )==F ), equity.boy[1] ]
-      
-      
-      d <- dat[[ "d"]]
-      e <- dat[[ "e"]]
-    }
-    
-    else if ( length( equity.eoy )==2 & length( equity.boy )==1 ) {
-      
-      # create a column that concatenates two denominator variables into single column
-      dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), "d"] <- dat[ which( is.na( dat[ equity.eoy[2] ] )==F ), equity.eoy[2] ]
-      dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), "d"] <- dat[ which( is.na( dat[ equity.eoy[1] ] )==F ), equity.eoy[1] ]
-      
-      
-      d <- dat[[ "d"]]
-      e <- dat[[ equity.boy ]]
-    }
-    
-    else if ( length( equity.eoy )==1 & length( equity.boy )==2 ) {
-      
-      # create a column that concatenates two numerator variables into single column
-      dat[ which( is.na( dat[ equity.boy[2] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[2] ] )==F ), equity.boy[2] ]
-      dat[ which( is.na( dat[ equity.boy[1] ] )==F ), "e"] <- dat[ which( is.na( dat[ equity.boy[1] ] )==F ), equity.boy[1] ]
-      
-      
-      d <- dat[[ equity.eoy ]]
-      e <- dat[[ "e"]]
-    }
-    
-    else if ( length( equity.eoy )==1 & length( equity.boy )==1 ) {
-      
-      d <- dat[[ equity.eoy ]]
-      e <- dat[[ equity.boy ]]
-    }
-    
-    
-  }    
-  
-  # can't divide by zero
-  print( paste0( "Equity (BOY) cannot be equal to zero: ", sum( e==0, na.rm = T ), " cases have been replaced with NA." ) )
-  e[ e == 0 ] <- NA 
-  
-  or <- d / e
-  
-  top.p    <- 1 - (1-winsorize)/2
-  bottom.p <- 0 + (1-winsorize)/2
-  top      <- quantile( or, top.p, na.rm=T )
-  bottom   <- quantile( or, bottom.p, na.rm=T )
-  or.w    <- or
-  or.w[ or.w > top    ] <- top
-  or.w[ or.w < bottom ] <- bottom
-  
-  or.n <- scale( or.w )
-  
-  or.p <- dplyr::ntile( or, 100 )
-  
-  OR <- data.frame( or, or.w, or.n, or.p )
-  
-  print( summary( OR ) )
-  
-  par( mfrow=c(2,2) )
-  plot( density(or,   na.rm=T), main="Operating Margin (OR)" )
-  plot( density(or.w, na.rm=T), main="OR Winsorized" )
-  plot( density(or.n, na.rm=T), main="OR Standardized as Z" )
-  plot( density(or.p, na.rm=T), main="OR as Percentile" )
-  
-  df.or <- data.frame( cbind( df, OR ) )
-  return( df.or )
-}
+  validate_inputs( winsorize, net_assets_eoy, net_assets_boy, "net_assets_eoy", "net_assets_boy" )
 
+  if ( length( net_assets_eoy ) > 2 ) stop( "`net_assets_eoy` must be one or two column names." )
+  if ( length( net_assets_boy ) > 2 ) stop( "`net_assets_boy` must be one or two column names." )
+
+  vars <- c( net_assets_eoy, net_assets_boy )
+  KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
+  dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
+  dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
+  if ( sanitize ) {
+    dt <- sanitize_financials( dt )
+  }
+
+  eoy <- resolve_col( dt, net_assets_eoy )
+  boy <- resolve_col( dt, net_assets_boy )
+
+  message( paste0( "Beginning net assets equal to zero: ", sum( boy == 0, na.rm = TRUE ),
+                   " case(s) replaced with NA." ) )
+  boy[ boy == 0 ] <- NA
+
+  or <- ( eoy - boy ) / boy
+
+  v <- winsorize_var( or, winsorize )
+  OR <- data.frame( or   = v$raw,
+                    or_w = v$winsorized,
+                    or_z = v$z,
+                    or_p = v$pctile )
+
+  if ( summarize ) {
+    print( summary( OR ) )
+    op <- par( mfrow = c(2,2) )
+    on.exit( par(op), add = TRUE )
+    plot( density( OR$or, na.rm = TRUE ), main = "OR (raw)" )
+    plot( density( OR$or_w, na.rm = TRUE ), main = "OR Winsorized" )
+    plot( density( OR$or_z, na.rm = TRUE ), main = "OR Standardized (Z)" )
+    plot( density( OR$or_p, na.rm = TRUE ), main = "OR Percentile" )
+  }
+
+  return( cbind( df, OR ) )
+}

@@ -4,131 +4,100 @@
 \alias{get_moch}
 \title{Months of Operating Cash on Hand}
 \usage{
-get_moch( df, cash = 'F9_10_ASSET_CASH_EOY', 
-short.invest = 'F9_10_ASSET_SAVING_EOY', 
-pledges.receive = 'F9_10_ASSET_PLEDGE_NET_EOY', 
-accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
-tot.func.exp = 'F9_09_EXP_TOT_TOT', 
-dda = 'F9_09_EXP_DEPREC_TOT', numerator = NULL, denominator = NULL, winsorize = 0.98 )
+get_moch( df,
+  cash                 = "F9_10_ASSET_CASH_EOY",
+  savings              = "F9_10_ASSET_SAVING_EOY",
+  pledges_receivable   = "F9_10_ASSET_PLEDGE_NET_EOY",
+  accounts_receivable  = "F9_10_ASSET_ACC_NET_EOY",
+  total_expenses       = "F9_09_EXP_TOT_TOT",
+  depreciation         = "F9_09_EXP_DEPREC_TOT",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ: Part II, line 22B (cash and short-term investments only)) with the default name supplied.}
+\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
 
-\item{short.invest}{A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B; On EZ: Part II, line 22B (cash and short-term investments only)) with the default name supplied.}
+\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
 
-\item{pledges.receive}{A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available) with the default name supplied.}
+\item{pledges_receivable}{Pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
 
-\item{accounts.receive}{A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available) with the default name supplied.}
+\item{accounts_receivable}{Accounts receivable, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
 
-\item{tot.func.exp}{A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available) with the default name supplied.}
+\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
 
-\item{dda}{A character string indicating the column name for depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available) with the default name supplied.}
+\item{depreciation}{Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (\code{cash}, \code{short.invest},\code{pledges.receive}, \code{accounts.receive}). Users may also use this argument to supply the column variable for EZ-filers: cash, savings, and investment, EOY On EZ: Part II, line 22B (cash and short-term investments only)).}
+\item{numerator}{Optional. A pre-aggregated column name for liquid assets, bypassing the
+individual \code{cash}, \code{savings}, \code{pledges_receivable}, and
+\code{accounts_receivable} arguments. Cannot be combined with those arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (\code{tot.func.exp}, \code{dda}). Users may also use this argument to supply the column variable for EZ-filers: Total operating expenses, EOY (On EZ: Part I, line 17 (operating expenses only)).}
+\item{denominator}{Optional. A pre-aggregated column name for the denominator (annual
+non-depreciation expenses). The function divides this by 12 internally. Cannot be
+combined with \code{total_expenses} or \code{depreciation}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe with the months of operating cash on hand (\code{moch}),
-a winsorized version (\code{moch.w}), a standardized z-score version (\code{moch.z}),
-and a percentile version (\code{moch.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{moch}   — months of operating cash on hand (raw)
+\item \code{moch_w} — winsorized version
+\item \code{moch_z} — standardized z-score (based on winsorized values)
+\item \code{moch_p} — percentile rank (1–100)
+}
 }
 \description{
-Calculate the months of operating cash on hand and append it to the dataframe.
+Number of months the organization can operate using available liquid assets.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{moch = liquid_assets / monthly_expenses
+
+liquid_assets    = cash + savings + pledges_receivable + accounts_receivable
+monthly_expenses = ( total_expenses - depreciation ) / 12
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-Months of cash on hand is the number of months that an organization can continue to pay its
-operating expenses, given the amount of cash available. This metric is good to review at startup of
-organization, during periods of low revenues, and prior to undertaking new major activity.The metric is
-limited though in the following ways. First, it is based on an average monthly cash outflow, which is not
-really the case. Instead, cash tends to be spent in a lumpy manner, such as when rent or payroll are paid.
-Also, management tends to take drastic action to reduce expenses as cash reserves decline, so that the
-actual months of operation tend to be longer than indicated by this ratio. Thus, it is better to use a
-detailed cash flow analysis to determine the precise duration of the available cash, with regular updates.
+Months of operating cash on hand measures how long an organization could sustain
+operations using only its liquid assets if all other revenue ceased. It is the
+monthly equivalent of \code{\link{get_doch}}.
+
+Liquid assets are defined as the sum of cash, short-term savings, pledges receivable,
+and accounts receivable. Monthly expenses exclude non-cash depreciation charges to
+better approximate actual cash outflows.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_ASSET_CASH_EOY}: Cash (\code{cash})
+\item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Pledges receivable (\code{pledges_receivable})
+\item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
+\item \code{F9_09_EXP_TOT_TOT}: Total expenses (\code{total_expenses})
+\item \code{F9_09_EXP_DEPREC_TOT}: Depreciation (\code{depreciation})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,200,30 )
-x4 <- rnorm( 1000,100,30 )
-x5 <- rnorm( 1000,200,30 )
-x6 <- rnorm( 1000,200,30 )
-dat <- data.frame( x1, x2, x3, x4, x5, x6 )
+data( dat10k )
 
-# specify own column names
-d <- get_moch( df=dat, cash='x1', short.invest='x2', pledges.receive='x3', accounts.receive='x4', tot.func.exp='x5', dda = 'x6', winsorize=0.98 )
+d <- get_moch( df = dat10k )
+head( d[ , c( "moch", "moch_w", "moch_z", "moch_p" ) ] )
 
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-                         "F9_10_ASSET_ACC_NET_EOY", "F9_09_EXP_TOT_TOT", "F9_09_EXP_DEPREC_TOT" )
-
-
-d <- get_moch( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_ASSET_ACC_NET_EOY <- as.factor( dat_01$F9_10_ASSET_ACC_NET_EOY )
-
-d <- get_moch( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_moch( df=dat, cash='x1', short.invest='x2', pledges.receive='x3', accounts.receive='x4', tot.func.exp='x5', dda = 'x6', winsorize = 0.95 )
-
-d <- get_moch( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x5 + x6
-x.num <- x1 + x2 + x3 + x4
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_moch( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_moch( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
-
-d <- get_moch( df = part010810 )
-
-\dontrun{
-## Errors ## 
-# incorrectly specify denominator
-get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-          tot.func.exp = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-          tot.func.exp = NULL, dda = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-
-
-# incorrectly specify denominator with conflicting arguments
-get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-          tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-
-# supplying no arguments for the numerator
-get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-          tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying no arguments for the denominator
-get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-          tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_moch( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-          tot.func.exp = c( 'x5', 'x6' ), dda = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-get_moch( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-          tot.func.exp = NULL, dda = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )
-          }  
 }

@@ -2,97 +2,75 @@
 % Please edit documentation in R/get-dmr.R
 \name{get_dmr}
 \alias{get_dmr}
-\title{Debt Management Ratio}
+\title{Debt to Net Assets Ratio}
 \usage{
-get_dmr( df, liabilities = "F9_10_LIAB_TOT_EOY", 
-net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
-winsorize = 0.98 )
+get_dmr( df,
+  liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
+  net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{liabilities}{A character string indicating the column name for total liabilities, EOY (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.}
+\item{liabilities}{Total liabilities, EOY. Accepts one or two column names; if two are
+provided they are coalesced with the 990 value taking priority over 990EZ.
+(On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
+On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})}
 
-\item{net.assets}{A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available) with the default name supplied.}
+\item{net_assets}{Unrestricted net assets, EOY. (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the debt management ratio (\code{dmr}),
-a winsorized version (\code{dmr.w}), a standardized z-score version (\code{dmr.z}),
-and a percentile version (\code{dmr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{dmr}   — debt to net assets ratio (raw)
+\item \code{dmr_w} — winsorized version
+\item \code{dmr_z} — standardized z-score (based on winsorized values)
+\item \code{dmr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the debt management ratio and append it to the dataframe.
+Compares total liabilities to unrestricted net assets.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{dmr = total_liabilities / unrestricted_net_assets
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-This metric measures how much an organization is relying on funding from lending entities and the
-amount of free, unrestricted cash it has to pay back those loans. A high value in this metric could mean
-an organization is highly leveraged and thus that it has reduced ability to borrow more money in the future.
-Conversely, a low value indicates the organization may not be leveraging its assets to achieve the most
-growth and impact it could or that there is a dearth of credit available from lending entities.
-Note: computation of this metric is available to both 990 and 990-EZ filers.
+The debt to net assets ratio measures the relationship between an organization's total
+obligations and its unrestricted equity base. Lower values indicate a stronger capacity
+to absorb debt.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{liabilities}, 990)
+\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{liabilities}, 990EZ)
+\item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{net_assets})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_dmr( df = dat10k )
+head( d[ , c( "dmr", "dmr_w", "dmr_z", "dmr_p" ) ] )
 
-# specify own column names
-d <- get_dmr( df = dat, liabilities = "x1", net.assets = "x2" )
-
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_10_NAFB_UNRESTRICT_EOY" )
-
-d <- get_dmr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_LIAB_TOT_EOY <- as.factor( dat_01$F9_10_LIAB_TOT_EOY )
-
-d <- get_dmr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_dmr( df = dat, liabilities = "x1", net.assets = "x2", winsorize = 0.95 )
-
-d <- get_dmr( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_dmr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_LIAB_TOT_EOY <- as.character( part010810$F9_10_LIAB_TOT_EOY )
-
-d <- get_dmr( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_dmr( df = dat, liabilities = NULL, net.assets = "x2" )
-
-# denominator not specified
-d <- get_dmr( df = dat, liabilities = "x1", net.assets = NULL )
-
-# neither numerator nor denominator specified
-d <- get_dmr( df = dat, liabilities = NULL, net.assets = NULL )
-
-# column names vector not of correct length
-d <- get_dmr( df = dat, liabilities = c("e","b","c"), net.assets = "e")
-
-# column names vector not of correct length
-d <- get_dmr( df = dat, liabilities = "e", net.assets = c( "e", "b", "c") )
-}
 }

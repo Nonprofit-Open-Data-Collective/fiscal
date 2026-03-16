@@ -2,97 +2,71 @@
 % Please edit documentation in R/get-ggr.R
 \name{get_ggr}
 \alias{get_ggr}
-\title{Government Grants Ratio}
+\title{Government Grant Ratio}
 \usage{
-get_ggr( df, 
-ggc = "F9_08_REV_CONTR_GOVT_GRANT", 
-total.revenue = "F9_08_REV_TOT_TOT", 
-winsorize = 0.98 )
+get_ggr( df,
+  government_grants = "F9_08_REV_CONTR_GOVT_GRANT",
+  total_revenue     = "F9_08_REV_TOT_TOT",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{ggc}{A character string indicating the column name for government grant contributions (On 990: Part VIII, Line 1(E); On EZ: Not Available).}
+\item{government_grants}{Government grants and contributions. (On 990: Part VIII, line 1e; \code{F9_08_REV_CONTR_GOVT_GRANT})}
 
-\item{total.revenue}{A character string indicating the column name for total revenue (On 990: (Part VIII, Line 12A); On EZ: Part I, Line 9).}
+\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the government grants ratio (\code{ggr}),
-a winsorized version (\code{ggr.w}), a standardized z-score version (\code{ggr.z}),
-and a percentile version (\code{ggr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{ggr}   — government grant ratio (raw)
+\item \code{ggr_w} — winsorized version
+\item \code{ggr_z} — standardized z-score (based on winsorized values)
+\item \code{ggr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the government grants ratio and append it to the dataframe.
+Share of total revenue originating from government grants.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{ggr = government_grants / total_revenue
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-The government grants ratio measures the percentage of an organization’s revenues that come from
-government grants and contributions. High values in this ratio indicate that more of an organization's
-revenues come from government grants while a lower number indicates that an organization's funds come from
-other donation sources (private foundations), earned income, or investment income. Note: computation of this
-metric is available to only 990 filers and not for 990-EZ filers. The default inputs use column names for
-variables available only to 990 filers.
+The government grant ratio measures the proportion of total revenue derived from
+government sources. High values indicate heavy reliance on public funding, which may
+create vulnerability if that funding is reduced or eliminated.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_08_REV_CONTR_GOVT_GRANT}: Government grants and contributions (\code{government_grants})
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_ggr( df = dat10k )
+head( d[ , c( "ggr", "ggr_w", "ggr_z", "ggr_p" ) ] )
 
-# specify own column names
-d <- get_ggr( df = dat, ggc = "x1", total.revenue = "x2" )
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_08_REV_CONTR_GOVT_GRANT", "F9_08_REV_TOT_TOT" )
-
-d <- get_ggr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_08_REV_CONTR_GOVT_GRANT <- as.factor( dat_01$F9_08_REV_CONTR_GOVT_GRANT )
-
-d <- get_ggr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_ggr( df = dat, ggc = "x1", total.revenue = "x2", winsorize = 0.95 )
-
-d <- get_ggr( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_ggr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_08_REV_CONTR_GOVT_GRANT <- as.character( part010810$F9_08_REV_CONTR_GOVT_GRANT )
-
-d <- get_ggr( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_ggr( df = dat, ggc = NULL, total.revenue = "x2" )
-
-# denominator not specified
-d <- get_ggr( df = dat, ggc = "x1", total.revenue = NULL )
-
-# neither numerator nor denominator specified
-d <- get_ggr( df = dat, ggc = NULL, total.revenue = NULL )
-
-# column names vector not of correct length
-d <- get_ggr( df = dat, ggc = c("e","b","c"), total.revenue = "e")
-
-# column names vector not of correct length
-d <- get_ggr( df = dat, ggc = "e", total.revenue = c( "e", "b", "c") )
-}
 }

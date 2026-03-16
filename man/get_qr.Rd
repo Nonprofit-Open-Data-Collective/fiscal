@@ -4,134 +4,95 @@
 \alias{get_qr}
 \title{Quick Ratio}
 \usage{
-get_qr( df, 
-cash = "F9_10_ASSET_CASH_EOY", 
-si = "F9_10_ASSET_SAVING_EOY", 
-pr = "F9_10_ASSET_PLEDGE_NET_EOY",
-ar = "F9_10_ASSET_ACC_NET_EOY", 
-ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
-gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-numerator = NULL,
-denominator = NULL,
-winsorize = 0.98 )
+get_qr( df,
+  cash                = "F9_10_ASSET_CASH_EOY",
+  savings             = "F9_10_ASSET_SAVING_EOY",
+  pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
+  accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
+  accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
+  grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ: Not Available).}
+\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
 
-\item{si}{A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B;On EZ: Not Available).}
+\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
 
-\item{pr}{A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available).}
+\item{pledges_receivable}{Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
 
-\item{ar}{A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).}
+\item{accounts_receivable}{Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
 
-\item{ap}{A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).}
+\item{accounts_payable}{Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})}
 
-\item{gp}{A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).}
+\item{grants_payable}{Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (\code{cash}, \code{si},\code{pr}, \code{ar} ).}
+\item{numerator}{Optional. A pre-aggregated column for quick assets. Cannot be combined
+with the individual asset arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (\code{ap}, \code{gp}).}
+\item{denominator}{Optional. A pre-aggregated column for current liabilities. Cannot be
+combined with \code{accounts_payable} or \code{grants_payable}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the quick ratio (\code{qr}),
-a winsorized version (\code{qr.w}), a standardized z-score version (\code{qr.z}),
-and a percentile version (\code{qr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{qr}   — quick ratio (raw)
+\item \code{qr_w} — winsorized version
+\item \code{qr_z} — standardized z-score (based on winsorized values)
+\item \code{qr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the quick ratio and append it to the dataframe.
+Measures liquidity using only the most liquid assets, excluding inventory and prepaid expenses.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{qr = quick_assets / current_liabilities
+
+quick_assets        = cash + savings + pledges_receivable + accounts_receivable
+current_liabilities = accounts_payable + grants_payable
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-This metric indicates how well an organization can cover its liabilities with its readily
-available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current
-liabilities. This also indicates that the organization can pay off its current debts without selling its
-long-term assets. If an organization has a quick ratio higher than 1, this means that it owns more quick
-assets than current liabilities. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers.
-The default inputs use column names for variables available only to 990 filers.
+The quick ratio is a stricter liquidity measure than the current ratio (\code{\link{get_cr}}).
+It excludes inventory and prepaid expenses from current assets, retaining only the most
+immediately convertible resources. A ratio above 1.0 indicates that highly liquid assets
+are sufficient to cover current liabilities.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
+\item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
+\item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
+\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,200,30 )
-x4 <- rnorm( 1000,100,30 )
-x5 <- rnorm( 1000,200,30 )
-x6 <- rnorm( 1000,200,30 )
-dat <- data.frame( x1, x2, x3, x4, x5, x6 )
+data( dat10k )
 
-# specify own column names
-d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize=0.98 )
+d <- get_qr( df = dat10k )
+head( d[ , c( "qr", "qr_w", "qr_z", "qr_p" ) ] )
 
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-                         "F9_10_ASSET_ACC_NET_EOY", "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY" )
-
-
-d <- get_qr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_ASSET_ACC_NET_EOY <- as.factor( dat_01$F9_10_ASSET_ACC_NET_EOY )
-
-d <- get_qr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize = 0.95 )
-
-d <- get_qr( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x5 + x6
-x.num <- x1 + x2 + x3 + x4
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_qr( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_qr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_LIAB_ACC_PAYABLE_EOY <- as.character( part010810$F9_10_LIAB_ACC_PAYABLE_EOY )
-
-d <- get_qr( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# incorrectly specify denominator
-get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-        ap = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-        ap = NULL, gp = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-
-
-# incorrectly specify denominator with conflicting arguments
-get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-        ap = 'x5', gp = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-
-# supplying no arguments for the numerator
-get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
-        ap = 'x5', gp = 'x6', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying no arguments for the denominator
-get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-        ap = NULL, gp = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-        ap = c( 'x5', 'x6' ), gp = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
-        ap = NULL, gp = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
-        }
 }

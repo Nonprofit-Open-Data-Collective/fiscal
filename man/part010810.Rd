@@ -3,11 +3,10 @@
 \docType{data}
 \name{part010810}
 \alias{part010810}
-\title{NCCS 990/990-EZ Data Excerpt}
+\title{NCCS 990/990-EZ Data Excerpt (2014-2021)}
 \format{
-A data frame with 1000 rows and 329 variables:
-\describe{
-Data Dictionary: https://nonprofit-open-data-collective.github.io/irs990efile/data-dictionary/data-dictionary.html}
+A data frame with 1000 rows and 329 variables. See the data dictionary at
+\url{https://nonprofit-open-data-collective.github.io/irs990efile/data-dictionary/data-dictionary.html}
 }
 \source{
 \url{https://github.com/lecy/fiscal-health/tree/main/EFILE}
@@ -16,9 +15,10 @@ Data Dictionary: https://nonprofit-open-data-collective.github.io/irs990efile/da
 part010810
 }
 \description{
-A dataset containing data from 990 and 990-EZ filings, 2014-2021.
+A dataset containing data from 990 and 990-EZ filings for the years 2014-2021,
+used as the primary example dataset throughout the \code{fiscal} package.
 }
 \examples{
- data( part010810 )
+data( part010810 )
 }
 \keyword{datasets}

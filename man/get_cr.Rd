@@ -4,154 +4,105 @@
 \alias{get_cr}
 \title{Current Ratio}
 \usage{
-get_cr( df, cash = 'F9_10_ASSET_CASH_EOY', 
-short.invest = 'F9_10_ASSET_SAVING_EOY', 
-pledges.receive = 'F9_10_ASSET_PLEDGE_NET_EOY', 
-accounts.receive = 'F9_10_ASSET_ACC_NET_EOY', 
-inventories.sale = 'F9_10_ASSET_INV_SALE_EOY', 
-prepaid.expenses = 'F9_10_ASSET_EXP_PREPAID_EOY', 
-accounts.payable = 'F9_10_LIAB_ACC_PAYABLE_EOY', 
-grants.payable = 'F9_10_LIAB_GRANT_PAYABLE_EOY', 
-numerator = NULL, denominator = NULL, winsorize = 0.98 )
+get_cr( df,
+  cash                = "F9_10_ASSET_CASH_EOY",
+  savings             = "F9_10_ASSET_SAVING_EOY",
+  pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
+  accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
+  investment_sales    = "F9_10_ASSET_INV_SALE_EOY",
+  prepaid_expenses    = "F9_10_ASSET_EXP_PREPAID_EOY",
+  accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
+  grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ:Part I, line 22 (cash and short-term investments only)) with the default name supplied.}
+\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
 
-\item{short.invest}{A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B; On EZ:Part I, line 22 (cash and short-term investments only)) with the default name supplied.}
+\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
 
-\item{pledges.receive}{A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available) with the default name supplied.}
+\item{pledges_receivable}{Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
 
-\item{accounts.receive}{A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available) with the default name supplied.}
+\item{accounts_receivable}{Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
 
-\item{inventories.sale}{A character string indicating the column name for inventories for sale or use, EOY (On 990: Part X, line 8B; On EZ: Not Available) with the default name supplied.}
+\item{investment_sales}{Investments held for sale or use, EOY. (On 990: Part X, line 8B; \code{F9_10_ASSET_INV_SALE_EOY})}
 
-\item{prepaid.expenses}{A character string indicating the column name for prepaid expenses and deferred charges, EOY (On 990: Part X, line 9B; On EZ: Not Available) with the default name supplied.}
+\item{prepaid_expenses}{Prepaid expenses and deferred charges, EOY. (On 990: Part X, line 9B; \code{F9_10_ASSET_EXP_PREPAID_EOY})}
 
-\item{accounts.payable}{A character string indicating the column name for accounts payable, EOY (On 990: (Part X, line 17B); On EZ: Not available) with the default name supplied.}
+\item{accounts_payable}{Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})}
 
-\item{grants.payable}{A character string indicating the column name for grants payable, EOY (On 990: (Part X, line 18B); On EZ: Not available) with the default name supplied.}
+\item{grants_payable}{Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (\code{cash}, \code{short.invest},\code{pledges.receive}, \code{accounts.receive}, \code{inventories.sale}, \code{prepaid.expenses}).}
+\item{numerator}{Optional. A pre-aggregated column name for current assets, bypassing
+the individual asset arguments. Cannot be combined with those arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (\code{accounts.payable}, \code{grants.payable}).}
+\item{denominator}{Optional. A pre-aggregated column name for current liabilities,
+bypassing \code{accounts_payable} and \code{grants_payable}. Cannot be combined
+with those arguments.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe with the current ratio (\code{cr}),
-a winsorized version (\code{cr.w}), a standardized z-score version (\code{cr.z}),
-and a percentile version (\code{cr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{cr}   — current ratio (raw)
+\item \code{cr_w} — winsorized version
+\item \code{cr_z} — standardized z-score (based on winsorized values)
+\item \code{cr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the current ratio and append it to the dataframe.
+Measures short-term liquidity by comparing current assets to current liabilities.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cr = current_assets / current_liabilities
+
+current_assets      = cash + savings + pledges_receivable + accounts_receivable
+                      + investment_sales + prepaid_expenses
+current_liabilities = accounts_payable + grants_payable
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-The current ratio is used to measure the overall liquidity of a nonprofit organization.
-In its simplest form, it shows how many dollars of current assets an organization has to cover its
-current obligations. The higher the ratio, the more liquid the organization.As a rule of thumb, organizations
-should strive for a current ratio of 1.0 or higher. An organization with a ratio of 1.0 would have one dollar
-of assets to pay for every dollar of current liabilities. Note: computation of this metric is available to only 990 filers
-not for 990-EZ filers. The default inputs use column names for variables available only to 990 filers.
+The current ratio measures overall liquidity — how many dollars of current assets are
+available to cover each dollar of current liabilities. A ratio at or above 1.0 is
+generally considered healthy. Values below 1.0 indicate that current liabilities exceed
+current assets.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
+\item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
+\item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
+\item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investment_sales})
+\item \code{F9_10_ASSET_EXP_PREPAID_EOY}: Prepaid expenses and deferred charges, EOY (\code{prepaid_expenses})
+\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,100,30 )
-x4 <- rnorm( 1000,200,30 )
-x5 <- rnorm( 1000,100,30 )
-x6 <- rnorm( 1000,200,30 )
-x7 <- rnorm( 1000,100,30 )
-x8 <- rnorm( 1000,200,30 )
-x7[ c(15,300,600) ] <- 0
-x8[ c(15,300,600) ] <- 0
+data( dat10k )
 
+d <- get_cr( df = dat10k )
+head( d[ , c( "cr", "cr_w", "cr_z", "cr_p" ) ] )
 
-
-dat <- data.frame( x1,x2, x3, x4, x5, x6, x7, x8)
-
-# specify own column names
-d <- get_cr( df=dat, cash='x1', short.invest='x2', pledges.receive='x3', 
-             accounts.receive='x4', inventories.sale='x5', prepaid.expenses = 'x6', 
-             accounts.payable = 'x7', grants.payable = 'x8', winsorize=0.98 )
-
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-                         "F9_10_ASSET_ACC_NET_EOY", "F9_10_ASSET_INV_SALE_EOY", "F9_10_ASSET_EXP_PREPAID_EOY",
-                         "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY")
-
-
-d <- get_cr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_ASSET_ACC_NET_EOY <- as.factor( dat_01$F9_10_ASSET_ACC_NET_EOY )
-
-d <- get_cr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_cr( df=dat, cash='x1', short.invest='x2', pledges.receive='x3', 
-             accounts.receive='x4', inventories.sale='x5', prepaid.expenses = 'x6', 
-             accounts.payable = 'x7', grants.payable = 'x8', winsorize=0.95 )
-
-d <- get_cr( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x7 + x8
-x.num <- x1 + x2 + x3 + x4 + x5 + x6
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_cr( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_cr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_ASSET_INV_SALE_EOY <- as.character( part010810$F9_10_ASSET_INV_SALE_EOY )
-
-d <- get_cr( df = part010810 )
-
-\dontrun{
-## Errors
-# incorrectly specify denominator
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, 
-        numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', 
-        numerator = 'x.num', denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify denominator with conflicting arguments
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', 
-        numerator = NULL, denominator = 'x.den', winsorize=0.98 )
-
-# supplying no arguments for the numerator
-get_cr( df = dat_02, cash = NULL, short.invest = NULL, pledges.receive = NULL, accounts.receive = NULL, 
-        inventories.sale = NULL, prepaid.expenses = NULL, accounts.payable = 'x7', grants.payable = 'x8', 
-        numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# supplying no arguments for the denominator
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = NULL, grants.payable = NULL, 
-        numerator = NULL, denominator = NULL, winsorize=0.98 ) 
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = c( 'x5', 'x6' ), prepaid.expenses = 'x6', accounts.payable = 'x7', grants.payable = 'x8', 
-        numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-get_cr( df = dat_02, cash = 'x1', short.invest = 'x2', pledges.receive = 'x3', accounts.receive = 'x4', 
-        inventories.sale = 'x5', prepaid.expenses = 'x6', accounts.payable = c( 'x7', 'x8' ), grants.payable = 'x8', 
-        numerator = NULL, denominator = NULL, winsorize=0.98 ) 
-        }
 }

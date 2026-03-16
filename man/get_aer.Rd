@@ -2,96 +2,72 @@
 % Please edit documentation in R/get-aer.R
 \name{get_aer}
 \alias{get_aer}
-\title{Administration Expense Ratio}
+\title{Administrative Overhead Ratio}
 \usage{
-get_aer( df, mgmt.ge = "F9_09_EXP_TOT_MGMT", total.expense = "F9_09_EXP_TOT_TOT", winsorize = 0.98 )
+get_aer( df,
+  mgmt_expenses  = "F9_09_EXP_TOT_MGMT",
+  total_expenses = "F9_09_EXP_TOT_TOT",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{mgmt.ge}{A character string indicating the column name for management and general expenses (On 990: Part 9, Line 25(C); On EZ: Not Available.}
+\item{mgmt_expenses}{Management and general expenses. (On 990: Part IX, line 25C; \code{F9_09_EXP_TOT_MGMT})}
 
-\item{total.expense}{A character string indicating the column name for total expenses (On 990: Part 9, Line 25(A); On EZ: Part 1, Line 17).}
+\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the administration expense ratio (\code{aer}),
-a winsorized version (\code{aer.w}), a standardized z-score version (\code{aer.z}),
-and a percentile version (\code{aer.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{aer}   — administrative overhead ratio (raw)
+\item \code{aer_w} — winsorized version
+\item \code{aer_z} — standardized z-score (based on winsorized values)
+\item \code{aer_p} — percentile rank (1–100)
+}
 }
 \description{
-Calculate the administration expense ratio and append it to the dataframe.
+Share of total expenses devoted to management and general administration.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{aer = management_expenses / total_expenses
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-The administrative expense ratio measures the percentage of an organization’s expenses that are
-being allocated to administrative costs. High values in this ratio indicate that more of an organization's
-expenses are going towards its management and general expenses (or overhead) while a lower number indicates
-that an organization's funds are going towards program service or fundraising expenses. Charity Navigator
-generally gives its highest rankings to organizations that spend less than 15\% of expenses on overhead. The
-Better Business Bureau’s Wise Giving Alliance recommends a ratio of less than 35\%. Note: computation of this
-metric is available to full 990 filers only.
+The administrative overhead ratio measures what share of total spending goes to management
+and general expenses rather than programs or fundraising. Lower values indicate more
+mission-focused spending. Charity Navigator gives its highest ratings to organizations
+spending less than 15\% on overhead; the Better Business Bureau recommends below 35\%.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_09_EXP_TOT_MGMT}: Management and general expenses (\code{mgmt_expenses})
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
-
-# specify own column names
-d <- get_aer( df = dat, mgmt.ge = "x1", total.expense = "x2" )
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_09_EXP_TOT_MGMT", "F9_09_EXP_TOT_TOT" )
-
-d <- get_aer( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_09_EXP_TOT_MGMT <- as.factor( dat_01$F9_09_EXP_TOT_MGMT )
-
-d <- get_aer( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_aer( df = dat, mgmt.ge = "x1", total.expense = "x2", winsorize = 0.95 )
-
-d <- get_aer( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_aer( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_09_EXP_TOT_MGMT <- as.character( part010810$F9_09_EXP_TOT_MGMT )
-
-d <- get_aer( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_aer( df = dat, mgmt.ge = NULL, total.expense = "x2" )
-
-# denominator not specified
-d <- get_aer( df = dat, mgmt.ge = "x1", total.expense = NULL )
-
-# neither numerator nor denominator specified
-d <- get_aer( df = dat, mgmt.ge = NULL, total.expense = NULL )
-
-# column names vector not of correct length
-d <- get_aer( df = dat, mgmt.ge = c("e","b","c"), total.expense = "e")
-
-# column names vector not of correct length
-d <- get_aer( df = dat, mgmt.ge = "e", total.expense = c( "e", "b", "c") )
-}
+d <- get_aer( df = dat10k )
+head( d[ , c( "aer", "aer_w", "aer_z", "aer_p" ) ] )
 
 }

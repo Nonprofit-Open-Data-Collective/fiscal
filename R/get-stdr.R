@@ -6,234 +6,150 @@
 #' Short Term Debt Ratio
 #'
 #' @description
-#' Calculate the short term debt ratio and append it to the dataframe. 
+#' Measures short-term obligations as a share of total net assets.
 #'
-#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param accounts.payable A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
-#' @param grants.payable A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
-#' @param net.assets A character string indicating the column name for net assets, EOY (On 990: Part X, Line 33B; On EZ: Part I, Line 21).
-#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (`accounts.payable`, `grants.payable`).
-#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (`net.assets`). 
-#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
-#' 
-#' @usage get_stdr( df, accounts.payable = "F9_10_LIAB_ACC_PAYABLE_EOY", grants.payable = "F9_10_LIAB_GRANT_PAYABLE_EOY", net.assets = "F9_10_NAFB_TOT_EOY", numerator = NULL, denominator = NULL, winsorize = 0.98 )
-#' 
-#' @return Object of class \code{data.frame}: the original dataframe appended with the short term debt ratio (`stdr`), 
-#'  a winsorized version (`stdr.w`), a standardized z-score version (`stdr.z`), 
-#'  and a percentile version (`stdr.p`).   
+#' **Formula:**
+#' ```
+#' stdr = short_term_liabilities / net_assets
 #'
-#' @details This metric indicates how well an organization can cover its immediate liabilities with its equity. 
-#' Low values are better as they indicate that an organization has lower levels of leverage and more flexibility 
-#' to dispense its assets as needed or as opportunities arise. When an organization has a Short Term Debt Ratio 
-#' of 1, its liabilities are fully equal to the assets it owns. If an organization has a ratio higher than 1, it 
-#' indicates that it is over leveraged. A value close to zero indicates low levels of liability, and a negative 
-#' value indicates that an organization has overpaid on their liabilities. Note: computation of this metric is available 
-#' to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available only to 990 
-#' filers.
-#' 
+#' short_term_liabilities = accounts_payable + grants_payable
+#' ```
+#'
+#' **Calculated For:** 990 filers only.
+#'
+#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param accounts_payable Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})
+#' @param grants_payable Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})
+#' @param net_assets Total net assets, EOY. (On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY})
+#' @param numerator Optional. A pre-aggregated column for short-term liabilities. Cannot be
+#'   combined with \code{accounts_payable} or \code{grants_payable}.
+#' @param denominator Optional. A pre-aggregated column for the denominator. Cannot be
+#'   combined with \code{net_assets}.
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
+#'   winsorizes at the 1st and 99th percentiles.
+#'
+#' @usage
+#' get_stdr( df,
+#'   accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
+#'   grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+#'   net_assets       = "F9_10_NAFB_TOT_EOY",
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   sanitize  = TRUE,
+#'   summarize = FALSE )
+#'
+#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#'   new columns:
+#'   \itemize{
+#'     \item \code{stdr}   — short term debt ratio (raw)
+#'     \item \code{stdr_w} — winsorized version
+#'     \item \code{stdr_z} — standardized z-score (based on winsorized values)
+#'     \item \code{stdr_p} — percentile rank (1-100)
+#'   }
+#'
+#' @details
+#' The short term debt ratio measures the size of near-term financial obligations relative
+#' to the organization's total equity base. Higher values indicate greater near-term
+#' financial pressure and reduced capacity to absorb unexpected costs.
+#'
+#' **Variables used:**
+#' \itemize{
+#'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+#'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+#'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets})
+#' }
+#'
+#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#'   the financial input columns are imputed to zero before the ratio is computed,
+#'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+#'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+#'   The returned dataframe always contains the original unmodified input columns.
+#'
+#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#'   the results and plots density curves for all four output columns
+#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'
 #' @import dplyr
 #' @import stringr
 #' @import magrittr
-#' 
+#'
 #' @examples
 #' library( fiscal )
-#' x1 <- rnorm( 1000, 100, 30 )
-#' x2 <- rnorm( 1000, 200, 30 )
-#' x3 <- rnorm( 1000, 200, 30 )
-#' x3[ c( 15, 300, 600 ) ] <- 0
-#' 
-#' dat <- data.frame( x1, x2, x3 )
-#' 
-#' # specify own column names
-#' d <- get_stdr( df = dat, accounts.payable = "x1", grants.payable = "x2", net.assets = "x3" )
-#' 
-#' 
-#' head( d ) 
-#' 
-#' # run with default column names
-#' x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-#' x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-#' 
-#' dat_01 <- data.frame( x1, x2, x3 )
-#' 
-#' colnames( dat_01 ) <- c( "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY", "F9_10_NAFB_TOT_EOY" )
-#' 
-#' d <- get_stdr( dat_01 )
-#' 
-#' # coerce one column to factor
-#' dat_01$F9_10_LIAB_GRANT_PAYABLE_EOY <- as.factor( dat_01$F9_10_LIAB_GRANT_PAYABLE_EOY )
-#' 
-#' d <- get_stdr( dat_01 )
-#' 
-#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_stdr( df = dat, accounts.payable = "x1", grants.payable = "x2", net.assets = "x3", winsorize = 0.95 )
-#' 
-#' d <- get_stdr( dat_01, winsorize = 0.95 )
-#' 
-#' 
-#' # using 990 data
-#' data( part010810 )
-#' d <- get_stdr( df = part010810 )
-#' 
-#' # now coerce one of the variables to numeric
-#' part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
-#' 
-#' d <- get_stdr( df = part010810 )
-#' 
-#' \dontrun{
-#' ## Errors ##
-#' 
-#' # numerator not specified
-#' d <- get_stdr( df = dat, accounts.payable = NULL, grants.payable = NULL, net.assets = "x3" )
-#' 
-#' # denominator not specified
-#' d <- get_stdr( df = dat, accounts.payable = "x1", grants.payable = "x2", net.assets = NULL )
-#' 
-#' # neither numerator nor denominator specified
-#' d <- get_stdr( df = dat, accounts.payable = NULL, grants.payable = NULL, net.assets = NULL )
-#' 
-#' # column names vector not of correct length
-#' d <- get_stdr( df = dat, accounts.payable = c("e","b","c"), grants.payable = "x2", net.assets = "e")
-#' 
-#' # column names vector not of correct length
-#' d <- get_stdr( df = dat, accounts.payable = "e", net.assets = c( "e", "b", "c"), grants.payable = "x2" )
-#' }
+#' data( dat10k )
+#'
+#' d <- get_stdr( df = dat10k )
+#' head( d[ , c( "stdr", "stdr_w", "stdr_z", "stdr_p" ) ] )
+#'
 #' @export
 get_stdr <- function( df,
-                      accounts.payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
-                      grants.payable = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-                      net.assets = "F9_10_NAFB_TOT_EOY",
-                      numerator = NULL,
+                      accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
+                      grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+                      net_assets       = "F9_10_NAFB_TOT_EOY",
+                      numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 )
+                      winsorize = 0.98 ,
+                     sanitize  = TRUE,
+                     summarize = FALSE )
 {
-  
-  
-  
-  # checks
-  if( winsorize > 1 | winsorize < 0 )
-  { stop( "winsorize argument must be 0 < w < 1" ) }
-  
-  if ( is.null( accounts.payable )==F & is.null( grants.payable )==F & is.null( net.assets )==F ) {
-    
-    if ( accounts.payable == "F9_10_LIAB_ACC_PAYABLE_EOY" & grants.payable == "F9_10_LIAB_GRANT_PAYABLE_EOY" &
-         net.assets == "F9_10_NAFB_TOT_EOY" & is.null( numerator )==F & is.null( denominator )==F ){
-      
-      warning( "Default argument inputs overridden with specified numerator and denominator arguments" ) 
-      
-      accounts.payable <- NULL
-      grants.payable <- NULL
-      net.assets <- NULL
-      
-    }
-    
-  } 
-  
-  if ( ( ( length( c( accounts.payable, grants.payable ) ) < 2 )==F | is.null( numerator )==F ) &
-       ( ( is.null( net.assets )==T ) &
-         is.null( denominator )==T ) )
-  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if ( ( ( length( c( net.assets ) ) == 0 )==F | is.null( denominator )==F ) &
-       ( ( is.null( accounts.payable )==T | is.null( grants.payable )==T ) &
-         is.null( numerator )==T ) )
-  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  
-  if ( ( length( c( accounts.payable, grants.payable ) ) <= 2 ) &
-       ( length( c( accounts.payable, grants.payable ) ) >= 1 ) & 
-       ( is.null( numerator )==F ) )
-  { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if ( ( length( c( net.assets ) ) >= 1 ) & 
-       ( is.null( denominator )==F ) )
-  { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if( ( length( accounts.payable ) > 1 | length( accounts.payable ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`accounts.payable` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( grants.payable ) > 1 | length( grants.payable ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`grants.payable` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( net.assets ) > 1 | length( net.assets ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`net.assets` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( numerator ) > 1 & length( c( accounts.payable, grants.payable ) ) == 0 ) )
-  { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( denominator ) > 1 & length( c( net.assets ) ) == 0 ) )
-  { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  
-  
-  # copy data
-  dat <- df
-  
-  ## ensure variable classes are numeric ##
-  
-  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
-  v <- c( colnames( dat )[which( colnames( dat ) %in% accounts.payable ) ], colnames( dat )[which( colnames( dat ) %in% grants.payable )],
-          colnames( dat )[which( colnames( dat ) %in% net.assets )],colnames( dat )[which( colnames( dat ) %in% numerator )],
-          colnames( dat )[which( colnames( dat ) %in% denominator )] )
-  
-  dat <- coerce_numeric( d = dat, vars = v )
-  
-  if( is.null( numerator) == T & is.null( denominator ) == T ){
-    
-    num <- dat[[ accounts.payable ]] + dat[[ grants.payable ]]
-    den <- dat[[ net.assets ]]
-    
+  if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
+
+  using_component_num <- !is.null( accounts_payable ) | !is.null( grants_payable )
+  using_component_den <- !is.null( net_assets )
+
+  if ( !is.null( numerator ) & using_component_num ) {
+    stop( "Supply either `numerator` OR the payable arguments (accounts_payable, grants_payable), not both." )
   }
-  
-  if( is.null( numerator) == F & is.null( denominator ) == T ){
-    
-    num <- dat[[ numerator ]]
-    den <- dat[[ net.assets ]]
-    
+  if ( !is.null( denominator ) & using_component_den ) {
+    stop( "Supply either `denominator` OR `net_assets`, not both." )
   }
-  
-  if( is.null( numerator) == T & is.null( denominator ) == F ){
-    
-    num <- dat[[ accounts.payable ]] + dat[[ grants.payable ]]
-    den <- dat[[ denominator ]]
-    
+  if ( is.null( numerator ) & !using_component_num ) {
+    stop( "No numerator specified. Supply `numerator` or the payable columns." )
   }
-  
-  if( is.null( numerator) == F & is.null( denominator ) == F ){
-    
-    num <- dat[[ numerator ]]
-    den <- dat[[ denominator ]]
-    
+  if ( is.null( denominator ) & !using_component_den ) {
+    stop( "No denominator specified. Supply `denominator` or `net_assets`." )
   }
-  
-  # can't divide by zero
-  print( paste0( "Net assets cannot be zero: ", sum( den==0, na.rm = T ), " cases have been replaced with NA." ) )
-  den[ den == 0 ] <- NA 
-  
+
+  all_cols <- c( accounts_payable, grants_payable, net_assets, numerator, denominator )
+  vars <- c( accounts_payable, grants_payable, net_assets, numerator, denominator )
+  KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
+  dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
+  dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
+  if ( sanitize ) {
+    dt <- sanitize_financials( dt )
+  }
+
+  if ( !is.null( numerator ) ) {
+    num <- dt[[ numerator ]]
+  } else {
+    num <- dt[[ accounts_payable ]] + dt[[ grants_payable ]]
+  }
+
+  if ( !is.null( denominator ) ) {
+    den <- dt[[ denominator ]]
+  } else {
+    den <- dt[[ net_assets ]]
+  }
+
+  message( paste0( "Net assets equal to zero: ", sum( den == 0, na.rm = TRUE ),
+                   " case(s) replaced with NA." ) )
+  den[ den == 0 ] <- NA
+
   stdr <- num / den
-  
-  top.p    <- 1 - (1-winsorize)/2
-  bottom.p <- 0 + (1-winsorize)/2
-  top      <- quantile( stdr, top.p, na.rm=T )
-  bottom   <- quantile( stdr, bottom.p, na.rm=T )
-  stdr.w    <- stdr
-  stdr.w[ stdr.w > top    ] <- top
-  stdr.w[ stdr.w < bottom ] <- bottom
-  
-  stdr.n <- scale( stdr.w )
-  
-  stdr.p <- dplyr::ntile( stdr, 100 )
-  
-  STDR <- data.frame( stdr, stdr.w, stdr.n, stdr.p )
-  
-  print( summary( STDR ) )
-  
-  par( mfrow=c(2,2) )
-  plot( density( stdr,   na.rm=T ), main="Short-Term Debt Ratio (STDR)" )
-  plot( density( stdr.w, na.rm=T ), main="STDR Winsorized" )
-  plot( density( stdr.n, na.rm=T ), main="STDR Standardized as Z" )
-  plot( density( stdr.p, na.rm=T ), main="STDR as Percentile" )
-  
-  df.stdr <- data.frame( cbind( df, STDR ) )
-  return( df.stdr )
+
+  v <- winsorize_var( stdr, winsorize )
+  STDR <- data.frame( stdr   = v$raw,
+                      stdr_w = v$winsorized,
+                      stdr_z = v$z,
+                      stdr_p = v$pctile )
+
+  if ( summarize ) {
+    print( summary( STDR ) )
+    op <- par( mfrow = c(2,2) )
+    on.exit( par(op), add = TRUE )
+    plot( density( STDR$stdr, na.rm = TRUE ), main = "STDR (raw)" )
+    plot( density( STDR$stdr_w, na.rm = TRUE ), main = "STDR Winsorized" )
+    plot( density( STDR$stdr_z, na.rm = TRUE ), main = "STDR Standardized (Z)" )
+    plot( density( STDR$stdr_p, na.rm = TRUE ), main = "STDR Percentile" )
+  }
+
+  return( cbind( df, STDR ) )
 }

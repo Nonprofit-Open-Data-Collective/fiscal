@@ -6,282 +6,167 @@
 #' Quick Ratio
 #'
 #' @description
-#' Calculate the quick ratio and append it to the dataframe. 
+#' Measures liquidity using only the most liquid assets, excluding inventory and prepaid expenses.
 #'
-#' @param df A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.
-#' @param cash A character string indicating the column name for cash, EOY (On 990: Part X, line 1B; On EZ: Not Available).
-#' @param si A character string indicating the column name for short-term investments, EOY (On 990: Part X, line 2B;On EZ: Not Available).
-#' @param pr A character string indicating the column name for pledges and grant receivables, EOY On 990: Part X, line 3B; On EZ: Not Available).
-#' @param ar A character string indicating the column name for accounts receivables, EOY (On 990: Part X, line 4B; On EZ: Not Available).
-#' @param ap A character string indicating the column name for accounts payable, EOY (On 990: Part X, line 17B; On EZ: Not Available).
-#' @param gp A character string indicating the column name for grants payable, EOY (On 990: Part X, line 18B; On EZ: Not Available).
-#' @param numerator A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (current assets). Do not combine with numerator column component arguments (`cash`, `si`,`pr`, `ar` ).
-#' @param denominator A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (current liabilities). Do not combine with denominator column component arguments (`ap`, `gp`).
-#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.   
+#' **Formula:**
+#' ```
+#' qr = quick_assets / current_liabilities
 #'
-#'@usage get_qr( df, 
-#' cash = "F9_10_ASSET_CASH_EOY", 
-#' si = "F9_10_ASSET_SAVING_EOY", 
-#' pr = "F9_10_ASSET_PLEDGE_NET_EOY",
-#' ar = "F9_10_ASSET_ACC_NET_EOY", 
-#' ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
-#' gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-#' numerator = NULL,
-#' denominator = NULL,
-#' winsorize = 0.98 )
-#' 
-#' @return Object of class \code{data.frame}: the original dataframe appended with the quick ratio (`qr`), 
-#' a winsorized version (`qr.w`), a standardized z-score version (`qr.z`), 
-#' and a percentile version (`qr.p`).   
+#' quick_assets        = cash + savings + pledges_receivable + accounts_receivable
+#' current_liabilities = accounts_payable + grants_payable
+#' ```
 #'
-#' @details This metric indicates how well an organization can cover its liabilities with its readily 
-#' available cash. When an organization has a quick ratio of 1, its quick assets are equal to its current 
-#' liabilities. This also indicates that the organization can pay off its current debts without selling its 
-#' long-term assets. If an organization has a quick ratio higher than 1, this means that it owns more quick 
-#' assets than current liabilities. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers. 
-#' The default inputs use column names for variables available only to 990 filers.
-#' 
+#' **Calculated For:** 990 filers only.
+#'
+#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param cash Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})
+#' @param savings Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})
+#' @param pledges_receivable Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})
+#' @param accounts_receivable Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})
+#' @param accounts_payable Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})
+#' @param grants_payable Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})
+#' @param numerator Optional. A pre-aggregated column for quick assets. Cannot be combined
+#'   with the individual asset arguments.
+#' @param denominator Optional. A pre-aggregated column for current liabilities. Cannot be
+#'   combined with \code{accounts_payable} or \code{grants_payable}.
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
+#'   winsorizes at the 1st and 99th percentiles.
+#'
+#' @usage
+#' get_qr( df,
+#'   cash                = "F9_10_ASSET_CASH_EOY",
+#'   savings             = "F9_10_ASSET_SAVING_EOY",
+#'   pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
+#'   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
+#'   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
+#'   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   sanitize  = TRUE,
+#'   summarize = FALSE )
+#'
+#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#'   new columns:
+#'   \itemize{
+#'     \item \code{qr}   — quick ratio (raw)
+#'     \item \code{qr_w} — winsorized version
+#'     \item \code{qr_z} — standardized z-score (based on winsorized values)
+#'     \item \code{qr_p} — percentile rank (1-100)
+#'   }
+#'
+#' @details
+#' The quick ratio is a stricter liquidity measure than the current ratio (\code{\link{get_cr}}).
+#' It excludes inventory and prepaid expenses from current assets, retaining only the most
+#' immediately convertible resources. A ratio above 1.0 indicates that highly liquid assets
+#' are sufficient to cover current liabilities.
+#'
+#' **Variables used:**
+#' \itemize{
+#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
+#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
+#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
+#'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
+#'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+#'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+#' }
+#'
+#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#'   the financial input columns are imputed to zero before the ratio is computed,
+#'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+#'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+#'   The returned dataframe always contains the original unmodified input columns.
+#'
+#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#'   the results and plots density curves for all four output columns
+#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'
 #' @import dplyr
 #' @import stringr
 #' @import magrittr
-#' 
+#'
 #' @examples
 #' library( fiscal )
-#' x1 <- rnorm( 1000,100,30 )
-#' x2 <- rnorm( 1000,200,30 )
-#' x3 <- rnorm( 1000,200,30 )
-#' x4 <- rnorm( 1000,100,30 )
-#' x5 <- rnorm( 1000,200,30 )
-#' x6 <- rnorm( 1000,200,30 )
-#' dat <- data.frame( x1, x2, x3, x4, x5, x6 )
-#' 
-#' # specify own column names
-#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize=0.98 )
-#' 
-#' head( d )
-#' 
-#' # run with default column names
-#' dat_01 <- dat
-#' 
-#' colnames( dat_01 ) <- c( "F9_10_ASSET_CASH_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-#'                          "F9_10_ASSET_ACC_NET_EOY", "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY" )
-#' 
-#' 
-#' d <- get_qr( dat_01 )
-#' 
-#' # coerce one column to factor
-#' dat_01$F9_10_ASSET_ACC_NET_EOY <- as.factor( dat_01$F9_10_ASSET_ACC_NET_EOY )
-#' 
-#' d <- get_qr( dat_01 )
-#' 
-#' # winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-#' d <- get_qr( df=dat, cash='x1', si='x2', pr='x3', ar='x4', ap='x5', gp = 'x6', winsorize = 0.95 )
-#' 
-#' d <- get_qr( dat_01, winsorize = 0.95 )
-#' 
-#' # aggregate variables into single numerator and denominator
-#' x.den <- x5 + x6
-#' x.num <- x1 + x2 + x3 + x4
-#' 
-#' dat_02 <- cbind( dat, x.den, x.num)
-#' 
-#' d <- get_qr( dat_02, numerator = "x.num", denominator = "x.den" )
-#' 
-#' # using 990 data
-#' data( part010810 )
-#' d <- get_qr( df = part010810 )
-#' 
-#' # now coerce one of the variables to numeric
-#' part010810$F9_10_LIAB_ACC_PAYABLE_EOY <- as.character( part010810$F9_10_LIAB_ACC_PAYABLE_EOY )
-#' 
-#' d <- get_qr( df = part010810 )
-#' 
-#' \dontrun{
-#' ## Errors ##
-#' 
-#' # incorrectly specify denominator
-#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-#' 
-#' # incorrectly specify numerator with conflicting arguments
-#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = NULL, gp = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-#' 
-#' 
-#' # incorrectly specify denominator with conflicting arguments
-#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = 'x5', gp = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-#' 
-#' # supplying no arguments for the numerator
-#' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
-#'         ap = 'x5', gp = 'x6', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-#' 
-#' # supplying no arguments for the denominator
-#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = NULL, gp = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-#' 
-#' # supplying argument for one of the parameters in the numerator that is greater than length 1
-#' get_qr( df = dat_02, cash = 'x1', si = 'x2', pr = 'x3', ar = 'x4', 
-#'         ap = c( 'x5', 'x6' ), gp = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
-#' 
-#' get_qr( df = dat_02, cash = NULL, si = NULL, pr = NULL, ar = NULL, 
-#'         ap = NULL, gp = NULL, numerator = c( 'x5', 'x6' ), denominator = 'x.den' , winsorize=0.98 )  
-#'         }
+#' data( dat10k )
+#'
+#' d <- get_qr( df = dat10k )
+#' head( d[ , c( "qr", "qr_w", "qr_z", "qr_p" ) ] )
+#'
 #' @export
-get_qr <- function( df, 
-                    cash = "F9_10_ASSET_CASH_EOY", 
-                    si = "F9_10_ASSET_SAVING_EOY", 
-                    pr = "F9_10_ASSET_PLEDGE_NET_EOY",
-                    ar = "F9_10_ASSET_ACC_NET_EOY", 
-                    ap = "F9_10_LIAB_ACC_PAYABLE_EOY",
-                    gp = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-                    numerator = NULL,
+get_qr <- function( df,
+                    cash                = "F9_10_ASSET_CASH_EOY",
+                    savings             = "F9_10_ASSET_SAVING_EOY",
+                    pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
+                    accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
+                    accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
+                    grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
+                    numerator   = NULL,
                     denominator = NULL,
-                    winsorize = 0.98 )
+                    winsorize = 0.98 ,
+                     sanitize  = TRUE,
+                     summarize = FALSE )
 {
-  
-  
-  # checks
-  if( winsorize > 1 | winsorize < 0 )
-  { stop( "winsorize argument must be 0 < w < 1" ) }
-  
-  if( is.null( cash )==F & is.null( si )==F & is.null( pr )==F & is.null( ar )==F &
-      is.null( ap )==F & is.null( gp )==F ) {
-    
-    if( cash == "F9_10_ASSET_CASH_EOY" & si == "F9_10_ASSET_SAVING_EOY" &
-        pr == "F9_10_ASSET_PLEDGE_NET_EOY" & ar == "F9_10_ASSET_ACC_NET_EOY" & ap == "F9_10_LIAB_ACC_PAYABLE_EOY" &
-        gp == "F9_10_LIAB_GRANT_PAYABLE_EOY" & is.null( numerator )==F & is.null( denominator )==F ){
-      
-      warning( "Default argument inputs overridden with specified numerator and denominator arguments" ) 
-      
-      cash <- NULL
-      si <- NULL
-      pr <- NULL
-      ar <- NULL
-      ap <- NULL
-      gp <- NULL
-      
-    }
-    
-  } 
+  if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  if ( ( ( length( c( cash, si, pr, ar ) ) < 4 )==F | is.null( numerator )==F ) &
-       ( ( is.null( ap )==T & is.null( gp )==T ) &
-         is.null( denominator )==T ) )
-  { stop( "The denominator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if ( ( ( length( c( ap, gp ) ) < 2 )==F | is.null( denominator )==F ) &
-       ( ( is.null( cash )==T | is.null( si )==T | 
-           is.null( pr )==T | is.null( ar )==T ) &
-         is.null( numerator )==T ) )
-  { stop( "The numerator has been incorrectly specified. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  
-  if ( ( length( c( cash, si, pr, ar ) ) <= 4 ) &
-       ( length( c( cash, si, pr, ar ) ) >= 1 ) & 
-       ( is.null( numerator )==F ) )
-  { stop( "The numerator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if ( ( length( c( ap, gp ) ) >= 2 ) & 
-       ( is.null( denominator )==F ) )
-  { stop( "The denominator has been incorrectly specified with conflicting arguments. Ensure you are passing the correct data field to the correct argument." ) }
-  
-  if( ( length( cash ) > 1 | length( cash ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`cash` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( si ) > 1 | length( si ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`si` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( pr ) > 1 | length( pr ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`pr` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( ar ) > 1 | length( ar ) < 1 ) & is.null( numerator ) == T ) 
-  { stop( "`ar` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( ap ) > 1 | length( ap ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`ap` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( gp ) > 1 | length( gp ) < 1 ) & is.null( denominator ) == T ) 
-  { stop( "`gp` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( numerator ) > 1 & length( c( cash, si, pr, ar ) ) == 0 ) )
-  { stop( "`numerator` must be a single quoted string or a vector with a maximum length of one." ) }
-  
-  if( ( length( denominator ) > 1 & length( c( ap, gp ) ) == 0 ) )
-  { stop( "`denominator` must be a single quoted string or a vector with a maximum length of one." ) }
-  
+  using_component_num <- !is.null( cash ) | !is.null( savings ) |
+                         !is.null( pledges_receivable ) | !is.null( accounts_receivable )
+  using_component_den <- !is.null( accounts_payable ) | !is.null( grants_payable )
 
-  
-  # copy data
-  dat <- df
-  
-  ## ensure variable classes are numeric ##
-
-  # run coerce_numeric and loop through all variables required and that matched by the two input arguments
-  v <- c( colnames( dat )[which( colnames( dat ) %in% cash ) ], colnames( dat )[which( colnames( dat ) %in% si )],
-          colnames( dat )[which( colnames( dat ) %in% ar )], colnames( dat )[which( colnames( dat ) %in% pr )], 
-          colnames( dat )[which( colnames( dat ) %in% ap )], colnames( dat )[which( colnames( dat ) %in% gp )],
-          colnames( dat )[which( colnames( dat ) %in% numerator )], colnames( dat )[which( colnames( dat ) %in% denominator )] )
-  
-  dat <- coerce_numeric( d = dat, vars = v )
-
-  if( is.null( numerator) == T & is.null( denominator ) == T ){
-    
-    num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
-    den <- dat[[ ap ]] + dat[[ gp ]]
-    
+  if ( !is.null( numerator ) & using_component_num ) {
+    stop( "Supply either `numerator` OR the individual asset arguments (cash, savings, pledges_receivable, accounts_receivable), not both." )
   }
-  
-  if( is.null( numerator) == F & is.null( denominator ) == T ){
-    
-    num <- dat[[ numerator ]]
-    den <- dat[[ ap ]] + dat[[ gp ]] 
-    
+  if ( !is.null( denominator ) & using_component_den ) {
+    stop( "Supply either `denominator` OR the payable arguments (accounts_payable, grants_payable), not both." )
   }
-  
-  if( is.null( numerator) == T & is.null( denominator ) == F ){
-    
-    num <- dat[[ cash ]] + dat[[ si ]] + dat[[ pr ]] + dat[[ ar ]]
-    den <- dat[[ denominator ]] 
-    
+  if ( is.null( numerator ) & !using_component_num ) {
+    stop( "No numerator specified. Supply `numerator` or the individual asset columns." )
   }
-  
-  if( is.null( numerator) == F & is.null( denominator ) == F ){
-    
-    num <- dat[[ numerator ]]
-    den <- dat[[ denominator ]] 
-    
+  if ( is.null( denominator ) & !using_component_den ) {
+    stop( "No denominator specified. Supply `denominator` or the payable columns." )
   }
 
-  # can't divide by zero
-  print( paste0( "Payables cannot be zero: ", sum( den==0, na.rm = T ), " cases have been replaced with NA." ) )
-  den[ den == 0 ] <- NA 
-  
+  all_cols <- c( cash, savings, pledges_receivable, accounts_receivable,
+                 accounts_payable, grants_payable, numerator, denominator )
+  vars <- c( cash, savings, pledges_receivable, accounts_receivable, accounts_payable, grants_payable, numerator, denominator )
+  KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
+  dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
+  dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
+  if ( sanitize ) {
+    dt <- sanitize_financials( dt )
+  }
+
+  if ( !is.null( numerator ) ) {
+    num <- dt[[ numerator ]]
+  } else {
+    num <- dt[[ cash ]] + dt[[ savings ]] +
+           dt[[ pledges_receivable ]] + dt[[ accounts_receivable ]]
+  }
+
+  if ( !is.null( denominator ) ) {
+    den <- dt[[ denominator ]]
+  } else {
+    den <- dt[[ accounts_payable ]] + dt[[ grants_payable ]]
+  }
+
+  message( paste0( "Current liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
+                   " case(s) replaced with NA." ) )
+  den[ den == 0 ] <- NA
+
   qr <- num / den
 
-  top.p    <- 1 - (1-winsorize)/2
-  bottom.p <- 0 + (1-winsorize)/2
-  top      <- quantile( qr, top.p, na.rm=T )
-  bottom   <- quantile( qr, bottom.p, na.rm=T )
-  qr.w    <- qr
-  qr.w[ qr.w > top    ] <- top
-  qr.w[ qr.w < bottom ] <- bottom
-  
-  qr.n <- scale( qr.w )
-  
-  qr.p <- dplyr::ntile( qr, 100 )
-  
-  QR <- data.frame( qr, qr.w, qr.n, qr.p )
-  
-  print( summary( QR ) )
-  
-  par( mfrow=c(2,2) )
-  plot( density( qr,   na.rm=T ), main="Quick Ratio (QR)" )
-  plot( density( qr.w, na.rm=T ), main="QR Winsorized" )
-  plot( density( qr.n, na.rm=T ), main="QR Standardized as Z" )
-  plot( density( qr.p, na.rm=T ), main="QR as Percentile" )
-  
-  df.qr <- data.frame( cbind( df, QR ) )
-  return( df.qr )
-}
+  v <- winsorize_var( qr, winsorize )
+  QR <- data.frame( qr   = v$raw,
+                    qr_w = v$winsorized,
+                    qr_z = v$z,
+                    qr_p = v$pctile )
 
+  if ( summarize ) {
+    print( summary( QR ) )
+    op <- par( mfrow = c(2,2) )
+    on.exit( par(op), add = TRUE )
+    plot( density( QR$qr, na.rm = TRUE ), main = "QR (raw)" )
+    plot( density( QR$qr_w, na.rm = TRUE ), main = "QR Winsorized" )
+    plot( density( QR$qr_z, na.rm = TRUE ), main = "QR Standardized (Z)" )
+    plot( density( QR$qr_p, na.rm = TRUE ), main = "QR Percentile" )
+  }
+
+  return( cbind( df, QR ) )
+}

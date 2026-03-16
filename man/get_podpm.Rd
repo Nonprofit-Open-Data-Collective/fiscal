@@ -4,99 +4,70 @@
 \alias{get_podpm}
 \title{Post-Depreciation Profitability Margin}
 \usage{
-get_podpm( df, 
-expenses = "F9_09_EXP_TOT_TOT",
-revenue = "F9_08_REV_TOT_TOT", 
-winsorize = 0.98 )
+get_podpm( df,
+  expenses  = "F9_09_EXP_TOT_TOT",
+  revenue   = "F9_08_REV_TOT_TOT",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{expenses}{A character string indicating the column name for total functional expenses (On 990: Part IX, line 25A; On EZ: Not Available).}
+\item{expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
 
-\item{revenue}{A character string indicating the column name for total revenue, (On 990: Part VIII, line 12A; On EZ: Part I, line 9).}
+\item{revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the post-depreciation profitability margin (\code{podpm}),
-a winsorized version (\code{podpm.w}), a standardized z-score version (\code{podpm.z}),
-and a percentile version (\code{podpm.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{podpm}   — post-depreciation profitability margin (raw)
+\item \code{podpm_w} — winsorized version
+\item \code{podpm_z} — standardized z-score (based on winsorized values)
+\item \code{podpm_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the post-depreciation profitability margin and append it to the dataframe.
+Operating surplus or deficit as a share of total revenue, after depreciation.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{podpm = ( total_revenue - total_expenses ) / total_revenue
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-Post-depreciation profit is an income measure used to determine profit after incorporating
-non-cash expenses on a balance sheet. Post-depreciation profit is calculated because it provides a
-picture of an organization’s true available profits net of depreciation expenses. Non-expense items lower
-an organization’s reported earnings, so a post-depreciation profit would show a lower profit in comparison
-to profits calculated prior to depreciation expenses.High values in this metric are generally desirable
-since they indicate that an organization is not losing a lot of its revenues to expenses. Values close to
-zero are normal, and negative numbers indicate the organization is functioning at a deficit. Note: computation of this
-metric is available to only 990 filers and not for 990-EZ filers. The default inputs use column names for
-variables available only to 990 filers.
+The post-depreciation profitability margin measures the net surplus (or deficit) as a
+proportion of total revenue after all expenses including non-cash depreciation charges
+have been accounted for. Positive values indicate a surplus; negative values a deficit.
+Compare with \code{\link{get_predpm}} which excludes depreciation.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{expenses})
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{revenue})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_podpm( df = dat10k )
+head( d[ , c( "podpm", "podpm_w", "podpm_z", "podpm_p" ) ] )
 
-# specify own column names
-d <- get_podpm( df = dat, expenses = "x1", revenue = "x2" )
-
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_09_EXP_TOT_TOT", "F9_08_REV_TOT_TOT" )
-
-d <- get_podpm( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_09_EXP_TOT_TOT <- as.factor( dat_01$F9_09_EXP_TOT_TOT )
-
-d <- get_podpm( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_podpm( df = dat, expenses = "x1", revenue = "x2", winsorize = 0.95 )
-
-d <- get_podpm( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_podpm( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
-
-d <- get_podpm( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_podpm( df = dat, expenses = NULL, revenue = "x2" )
-
-# denominator not specified
-d <- get_podpm( df = dat, expenses = "x1", revenue = NULL )
-
-# neither numerator nor denominator specified
-d <- get_podpm( df = dat, expenses = NULL, revenue = NULL )
-
-# column names vector not of correct length
-d <- get_podpm( df = dat, expenses = c("e","b","c"), revenue = "e")
-
-# column names vector not of correct length
-d <- get_podpm( df = dat, expenses = "e", revenue = c( "e", "b", "c") )
-}
 }

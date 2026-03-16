@@ -4,133 +4,99 @@
 \alias{get_doci}
 \title{Days of Operating Cash and Investments}
 \usage{
-get_doci( df, 
-net.assets = "F9_10_NAFB_UNRESTRICT_EOY", 
-invest = "F9_10_ASSET_INV_SALE_EOY", 
-lbe = "F9_10_ASSET_LAND_BLDG_NET_EOY", 
-mnp = "F9_10_LIAB_MTG_NOTE_EOY", 
-tot.func.exp = "F9_09_EXP_TOT_TOT", 
-dda = "F9_09_EXP_DEPREC_TOT", numerator = NULL, denominator = NULL, winsorize = 0.98 )
+get_doci( df,
+  net_assets        = "F9_10_NAFB_UNRESTRICT_EOY",
+  investments       = "F9_10_ASSET_INV_SALE_EOY",
+  land_buildings    = "F9_10_ASSET_LAND_BLDG_NET_EOY",
+  mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
+  total_expenses    = "F9_09_EXP_TOT_TOT",
+  depreciation      = "F9_09_EXP_DEPREC_TOT",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{net.assets}{A character string indicating the column name for unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).}
+\item{net_assets}{Unrestricted net assets, EOY. (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY})}
 
-\item{invest}{A character string indicating the column name for investment income (On 990: Part X, Line 8(B); On EZ: Not Available).}
+\item{investments}{Investments held for sale or use, EOY. (On 990: Part X, line 11c; \code{F9_10_ASSET_INV_SALE_EOY})}
 
-\item{lbe}{A character string indicating the column name for lands, buildings, and equipment (On 990: Part X, Line 10(c)(B); On EZ: Not Available).}
+\item{land_buildings}{Net land, buildings, and equipment, EOY. (On 990: Part X, line 10c; \code{F9_10_ASSET_LAND_BLDG_NET_EOY})}
 
-\item{mnp}{A character string indicating the column name for mortgages and notes payables (On 990: Part X, Line 23(B); On EZ: Not Available).}
+\item{mortgages_payable}{Mortgages and notes payable, EOY. (On 990: Part X, line 23B; \code{F9_10_LIAB_MTG_NOTE_EOY})}
 
-\item{tot.func.exp}{A character string indicating the column name for daily average expenses or total expenses (On 990: Part IX, Line 25(A); On EZ: Not Available).}
+\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
 
-\item{dda}{Depreciation, depletion, and amortization (On 990: Part IX, line 22A; On EZ: Not Available).}
+\item{depreciation}{Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator. Do not combine with numerator column component arguments (\code{net.assets}, \code{invest},\code{lbe}, \code{mnp}).}
+\item{numerator}{Optional. A pre-aggregated column for investable assets. Cannot be
+combined with the individual component arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator. Do not combine with denominator column component arguments (\code{tot.func.exp}, \code{dda}).}
+\item{denominator}{Optional. A pre-aggregated column for annual non-depreciation expenses
+(the function divides this by 365 internally). Cannot be combined with
+\code{total_expenses} or \code{depreciation}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the days of operating cash and investments (\code{doci}),
-a winsorized version (\code{doci.w}), a standardized z-score version (\code{doci.z}),
-and a percentile version (\code{doci.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{doci}   — days of operating cash and investments (raw)
+\item \code{doci_w} — winsorized version
+\item \code{doci_z} — standardized z-score (based on winsorized values)
+\item \code{doci_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the days of operating cash and investments and append it to the dataframe.
+Measures days of operating coverage using liquid and investment assets, net of
+fixed property obligations.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{doci = investable_assets / daily_expenses
+
+investable_assets = unrestricted_net_assets + investments
+                    - ( land_buildings_equipment + mortgages_payable )
+daily_expenses    = ( total_expenses - depreciation ) / 365
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-The days of operating cash and investment measures how long an organization would be able to
-continue operating its programs and investing at its current rate based on its average per-day expenses
-(excluding depreciation). Note: This ratio is the same as month of cash on hand but it is in days and
-excludes land and mortgages from the operating cash and investment numerator. The reason that land and
-mortgage expenses are deducted from the numerator is because those are non-liquid or necessary expenses
-and shouldn't truly be considered free cash for operating and investment. The higher the number of days
-from this metric, the more protected the system will be against revenue shocks, but the target value is
-subjective. Generally, a system should aim to maintain several months’ worth of cash on hand and at the
-very least exceed the length of the billing period (usually 30 or 60 days). Note: computation of this metric
-is available to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables
-available only to 990 filers.
+Days of operating cash and investments extends \code{\link{get_doch}} by using a broader
+measure of available resources. The numerator starts with unrestricted net assets and
+investments, then subtracts land, buildings, and equipment (which are illiquid) and the
+mortgages payable against them. This gives a better estimate of truly accessible financial
+resources.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{net_assets})
+\item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investments})
+\item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment, EOY (\code{land_buildings})
+\item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable, EOY (\code{mortgages_payable})
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+\item \code{F9_09_EXP_DEPREC_TOT}: Depreciation, depletion, and amortization (\code{depreciation})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x3 <- rnorm( 1000,200,30 )
-x4 <- rnorm( 1000,100,30 )
-x5 <- rnorm( 1000,200,30 )
-x6 <- rnorm( 1000,200,30 )
-dat <- data.frame( x1, x2, x3, x4, x5, x6 )
+data( dat10k )
 
-# specify own column names
-d <- get_doci( df=dat, net.assets='x1', invest='x2', lbe='x3', mnp='x4', tot.func.exp='x5', dda = 'x6', winsorize=0.98 )
+d <- get_doci( df = dat10k )
+head( d[ , c( "doci", "doci_w", "doci_z", "doci_p" ) ] )
 
-head( d )
-
-# run with default column names
-dat_01 <- dat
-
-colnames( dat_01 ) <- c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_10_ASSET_INV_SALE_EOY", "F9_10_ASSET_LAND_BLDG_NET_EOY",
-                         "F9_10_LIAB_MTG_NOTE_EOY", "F9_09_EXP_TOT_TOT", "F9_09_EXP_DEPREC_TOT" )
-
-
-d <- get_doci( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_NAFB_UNRESTRICT_EOY <- as.factor( dat_01$F9_10_NAFB_UNRESTRICT_EOY )
-
-d <- get_doci( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_doci( df=dat, net.assets='x1', invest='x2', lbe='x3', mnp='x4', tot.func.exp='x5', dda = 'x6', winsorize = 0.95 )
-
-d <- get_doci( dat_01, winsorize = 0.95 )
-
-# aggregate variables into single numerator and denominator
-x.den <- x5 + x6
-x.num <- x1 + x2 + x3 + x4
-
-dat_02 <- cbind( dat, x.den, x.num)
-
-d <- get_doci( dat_02, numerator = "x.num", denominator = "x.den" )
-
-# using 990 data
-data( part010810 )
-d <- get_doci( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_NAFB_UNRESTRICT_EOY <- as.character( part010810$F9_10_NAFB_UNRESTRICT_EOY )
-
-d <- get_doci( df = part010810 )
-
-\dontrun{
-#errors 
-
-# incorrectly specify denominator
-get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
-          tot.func.exp = NULL, numerator = NULL, denominator = NULL, winsorize=0.98 )
-
-# incorrectly specify numerator with conflicting arguments
-get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
-          tot.func.exp = NULL, dda = NULL, numerator = 'x.num', denominator = 'x.den' , winsorize=0.98 )
-
-
-# incorrectly specify denominator with conflicting arguments
-get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
-          tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = 'x.den' , winsorize=0.98 )  
-
-# supplying no arguments for the numerator
-get_doci( df = dat_02, net.assets = NULL, invest = NULL, lbe = NULL, mnp = NULL, 
-          tot.func.exp = 'x5', dda = 'x6', numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying no arguments for the denominator
-get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
-          tot.func.exp = NULL, dda = NULL, numerator = NULL, denominator = NULL , winsorize=0.98 )  
-
-# supplying argument for one of the parameters in the numerator that is greater than length 1
-get_doci( df = dat_02, net.assets = 'x1', invest = 'x2', lbe = 'x3', mnp = 'x4', 
-          tot.func.exp = c( 'x5', 'x6' ), dda = 'x6', numerator = NULL, denominator = NULL, winsorize=0.98 )
-}
 }

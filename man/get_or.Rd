@@ -2,96 +2,78 @@
 % Please edit documentation in R/get-or.R
 \name{get_or}
 \alias{get_or}
-\title{Operating Margin}
+\title{Operating Ratio}
 \usage{
-get_or( df, 
-equity.eoy = "F9_10_NAFB_UNRESTRICT_EOY", 
-equity.boy = "F9_10_NAFB_UNRESTRICT_BOY", 
-winsorize = 0.98 )
+get_or( df,
+  net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
+  net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{equity.eoy}{Unrestricted net assets, EOY (On 990: Part X, line 27B; On EZ: Not Available).}
+\item{net_assets_eoy}{Total net assets, end of year. Accepts one or two column names;
+if two are provided they are coalesced with the 990 value taking priority over 990EZ.
+(On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY};
+On EZ: Part II; \code{F9_01_NAFB_TOT_EOY})}
 
-\item{equity.boy}{Unrestricted net assets, BOY (On 990: Part X, line 27A; On EZ: Not Available).}
+\item{net_assets_boy}{Total net assets, beginning of year. Accepts one or two column names.
+(On 990: Part X, line 33A; \code{F9_10_NAFB_TOT_BOY};
+On EZ: Part II; \code{F9_01_NAFB_TOT_BOY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the operating margin (\code{or}),
-a winsorized version (\code{or.w}), a standardized z-score version (\code{or.z}),
-and a percentile version (\code{or.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{or}   — operating ratio (raw)
+\item \code{or_w} — winsorized version
+\item \code{or_z} — standardized z-score (based on winsorized values)
+\item \code{or_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the operating margin and append it to the dataframe.
+Year-over-year change in total net assets, expressed as a proportion of beginning net assets.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-The operating margin measures what percent of an organizations unrestricted net assets (or free
-cash) from the beginning of 2019 it had at the end of 2019. Note: computation of this metric is available
-to only 990 filers and not for 990-EZ filers. The default inputs use column names for variables available
-only to 990 filers.
+The operating ratio measures financial performance as the percentage change in total net
+assets from the beginning to the end of the fiscal year. Positive values indicate a
+financial surplus; negative values indicate a deficit.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets_eoy}, 990)
+\item \code{F9_01_NAFB_TOT_EOY}: Total net assets, EOY from Part I (\code{net_assets_eoy}, 990EZ)
+\item \code{F9_10_NAFB_TOT_BOY}: Total net assets, BOY (\code{net_assets_boy}, 990)
+\item \code{F9_01_NAFB_TOT_BOY}: Total net assets, BOY from Part I (\code{net_assets_boy}, 990EZ)
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
-
-# specify own column names
-d <- get_or( df = dat, equity.eoy = "x1", equity.boy = "x2" )
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_10_NAFB_UNRESTRICT_BOY" )
-
-d <- get_or( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_NAFB_UNRESTRICT_EOY <- as.factor( dat_01$F9_10_NAFB_UNRESTRICT_EOY )
-
-d <- get_or( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_or( df = dat, equity.eoy = "x1", equity.boy = "x2", winsorize = 0.95 )
-
-d <- get_or( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_or( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_NAFB_UNRESTRICT_EOY <- as.character( part010810$F9_10_NAFB_UNRESTRICT_EOY )
-
-d <- get_or( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_or( df = dat, equity.eoy = NULL, equity.boy = "x2" )
-
-# denominator not specified
-d <- get_or( df = dat, equity.eoy = "x1", equity.boy = NULL )
-
-# neither numerator nor denominator specified
-d <- get_or( df = dat, equity.eoy = NULL, equity.boy = NULL )
-
-# column names vector not of correct length
-d <- get_or( df = dat, equity.eoy = c("e","b","c"), equity.boy = "e")
-
-# column names vector not of correct length
-d <- get_or( df = dat, equity.eoy = "e", equity.boy = c( "e", "b", "c") )
-}
+d <- get_or( df = dat10k )
+head( d[ , c( "or", "or_w", "or_z", "or_p" ) ] )
 
 }

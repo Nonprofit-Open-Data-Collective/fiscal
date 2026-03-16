@@ -4,95 +4,69 @@
 \alias{get_er}
 \title{Equity Ratio}
 \usage{
-get_er( df, net.assets = 'F9_10_NAFB_TOT_EOY', total.assets = 'F9_10_ASSET_TOT_EOY', winsorize = 0.98 )
+get_er( df,
+  net_assets   = "F9_10_NAFB_TOT_EOY",
+  total_assets = "F9_10_ASSET_TOT_EOY",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset with the default name supplied.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{net.assets}{A character string indicating the column name for net assets, EOY (On 990: Part X, Line 33B; On EZ: Part I, Line 21) with the default name supplied.}
+\item{net_assets}{Total net assets, EOY. (On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY})}
 
-\item{total.assets}{A character string indicating the column name for total assets, EOY (On 990: Part X, Line 16B; On EZ: Part II, Line 25B) with the default name supplied.}
+\item{total_assets}{Total assets, EOY. (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the equity ratio (\code{er}),
-a winsorized version (\code{er.w}), a standardized z-score version (\code{er.z}),
-and a percentile version (\code{er.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{er}   — equity ratio (raw)
+\item \code{er_w} — winsorized version
+\item \code{er_z} — standardized z-score (based on winsorized values)
+\item \code{er_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the equity ratio and append it to the dataframe.
+Share of total assets financed through net assets (equity).
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{er = total_net_assets / total_assets
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-This metric indicates how much of an organization’s assets are owned free and clear or how much
-equity it has in its total assets. Nonprofits with greater amounts of equity are more flexible in the face
-of financial shocks than organizations with comparatively lesser amounts of equity because they can (1)
-borrow money from capital markets and (2) convert those assets to cash to offset financial shocks. High
-values in this indicator are generally better, as they show that an organization has substantial equity in
-its assets. Low or negative values indicate an organization has higher liabilities and is generally more
-leveraged and thus more vulnerable to shocks. However, low values also indicate that an organization may
-be investing more of its equity for growth. Note: computation of this metric is available to both 990 and 990-EZ filers.
+The equity ratio measures the proportion of total assets that are financed by the
+organization's own net assets rather than liabilities. Higher values indicate greater
+financial stability and a lower dependence on debt financing.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets})
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_er( df = dat10k )
+head( d[ , c( "er", "er_w", "er_z", "er_p" ) ] )
 
-# specify own column names
-d <- get_er( df = dat, net.assets = "x1", total.assets = "x2" )
-
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_10_NAFB_TOT_EOY", "F9_10_ASSET_TOT_EOY" )
-
-d <- get_er( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_NAFB_TOT_EOY <- as.factor( dat_01$F9_10_NAFB_TOT_EOY )
-
-d <- get_er( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_er( df = dat, net.assets = "x1", total.assets = "x2", winsorize = 0.95 )
-
-d <- get_er( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_er( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_01_EXP_TOT_CY <- as.character( part010810$F9_01_EXP_TOT_CY )
-
-d <- get_er( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_er( df = dat, net.assets = NULL, total.assets = "x2" )
-
-# denominator not specified
-d <- get_er( df = dat, net.assets = "x1", total.assets = NULL )
-
-# neither numerator nor denominator specified
-d <- get_er( df = dat, net.assets = NULL, total.assets = NULL )
-
-# column names vector not of correct length
-d <- get_er( df = dat, net.assets = c("e","b","c"), total.assets = "e")
-
-# column names vector not of correct length
-d <- get_er( df = dat, net.assets = "e", total.assets = c( "e", "b", "c") )
-}
 }

@@ -4,101 +4,81 @@
 \alias{get_dgdr}
 \title{Donation/Grant Dependence Ratio}
 \usage{
-get_dgdr( df, total.contributions = "F9_08_REV_CONTR_TOT", fund.income = "F9_08_REV_OTH_FUNDR_NET_TOT", total.revenue = "F9_08_REV_TOT_TOT", numerator = NULL, denominator = NULL, winsorize = 0.98 )
+get_dgdr( df,
+  contributions        = "F9_08_REV_CONTR_TOT",
+  fundraising_revenue  = "F9_08_REV_OTH_FUNDR_NET_TOT",
+  total_revenue        = "F9_08_REV_TOT_TOT",
+  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{total.contributions}{Column name for total contributions (can be quoted or unquoted) (On 990: Part VIII, Line 1h(A); On EZ: Not Available) with the default name supplied.}
+\item{contributions}{Total contributions, EOY. (On 990: Part VIII, line 1h; \code{F9_08_REV_CONTR_TOT})}
 
-\item{fund.income}{Column name for fundraising income (can be quoted or unquoted) (On 990: Part VIII, Line 8c(A); On EZ: Not Available) with the default name supplied.}
+\item{fundraising_revenue}{Net fundraising event revenue. (On 990: Part VIII, line 8c; \code{F9_08_REV_OTH_FUNDR_NET_TOT})}
 
-\item{total.revenue}{Column name for fundraising income (can be quoted or unquoted) (On 990: Part VIII, Line 12A; On EZ: Part I, Line 9) with the default name supplied.}
+\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
 
-\item{numerator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the numerator (CHANGE). Do not combine with numerator column component arguments (\code{total.contributions}, \code{fund.income}).}
+\item{numerator}{Optional. A pre-aggregated column name for donation revenue, bypassing
+\code{contributions} and \code{fundraising_revenue}. Cannot be combined with those arguments.}
 
-\item{denominator}{A character string indicating the user-supplied column name for a pre-aggregated variable for the denominator (CHANGE). Do not combine with denominator column component arguments (\code{total.revenue}).}
+\item{denominator}{Optional. A pre-aggregated column name for the denominator. Cannot be
+combined with \code{total_revenue}.}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the donation/grant dependence ratio (\code{dgdr}),
-a winsorized version (\code{dgdr.w}), a standardized z-score version (\code{dgdr.z}),
-and a percentile version (\code{dgdr.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{dgdr}   — donation/grant dependence ratio (raw)
+\item \code{dgdr_w} — winsorized version
+\item \code{dgdr_z} — standardized z-score (based on winsorized values)
+\item \code{dgdr_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the donation/grant dependence ratio and append it to the dataframe.
+Measures reliance on contributions and fundraising as a share of total revenue.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{dgdr = donation_revenue / total_revenue
+
+donation_revenue = contributions + fundraising_revenue
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-This metric shows how much of an organization’s total revenues come from contributions, government
-grants, and special event revenues. High levels in this indicator are undesirable since that means that an
-organization’s revenues are volatile insofar as it is dependent on contributions that are highly likely to
-contract during economic downturns. Low values in this indicator mean an organization is not dependent on
-donations. Note: computation of this metric is available to only 990 filers and not for 990-EZ filers. The default
-inputs use column names for variables available only to 990 filers.
+The donation/grant dependence ratio measures the share of total revenue derived from
+contributions and fundraising. Higher values indicate greater reliance on external
+philanthropic support, which may create revenue volatility risk.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_08_REV_CONTR_TOT}: Total contributions (\code{contributions})
+\item \code{F9_08_REV_OTH_FUNDR_NET_TOT}: Net fundraising event revenue (\code{fundraising_revenue})
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x3 <- rnorm( 1000, 200, 30 )
-x3[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2, x3 )
-
-# specify own column names
-d <- get_dgdr( df = dat, total.contributions = "x1", fund.income = "x2", total.revenue = "x3" )
-
-
-head( d ) 
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2, x3 )
-
-colnames( dat_01 ) <- c( "F9_08_REV_CONTR_TOT", "F9_08_REV_OTH_FUNDR_NET_TOT", "F9_08_REV_TOT_TOT" )
-
-d <- get_dgdr( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_08_REV_OTH_FUNDR_NET_TOT <- as.factor( dat_01$F9_08_REV_OTH_FUNDR_NET_TOT )
-
-d <- get_dgdr( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_dgdr( df = dat, total.contributions = "x1", fund.income = "x2", total.revenue = "x3", winsorize = 0.95 )
-
-d <- get_dgdr( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_dgdr( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_09_EXP_TOT_TOT <- as.character( part010810$F9_09_EXP_TOT_TOT )
-
-d <- get_dgdr( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_dgdr( df = dat, total.contributions = NULL, fund.income = NULL, total.revenue = "x3" )
-
-# denominator not specified
-d <- get_dgdr( df = dat, total.contributions = "x1", fund.income = "x2", total.revenue = NULL )
-
-# neither numerator nor denominator specified
-d <- get_dgdr( df = dat, total.contributions = NULL, fund.income = NULL, total.revenue = NULL )
-
-# column names vector not of correct length
-d <- get_dgdr( df = dat, total.contributions = c("e","b","c"), fund.income = "x2", total.revenue = "e")
-
-# column names vector not of correct length
-d <- get_dgdr( df = dat, total.contributions = "e", total.revenue = c( "e", "b", "c"), fund.income = "x2" )
-}
+d <- get_dgdr( df = dat10k )
+head( d[ , c( "dgdr", "dgdr_w", "dgdr_z", "dgdr_p" ) ] )
 
 }

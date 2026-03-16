@@ -2,94 +2,72 @@
 % Please edit documentation in R/get-lar.R
 \name{get_lar}
 \alias{get_lar}
-\title{Lands to Assets Ratio}
+\title{Land Asset Ratio}
 \usage{
-get_lar( df, land = "F9_10_ASSET_LAND_BLDG_DEPREC", assets = "F9_10_ASSET_TOT_EOY", winsorize = 0.98 )
+get_lar( df,
+  land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
+  total_assets   = "F9_10_ASSET_TOT_EOY",
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{land}{Land, buildings, and equipment (Part X, line 10B; On EZ: On EZ: Not Available).}
+\item{land_buildings}{Net land, buildings, and equipment (after depreciation), EOY.
+(On 990: Part X, line 10c; \code{F9_10_ASSET_LAND_BLDG_DEPREC})}
 
-\item{assets}{Total assets (On 990: Part X, Line 16B; On EZ: Part II, line 25B).}
+\item{total_assets}{Total assets, EOY. (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the lands to assets ratio (\code{lar}),
-a winsorized version (\code{lar.w}), a standardized z-score version (\code{lar.z}),
-and a percentile version (\code{lar.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{lar}   — land asset ratio (raw)
+\item \code{lar_w} — winsorized version
+\item \code{lar_z} — standardized z-score (based on winsorized values)
+\item \code{lar_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the lands to assets ratio and append it to the dataframe.
+Share of total assets invested in land, buildings, and equipment.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{lar = land_buildings_equipment / total_assets
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
-This metric shows the proportion of an organization’s total assets that are made up by land and
-buildings. It shows how diversified their asset portfolio is and somewhat how specialized their line of
-work is within housing or building development. Higher values mean that an organization has more of its
-asset portfolio in land and buildings, and lower values mean that development or land and building holdings
-represent a small share of what the organization’s activities and finances are tied up in. Note: computation of
-this metric is available to full 990 filers only.
+The land asset ratio measures what share of total assets are held as fixed property
+(land, buildings, and equipment). Higher values may indicate capital-intensive operations
+or limited asset liquidity.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Net land, buildings, and equipment, EOY (\code{land_buildings})
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_lar( df = dat10k )
+head( d[ , c( "lar", "lar_w", "lar_z", "lar_p" ) ] )
 
-# specify own column names
-d <- get_lar( df = dat, land = "x1", assets = "x2" )
-
-head( d )
-
-# run with default column names
-x1[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x2[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2 )
-
-colnames( dat_01 ) <- c( "F9_10_ASSET_LAND_BLDG_DEPREC", "F9_10_ASSET_TOT_EOY" )
-
-d <- get_lar( dat_01 )
-
-# coerce one column to factor
-dat_01$F9_10_ASSET_LAND_BLDG_DEPREC <- as.factor( dat_01$F9_10_ASSET_LAND_BLDG_DEPREC )
-
-d <- get_lar( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_lar( df = dat, land = "x1", assets = "x2", winsorize = 0.95 )
-
-d <- get_lar( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_lar( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_10_ASSET_LAND_BLDG_DEPREC <- as.character( part010810$F9_10_ASSET_LAND_BLDG_DEPREC )
-
-d <- get_lar( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_lar( df = dat, land = NULL, assets = "x2" )
-
-# denominator not specified
-d <- get_lar( df = dat, land = "x1", assets = NULL )
-
-# neither numerator nor denominator specified
-d <- get_lar( df = dat, land = NULL, assets = NULL )
-
-# column names vector not of correct length
-d <- get_lar( df = dat, land = c("e","b","c"), assets = "e")
-
-# column names vector not of correct length
-d <- get_lar( df = dat, land = "e", assets = c( "e", "b", "c") )
-}
 }

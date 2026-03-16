@@ -4,112 +4,76 @@
 \alias{get_dar}
 \title{Debt to Asset Ratio}
 \usage{
-get_dar( df, 
-debt = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ) , 
-assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ), 
-winsorize = 0.98 )
+get_dar( df,
+  debt   = c( "F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"  ),
+  assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{debt}{Column name(s) for total liabilities (must be quoted). (On 990: Part X, line 26B; On EZ: Part II, line 26B) with the default name supplied.}
+\item{debt}{Total liabilities, EOY. Accepts one or two column names; if two are provided
+they are coalesced with the 990 value taking priority over 990EZ.
+(On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
+On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})}
 
-\item{assets}{Column name(s) for total assets, EOY (must be quoted). (On 990: Part X, line 16B; On EZ: Part II, line 25B) with the default name supplied.}
+\item{assets}{Total assets, EOY. Accepts one or two column names.
+(On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY};
+On EZ: Part II, line 25B; \code{F9_01_NAFB_ASSET_TOT_EOY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the debt to asset ratio (\code{dar}),
-a winsorized version (\code{dar.w}), a standardized z-score version (\code{dar.z}),
-and a percentile version (\code{dar.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{dar}   — debt to asset ratio (raw)
+\item \code{dar_w} — winsorized version
+\item \code{dar_z} — standardized z-score (based on winsorized values)
+\item \code{dar_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the debt to asset ratio and append it to the dataframe.
+Proportion of total assets financed through liabilities.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{dar = total_liabilities / total_assets
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-Total-debt-to-total-assets is a leverage ratio that defines the total
-amount of debt relative to assets owned by a company. Using this metric,
-analysts can compare one company's leverage with that of other companies
-in the same industry. This information can reflect how financially stable
-a company is. The higher the ratio, the higher the degree of leverage (DoL) and,
-consequently, the higher the risk (\href{Investopedia}{https://www.investopedia.com/terms/t/totaldebttototalassets.asp}).
-Note: computation of this metric is available to both 990 and 990-EZ filers.
+The debt to asset ratio measures the degree of leverage — how much of the organization's
+asset base is financed by debt rather than equity. Higher values indicate greater
+financial risk.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
+\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ)
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}, 990)
+\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ)
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000,100,30 )
-x2 <- rnorm( 1000,200,30 )
-x2[ c(15,300,600) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1,x2 )
+d <- get_dar( df = dat10k )
+head( d[ , c( "dar", "dar_w", "dar_z", "dar_p" ) ] )
 
-# specify own column names
-d <- get_dar( df = dat, debt = "x1", assets = "x2" )
-
-
-head( d )
-
-# run with default column names
-x3 <- rnorm( 1000,100,30 )
-x4 <- rnorm( 1000,200,30 )
-x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x4[ seq( from = 1, to = 1000, 71 ) ] <- NA
-
-dat_01 <- data.frame( x1, x2, x3, x4 )
-
-colnames( dat_01 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
-                         "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
-
-d <- get_dar( dat_01 )
-
-# specify only PC variables
-d <- get_dar( dat_01, debt = "F9_10_LIAB_TOT_EOY", assets = "F9_10_ASSET_TOT_EOY" )
-
-# coerce one column to factor
-dat_01$F9_10_LIAB_TOT_EOY <- as.factor( dat_01$F9_10_LIAB_TOT_EOY )
-
-d <- get_dar( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_dar( df = dat, debt = "x1", assets ="x2", winsorize=0.95 )
-
-d <- get_dar( dat_01, winsorize = 0.95 )
-
-# assume only one PC variable for the numerator or denominator is present in the dataset and we run with default parameters
-dat_02 <- dat_01
-
-colnames( dat_02 ) <- c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
-                         "x", "F9_01_NAFB_ASSET_TOT_EOY")
-
-
-d <- get_dar( dat_02, winsorize = 0.95 )
-
-colnames( dat_02 ) <- c( "F9_10_LIAB_TOT_EOY", "x",
-                         "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
-
-d <- get_dar( dat_02, winsorize = 0.95 )
-
-
-# using 990 data
-
-data( part010810 )
-
-d <- get_dar(df=part010810)
-
-# now coerce one of the variables to numeric
-part010810$F9_01_NAFB_ASSET_TOT_EOY <- as.character( part010810$F9_01_NAFB_ASSET_TOT_EOY )
-
-d <- get_dar(df=part010810)
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_dar( df = dat, debt = NULL, assets = "x2")
-
-# denominator not specified
-d <- get_dar( df = dat, debt = "x1", assets = NULL )
-
-d <- get_dar( df = dat, debt = NULL, assets = NULL )
-}
 }

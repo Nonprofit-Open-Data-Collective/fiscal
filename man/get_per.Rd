@@ -2,100 +2,75 @@
 % Please edit documentation in R/get-per.R
 \name{get_per}
 \alias{get_per}
-\title{Program Efficiency Ratio}
+\title{Program Expense Ratio}
 \usage{
-get_per( df, 
-pse = c( "F9_09_EXP_TOT_PROG", "F9_10_ASSET_TOT_EOY" ), 
-total.expense = "F9_01_EXP_TOT_CY",
-winsorize = 0.98 )
+get_per( df,
+  program_expenses = "F9_09_EXP_TOT_PROG",
+  total_expenses   = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY" ),
+  winsorize = 0.98,
+  sanitize  = TRUE,
+  summarize = FALSE )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing the required field for computing the metric. The metric will be appended to this dataset.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{pse}{A character string indicating the column name for program service expenses (On 990: Part 9, Line 25B; On EZ: Pt II, Line 25B).}
+\item{program_expenses}{Program service expenses. (On 990: Part IX, line 25B; \code{F9_09_EXP_TOT_PROG})}
 
-\item{total.expense}{A character string indicating the column name for total expenses (On 990: Part 1, Line 18(B); On EZ: Part 1, Line 17).}
+\item{total_expenses}{Total functional expenses. Accepts one or two column names; if two
+are provided they are coalesced with the 990 value taking priority over 990EZ.
+(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT};
+On EZ: Part I, line 17; \code{F9_01_EXP_TOT_CY})}
 
-\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at 99th and 1st percentile values.}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
+
+\item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+the financial input columns are imputed to zero before the ratio is computed,
+respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
+for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
+The returned dataframe always contains the original unmodified input columns.}
+
+\item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
+the results and plots density curves for all four output columns
+(raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-Object of class \code{data.frame}: the original dataframe appended with the program efficiency ratio (\code{per}),
-a winsorized version (\code{per.w}), a standardized z-score version (\code{per.z}),
-and a percentile version (\code{per.p}).
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+\itemize{
+\item \code{per}   — program expense ratio (raw)
+\item \code{per_w} — winsorized version
+\item \code{per_z} — standardized z-score (based on winsorized values)
+\item \code{per_p} — percentile rank (1-100)
+}
 }
 \description{
-Calculate the program efficiency ratio and append it to the dataframe.
+Share of total expenses devoted to program services.
+
+\strong{Formula:}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{per = program_expenses / total_expenses
+}\if{html}{\out{</div>}}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-The program efficiency ratio measures the percentage of expenses that a nonprofit organization is
-spending on its core mission. High values in this ratio indicate that more of an organization's expenses
-are going towards its core mission or program services while a lower number indicates that an organization's
-expenses are comprised of other things like management or fundraising. Charity Navigator generally gives
-the highest rankings to those organizations whose ratio of program expenses is 85\% or higher of their total
-expenses. Other agencies, such as the Better Business Bureau’s Wise Giving Alliance, recommend a ratio of
-65\% or higher. Note: computation of this metric is available to both 990 and 990-EZ filers.
+The program expense ratio measures the share of total spending directed toward mission-related
+program services. Higher values indicate more mission-focused resource allocation.
+Charity Navigator and similar watchdogs use this ratio as a key quality indicator.
+
+\strong{Variables used:}
+\itemize{
+\item \code{F9_09_EXP_TOT_PROG}: Program service expenses (\code{program_expenses})
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, 990)
+\item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ)
+}
 }
 \examples{
 library( fiscal )
-x1 <- rnorm( 1000, 100, 30 )
-x2 <- rnorm( 1000, 200, 30 )
-x2[ c( 15, 300, 600 ) ] <- 0
+data( dat10k )
 
-dat <- data.frame( x1, x2 )
+d <- get_per( df = dat10k )
+head( d[ , c( "per", "per_w", "per_z", "per_p" ) ] )
 
-# specify own column names
-d <- get_per( df = dat, pse = "x1", total.expense = "x2" )
-
-head( d )
-
-# run with default column names
-x3 <- rnorm( 1000, 100, 30 )
-x3[ seq( from = 1, to = 1000, 50 ) ] <- NA
-x3[ seq( from = 2, to = 998, 53 ) ] <- 0
-
-
-dat_01 <- data.frame( x1, x2, x3 )
-
-colnames( dat_01 ) <- c( "F9_09_EXP_TOT_PROG", "F9_10_ASSET_TOT_EOY", "F9_01_EXP_TOT_CY" )
-
-d <- get_per( dat_01 )
-
-# coerce one column to factper
-dat_01$F9_09_EXP_TOT_PROG <- as.factor( dat_01$F9_09_EXP_TOT_PROG )
-
-d <- get_per( dat_01 )
-
-# winsorize at 0.025 and 0.975 percentiles instead of 0.01 and 0.99
-d <- get_per( df = dat, pse = "x1", total.expense = "x2", winsorize = 0.95 )
-
-d <- get_per( dat_01, winsorize = 0.95 )
-
-
-# using 990 data
-data( part010810 )
-d <- get_per( df = part010810 )
-
-# now coerce one of the variables to numeric
-part010810$F9_09_EXP_TOT_PROG <- as.character( part010810$F9_09_EXP_TOT_PROG )
-
-d <- get_per( df = part010810 )
-
-\dontrun{
-## Errors ##
-
-# numerator not specified
-d <- get_per( df = dat, pse = NULL, total.expense = "x2" )
-
-# denominator not specified
-d <- get_per( df = dat, pse = "x1", total.expense = NULL )
-
-# neither numerator nor denominator specified
-d <- get_per( df = dat, pse = NULL, total.expense = NULL )
-
-# column names vector not of correct length
-d <- get_per( df = dat, pse = c("e","b","c"), total.expense = "e")
-
-# column names vector not of correct length
-d <- get_per( df = dat, pse = "e", total.expense = c( "e", "b", "c") ) 
-}
 }
