@@ -161,10 +161,10 @@ compute_all <- function( df,
   # ---- Assemble return value ----
   if ( append_to_df ) {
     result <- df                                        # original, unsanitized columns
-    result[ , keep_cols ] <- df_sanitized[ , keep_cols ]
+    result[ , keep_cols ] <- dplyr::select( df_sanitized, dplyr::all_of( keep_cols ) )
     return( as.data.frame( result ) )
   } else {
     id_cols <- intersect( .IDVARS, colnames( df_sanitized ) )
-    return( as.data.frame( df_sanitized[ , c( id_cols, keep_cols ) ] ) )
+    return( as.data.frame( dplyr::select( df_sanitized, dplyr::all_of( c( id_cols, keep_cols ) ) ) ) )
   }
 }
