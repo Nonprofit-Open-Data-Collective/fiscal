@@ -20,28 +20,28 @@ devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
 <hr>
 <br>
 
-## Example Ratio: DAR
+## Example Ratio: Debt to Asset Ratio
 
 ```r
 library( fiscal )
-help( get_dar )  # function documentation 
+help( get_debt_assets_ratio )  # function documentation 
 ```
 
 **Description**
 Calculate the debt to asset ratio and append it to the dataframe.
 
 ```
-dar = ( short term debt + long term debt ) / total assets 
+debt_assets = total_liabilities / total_assets
 ```
 
 **Usage**
 ```
-  get_dar( df, 
-           debt   = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
-           assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-           winsorize = 0.98,
-           sanitize  = TRUE,
-           summarize = FALSE )
+  get_debt_assets_ratio( df, 
+                         debt   = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
+                         assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
+                         winsorize = 0.98,
+                         sanitize  = TRUE,
+                         summarize = FALSE )
 ```
 
 **Arguments**
@@ -56,31 +56,20 @@ dar = ( short term debt + long term debt ) / total assets
 ```r
 df <- dat10k   # sample of 10,000 rows from efile financials
 
-# test the debt-to-asset ratio function
-df <- get_dar( df )
-
-# [1] "Assets equal to zero: 3 cases have been replaced with NA."
-#
-#       dar               dar_w             dar_z              dar_p       
-#  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  
-#  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  
-#  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  
-#  Mean   : 0.51315   Mean   :0.51254   Mean   : 0.00000   Mean   : 50.35  
-#  3rd Qu.: 0.62853   3rd Qu.:0.62853   3rd Qu.: 0.64995   3rd Qu.: 75.00  
-#  Max.   : 1.24623   Max.   :1.00150   Max.   : 2.73988   Max.   :100.00  
-#  NA's   :3          NA's   :3         NA's   :3          NA's   :3
+# compute the debt-to-asset ratio
+df <- get_debt_assets_ratio( df )
 
 # fiscal health metrics have been appended to the original dataframe
 head( df ) 
 
 # defaults to efile variable names
 # but you can override with your own column names
-df <- get_dar( df, debt = "my_liabilities", assets = "my_assets" )
+df <- get_debt_assets_ratio( df, debt = "my_liabilities", assets = "my_assets" )
 
 # the function is pipe-enabled 
 df <- 
   df %>% 
-  get_dar()
+  get_debt_assets_ratio()
   
 # compute all ratio metrics at once
 df <- compute_all( df, metrics = c("ratio","w","z","p") )
@@ -110,19 +99,19 @@ The `append_to_df` argument controls the output shape:
 
 The functions are designed to create multiple versions of the fiscal health metric, print summary statistics, and visualize the density distribution. The four versions are added back to the original dataset. 
 
-For example, the Debt to Asset Ratio function **get_dar()** creates the following: 
+For example, `get_debt_assets_ratio()` creates the following columns: 
 
-* `dar`   — the raw debt-to-asset ratio (DAR) 
-* `dar_w` — the winsorized version of DAR 
-* `dar_z` — DAR standardized as a z-score 
-* `dar_p` — DAR expressed as a percentile rank  
+* `debt_assets`   — the raw debt-to-asset ratio
+* `debt_assets_w` — the winsorized version
+* `debt_assets_z` — standardized as a z-score
+* `debt_assets_p` — expressed as a percentile rank  
 
 ```r
-df <- get_dar( df = dat10k, summarize = TRUE )
+df <- get_debt_assets_ratio( df = dat10k, summarize = TRUE )
 
 # [1] "Assets equal to zero: 3 cases have been replaced with NA."
 #
-#       dar               dar_w             dar_z              dar_p       
+#    debt_assets       debt_assets_w     debt_assets_z      debt_assets_p    
 #  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  
 #  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  
 #  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  
@@ -152,38 +141,54 @@ df <- retrieve_efile_data( year = 2021 )
 df <- compute_all( df )
 
 # or add individual metrics
-df <- get_aer( df )     # Administrative Overhead Ratio
-df <- get_arr( df )     # Asset Revenue Ratio
-df <- get_brr( df )     # Burn Rate Ratio
-df <- get_casr( df )    # Cash Ratio
-df <- get_coh( df )     # Cash on Hand
-df <- get_cr( df )      # Current Ratio
-df <- get_dar( df )     # Debt to Asset Ratio
-df <- get_der( df )     # Debt to Equity Ratio
-df <- get_dgdr( df )    # Donation/Grant Dependence Ratio
-df <- get_dmr( df )     # Debt to Net Assets Ratio
-df <- get_doch( df )    # Days of Cash on Hand
-df <- get_doci( df )    # Days of Cash and Investments
-df <- get_eidr( df )    # Earned Income Dependency Ratio
-df <- get_er( df )      # Equity Ratio
-df <- get_fer( df )     # Fundraising Efficiency Ratio
-df <- get_ggr( df )     # Government Grant Ratio
-df <- get_iidr( df )    # Investment Income Dependency Ratio
-df <- get_lar( df )     # Land Asset Ratio
-df <- get_luna( df )    # Liquid Unrestricted Net Assets
-df <- get_moch( df )    # Months of Cash on Hand
-df <- get_nacr( df )    # Net Assets Composition Ratio
-df <- get_or( df )      # Operating Ratio
-df <- get_orr( df )     # Operating Reserve Ratio
-df <- get_per( df )     # Program Expense Ratio
-df <- get_podpm( df )   # Post-Depreciation Profit Margin
-df <- get_predpm( df )  # Pre-Depreciation Profit Margin
-df <- get_qr( df )      # Quick Ratio
-df <- get_roa( df )     # Return on Assets
-df <- get_rona( df )    # Return on Net Assets
-df <- get_sm( df )      # Surplus Margin
-df <- get_ssr( df )     # Self Sufficiency Ratio
-df <- get_stdr( df )    # Short Term Debt Ratio
+df <- get_assets_revenue_ratio( df )           # Asset Revenue Ratio
+df <- get_cash_assets_ratio( df )              # Cash and Savings to Assets Ratio
+df <- get_cash_burn_ratio( df )                # Burn Rate Ratio
+df <- get_cash_liquidity_ratio( df )           # Cash Liquidity Ratio
+df <- get_cash_on_hand( df )                   # Cash on Hand (dollar amount)
+df <- get_current_ratio( df )                  # Current Ratio
+df <- get_days_cash_investments( df )          # Days of Cash and Investments
+df <- get_days_cash_operations( df )           # Days of Cash on Hand
+df <- get_debt_assets_ratio( df )              # Debt to Asset Ratio
+df <- get_debt_equity_ratio( df )              # Debt to Equity Ratio
+df <- get_debt_netassets_ratio( df )           # Debt to Net Assets Ratio
+df <- get_debt_secured_ratio( df )             # Secured Debt Ratio
+df <- get_debt_shortterm_ratio( df )           # Short Term Debt Ratio
+df <- get_debt_unsecured_ratio( df )           # Unsecured Debt Ratio
+df <- get_donations_revenue_ratio( df )        # Donation and Grant Dependence Ratio
+df <- get_earned_income_ratio( df )            # Earned Income Dependency Ratio
+df <- get_equity_ratio( df )                   # Equity Ratio
+df <- get_expenses_admin_ratio( df )           # Administrative Overhead Ratio
+df <- get_expenses_affiliates_ratio( df )      # Payments to Affiliates Ratio
+df <- get_expenses_compensation_ratio( df )    # Compensation Expense Ratio
+df <- get_expenses_feesforservice_ratio( df )  # Fees for Services Ratio
+df <- get_expenses_grants_ratio( df )          # Grants-to-Others Expense Ratio
+df <- get_expenses_membbenefits_ratio( df )    # Member Benefits Expense Ratio
+df <- get_fundraising_efficiency_ratio( df )   # Fundraising Efficiency Ratio
+df <- get_grants_govt_ratio( df )              # Government Grant Ratio
+df <- get_investment_income_ratio( df )        # Investment Income Dependency Ratio
+df <- get_investments_assets_ratio( df )       # Investment Assets Ratio
+df <- get_land_assets_gross_ratio( df )        # Land, Buildings, Equipment Ratio (Gross)
+df <- get_land_assets_net_ratio( df )          # Land, Buildings, Equipment Ratio (Net)
+df <- get_liquid_assets_months( df )           # Liquid Unrestricted Net Assets (Months)
+df <- get_months_cash_operations( df )         # Months of Cash on Hand
+df <- get_netassets_composition_ratio( df )    # Net Assets Composition Ratio
+df <- get_netassets_growth_ratio( df )         # Net Assets Growth Ratio
+df <- get_operating_reserve_ratio( df )        # Operating Reserve Ratio
+df <- get_overhead_ratio( df )                 # Overhead Ratio (mgmt + fundraising)
+df <- get_profit_margin_postdepr( df )         # Post-Depreciation Profit Margin
+df <- get_profit_margin_predepr( df )          # Pre-Depreciation Profit Margin
+df <- get_program_expenses_ratio( df )         # Program Expense Ratio
+df <- get_quick_ratio( df )                    # Quick Ratio
+df <- get_return_assets_ratio( df )            # Return on Assets
+df <- get_return_netassets_ratio( df )         # Return on Net Assets
+df <- get_revenue_fedcampaign_ratio( df )      # Federated Campaign Revenue Ratio
+df <- get_revenue_fundevents_ratio( df )       # Fundraising Events Revenue Ratio
+df <- get_revenue_membdues_ratio( df )         # Membership Dues Revenue Ratio
+df <- get_revenue_programs_ratio( df )         # Program Service Revenue Ratio
+df <- get_revenue_reltdorgs_ratio( df )        # Related Organizations Revenue Ratio
+df <- get_self_sufficiency_ratio( df )         # Self Sufficiency Ratio
+df <- get_surplus_margin_ratio( df )           # Surplus Margin
 ```
 
 <br>
@@ -194,27 +199,7 @@ df <- get_stdr( df )    # Short Term Debt Ratio
 
 ---
 
-## get_aer()
-
-**Ratio:** Administrative Overhead Ratio
-
-**Definition:** Share of total expenses devoted to management and general administration.
-
-**Formula:**
-```
-aer = administrative_expenses / total_expenses
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `mgmt_expenses` | `F9_09_EXP_TOT_MGMT` | Management and general expenses |
-| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
-
-**Scope:** 990 filers only
-
----
-
-## get_arr()
+## get_assets_revenue_ratio()
 
 **Ratio:** Asset Revenue Ratio
 
@@ -222,7 +207,7 @@ aer = administrative_expenses / total_expenses
 
 **Formula:**
 ```
-arr = total_assets_eoy / total_revenue
+assets_rev = total_assets_eoy / total_revenue
 ```
 
 | Argument | efile Variable | Description |
@@ -235,7 +220,28 @@ arr = total_assets_eoy / total_revenue
 
 ---
 
-## get_brr()
+## get_cash_assets_ratio()
+
+**Ratio:** Cash and Savings to Assets Ratio
+
+**Definition:** Cash and savings as a share of total assets; measures the liquid composition of the asset base.
+
+**Formula:**
+```
+cash_assets = ( cash + savings ) / total_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+**Scope:** 990 filers only
+
+---
+
+## get_cash_burn_ratio()
 
 **Ratio:** Burn Rate Ratio
 
@@ -243,7 +249,7 @@ arr = total_assets_eoy / total_revenue
 
 **Formula:**
 ```
-brr = cash_eoy / cash_boy
+cash_burn = cash_eoy / cash_boy
 ```
 
 | Argument | efile Variable | Description |
@@ -255,15 +261,15 @@ brr = cash_eoy / cash_boy
 
 ---
 
-## get_casr()
+## get_cash_liquidity_ratio()
 
-**Ratio:** Cash Ratio
+**Ratio:** Cash Liquidity Ratio
 
 **Definition:** Measures the organization's ability to cover current liabilities using only cash and savings.
 
 **Formula:**
 ```
-casr = ( cash + savings ) / ( accounts_payable + grants_payable )
+cash_liq = ( cash + savings ) / ( accounts_payable + grants_payable )
 ```
 
 | Argument | efile Variable | Description |
@@ -277,7 +283,7 @@ casr = ( cash + savings ) / ( accounts_payable + grants_payable )
 
 ---
 
-## get_coh()
+## get_cash_on_hand()
 
 **Ratio:** Cash on Hand
 
@@ -285,7 +291,7 @@ casr = ( cash + savings ) / ( accounts_payable + grants_payable )
 
 **Formula:**
 ```
-coh = cash + savings
+cash_on_hand = cash + savings
 ```
 
 | Argument | efile Variable | Description |
@@ -297,7 +303,7 @@ coh = cash + savings
 
 ---
 
-## get_cr()
+## get_current_ratio()
 
 **Ratio:** Current Ratio
 
@@ -305,7 +311,7 @@ coh = cash + savings
 
 **Formula:**
 ```
-cr = current_assets / current_liabilities
+current = current_assets / current_liabilities
 
 current_assets      = cash + savings + pledges_receivable + accounts_receivable
                       + investment_sales + prepaid_expenses
@@ -327,118 +333,7 @@ current_liabilities = accounts_payable + grants_payable
 
 ---
 
-## get_dar()
-
-**Ratio:** Debt to Asset Ratio
-
-**Definition:** Proportion of total assets financed through liabilities.
-
-**Formula:**
-```
-dar = total_liabilities / total_assets
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
-| `debt` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
-| `assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY (990) |
-| `assets` | `F9_01_NAFB_ASSET_TOT_EOY` | Total assets from Part I (990EZ fallback) |
-
-**Scope:** 990 + 990EZ filers
-
----
-
-## get_der()
-
-**Ratio:** Debt to Equity Ratio
-
-**Definition:** Compares total liabilities to unrestricted net assets.
-
-**Formula:**
-```
-der = total_liabilities / unrestricted_net_assets
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
-| `equity` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-
-**Scope:** 990 filers only
-
----
-
-## get_dgdr()
-
-**Ratio:** Donation and Grant Dependence Ratio
-
-**Definition:** Measures reliance on contributions and fundraising as a share of total revenue.
-
-**Formula:**
-```
-dgdr = ( contributions + fundraising_revenue ) / total_revenue
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `contributions` | `F9_08_REV_CONTR_TOT` | Total contributions |
-| `fundraising_revenue` | `F9_08_REV_OTH_FUNDR_NET_TOT` | Net fundraising event revenue |
-| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
-
-**Scope:** 990 filers only
-
----
-
-## get_dmr()
-
-**Ratio:** Debt to Net Assets Ratio
-
-**Definition:** Compares total liabilities to unrestricted net assets.
-
-**Formula:**
-```
-dmr = total_liabilities / unrestricted_net_assets
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
-| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-
-**Scope:** 990 + 990EZ filers
-
----
-
-## get_doch()
-
-**Ratio:** Days of Cash on Hand
-
-**Definition:** Number of days an organization can operate using available liquid assets.
-
-**Formula:**
-```
-doch = liquid_assets / daily_expenses
-
-liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
-daily_expenses = ( total_expenses - depreciation ) / 365
-```
-
-| Argument | efile Variable | Description |
-|----------|---------------|-------------|
-| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand |
-| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings |
-| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
-| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable |
-| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
-| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
-
-**Scope:** 990 filers only
-
----
-
-## get_doci()
+## get_days_cash_investments()
 
 **Ratio:** Days of Cash and Investments
 
@@ -446,7 +341,7 @@ daily_expenses = ( total_expenses - depreciation ) / 365
 
 **Formula:**
 ```
-doci = liquid_and_investment_assets / daily_expenses
+days_cash_inv = liquid_and_investment_assets / daily_expenses
 
 liquid_and_investment_assets = unrestricted_net_assets + investments
                                - ( land_buildings - mortgages_payable )
@@ -466,7 +361,181 @@ daily_expenses               = ( total_expenses - depreciation ) / 365
 
 ---
 
-## get_eidr()
+## get_days_cash_operations()
+
+**Ratio:** Days of Cash on Hand
+
+**Definition:** Number of days an organization can operate using available liquid assets.
+
+**Formula:**
+```
+days_cash_ops = liquid_assets / daily_expenses
+
+liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
+daily_expenses = ( total_expenses - depreciation ) / 365
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
+
+**Scope:** 990 filers only
+
+---
+
+## get_debt_assets_ratio()
+
+**Ratio:** Debt to Asset Ratio
+
+**Definition:** Proportion of total assets financed through liabilities.
+
+**Formula:**
+```
+debt_assets = total_liabilities / total_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
+| `debt` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
+| `assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY (990) |
+| `assets` | `F9_01_NAFB_ASSET_TOT_EOY` | Total assets from Part I (990EZ fallback) |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_debt_equity_ratio()
+
+**Ratio:** Debt to Equity Ratio
+
+**Definition:** Compares total liabilities to unrestricted net assets.
+
+**Formula:**
+```
+debt_equity = total_liabilities / unrestricted_net_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+| `equity` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+
+**Scope:** 990 filers only
+
+---
+
+## get_debt_netassets_ratio()
+
+**Ratio:** Debt to Net Assets Ratio
+
+**Definition:** Compares total liabilities to unrestricted net assets.
+
+**Formula:**
+```
+debt_netassets = total_liabilities / unrestricted_net_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
+| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
+| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_debt_secured_ratio()
+
+**Ratio:** Secured Debt Ratio
+
+**Definition:** Secured mortgages and notes payable as a share of total liabilities.
+
+**Formula:**
+```
+debt_secured = secured_mortgages_notes / total_liabilities
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `secured_mortgages_notes` | `F9_10_LIAB_MTG_NOTE_EOY` | Secured mortgages and notes payable, EOY |
+| `total_liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+
+**Scope:** 990 filers only
+
+---
+
+## get_debt_shortterm_ratio()
+
+**Ratio:** Short Term Debt Ratio
+
+**Definition:** Share of short-term liabilities relative to total net assets.
+
+**Formula:**
+```
+debt_shortterm = short_term_liabilities / net_assets
+
+short_term_liabilities = accounts_payable + grants_payable
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
+| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
+| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+
+**Scope:** 990 filers only
+
+---
+
+## get_debt_unsecured_ratio()
+
+**Ratio:** Unsecured Debt Ratio
+
+**Definition:** Unsecured notes and loans payable as a share of total liabilities.
+
+**Formula:**
+```
+debt_unsecured = unsecured_notes_loans / total_liabilities
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `unsecured_notes_loans` | `F9_10_LIAB_NOTE_UNSEC_EOY` | Unsecured notes and loans payable, EOY |
+| `total_liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+
+**Scope:** 990 filers only
+
+---
+
+## get_donations_revenue_ratio()
+
+**Ratio:** Donation and Grant Dependence Ratio
+
+**Definition:** Measures reliance on contributions and fundraising as a share of total revenue.
+
+**Formula:**
+```
+donations_rev = ( contributions + fundraising_revenue ) / total_revenue
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `contributions` | `F9_08_REV_CONTR_TOT` | Total contributions |
+| `fundraising_revenue` | `F9_08_REV_OTH_FUNDR_NET_TOT` | Net fundraising event revenue |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+**Scope:** 990 filers only
+
+---
+
+## get_earned_income_ratio()
 
 **Ratio:** Earned Income Dependency Ratio
 
@@ -474,7 +543,7 @@ daily_expenses               = ( total_expenses - depreciation ) / 365
 
 **Formula:**
 ```
-eidr = earned_revenue / total_revenue
+earned_income = earned_revenue / total_revenue
 
 earned_revenue = program_service_rev + membership_dues + royalties + other_revenue
 ```
@@ -491,7 +560,7 @@ earned_revenue = program_service_rev + membership_dues + royalties + other_reven
 
 ---
 
-## get_er()
+## get_equity_ratio()
 
 **Ratio:** Equity Ratio
 
@@ -499,7 +568,7 @@ earned_revenue = program_service_rev + membership_dues + royalties + other_reven
 
 **Formula:**
 ```
-er = net_assets / total_assets
+equity = net_assets / total_assets
 ```
 
 | Argument | efile Variable | Description |
@@ -511,7 +580,145 @@ er = net_assets / total_assets
 
 ---
 
-## get_fer()
+## get_expenses_admin_ratio()
+
+**Ratio:** Administrative Overhead Ratio
+
+**Definition:** Share of total expenses devoted to management and general administration.
+
+**Formula:**
+```
+expenses_admin = administrative_expenses / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `mgmt_expenses` | `F9_09_EXP_TOT_MGMT` | Management and general expenses |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 filers only
+
+---
+
+## get_expenses_affiliates_ratio()
+
+**Ratio:** Payments to Affiliates Ratio
+
+**Definition:** Payments to affiliates as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_affiliates = payments_to_affiliates / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `payments_to_affiliates` | `F9_09_EXP_PAY_AFFIL_TOT` | Payments to affiliates, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 filers only
+
+---
+
+## get_expenses_compensation_ratio()
+
+**Ratio:** Compensation Expense Ratio
+
+**Definition:** Total compensation and employee-related expenses as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_compensation = ( officer_comp + disqualified_comp + other_salaries
+                          + pension_contributions + other_employee_benefits
+                          + payroll_taxes ) / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `officer_comp` | `F9_09_EXP_COMP_DTK_TOT` | Officer/director compensation, total |
+| `disqualified_comp` | `F9_09_EXP_COMP_DSQ_PERS_TOT` | Disqualified person compensation, total |
+| `other_salaries` | `F9_09_EXP_OTH_SAL_WAGE_TOT` | Other salaries and wages, total |
+| `pension_contributions` | `F9_09_EXP_PENSION_CONTR_TOT` | Pension plan contributions, total |
+| `other_employee_benefits` | `F9_09_EXP_OTH_EMPL_BEN_TOT` | Other employee benefits, total |
+| `payroll_taxes` | `F9_09_EXP_PAYROLL_TAX_TOT` | Payroll taxes, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 filers only
+
+---
+
+## get_expenses_feesforservice_ratio()
+
+**Ratio:** Fees for Services Ratio
+
+**Definition:** Total fees paid for outside professional services as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_feesforservice = ( mgmt_fees + legal_fees + accounting_fees + lobbying_fees
+                            + prof_fundraising_fees + investment_mgmt_fees
+                            + other_fees ) / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `mgmt_fees` | `F9_09_EXP_FEE_SVC_MGMT_TOT` | Management fees, total |
+| `legal_fees` | `F9_09_EXP_FEE_SVC_LEGAL_TOT` | Legal fees, total |
+| `accounting_fees` | `F9_09_EXP_FEE_SVC_ACC_TOT` | Accounting fees, total |
+| `lobbying_fees` | `F9_09_EXP_FEE_SVC_LOB_TOT` | Lobbying fees, total |
+| `prof_fundraising_fees` | `F9_09_EXP_FEE_SVC_FUNDR_TOT` | Professional fundraising fees, total |
+| `investment_mgmt_fees` | `F9_09_EXP_FEE_SVC_INVEST_TOT` | Investment management fees, total |
+| `other_fees` | `F9_09_EXP_FEE_SVC_OTH_TOT` | Other fees for services, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 filers only
+
+---
+
+## get_expenses_grants_ratio()
+
+**Ratio:** Grants-to-Others Expense Ratio
+
+**Definition:** Total grants paid to domestic and foreign entities as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_grants = ( us_org_grants + us_indiv_grants + foreign_grants )
+                  / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `us_org_grants` | `F9_09_EXP_GRANT_US_ORG_TOT` | Grants to domestic organizations, total |
+| `us_indiv_grants` | `F9_09_EXP_GRANT_US_INDIV_TOT` | Grants to domestic individuals, total |
+| `foreign_grants` | `F9_09_EXP_GRANT_FRGN_TOT` | Grants to foreign entities, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 filers only
+
+---
+
+## get_expenses_membbenefits_ratio()
+
+**Ratio:** Member Benefits Expense Ratio
+
+**Definition:** Benefits paid to or for members as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_membbenefits = member_benefits / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `member_benefits` | `F9_09_EXP_BEN_PAID_MEMB_TOT` | Benefits paid to members, total (scope: 990 + 990EZ) |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_fundraising_efficiency_ratio()
 
 **Ratio:** Fundraising Efficiency Ratio
 
@@ -519,7 +726,7 @@ er = net_assets / total_assets
 
 **Formula:**
 ```
-fer = fundraising_expenses / total_contributions
+fundr_eff = fundraising_expenses / total_contributions
 ```
 
 | Argument | efile Variable | Description |
@@ -531,7 +738,7 @@ fer = fundraising_expenses / total_contributions
 
 ---
 
-## get_ggr()
+## get_grants_govt_ratio()
 
 **Ratio:** Government Grant Ratio
 
@@ -539,7 +746,7 @@ fer = fundraising_expenses / total_contributions
 
 **Formula:**
 ```
-ggr = government_grants / total_revenue
+grants_govt = government_grants / total_revenue
 ```
 
 | Argument | efile Variable | Description |
@@ -551,7 +758,7 @@ ggr = government_grants / total_revenue
 
 ---
 
-## get_iidr()
+## get_investment_income_ratio()
 
 **Ratio:** Investment Income Dependency Ratio
 
@@ -559,7 +766,7 @@ ggr = government_grants / total_revenue
 
 **Formula:**
 ```
-iidr = investment_income / total_revenue
+invest_income = investment_income / total_revenue
 
 investment_income = invest_income + bond_proceeds + rent_income + asset_sale_income
 ```
@@ -576,36 +783,77 @@ investment_income = invest_income + bond_proceeds + rent_income + asset_sale_inc
 
 ---
 
-## get_lar()
+## get_investments_assets_ratio()
 
-**Ratio:** Land Asset Ratio
+**Ratio:** Investment Assets Ratio
 
-**Definition:** Share of total assets invested in land, buildings, and equipment.
+**Definition:** Investment securities as a share of total assets.
 
 **Formula:**
 ```
-lar = land_buildings / total_assets
+investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_DEPREC` | Land, buildings, and equipment (net of depreciation) |
+| `pub_traded_securities` | `F9_10_ASSET_INVEST_SEC_EOY` | Publicly traded securities, EOY (scope: 990 + 990EZ) |
+| `other_securities` | `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Other securities, EOY (scope: 990 + 990EZ) |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_land_assets_gross_ratio()
+
+**Ratio:** Land, Buildings, and Equipment to Assets Ratio (Gross)
+
+**Definition:** Gross book value of land, buildings, and equipment as a share of total assets, before netting accumulated depreciation.
+
+**Formula:**
+```
+land_assets_gross = land_bldg_equip_deprec / total_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `land_buildings` | `F9_10_ASSET_LAND_BLDG_DEPREC` | Accumulated depreciation on land and buildings |
 | `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
 
 **Scope:** 990 filers only
 
 ---
 
-## get_luna()
+## get_land_assets_net_ratio()
 
-**Ratio:** Liquid Unrestricted Net Assets
+**Ratio:** Land, Buildings, and Equipment to Assets Ratio (Net)
+
+**Definition:** Net land, buildings, and equipment as a share of total assets, after accumulated depreciation.
+
+**Formula:**
+```
+land_assets_net = land_bldg_equip_net / total_assets
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `land_bldg_equip_net` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment, EOY (scope: 990 + 990EZ) |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_liquid_assets_months()
+
+**Ratio:** Liquid Unrestricted Net Assets (Months)
 
 **Definition:** Unrestricted net assets available for operations, net of illiquid fixed assets and related debt, expressed as months of expenses.
 
 **Formula:**
 ```
-luna = ( unrestricted_net_assets - net_fixed_assets + mortgages_payable )
-       / monthly_expenses
+liquid_assets_months = ( unrestricted_net_assets - net_fixed_assets + mortgages_payable )
+                       / monthly_expenses
 
 monthly_expenses = total_expenses / 12
 ```
@@ -621,7 +869,7 @@ monthly_expenses = total_expenses / 12
 
 ---
 
-## get_moch()
+## get_months_cash_operations()
 
 **Ratio:** Months of Cash on Hand
 
@@ -629,7 +877,7 @@ monthly_expenses = total_expenses / 12
 
 **Formula:**
 ```
-moch = liquid_assets / monthly_expenses
+months_cash_ops = liquid_assets / monthly_expenses
 
 liquid_assets    = cash + savings + pledges_receivable + accounts_receivable
 monthly_expenses = ( total_expenses - depreciation ) / 12
@@ -648,7 +896,7 @@ monthly_expenses = ( total_expenses - depreciation ) / 12
 
 ---
 
-## get_nacr()
+## get_netassets_composition_ratio()
 
 **Ratio:** Net Assets Composition Ratio
 
@@ -656,7 +904,7 @@ monthly_expenses = ( total_expenses - depreciation ) / 12
 
 **Formula:**
 ```
-nacr = unrestricted_net_assets / total_net_assets
+netassets_comp = unrestricted_net_assets / total_net_assets
 ```
 
 | Argument | efile Variable | Description |
@@ -668,15 +916,15 @@ nacr = unrestricted_net_assets / total_net_assets
 
 ---
 
-## get_or()
+## get_netassets_growth_ratio()
 
-**Ratio:** Operating Ratio
+**Ratio:** Net Assets Growth Ratio
 
 **Definition:** Year-over-year change in net assets as a proportion of beginning-of-year net assets.
 
 **Formula:**
 ```
-or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
+netassets_growth = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 ```
 
 | Argument | efile Variable | Description |
@@ -690,7 +938,7 @@ or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 
 ---
 
-## get_orr()
+## get_operating_reserve_ratio()
 
 **Ratio:** Operating Reserve Ratio
 
@@ -698,7 +946,7 @@ or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 
 **Formula:**
 ```
-orr = ( unrestricted_net_assets - net_fixed_assets ) / monthly_expenses
+op_reserve = ( unrestricted_net_assets - net_fixed_assets ) / monthly_expenses
 
 monthly_expenses = total_expenses / 12
 ```
@@ -713,28 +961,28 @@ monthly_expenses = total_expenses / 12
 
 ---
 
-## get_per()
+## get_overhead_ratio()
 
-**Ratio:** Program Expense Ratio
+**Ratio:** Overhead Ratio
 
-**Definition:** Share of total expenses devoted to program services.
+**Definition:** Combined management and fundraising expenses as a share of total functional expenses.
 
 **Formula:**
 ```
-per = program_expenses / total_expenses
+overhead = ( mgmt_expenses + fundraising_expenses ) / total_expenses
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `program_expenses` | `F9_09_EXP_TOT_PROG` | Program service expenses (990) |
-| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses (990) |
-| `total_expenses` | `F9_01_EXP_TOT_CY` | Total expenses from Part I (990EZ fallback) |
+| `mgmt_expenses` | `F9_09_EXP_TOT_MGMT` | Management and general expenses |
+| `fundraising_expenses` | `F9_09_EXP_TOT_FUNDR` | Fundraising expenses |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 
-**Scope:** 990 + 990EZ filers
+**Scope:** 990 filers only
 
 ---
 
-## get_podpm()
+## get_profit_margin_postdepr()
 
 **Ratio:** Post-Depreciation Profit Margin
 
@@ -742,7 +990,7 @@ per = program_expenses / total_expenses
 
 **Formula:**
 ```
-podpm = ( total_revenue - total_expenses ) / total_revenue
+profit_postdepr = ( total_revenue - total_expenses ) / total_revenue
 ```
 
 | Argument | efile Variable | Description |
@@ -754,7 +1002,7 @@ podpm = ( total_revenue - total_expenses ) / total_revenue
 
 ---
 
-## get_predpm()
+## get_profit_margin_predepr()
 
 **Ratio:** Pre-Depreciation Profit Margin
 
@@ -762,7 +1010,7 @@ podpm = ( total_revenue - total_expenses ) / total_revenue
 
 **Formula:**
 ```
-predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
+profit_predepr = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 ```
 
 | Argument | efile Variable | Description |
@@ -775,7 +1023,28 @@ predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 
 ---
 
-## get_qr()
+## get_program_expenses_ratio()
+
+**Ratio:** Program Expense Ratio
+
+**Definition:** Share of total expenses devoted to program services.
+
+**Formula:**
+```
+prog_exp = program_expenses / total_expenses
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_expenses` | `F9_09_EXP_TOT_PROG` | Program service expenses (990) |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses (990) |
+| `total_expenses` | `F9_01_EXP_TOT_CY` | Total expenses from Part I (990EZ fallback) |
+
+**Scope:** 990 + 990EZ filers
+
+---
+
+## get_quick_ratio()
 
 **Ratio:** Quick Ratio
 
@@ -783,7 +1052,7 @@ predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 
 **Formula:**
 ```
-qr = quick_assets / current_liabilities
+quick = quick_assets / current_liabilities
 
 quick_assets        = cash + savings + pledges_receivable + accounts_receivable
 current_liabilities = accounts_payable + grants_payable
@@ -802,7 +1071,7 @@ current_liabilities = accounts_payable + grants_payable
 
 ---
 
-## get_roa()
+## get_return_assets_ratio()
 
 **Ratio:** Return on Assets
 
@@ -810,7 +1079,7 @@ current_liabilities = accounts_payable + grants_payable
 
 **Formula:**
 ```
-roa = revenues_less_expenses / total_assets
+return_assets = revenues_less_expenses / total_assets
 ```
 
 | Argument | efile Variable | Description |
@@ -823,7 +1092,7 @@ roa = revenues_less_expenses / total_assets
 
 ---
 
-## get_rona()
+## get_return_netassets_ratio()
 
 **Ratio:** Return on Net Assets
 
@@ -831,7 +1100,7 @@ roa = revenues_less_expenses / total_assets
 
 **Formula:**
 ```
-rona = revenues_less_expenses / net_assets_boy
+return_netassets = revenues_less_expenses / net_assets_boy
 ```
 
 | Argument | efile Variable | Description |
@@ -844,28 +1113,107 @@ rona = revenues_less_expenses / net_assets_boy
 
 ---
 
-## get_sm()
+## get_revenue_fedcampaign_ratio()
 
-**Ratio:** Surplus Margin
+**Ratio:** Federated Campaign Revenue Ratio
 
-**Definition:** Net surplus or deficit as a share of total revenue.
+**Definition:** Federated campaign contributions as a share of total revenue.
 
 **Formula:**
 ```
-sm = revenues_less_expenses / total_revenue
+revenue_fedcampaign = federated_campaigns / total_revenue
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `revenues_less_expenses` | `F9_01_EXP_REV_LESS_EXP_CY` | Revenues less expenses, current year |
-| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue from Part VIII (990) |
-| `total_revenue` | `F9_01_REV_TOT_CY` | Total revenue from Part I (990EZ fallback) |
+| `federated_campaigns` | `F9_08_REV_CONTR_FED_CAMP` | Federated campaign contributions |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
 
-**Scope:** 990 + 990EZ filers
+**Scope:** 990 filers only
 
 ---
 
-## get_ssr()
+## get_revenue_fundevents_ratio()
+
+**Ratio:** Fundraising Events Revenue Ratio
+
+**Definition:** Fundraising event contributions as a share of total revenue.
+
+**Formula:**
+```
+revenue_fundevents = fundraising_event_revenue / total_revenue
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `fundraising_event_revenue` | `F9_08_REV_CONTR_FUNDR_EVNT` | Gross revenue from fundraising events |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+**Scope:** 990 filers only
+
+---
+
+## get_revenue_membdues_ratio()
+
+**Ratio:** Membership Dues Revenue Ratio
+
+**Definition:** Membership dues as a share of total revenue.
+
+**Formula:**
+```
+revenue_membdues = membership_dues / total_revenue
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `membership_dues` | `F9_08_REV_CONTR_MEMBSHIP_DUE` | Membership dues received |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+**Scope:** 990 filers only
+
+---
+
+## get_revenue_programs_ratio()
+
+**Ratio:** Program Service Revenue Ratio
+
+**Definition:** Program service revenue as a share of total revenue.
+
+**Formula:**
+```
+revenue_programs = program_service_revenue / total_revenue
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_service_revenue` | `F9_08_REV_PROG_TOT_TOT` | Total program service revenue |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+**Scope:** 990 filers only
+
+---
+
+## get_revenue_reltdorgs_ratio()
+
+**Ratio:** Related Organizations Revenue Ratio
+
+**Definition:** Revenue from related organizations as a share of total revenue.
+
+**Formula:**
+```
+revenue_reltdorgs = related_org_revenue / total_revenue
+```
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `related_org_revenue` | `F9_08_REV_CONTR_RLTD_ORG` | Contributions from related organizations |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+**Scope:** 990 filers only
+
+---
+
+## get_self_sufficiency_ratio()
 
 **Ratio:** Self Sufficiency Ratio
 
@@ -873,7 +1221,7 @@ sm = revenues_less_expenses / total_revenue
 
 **Formula:**
 ```
-ssr = program_service_revenue / total_expenses
+self_suff = program_service_revenue / total_expenses
 ```
 
 | Argument | efile Variable | Description |
@@ -887,25 +1235,23 @@ ssr = program_service_revenue / total_expenses
 
 ---
 
-## get_stdr()
+## get_surplus_margin_ratio()
 
-**Ratio:** Short Term Debt Ratio
+**Ratio:** Surplus Margin
 
-**Definition:** Share of short-term liabilities relative to total net assets.
+**Definition:** Net surplus or deficit as a share of total revenue.
 
 **Formula:**
 ```
-stdr = short_term_liabilities / net_assets
-
-short_term_liabilities = accounts_payable + grants_payable
+surplus_margin = revenues_less_expenses / total_revenue
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
-| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
-| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `revenues_less_expenses` | `F9_01_EXP_REV_LESS_EXP_CY` | Revenues less expenses, current year |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue from Part VIII (990) |
+| `total_revenue` | `F9_01_REV_TOT_CY` | Total revenue from Part I (990EZ fallback) |
 
-**Scope:** 990 filers only
+**Scope:** 990 + 990EZ filers
 
 ---
