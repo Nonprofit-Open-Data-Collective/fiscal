@@ -37,23 +37,88 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{dar}   — debt to asset ratio (raw)
-#'     \item \code{dar_w} — winsorized version
-#'     \item \code{dar_z} — standardized z-score (based on winsorized values)
-#'     \item \code{dar_p} — percentile rank (1-100)
+#'     \item \code{debt_assets}   — debt to asset ratio (raw)
+#'     \item \code{debt_assets_w} — winsorized version
+#'     \item \code{debt_assets_z} — standardized z-score (based on winsorized values)
+#'     \item \code{debt_assets_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The debt to asset ratio measures the degree of leverage — how much of the organization's
-#' asset base is financed by debt rather than equity. Higher values indicate greater
-#' financial risk.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The debt to asset ratio (also called the leverage ratio or debt ratio) measures
+#' what fraction of total assets is financed by liabilities rather than equity (net
+#' assets). It is the most fundamental solvency indicator in both commercial and
+#' nonprofit finance: a ratio approaching 1.0 means the organization is almost entirely
+#' debt-financed and has minimal equity cushion; a ratio near 0 means assets are
+#' almost entirely owned free of debt.
+#'
+#' For nonprofits this ratio is particularly important because: (1) they cannot raise
+#' equity capital by issuing stock, so debt is the primary external financing mechanism;
+#' and (2) funders, lenders, and rating agencies commonly use this ratio to assess
+#' creditworthiness and organizational stability.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' The commercial formula is identical: total liabilities / total assets. Nonprofit
+#' applications use the same ratio but may define "total liabilities" differently.
+#' This implementation uses the 990 Part X total liabilities (line 26B) or the Part I
+#' summary equivalent for 990EZ filers (line 26B), which includes all short- and
+#' long-term obligations reported on the balance sheet.
+#'
+#' Some studies use only long-term debt in the numerator to focus on structural
+#' leverage rather than near-term obligations. The full liabilities version is used
+#' here as the most comprehensive and commonly cited measure.
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' Total liabilities / total assets is the most universally understood and reported
+#' leverage measure. Using total liabilities rather than a subset avoids definitional
+#' ambiguity about which obligations to include. The PZ scope (both 990 and 990EZ)
+#' maximizes coverage across all filing types.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'     199-210.
+#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
+#'     Working Paper 04-016}.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
+#' one means liabilities equal total assets (zero net assets). Values above 1.0 occur
+#' when total liabilities exceed total assets, i.e., the organization has negative net
+#' assets (accumulated deficits exceed equity). This is a distress indicator but not
+#' uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
+#' long-term debt.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{Below 0.50}: Generally considered financially stable; assets
+#'     are more than twice liabilities.
+#'   \item \strong{0.50-0.70}: Moderate leverage; manageable but warrants monitoring.
+#'   \item \strong{Above 0.70}: High leverage; common vulnerability threshold used
+#'     in Tuckman & Chang (1991).
+#'   \item \strong{Above 1.0}: Negative net assets; acute financial risk.
+#'   \item Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
+#'     indicator in their logistic regression models.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
-#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ)
+#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ fallback)
 #'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}, 990)
-#'   \item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ)
+#'   \item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

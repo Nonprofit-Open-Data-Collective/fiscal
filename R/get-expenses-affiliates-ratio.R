@@ -21,6 +21,44 @@
 #' @param total_expenses Total functional expenses.
 #'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Primary uses and key insights}
+#'
+#' The payments to affiliates ratio measures the share of total functional expenses
+#' transferred to affiliated organizations. It captures inter-organizational resource
+#' flows within nonprofit families (federated structures, supporting organizations,
+#' shared-services models).
+#'
+#' \strong{Formula}
+#'
+#' Payments to affiliates (Part IX line 21, Column A) / total expenses (line 25A).
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+#'     and Society}, 20(4), 94-112.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
+#' for federated intermediaries.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Interpret in the context of organizational structure.
+#'   \item Large payments to affiliates absent a known federated structure warrant
+#'     review of related-party transaction disclosures.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_09_EXP_PAY_AFFIL_TOT}: Payments to affiliates (\code{payments_to_affiliates})
+#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
 #' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
@@ -28,8 +66,8 @@
 #'
 #' @usage
 #' get_expenses_affiliates_ratio( df,
-   payments_to_affiliates    = "F9_09_EXP_PAY_AFFIL_TOT",
-   total_expenses            = "F9_09_EXP_TOT_TOT",
+#'   payments_to_affiliates    = "F9_09_EXP_PAY_AFFIL_TOT",
+#'   total_expenses            = "F9_09_EXP_TOT_TOT",
 #'   winsorize  = 0.98,
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )

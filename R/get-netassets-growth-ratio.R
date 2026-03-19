@@ -37,23 +37,74 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{or}   — operating ratio (raw)
-#'     \item \code{or_w} — winsorized version
-#'     \item \code{or_z} — standardized z-score (based on winsorized values)
-#'     \item \code{or_p} — percentile rank (1-100)
+#'     \item \code{netassets_growth}   — operating ratio (raw)
+#'     \item \code{netassets_growth_w} — winsorized version
+#'     \item \code{netassets_growth_z} — standardized z-score (based on winsorized values)
+#'     \item \code{netassets_growth_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The operating ratio measures financial performance as the percentage change in total net
-#' assets from the beginning to the end of the fiscal year. Positive values indicate a
-#' financial surplus; negative values indicate a deficit.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The net assets growth ratio measures the year-over-year percentage change in total
+#' net assets — essentially the organizational equivalent of return on equity growth.
+#' Positive values indicate the organization grew its equity base during the year
+#' (surplus plus other balance sheet adjustments); negative values indicate net asset
+#' erosion (deficit or write-downs).
+#'
+#' This ratio captures all changes to net assets, including unrealized investment gains,
+#' prior-period adjustments, and currency translation effects, not just the operating
+#' surplus. It is therefore a broader measure than \code{\link{get_return_netassets_ratio}},
+#' which uses only the revenues-less-expenses figure.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Net assets EOY - Net assets BOY) / Net assets BOY. This is the standard percentage
+#' change formula. Some studies use the absolute dollar change as the dependent variable
+#' rather than a ratio, especially when the BOY base is near zero or negative.
+#'
+#' Using BOY net assets (rather than EOY or average) as the denominator is the standard
+#' practice for performance ratios: it measures the return generated on the starting
+#' equity base, avoiding circular dependency since the ending value is determined in part
+#' by the surplus being measured.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460. — Equity growth is a component of the
+#'     financial vulnerability framework.
+#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'     199-210.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Unbounded in both directions. A value of 0 means net assets were unchanged.
+#' Values below -1.0 (a drop of more than 100\%) indicate that the organization
+#' lost more than its entire starting equity base, resulting in negative net assets.
+#' The ratio is undefined (NA) when BOY net assets equal zero.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Small positive values (0.01 to 0.10) are typical and healthy for operating
+#'     nonprofits — enough growth to build modest reserves without appearing to
+#'     prioritize accumulation over mission.
+#'   \item Values below -0.10 in a single year are a warning sign; sustained negative
+#'     growth over multiple years indicates a structural financial problem.
+#'   \item Very high positive values (above 0.50) often reflect one-time large gifts
+#'     or asset revaluations rather than sustained operational performance.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets_eoy}, 990)
-#'   \item \code{F9_01_NAFB_TOT_EOY}: Total net assets, EOY from Part I (\code{net_assets_eoy}, 990EZ)
+#'   \item \code{F9_01_NAFB_TOT_EOY}: Net assets from Part I, EOY (\code{net_assets_eoy}, 990EZ fallback)
 #'   \item \code{F9_10_NAFB_TOT_BOY}: Total net assets, BOY (\code{net_assets_boy}, 990)
-#'   \item \code{F9_01_NAFB_TOT_BOY}: Total net assets, BOY from Part I (\code{net_assets_boy}, 990EZ)
+#'   \item \code{F9_01_NAFB_TOT_BOY}: Net assets from Part I, BOY (\code{net_assets_boy}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

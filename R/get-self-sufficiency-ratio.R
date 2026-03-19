@@ -37,23 +37,75 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{ssr}   — self sufficiency ratio (raw)
-#'     \item \code{ssr_w} — winsorized version
-#'     \item \code{ssr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{ssr_p} — percentile rank (1-100)
+#'     \item \code{self_suff}   — self sufficiency ratio (raw)
+#'     \item \code{self_suff_w} — winsorized version
+#'     \item \code{self_suff_z} — standardized z-score (based on winsorized values)
+#'     \item \code{self_suff_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The self sufficiency ratio measures the degree to which an organization can cover its
-#' total expenses through earned program service revenue alone, without relying on donations,
-#' grants, or investment income. A ratio at or above 1.0 indicates full self-sufficiency.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The self-sufficiency ratio (SSR) measures whether an organization's earned program
+#' service revenue is sufficient to cover its total expenses. A ratio of 1.0 means
+#' the organization could fully sustain itself from program fees and earned income
+#' alone, without any reliance on donations, grants, or investment income. Values
+#' below 1.0 indicate the degree of dependence on contributed revenue.
+#'
+#' SSR is particularly important in the nonprofit financial sustainability literature
+#' as a measure of earned income dependency and mission-related revenue generation.
+#' High SSR organizations (social enterprises, fee-for-service providers) are
+#' sometimes considered more financially resilient because earned revenue is more
+#' predictable and controllable than philanthropic support.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Program service revenue / total expenses. Some studies (Young 2007) use total
+#' earned income (including membership dues and investment income) in the numerator
+#' for a broader self-sufficiency concept. This implementation uses program service
+#' revenue only, consistent with the most common definition in the financial
+#' vulnerability literature.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Young, D.R. (2007). Financing nonprofits: Putting theory into practice.
+#'     AltaMira Press. — Extensive discussion of earned income and self-sufficiency
+#'     concepts.
+#'   \item Weisbrod, B.A. (1998). The nonprofit mission and its financing.
+#'     \emph{Journal of Policy Analysis and Management}, 17(2), 165-174. — Examines
+#'     the tension between earned income and mission.
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero; values above 1.0 are possible (and indicate program revenue
+#' exceeds total expenses — a surplus from earned income alone). The typical range for
+#' nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
+#' nonprofits depend on some contributed income.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{SSR > 1.0}: Fully self-sufficient from program revenue; uncommon
+#'     but characteristic of mature social enterprises and fee-based service providers.
+#'   \item \strong{SSR 0.50-1.0}: Majority of costs covered by program revenue;
+#'     moderate philanthropy dependence.
+#'   \item \strong{SSR < 0.25}: Heavily dependent on contributed income; common for
+#'     advocacy organizations, arts nonprofits, and grant-funded research entities.
+#'   \item High SSR is not universally better — organizations serving low-income
+#'     populations often cannot charge market-rate fees and require subsidy by design.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev}, 990)
-#'   \item \code{F9_01_REV_PROG_TOT_CY}: Program service revenue from Part I (\code{program_service_rev}, 990EZ)
+#'   \item \code{F9_01_REV_PROG_TOT_CY}: Program revenue from Part I (\code{program_service_rev}, 990EZ fallback)
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, 990)
-#'   \item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ)
+#'   \item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

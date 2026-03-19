@@ -33,20 +33,62 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{lar}   — land asset ratio (raw)
-#'     \item \code{lar_w} — winsorized version
-#'     \item \code{lar_z} — standardized z-score (based on winsorized values)
-#'     \item \code{lar_p} — percentile rank (1-100)
+#'     \item \code{land_assets_gross}   — land asset ratio (raw)
+#'     \item \code{land_assets_gross_w} — winsorized version
+#'     \item \code{land_assets_gross_z} — standardized z-score (based on winsorized values)
+#'     \item \code{land_assets_gross_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The land asset ratio measures what share of total assets are held as fixed property
-#' (land, buildings, and equipment). Higher values may indicate capital-intensive operations
-#' or limited asset liquidity.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The land, buildings, and equipment to assets ratio (gross version) measures what
+#' share of total assets is represented by the gross book value of fixed physical
+#' assets before accumulated depreciation is netted out. A high ratio indicates a
+#' capital-intensive organization with a large physical footprint; a low ratio
+#' indicates a lean service organization whose assets are primarily financial.
+#'
+#' The gross version uses the accumulated depreciation field (Part X line 10b) as a
+#' proxy for the gross value of the fixed asset base. This is distinct from the net
+#' version (\code{\link{get_land_assets_net_ratio}}), which uses the net book value
+#' after depreciation (Part X line 10cB). The gross version gives a better picture
+#' of the original investment in fixed assets; the net version better reflects
+#' current book value.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' F9_10_ASSET_LAND_BLDG_DEPREC (accumulated depreciation, line 10b) / total assets.
+#' Note: this field contains the accumulated depreciation amount, not the gross cost.
+#' Using it as a proxy for the scale of fixed asset investment is an approximation.
+#' For a cleaner measure of fixed asset intensity, \code{\link{get_land_assets_net_ratio}}
+#' uses the net value directly.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Net land, buildings, and equipment, EOY (\code{land_buildings})
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+#'     and Society}, 20(4), 94-112. — Asset composition analysis for nonprofits.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+#' most nonprofits with no owned real estate show values near zero, while
+#' capital-intensive organizations (healthcare, housing, higher education) may show
+#' values above 0.50.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Most informative for within-subsector comparisons.
+#'   \item High values indicate illiquidity risk: if the majority of assets are
+#'     fixed property, the organization has limited ability to quickly convert assets
+#'     to cash in a financial emergency.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Accumulated depreciation on land and buildings (\code{land_buildings})
 #'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
 #' }
 #'

@@ -161,13 +161,13 @@ dim( dat10k )
 table( dat10k$RETURN_TYPE )
 
 # Compute the government grant ratio for all organizations
-d <- get_ggr( df = dat10k )
-summary( d$ggr )
+d <- get_grants_govt_ratio( df = dat10k )
+summary( d$grants_govt )
 
 # Sanitize first, then compute a batch of ratios
 dat_clean <- sanitize_financials( dat10k )
-dat_clean  <- get_ggr( dat_clean )
-dat_clean  <- get_per( dat_clean )
-dat_clean  <- get_dar( dat_clean )
+dat_clean  <- get_grants_govt_ratio( dat_clean )
+dat_clean  <- get_program_expenses_ratio( dat_clean )
+dat_clean  <- get_debt_assets_ratio( dat_clean )
 }
 \keyword{datasets}

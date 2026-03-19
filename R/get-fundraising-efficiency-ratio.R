@@ -33,27 +33,71 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{fer}   — fundraising efficiency ratio (raw)
-#'     \item \code{fer_w} — winsorized version
-#'     \item \code{fer_z} — standardized z-score (based on winsorized values)
-#'     \item \code{fer_p} — percentile rank (1-100)
+#'     \item \code{fundr_eff}   — fundraising efficiency ratio (raw)
+#'     \item \code{fundr_eff_w} — winsorized version
+#'     \item \code{fundr_eff_z} — standardized z-score (based on winsorized values)
+#'     \item \code{fundr_eff_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The fundraising efficiency ratio expresses the cost of raising each dollar of
-#' contributions. A value of 0.20 means the organization spent 20 cents to raise
-#' each dollar. Lower values indicate more efficient fundraising.
+#' \strong{Primary uses and key insights}
 #'
-#' Note that organizations with no fundraising expenses (e.g., those relying entirely
-#' on unsolicited donations or government grants) will return a ratio of zero, which
-#' should be interpreted with caution rather than as evidence of exceptional efficiency.
-#' Organizations that receive no contributions will produce NA values (denominator zero).
+#' The fundraising efficiency ratio measures the cost of raising one dollar of
+#' contributions. A ratio of 0.20 means the organization spends 20 cents to raise
+#' each dollar — a common benchmark in the charity watchdog literature. Lower values
+#' indicate more efficient fundraising; higher values indicate more costly fundraising
+#' relative to the contributions raised.
 #'
-#' Cited by GuideStar and IRS as a standard accountability metric.
+#' This metric should be interpreted alongside the fundraising strategy: organizations
+#' investing in major gift programs or capital campaigns may show temporarily high
+#' ratios that reflect future revenue not yet received. Mature direct mail programs
+#' with large donor databases tend to show very low ratios.
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' Fundraising expenses (Part IX line 25D) / total contributions (Part VIII line 1h).
+#' An alternative uses total revenue rather than contributions in the denominator,
+#' which produces a lower ratio but conflates earned and contributed income. The
+#' contributions-only denominator is the most direct measure of fundraising productivity.
+#'
+#' Note: contributions (Part VIII 1h) include grants and federated campaign revenue
+#' alongside individual gifts, which may inflate the denominator for organizations
+#' receiving large government or foundation grants with minimal fundraising cost.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_09_EXP_TOT_FUNDR}: Fundraising expenses (\code{fundraising_expenses})
+#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'     199-210.
+#'   \item Charity Navigator. \emph{Financial Health Methodology}. charitynavigator.org.
+#'     — Uses fundraising efficiency as a rating factor (target: ≤ 10 cents per dollar).
+#'   \item Hager, M.A. (2001). Financial vulnerability among arts organizations.
+#'     \emph{Nonprofit and Voluntary Sector Quarterly}, 30(2), 376-392.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
+#' dollar) are possible, particularly for young organizations building donor bases or
+#' those in difficult fundraising environments. The typical range is approximately
+#' \[0, 0.50\] for most operating nonprofits.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{≤ 10 cents per dollar (ratio ≤ 0.10)}: Charity Navigator threshold
+#'     for a full fundraising efficiency score.
+#'   \item \strong{≤ 35 cents per dollar}: BBB Wise Giving Alliance standard.
+#'   \item \strong{Above 50 cents}: Commonly flagged as inefficient; may indicate
+#'     declining donor base or heavy reliance on expensive acquisition channels.
+#'   \item \strong{Zero}: Organizations with no fundraising expenses but positive
+#'     contributions (common for government-funded nonprofits) show a ratio of zero.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_09_EXP_TOT_FUNDR}: Total fundraising expenses (\code{fundraising_expenses})
 #'   \item \code{F9_08_REV_CONTR_TOT}: Total contributions received (\code{total_contributions})
 #' }
 #'

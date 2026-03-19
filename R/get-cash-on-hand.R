@@ -32,26 +32,77 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{coh}   — cash on hand in dollars (raw)
-#'     \item \code{coh_w} — winsorized version
-#'     \item \code{coh_z} — standardized z-score (based on winsorized values)
-#'     \item \code{coh_p} — percentile rank (1-100)
+#'     \item \code{cash_on_hand}   — cash on hand in dollars (raw)
+#'     \item \code{cash_on_hand_w} — winsorized version
+#'     \item \code{cash_on_hand_z} — standardized z-score (based on winsorized values)
+#'     \item \code{cash_on_hand_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' Cash on hand is an absolute dollar measure rather than a ratio. It captures the
-#' total liquid reserves available to an organization at year end, combining cash
-#' and short-term savings. Unlike ratio-based liquidity measures, it is sensitive to
-#' organizational size, so comparisons across organizations of different scales should
-#' use the ratio variants (\code{\link{get_doch}}, \code{\link{get_moch}}) instead.
+#' \strong{Primary uses and key insights}
 #'
-#' Cited by Tuckman & Chang (1991) and Bowman (2011) as a core indicator of
-#' financial vulnerability.
+#' Cash on hand is a simple dollar-denominated liquidity measure rather than a ratio.
+#' It answers the most direct version of the liquidity question: how much immediately
+#' spendable money does the organization have right now? It is most useful for
+#' communicating financial position to non-technical audiences (boards, funders),
+#' for absolute comparison against known fixed costs (monthly payroll, rent), and
+#' as the numerator input for ratio-based measures such as months of cash
+#' (\code{\link{get_months_cash_operations}}) and days of cash
+#' (\code{\link{get_days_cash_operations}}).
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' Some practitioners define cash on hand as cash only (Part X line 1B), excluding
+#' savings. Others include marketable securities or investments held for sale. This
+#' implementation uses cash plus savings (lines 1B + 2B) as the most common definition
+#' in the nonprofit financial management literature (Zietlow et al. 2007), since
+#' savings accounts and money market funds are effectively as liquid as operating
+#' cash for most organizations.
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' Lines 1B (cash) and 2B (savings and temporary cash investments) are the two most
+#' reliably liquid items on the 990 balance sheet and are the least subject to
+#' valuation uncertainty. Pledges and receivables are excluded because their timing
+#' and collectibility are uncertain. This definition is consistent with the "cash and
+#' cash equivalents" concept in nonprofit financial management practice.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley. — Standard practitioner reference for
+#'     cash management in nonprofits.
+#'   \item Calabrese, T.D. (2013). Running on empty: The operating reserves of U.S.
+#'     nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
+#'     281-302. — Examines operating cash and reserves as components of financial
+#'     sustainability.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Cash on hand is bounded below at zero (cannot be negative on a properly prepared
+#' balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
+#' so comparison across organizations of different sizes requires normalization. Use
+#' \code{\link{get_months_cash_operations}} or \code{\link{get_days_cash_operations}}
+#' for size-adjusted comparisons.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item As an absolute measure, benchmarks depend entirely on the organization's
+#'     expense base. A common practitioner rule is to maintain at least 60-90 days
+#'     of operating expenses in liquid cash.
+#'   \item The Nonprofit Finance Fund recommends a minimum of three months of operating
+#'     expenses in accessible reserves, of which cash and savings should form the core.
+#'   \item Very large cash balances relative to annual expenses may attract scrutiny
+#'     from donors and regulators about whether resources are being deployed toward mission.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
+#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

@@ -32,19 +32,60 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{podpm}   — post-depreciation profitability margin (raw)
-#'     \item \code{podpm_w} — winsorized version
-#'     \item \code{podpm_z} — standardized z-score (based on winsorized values)
-#'     \item \code{podpm_p} — percentile rank (1-100)
+#'     \item \code{profit_postdepr}   — post-depreciation profitability margin (raw)
+#'     \item \code{profit_postdepr_w} — winsorized version
+#'     \item \code{profit_postdepr_z} — standardized z-score (based on winsorized values)
+#'     \item \code{profit_postdepr_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The post-depreciation profitability margin measures the net surplus (or deficit) as a
-#' proportion of total revenue after all expenses including non-cash depreciation charges
-#' have been accounted for. Positive values indicate a surplus; negative values a deficit.
-#' Compare with \code{\link{get_predpm}} which excludes depreciation.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The post-depreciation profit margin measures the operating surplus or deficit as a
+#' share of total revenue, using expenses that include depreciation charges. It is
+#' the most conservative profit margin measure because depreciation, while non-cash,
+#' represents the consumption of capital assets that will eventually require replacement.
+#'
+#' This measure is closely related to \code{\link{get_surplus_margin_ratio}} but uses
+#' Part VIII revenue and Part IX expenses directly (both 990-only, PC scope) rather
+#' than the Part I summary line, making it more precise but narrower in coverage.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Total revenue - Total expenses) / Total revenue, using Part VIII line 12A and Part
+#' IX line 25A. The pre-depreciation version (\code{\link{get_profit_margin_predepr}})
+#' adds back depreciation to better approximate cash flow. The PODPM is also called
+#' the operating margin in some sources.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
+#'     Working Paper 04-016}.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded above at 1.0; unbounded below. The typical range for nonprofits is
+#' approximately \[-0.30, 0.30\]. Extreme negative values may reflect major
+#' write-downs or one-time capital expenses.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Near-zero is normal for nonprofits operating close to break-even.
+#'   \item Values between 0.02 and 0.07 (2-7\%) are healthy.
+#'   \item Two or more consecutive years below -0.05 is a common vulnerability threshold.
+#'   \item A persistent gap between PODPM and the pre-depreciation margin
+#'     (\code{\link{get_profit_margin_predepr}}) indicates significant capital asset
+#'     consumption that may require future capital expenditure.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{expenses})
 #'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{revenue})

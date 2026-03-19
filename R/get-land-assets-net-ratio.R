@@ -21,6 +21,51 @@
 #' @param total_assets Total assets, EOY.
 #'   (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY} (scope: 990 + 990EZ))
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Primary uses and key insights}
+#'
+#' The land, buildings, and equipment to assets ratio (net version) measures what
+#' share of total assets is represented by the net book value of fixed physical assets
+#' after accumulated depreciation. This is the standard version used in most nonprofit
+#' financial analyses, since it reflects current accounting value. High values indicate
+#' capital-intensive organizations; low values indicate lean service organizations.
+#' Very high values (above 0.60) may suggest illiquidity risk. Available on both 990
+#' and 990EZ forms (PZ scope).
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Net land, buildings, and equipment (Part X line 10cB) / total assets (line 16B).
+#' The gross version (\code{\link{get_land_assets_gross_ratio}}) uses accumulated
+#' depreciation instead of net book value.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+#'     and Society}, 20(4), 94-112.
+#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\] in normal conditions. Heavily skewed toward zero because many
+#' nonprofits own no real property.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values below 0.10 are typical for lean service organizations.
+#'   \item Values above 0.50 indicate more than half of assets are fixed property,
+#'     limiting financial flexibility.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment, EOY (\code{land_bldg_equip_net})
+#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
 #' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
@@ -28,8 +73,8 @@
 #'
 #' @usage
 #' get_land_assets_net_ratio( df,
-   land_bldg_equip_net       = "F9_10_ASSET_LAND_BLDG_NET_EOY",
-   total_assets              = "F9_10_ASSET_TOT_EOY",
+#'   land_bldg_equip_net       = "F9_10_ASSET_LAND_BLDG_NET_EOY",
+#'   total_assets              = "F9_10_ASSET_TOT_EOY",
 #'   winsorize  = 0.98,
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )

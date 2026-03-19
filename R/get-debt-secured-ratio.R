@@ -21,6 +21,52 @@
 #' @param total_liabilities Total liabilities, EOY.
 #'   (On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY})
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Primary uses and key insights}
+#'
+#' The secured debt ratio measures what share of total liabilities consists of
+#' mortgages and notes payable secured by collateral. It is a liability composition
+#' indicator: a high ratio means the organization's debt is predominantly secured
+#' (usually real estate mortgages), while a low ratio means most debt is unsecured.
+#'
+#' This metric is useful for understanding the nature of an organization's leverage,
+#' since secured debt typically has lower interest rates but pledges specific assets
+#' as collateral, limiting flexibility. It is particularly relevant for housing
+#' nonprofits, healthcare organizations, and educational institutions.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Secured mortgages and notes payable (Part X line 23B) / total liabilities (line 26B).
+#' The complement is approximately \code{\link{get_debt_unsecured_ratio}} (line 24B /
+#' line 26B), though the two do not sum to 1.0 because there are other liability categories.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
+#'     compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
+#' organizations (housing, healthcare, higher education) can show values above 0.70.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item No standard benchmark. Most informative when tracked over time or compared
+#'     within subsectors with similar capital structures.
+#'   \item For organizations with high secured debt ratios, lenders will scrutinize
+#'     the collateral value and debt service coverage.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Secured mortgages and notes payable, EOY (\code{secured_mortgages_notes})
+#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{total_liabilities})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
 #' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
@@ -28,8 +74,8 @@
 #'
 #' @usage
 #' get_debt_secured_ratio( df,
-   secured_mortgages_notes   = "F9_10_LIAB_MTG_NOTE_EOY",
-   total_liabilities         = "F9_10_LIAB_TOT_EOY",
+#'   secured_mortgages_notes   = "F9_10_LIAB_MTG_NOTE_EOY",
+#'   total_liabilities         = "F9_10_LIAB_TOT_EOY",
 #'   winsorize  = 0.98,
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )

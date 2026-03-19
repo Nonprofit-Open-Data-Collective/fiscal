@@ -39,31 +39,75 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{sm}   — surplus margin (raw)
-#'     \item \code{sm_w} — winsorized version
-#'     \item \code{sm_z} — standardized z-score (based on winsorized values)
-#'     \item \code{sm_p} — percentile rank (1-100)
+#'     \item \code{surplus_margin}   — surplus margin (raw)
+#'     \item \code{surplus_margin_w} — winsorized version
+#'     \item \code{surplus_margin_z} — standardized z-score (based on winsorized values)
+#'     \item \code{surplus_margin_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The surplus margin measures what fraction of total revenue remains after all expenses.
-#' Positive values indicate a financial surplus; negative values indicate a deficit.
-#' Unlike \code{\link{get_podpm}}, which computes (revenue - expenses) / revenue using
-#' Part VIII and Part IX directly, the surplus margin uses the Part I summary line, which
-#' may reflect accounting adjustments not captured in the Part VIII/IX subtraction alone.
+#' \strong{Primary uses and key insights}
 #'
-#' The primary field \code{F9_01_EXP_REV_LESS_EXP_CY} is available on both the full 990
-#' (Part I, line 19) and 990EZ (Part I, line 18) forms (scope: PZ). The secondary field
-#' \code{F9_11_RECO_REV_LESS_EXP} is the Part XI reconciliation value, available only to
-#' full 990 filers, and is used as a fallback when the Part I field is missing.
+#' The surplus margin (also called the operating margin or profit margin) measures
+#' what fraction of total revenue remains after all expenses. It is the most direct
+#' measure of annual financial performance: positive values indicate a surplus year
+#' (more revenue than expenses); negative values indicate a deficit year.
 #'
-#' Cited by the National Center for Charitable Statistics (NCCS).
+#' Unlike \code{\link{get_return_assets_ratio}} (which scales by assets) or
+#' \code{\link{get_return_netassets_ratio}} (which scales by equity), the surplus
+#' margin scales by revenue — answering the question: "of each dollar raised, how
+#' much is left after all expenses?" It is the nonprofit equivalent of the commercial
+#' net profit margin.
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' Revenues less expenses / total revenue. The numerator uses the Part I summary
+#' line (\code{F9_01_EXP_REV_LESS_EXP_CY}), which is available on both 990 and 990EZ
+#' and may include adjustments not captured in a simple revenue-minus-expenses
+#' calculation from Parts VIII and IX. An alternative uses (Part VIII total revenue -
+#' Part IX total expenses) / Part VIII revenue, which is more precise for full-990
+#' filers but unavailable for 990EZ filers. The Part I version is used here for
+#' maximum coverage.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses}, 990 + 990EZ)
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'     199-210.
+#'   \item Tuckman, H.P. & Chang, C.F. (1992). Nonprofit equity: A behavioral model and
+#'     its policy implications. \emph{Journal of Policy Analysis and Management}, 11(1),
+#'     76-87.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded above at 1.0 (expenses cannot be negative). Bounded below at -∞ in theory,
+#' but in practice the empirical range for nonprofits is approximately \[-0.30, 0.30\]
+#' in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
+#' events (large gifts, major write-downs, asset sales).
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{Near zero} is normal and expected for nonprofits operating close to
+#'     break-even by design.
+#'   \item \strong{0.02 to 0.07} (2-7\%) is commonly considered a healthy surplus
+#'     range — building modest reserves without appearing to hoard resources.
+#'   \item \strong{Below -0.05} for two or more consecutive years is a common
+#'     vulnerability threshold (Greenlee & Trussel 2000).
+#'   \item Tuckman & Chang (1991) use a margin below zero as a vulnerability indicator;
+#'     the magnitude matters for assessing severity.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses})
 #'   \item \code{F9_08_REV_TOT_TOT}: Total revenue from Part VIII (\code{total_revenue}, 990)
-#'   \item \code{F9_01_REV_TOT_CY}: Total revenue from Part I (\code{total_revenue}, 990EZ)
+#'   \item \code{F9_01_REV_TOT_CY}: Total revenue from Part I (\code{total_revenue}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

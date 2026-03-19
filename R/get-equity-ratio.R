@@ -32,18 +32,63 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{er}   — equity ratio (raw)
-#'     \item \code{er_w} — winsorized version
-#'     \item \code{er_z} — standardized z-score (based on winsorized values)
-#'     \item \code{er_p} — percentile rank (1-100)
+#'     \item \code{equity}   — equity ratio (raw)
+#'     \item \code{equity_w} — winsorized version
+#'     \item \code{equity_z} — standardized z-score (based on winsorized values)
+#'     \item \code{equity_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The equity ratio measures the proportion of total assets that are financed by the
-#' organization's own net assets rather than liabilities. Higher values indicate greater
-#' financial stability and a lower dependence on debt financing.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The equity ratio measures what share of total assets is financed by net assets
+#' (organizational equity) rather than liabilities. It is the arithmetic complement
+#' of the debt to asset ratio: equity ratio + debt ratio = 1.0 (when net assets are
+#' positive). A higher equity ratio indicates greater financial independence and
+#' resilience; the organization owns more of its assets outright.
+#'
+#' For nonprofits, the equity ratio is particularly meaningful because net assets
+#' represent the accumulated result of mission-related financial decisions over time.
+#' A declining equity ratio over several years signals that liabilities are growing
+#' faster than assets — a potential sustainability warning.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Total net assets / total assets. Some formulations use unrestricted net assets in
+#' the numerator to focus on the portion of equity truly available for general
+#' operations. This implementation uses total net assets (restricted + unrestricted)
+#' for maximum coverage across both 990 and 990EZ filers; for a more conservative
+#' version, see \code{\link{get_netassets_composition_ratio}}.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Theoretically bounded \[0, 1\] when net assets are positive. Values above 1.0
+#' are not possible. Values below zero occur when net assets are negative (accumulated
+#' deficit), which is a distress indicator. The empirical range for most nonprofits
+#' is approximately \[0.10, 0.95\].
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values above 0.50 (equity finances more than half of assets) are generally
+#'     considered healthy.
+#'   \item Values below 0.30 indicate high leverage — the organization is largely
+#'     debt-financed, which is common in capital-intensive subsectors.
+#'   \item The equity ratio is most useful as a trend measure: declining values over
+#'     consecutive years warrant investigation.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets})
 #'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})

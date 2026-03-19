@@ -40,27 +40,67 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{luna}   — months of liquid unrestricted net assets (raw)
-#'     \item \code{luna_w} — winsorized version
-#'     \item \code{luna_z} — standardized z-score (based on winsorized values)
-#'     \item \code{luna_p} — percentile rank (1-100)
+#'     \item \code{liquid_assets_months}   — months of liquid unrestricted net assets (raw)
+#'     \item \code{liquid_assets_months_w} — winsorized version
+#'     \item \code{liquid_assets_months_z} — standardized z-score (based on winsorized values)
+#'     \item \code{liquid_assets_months_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' LUNA measures how many months an organization could sustain operations using its
-#' liquid unrestricted equity. The numerator adjusts unrestricted net assets to remove
-#' the illiquid portion tied up in property: net fixed assets are subtracted, but
-#' the mortgages payable against them are added back (since that debt is already
-#' reflected in the net asset balance).
+#' \strong{Primary uses and key insights}
 #'
-#' Cited by Calabrese (2013) and Zietlow (2012). Related to \code{\link{get_orr}},
-#' which expresses the same concept as a ratio to annual (rather than monthly) expenses.
+#' Liquid unrestricted net assets (LUNA) measures how many months of operating expenses
+#' are covered by unrestricted net assets that are not tied up in illiquid fixed property
+#' (net of associated mortgage debt). It is a refinement of the operating reserve ratio
+#' (\code{\link{get_operating_reserve_ratio}}) that more precisely isolates liquid
+#' resources by netting out the value of fixed assets but adding back the portion
+#' financed by mortgage debt (since that debt reduces the net equity encumbrance of
+#' the fixed asset).
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' (Unrestricted net assets - net fixed assets + mortgages payable) / (total expenses / 12).
+#' The addition of mortgage debt back into the numerator reflects the logic that if the
+#' organization sold its building, it would receive the net proceeds (market value minus
+#' mortgage balance) — and the mortgage liability already reduces unrestricted net assets.
+#' Adding it back avoids double-counting the encumbrance.
+#'
+#' This formulation follows Zietlow et al. (2007) and is cited by Calabrese (2013).
+#' It differs from \code{\link{get_operating_reserve_ratio}} only in the addition of
+#' mortgages_payable to the numerator.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley. — Primary source for the LUNA definition.
+#'   \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
+#'     Leadership}, 23(3), 281-302. — Empirical application and validation.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Unbounded in both directions, expressed in months. Negative values indicate that
+#' fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
+#' range for operating nonprofits is approximately \[-12, 36\] months.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Same general benchmarks as \code{\link{get_operating_reserve_ratio}}: 3-6
+#'     months is considered adequate for most operating nonprofits.
+#'   \item Values below 1 month warrant concern; values above 12 months suggest
+#'     strong reserve accumulation.
+#'   \item Negative LUNA values are particularly informative: they indicate that the
+#'     organization's unrestricted equity is entirely absorbed by illiquid fixed assets,
+#'     leaving no liquid buffer.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{unrestricted_net_assets})
-#'   \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment, EOY (\code{net_fixed_assets})
-#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable, EOY (\code{mortgages_payable})
+#'   \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment (\code{net_fixed_assets})
+#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable (\code{mortgages_payable})
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 #' }
 #'

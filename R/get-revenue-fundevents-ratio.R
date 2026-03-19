@@ -21,6 +21,29 @@
 #' @param total_revenue Total revenue.
 #'   (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Revenue Fundevents Ratio — Revenue composition measure}
+#'
+#' Formula: fundraising event revenue / total revenue. Bounded \[0, 1\].
+#'
+#' Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures gross event revenue as a share of total revenue; net event income after direct expenses is reported elsewhere.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     \emph{VOLUNTAS}, 5(3), 273-290.
+#'   \item Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
+#'     organizations. \emph{Journal of Public Administration Research and Theory},
+#'     19(4), 947-966.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_08_REV_CONTR_FUNDR_EVNT}: Numerator (\code{fundraising_event_revenue})
+#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
 #' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
@@ -28,8 +51,8 @@
 #'
 #' @usage
 #' get_revenue_fundevents_ratio( df,
-   fundraising_event_revenue = "F9_08_REV_CONTR_FUNDR_EVNT",
-   total_revenue             = "F9_08_REV_TOT_TOT",
+#'   fundraising_event_revenue = "F9_08_REV_CONTR_FUNDR_EVNT",
+#'   total_revenue             = "F9_08_REV_TOT_TOT",
 #'   winsorize  = 0.98,
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )

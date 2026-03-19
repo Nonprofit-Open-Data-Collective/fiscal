@@ -45,18 +45,58 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{eidr}   — earned income dependency ratio (raw)
-#'     \item \code{eidr_w} — winsorized version
-#'     \item \code{eidr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{eidr_p} — percentile rank (1-100)
+#'     \item \code{earned_income}   — earned income dependency ratio (raw)
+#'     \item \code{earned_income_w} — winsorized version
+#'     \item \code{earned_income_z} — standardized z-score (based on winsorized values)
+#'     \item \code{earned_income_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The earned income dependency ratio measures the share of total revenue from self-generated
-#' sources, excluding donations and government grants. Higher values indicate greater financial
-#' self-sufficiency.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The earned income dependency ratio measures the combined share of revenue from
+#' program services, membership dues, royalties, and miscellaneous revenue — the
+#' sources that flow from the organization's own activities rather than from voluntary
+#' contributions. It is the revenue-side complement to \code{\link{get_self_sufficiency_ratio}},
+#' which compares program revenue to total expenses.
+#'
+#' Organizations with high earned income ratios are often considered more financially
+#' resilient because earned revenue is tied to service delivery rather than donor
+#' preferences, though it also creates exposure to market competition and customer
+#' retention challenges.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Program service revenue + membership dues + royalties + other miscellaneous revenue)
+#' / total revenue (Part VIII lines 2g + 1b + 5 + 11d-11e / line 12A). This broad
+#' definition of earned income follows several studies (Young 2007). A narrower version
+#' uses only program service revenue (see \code{\link{get_revenue_programs_ratio}}).
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Young, D.R. (2007). \emph{Financing Nonprofits}. AltaMira Press.
+#'   \item Weisbrod, B.A. (1998). The nonprofit mission and its financing. \emph{Journal
+#'     of Policy Analysis and Management}, 17(2), 165-174.
+#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     \emph{VOLUNTAS}, 5(3), 273-290.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Organizations heavily reliant on philanthropy show values near
+#' zero; fee-based service providers may show values above 0.90.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item No universal threshold. Context matters: an advocacy organization is expected
+#'     to show a low earned income ratio; a hospital is expected to show a high one.
+#'   \item Used in revenue concentration studies: a low ratio combined with high donation
+#'     dependence indicates philanthropic concentration risk.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev})
 #'   \item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Membership dues (\code{membership_dues})

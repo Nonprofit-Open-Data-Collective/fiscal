@@ -57,7 +57,7 @@ data( dat10k )
 dat_clean <- sanitize_financials( dat10k )
 
 # All ratios can then be computed without worrying about NA/zero ambiguity
-dat_clean <- get_ggr( dat_clean )
-dat_clean <- get_per( dat_clean )
+dat_clean <- get_grants_govt_ratio( dat_clean )
+dat_clean <- get_program_expenses_ratio( dat_clean )
 
 }

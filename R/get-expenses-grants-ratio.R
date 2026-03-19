@@ -27,6 +27,47 @@
 #' @param total_expenses Total functional expenses.
 #'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Primary uses and key insights}
+#'
+#' The grants-to-others ratio measures the share of total expenses paid out as grants
+#' to other organizations, individuals, or foreign entities. It is the defining
+#' characteristic of grant-making and pass-through organizations — foundations,
+#' federated funders, and community chests — where the primary activity is resource
+#' redistribution rather than direct service delivery.
+#'
+#' \strong{Formula}
+#'
+#' (Domestic org grants + domestic individual grants + foreign grants) / total expenses.
+#' Note: US organization grants (line 1) are PZ scope; other components are PC scope.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+#'     and Society}, 20(4), 94-112.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Near zero for direct-service organizations; near 1.0 for
+#' pure pass-through grant-makers.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Subsector comparisons are essential: a 0.80 ratio is expected for a
+#'     community foundation; anomalous for a hospital.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_09_EXP_GRANT_US_ORG_TOT}: Grants to domestic organizations (\code{us_org_grants})
+#'   \item \code{F9_09_EXP_GRANT_US_INDIV_TOT}: Grants to domestic individuals (\code{us_indiv_grants})
+#'   \item \code{F9_09_EXP_GRANT_FRGN_TOT}: Grants to foreign entities (\code{foreign_grants})
+#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}).
 #' @param summarize Logical (default \code{FALSE}).
 #'

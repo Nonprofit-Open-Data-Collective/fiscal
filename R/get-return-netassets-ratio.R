@@ -39,32 +39,71 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{rona}   — return on net assets (raw)
-#'     \item \code{rona_w} — winsorized version
-#'     \item \code{rona_z} — standardized z-score (based on winsorized values)
-#'     \item \code{rona_p} — percentile rank (1-100)
+#'     \item \code{return_netassets}   — return on net assets (raw)
+#'     \item \code{return_netassets_w} — winsorized version
+#'     \item \code{return_netassets_z} — standardized z-score (based on winsorized values)
+#'     \item \code{return_netassets_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' Return on net assets expresses the annual surplus or deficit relative to the equity
-#' base at the start of the year. Using beginning-of-year net assets as the denominator
-#' (rather than end-of-year) avoids circular dependency — the surplus itself affects
-#' ending net assets. A positive RONA indicates the organization grew its equity base
-#' during the year.
+#' \strong{Primary uses and key insights}
 #'
-#' RONA is closely related to \code{\link{get_or}} (Operating Ratio). Both measure
-#' year-over-year net asset growth, but use different numerators: \code{get_or} computes
-#' (EOY - BOY) / BOY using net asset balances directly, while \code{get_return_netassets_ratio} uses
-#' the reported revenues-less-expenses figure, which may differ due to other balance
-#' sheet adjustments (line 20 on Form 990 Part I).
+#' Return on net assets (RONA) measures how effectively the organization used its equity
+#' base to generate a surplus. By using beginning-of-year net assets as the denominator,
+#' it expresses the annual surplus as a percentage return on the organizational equity
+#' in place at the start of the year — analogous to return on equity (ROE) in commercial
+#' finance.
 #'
-#' Cited by NCCS and Nonprofit Finance Fund.
+#' RONA is closely related to \code{\link{get_netassets_growth_ratio}}: both measure
+#' year-over-year equity change, but RONA uses the reported revenues-less-expenses figure
+#' while the growth ratio uses the direct balance sheet comparison (EOY - BOY). The two
+#' can differ when there are other net asset adjustments (line 20 on Form 990 Part I).
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' Revenues less expenses / net assets BOY. Using beginning-of-year net assets in the
+#' denominator (rather than ending or average) avoids circular dependency: the ending
+#' value is determined partly by the surplus being measured. This is the standard
+#' approach in the nonprofit literature (Greenlee & Trussel 2000).
+#'
+#' An alternative uses average net assets ((BOY + EOY)/2), which smooths distortions
+#' from large mid-year transactions, but requires two balance sheet fields and is
+#' not standard in the 990-based literature.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses}, 990 + 990EZ)
+#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'     199-210.
+#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
+#'     Working Paper 04-016}.
+#'   \item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Unbounded in both directions. A value of 0 means break-even. The typical range for
+#' nonprofits is approximately \[-0.30, 0.30\]. The ratio is undefined (NA) when
+#' beginning net assets equal zero. Extreme values occur when BOY net assets are near
+#' zero (small denominator) rather than when the surplus itself is large.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Small positive values (0.02 to 0.10) are considered healthy.
+#'   \item Sustained negative RONA over multiple years is a financial vulnerability
+#'     indicator (Greenlee & Trussel 2000).
+#'   \item Like all ratio measures, RONA is most useful in trend analysis and
+#'     within-subsector comparisons rather than as an absolute benchmark.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses})
 #'   \item \code{F9_10_NAFB_TOT_BOY}: Total net assets, BOY (\code{net_assets_boy}, 990)
-#'   \item \code{F9_01_NAFB_TOT_BOY}: Net assets or fund balances, BOY from Part I (\code{net_assets_boy}, 990EZ)
+#'   \item \code{F9_01_NAFB_TOT_BOY}: Net assets from Part I, BOY (\code{net_assets_boy}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

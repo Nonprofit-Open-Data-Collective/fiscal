@@ -35,21 +35,57 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{dmr}   — debt to net assets ratio (raw)
-#'     \item \code{dmr_w} — winsorized version
-#'     \item \code{dmr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{dmr_p} — percentile rank (1-100)
+#'     \item \code{debt_netassets}   — debt to net assets ratio (raw)
+#'     \item \code{debt_netassets_w} — winsorized version
+#'     \item \code{debt_netassets_z} — standardized z-score (based on winsorized values)
+#'     \item \code{debt_netassets_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The debt to net assets ratio measures the relationship between an organization's total
-#' obligations and its unrestricted equity base. Lower values indicate a stronger capacity
-#' to absorb debt.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The debt to net assets ratio compares total liabilities to unrestricted net assets,
+#' similar to \code{\link{get_debt_equity_ratio}}. The key distinction is in scope:
+#' this function accepts both 990 and 990EZ filers (PZ scope) because it can use the
+#' Part I liabilities field as a fallback for 990EZ filers, whereas \code{\link{get_debt_equity_ratio}}
+#' requires the Part X unrestricted net assets breakdown which is only on the full 990.
+#'
+#' The practical use case for this function is cross-sectional analyses that include
+#' both 990 and 990EZ filers. For full-990-only datasets, \code{\link{get_debt_equity_ratio}}
+#' provides a more precise measure.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' See \code{\link{get_debt_equity_ratio}} for a full discussion of formula variations.
+#' This implementation uses \code{F9_10_NAFB_UNRESTRICT_EOY} as the denominator
+#' (unrestricted net assets, Part X line 27B) and falls back to the Part I summary
+#' liabilities field for the numerator when needed. The Part X unrestricted net assets
+#' field is not available on 990EZ, so 990EZ filers will have NA for this ratio.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Same as \code{\link{get_debt_equity_ratio}}: bounded below at zero when both
+#' numerator and denominator are positive; unbounded above; negative when unrestricted
+#' net assets are negative.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' See \code{\link{get_debt_equity_ratio}} for benchmarks. As a rule of thumb, values
+#' above 3.0-5.0 are commonly flagged as high leverage in the nonprofit vulnerability
+#' literature.
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{liabilities}, 990)
-#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{liabilities}, 990EZ)
+#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{liabilities}, 990EZ fallback)
 #'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{net_assets})
 #' }
 #'

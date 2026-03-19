@@ -32,25 +32,63 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{nacr}   — net assets composition ratio (raw)
-#'     \item \code{nacr_w} — winsorized version
-#'     \item \code{nacr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{nacr_p} — percentile rank (1-100)
+#'     \item \code{netassets_comp}   — net assets composition ratio (raw)
+#'     \item \code{netassets_comp_w} — winsorized version
+#'     \item \code{netassets_comp_z} — standardized z-score (based on winsorized values)
+#'     \item \code{netassets_comp_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The net assets composition ratio measures the proportion of an organization's
-#' total net assets that are unrestricted — i.e., available at management's
-#' discretion rather than designated for a specific donor purpose. Higher values
-#' indicate greater financial flexibility.
+#' \strong{Primary uses and key insights}
 #'
-#' Organizations with large permanently or temporarily restricted endowments may
-#' show low ratios even while holding substantial total net assets. The ratio helps
-#' distinguish between nominal and operational financial strength.
+#' The net assets composition ratio measures what fraction of total net assets is
+#' unrestricted — available for general operations without donor-imposed constraints.
+#' A high ratio means the organization has substantial financial flexibility; a low
+#' ratio means most net assets are restricted and cannot be redirected to cover
+#' operating shortfalls or unexpected needs.
 #'
-#' Cited by the Urban Institute and IRS as a transparency and governance indicator.
+#' This metric is specific to the nonprofit sector: commercial firms have no equivalent
+#' concept because all equity is by definition "unrestricted." It is particularly
+#' relevant for organizations that receive large restricted gifts or endowments, where
+#' total net assets may look strong but the unrestricted portion available for operations
+#' may be minimal.
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' Unrestricted net assets (Part X line 27B) / total net assets (Part X line 33B).
+#' An alternative formulation divides unrestricted net assets by total assets, which
+#' is more conservative and is sometimes used in rating agency analyses. The net assets
+#' denominator version is more common in the academic literature.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     \emph{VOLUNTAS: International Journal of Voluntary and Nonprofit Organizations},
+#'     5(3), 273-290. — Discusses the role of unrestricted resources in financial
+#'     flexibility.
+#'   \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
+#'     Leadership}, 23(3), 281-302. — Examines unrestricted reserve composition.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\] when both numerator and denominator are positive: zero means all
+#' net assets are restricted; one means all net assets are unrestricted. Values outside
+#' this range occur when either unrestricted or total net assets are negative.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values above 0.50 indicate that at least half of net assets are
+#'     unrestricted — generally considered healthy.
+#'   \item Values below 0.20 suggest heavy donor-restricted balance sheets and
+#'     limited financial flexibility.
+#'   \item Organizations with large endowments will show low ratios if the endowment
+#'     is permanently restricted, which may not indicate financial weakness.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{unrestricted_net_assets})
 #'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{total_net_assets})

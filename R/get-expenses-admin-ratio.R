@@ -32,19 +32,61 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{aer}   — administrative overhead ratio (raw)
-#'     \item \code{aer_w} — winsorized version
-#'     \item \code{aer_z} — standardized z-score (based on winsorized values)
-#'     \item \code{aer_p} — percentile rank (1–100)
+#'     \item \code{expenses_admin}   — administrative overhead ratio (raw)
+#'     \item \code{expenses_admin_w} — winsorized version
+#'     \item \code{expenses_admin_z} — standardized z-score (based on winsorized values)
+#'     \item \code{expenses_admin_p} — percentile rank (1–100)
 #'   }
 #'
 #' @details
-#' The administrative overhead ratio measures what share of total spending goes to management
-#' and general expenses rather than programs or fundraising. Lower values indicate more
-#' mission-focused spending. Charity Navigator gives its highest ratings to organizations
-#' spending less than 15% on overhead; the Better Business Bureau recommends below 35%.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The administrative overhead ratio measures what fraction of total expenses is
+#' devoted to management and general administration — the governance, compliance,
+#' financial management, and executive functions of the organization. It is the
+#' management component of the broader overhead ratio (\code{\link{get_overhead_ratio}}),
+#' which adds fundraising expenses.
+#'
+#' A high administrative ratio may indicate organizational complexity, compliance
+#' burden, or inefficiency; a very low ratio may indicate underinvestment in governance
+#' and financial systems. The appropriate level depends heavily on organizational size
+#' and mission type.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Management and general expenses (Part IX line 25C) / total functional expenses
+#' (line 25A). This is the most common operationalization. An alternative includes
+#' unallocated costs or uses a broader definition of overhead, but the Part IX column
+#' breakdown (program, management, fundraising) is the standard basis.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Lecy, J.D. & Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
+#'     \emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563.
+#'   \item Overhead Myth Campaign (GuideStar, BBB Wise Giving, Charity Navigator, 2013).
+#'   \item Nunnenkamp, P. & Öhler, H. (2012). Throwing foreign aid at HIV/AIDS in
+#'     developing countries: Missing the target? \emph{World Development}, 40(10),
+#'     1978-1994. — Uses administrative ratios in cross-organizational comparisons.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. In combination with program and fundraising ratios, all three
+#' sum to 1.0 by construction. The empirical range for most nonprofits is approximately
+#' \[0.05, 0.35\].
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Charity Navigator targets management and general expenses at or below 15\%
+#'     of total expenses for a favorable score.
+#'   \item Values below 5\% may indicate underinvestment in governance systems.
+#'   \item Very large or complex organizations may legitimately show higher ratios
+#'     due to the fixed cost nature of executive leadership and compliance functions.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_09_EXP_TOT_MGMT}: Management and general expenses (\code{mgmt_expenses})
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})

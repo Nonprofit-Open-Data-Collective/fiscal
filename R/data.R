@@ -1,18 +1,3 @@
-#' NCCS 990/990-EZ Data Excerpt (2014-2021)
-#'
-#' A dataset containing data from 990 and 990-EZ filings for the years 2014-2021,
-#' used as the primary example dataset throughout the \code{fiscal} package.
-#'
-#' @format A data frame with 1000 rows and 329 variables. See the data dictionary at
-#'   \url{https://nonprofit-open-data-collective.github.io/irs990efile/data-dictionary/data-dictionary.html}
-#'
-#' @source \url{https://github.com/lecy/fiscal-health/tree/main/EFILE}
-#'
-#' @examples
-#' data( part010810 )
-"part010810"
-
-
 #' IRS 990 Efile Dataset — 2021 Tax Year (10,000 Organizations)
 #'
 #' A dataset of 10,000 nonprofit organizations drawn from the 2021 IRS 990 efile
@@ -166,12 +151,12 @@
 #' table( dat10k$RETURN_TYPE )
 #'
 #' # Compute the government grant ratio for all organizations
-#' d <- get_ggr( df = dat10k )
-#' summary( d$ggr )
+#' d <- get_grants_govt_ratio( df = dat10k )
+#' summary( d$grants_govt )
 #'
 #' # Sanitize first, then compute a batch of ratios
 #' dat_clean <- sanitize_financials( dat10k )
-#' dat_clean  <- get_ggr( dat_clean )
-#' dat_clean  <- get_per( dat_clean )
-#' dat_clean  <- get_dar( dat_clean )
+#' dat_clean  <- get_grants_govt_ratio( dat_clean )
+#' dat_clean  <- get_program_expenses_ratio( dat_clean )
+#' dat_clean  <- get_debt_assets_ratio( dat_clean )
 "dat10k"

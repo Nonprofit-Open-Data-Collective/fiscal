@@ -21,6 +21,45 @@
 #' @param total_expenses Total functional expenses.
 #'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
 #' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @details
+#' \strong{Primary uses and key insights}
+#'
+#' The member benefits expense ratio measures the share of total functional expenses
+#' paid out as direct benefits to members. Primarily relevant for membership associations
+#' (unions, trade associations, professional societies) where member benefit payments
+#' are a core activity. For most public benefit nonprofits this ratio is near zero.
+#'
+#' \strong{Formula}
+#'
+#' Benefits paid to or for members (Part IX line 4, Column A) / total expenses.
+#' PZ scope — available to both 990 and 990EZ filers.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+#'     and Society}, 20(4), 94-112.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
+#' (above 0.50) for mutual benefit organizations.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Interpret in the context of the organization's exempt purpose and subsection code.
+#'   \item Non-zero values for 501(c)(3) organizations should be reviewed for compliance
+#'     with private benefit restrictions.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_09_EXP_BEN_PAID_MEMB_TOT}: Benefits paid to members (\code{member_benefits})
+#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+#' }
+#'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
 #' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
@@ -28,8 +67,8 @@
 #'
 #' @usage
 #' get_expenses_membbenefits_ratio( df,
-   member_benefits           = "F9_09_EXP_BEN_PAID_MEMB_TOT",
-   total_expenses            = "F9_09_EXP_TOT_TOT",
+#'   member_benefits           = "F9_09_EXP_BEN_PAID_MEMB_TOT",
+#'   total_expenses            = "F9_09_EXP_TOT_TOT",
 #'   winsorize  = 0.98,
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )

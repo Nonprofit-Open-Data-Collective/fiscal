@@ -40,18 +40,56 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{dgdr}   — donation/grant dependence ratio (raw)
-#'     \item \code{dgdr_w} — winsorized version
-#'     \item \code{dgdr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{dgdr_p} — percentile rank (1-100)
+#'     \item \code{donations_rev}   — donation/grant dependence ratio (raw)
+#'     \item \code{donations_rev_w} — winsorized version
+#'     \item \code{donations_rev_z} — standardized z-score (based on winsorized values)
+#'     \item \code{donations_rev_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The donation/grant dependence ratio measures the share of total revenue derived from
-#' contributions and fundraising. Higher values indicate greater reliance on external
-#' philanthropic support, which may create revenue volatility risk.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The donations and grant dependence ratio measures the combined share of total
+#' revenue from contributions (individual donations, foundation grants, corporate
+#' giving, federated campaigns) and net fundraising event income. It captures the
+#' overall dependence on philanthropic and voluntary support.
+#'
+#' A high ratio indicates the organization relies heavily on the goodwill of donors
+#' and the fundraising environment rather than earned or contractual income. This
+#' creates vulnerability to donor fatigue, economic downturns (when charitable giving
+#' declines), and changes in donor priorities.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Total contributions + net fundraising event revenue) / total revenue (Part VIII
+#' lines 1h + 8c / line 12A). Government grants are included in total contributions
+#' (line 1h) in this formulation. For a pure private philanthropy measure that excludes
+#' government grants, combine this ratio with \code{\link{get_grants_govt_ratio}}.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     \emph{VOLUNTAS}, 5(3), 273-290.
+#'   \item Froelich, K.A. (1999). Diversification of revenue strategies. \emph{Nonprofit
+#'     and Voluntary Sector Quarterly}, 28(3), 246-268.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
+#' with minimal earned income; values near 0 characterize fee-based service providers.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item No universal threshold. Revenue diversification theory suggests values
+#'     above 0.70-0.80 warrant monitoring of donor concentration and retention.
+#'   \item Organizations above 0.90 have almost no earned or contractual income buffer
+#'     if philanthropic support declines.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_08_REV_CONTR_TOT}: Total contributions (\code{contributions})
 #'   \item \code{F9_08_REV_OTH_FUNDR_NET_TOT}: Net fundraising event revenue (\code{fundraising_revenue})

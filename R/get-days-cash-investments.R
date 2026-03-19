@@ -50,27 +50,83 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{doci}   — days of operating cash and investments (raw)
-#'     \item \code{doci_w} — winsorized version
-#'     \item \code{doci_z} — standardized z-score (based on winsorized values)
-#'     \item \code{doci_p} — percentile rank (1-100)
+#'     \item \code{days_cash_inv}   — days of operating cash and investments (raw)
+#'     \item \code{days_cash_inv_w} — winsorized version
+#'     \item \code{days_cash_inv_z} — standardized z-score (based on winsorized values)
+#'     \item \code{days_cash_inv_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' Days of operating cash and investments extends \code{\link{get_doch}} by using a broader
-#' measure of available resources. The numerator starts with unrestricted net assets and
-#' investments, then subtracts land, buildings, and equipment (which are illiquid) and the
-#' mortgages payable against them. This gives a better estimate of truly accessible financial
-#' resources.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' Days of cash and investments extends \code{\link{get_days_cash_operations}} by
+#' incorporating investment assets into the liquidity numerator. It asks: if the
+#' organization could liquidate its unrestricted assets (net of fixed property and
+#' related debt), how many days of operations could it fund? This broader measure
+#' captures organizations that hold significant reserves in investment portfolios
+#' rather than bank accounts.
+#'
+#' It is most relevant for endowed organizations, foundations, and mature nonprofits
+#' that hold investment portfolios. For organizations with minimal investments,
+#' \code{\link{get_days_cash_operations}} and this metric will be nearly identical.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' The numerator is unrestricted net assets plus investments held for sale, minus
+#' net fixed assets (land/buildings/equipment), plus mortgage notes payable. This
+#' construction approximates the liquid, unrestricted resource base by starting from
+#' unrestricted net assets, adding back investment assets, and removing the illiquid
+#' fixed asset component (net of its associated debt). The denominator uses the same
+#' daily expense base as \code{\link{get_days_cash_operations}}: (total expenses -
+#' depreciation) / 365.
+#'
+#' This formulation follows Zietlow et al. (2007) and is related to the LUNA measure
+#' (\code{\link{get_liquid_assets_months}}).
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' By netting out fixed assets and their associated mortgage debt, the formula isolates
+#' resources that could realistically be accessed in a financial emergency — the
+#' organization cannot liquidate its building overnight, but it can liquidate investment
+#' securities. This is more operationally meaningful than simply summing all assets.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley.
+#'   \item Calabrese, T.D. (2013). Running on empty: The operating reserves of U.S.
+#'     nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
+#'     281-302.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Unbounded in both directions. Negative values occur when unrestricted net assets are
+#' negative (accumulated deficits exceed equity) or when fixed assets net of debt
+#' exceed liquid resources. Values above 365 indicate more than one year of coverage.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Because this measure is broader than days of cash alone, benchmarks are
+#'     higher: 180-365 days is considered a solid reserve position for endowed
+#'     organizations.
+#'   \item For operating nonprofits without significant investment portfolios, results
+#'     should be interpreted alongside \code{\link{get_days_cash_operations}}.
+#'   \item A large gap between this metric and \code{\link{get_days_cash_operations}}
+#'     indicates that much of the organization's liquidity is tied up in investments
+#'     rather than immediately accessible cash.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{net_assets})
 #'   \item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investments})
-#'   \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment, EOY (\code{land_buildings})
-#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable, EOY (\code{mortgages_payable})
+#'   \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment (\code{land_buildings})
+#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable (\code{mortgages_payable})
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation, depletion, and amortization (\code{depreciation})
+#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

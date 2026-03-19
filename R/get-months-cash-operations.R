@@ -49,29 +49,66 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{moch}   — months of operating cash on hand (raw)
-#'     \item \code{moch_w} — winsorized version
-#'     \item \code{moch_z} — standardized z-score (based on winsorized values)
-#'     \item \code{moch_p} — percentile rank (1–100)
+#'     \item \code{months_cash_ops}   — months of operating cash on hand (raw)
+#'     \item \code{months_cash_ops_w} — winsorized version
+#'     \item \code{months_cash_ops_z} — standardized z-score (based on winsorized values)
+#'     \item \code{months_cash_ops_p} — percentile rank (1–100)
 #'   }
 #'
 #' @details
-#' Months of operating cash on hand measures how long an organization could sustain
-#' operations using only its liquid assets if all other revenue ceased. It is the
-#' monthly equivalent of \code{\link{get_doch}}.
+#' \strong{Primary uses and key insights}
 #'
-#' Liquid assets are defined as the sum of cash, short-term savings, pledges receivable,
-#' and accounts receivable. Monthly expenses exclude non-cash depreciation charges to
-#' better approximate actual cash outflows.
+#' Months of cash on hand is the monthly expression of \code{\link{get_days_cash_operations}},
+#' expressing the same liquidity concept in a unit that is more natural for annual
+#' budget planning and board reporting. It is one of the most commonly reported metrics
+#' in nonprofit financial dashboards and funder due diligence.
 #'
-#' **Variables used:**
+#' \strong{Formula variations and their sources}
+#'
+#' The denominator uses (total expenses - depreciation) / 12. Subtracting depreciation
+#' follows standard practice (Zietlow et al. 2007) because the ratio measures cash
+#' coverage of cash expenses. Some formulations use total expenses without the
+#' depreciation adjustment; others use a rolling 12-month average of monthly expenses
+#' to smooth seasonal variation, which is not possible with annual 990 data.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash (\code{cash})
+#'   \item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
+#'     — Uses months of cash as a primary financial health indicator.
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley.
+#'   \item GuideStar/Candid. \emph{Nonprofit Finance Indicators}. — Months of cash is
+#'     one of the core metrics in the GuideStar financial health profile.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero; unbounded above. The typical operating range for nonprofits
+#' is approximately \[0, 24\] months, with values above 12 months uncommon for
+#' operating organizations (more typical for foundations).
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{Less than 1 month}: Acute liquidity risk.
+#'   \item \strong{1-3 months}: Below adequate; common recommendation is at least
+#'     3 months.
+#'   \item \strong{3-6 months}: Generally considered healthy for most nonprofits.
+#'   \item \strong{6+ months}: Strong reserve position; may be appropriate for
+#'     organizations with volatile revenue or major capital needs on the horizon.
+#'   \item The Nonprofit Finance Fund recommends 3-6 months as a target for most
+#'     operating nonprofits.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand (\code{cash})
 #'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
-#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Pledges receivable (\code{pledges_receivable})
+#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable (\code{pledges_receivable})
 #'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total expenses (\code{total_expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation (\code{depreciation})
+#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

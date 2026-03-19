@@ -37,23 +37,74 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{der}   — debt to equity ratio (raw)
-#'     \item \code{der_w} — winsorized version
-#'     \item \code{der_z} — standardized z-score (based on winsorized values)
-#'     \item \code{der_p} — percentile rank (1-100)
+#'     \item \code{debt_equity}   — debt to equity ratio (raw)
+#'     \item \code{debt_equity_w} — winsorized version
+#'     \item \code{debt_equity_z} — standardized z-score (based on winsorized values)
+#'     \item \code{debt_equity_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The debt to equity ratio indicates the degree to which an organization relies on
-#' debt financing relative to its own equity (unrestricted net assets). Higher values
-#' suggest greater financial leverage and risk.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The debt to equity ratio compares total obligations to the organization's equity
+#' cushion — its unrestricted net assets. In the nonprofit context, unrestricted net
+#' assets represent the accumulated surplus that the organization controls without
+#' donor restriction: the purest measure of its financial equity. A high ratio signals
+#' that liabilities substantially exceed the equity base, meaning a relatively small
+#' revenue shortfall could impair the ability to meet obligations.
+#'
+#' This ratio is closely related to \code{\link{get_debt_assets_ratio}} (DAR), but
+#' uses unrestricted net assets as the denominator instead of total assets. It is a
+#' stricter solvency measure because unrestricted net assets are typically much smaller
+#' than total assets, and because restricted assets cannot be used to pay general
+#' obligations.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' The commercial debt/equity ratio uses total debt / shareholders' equity. The
+#' nonprofit adaptation substitutes unrestricted net assets for equity, following
+#' Tuckman & Chang (1991) and the argument that only unrestricted resources represent
+#' true organizational equity available to cover obligations.
+#'
+#' An alternative uses total net assets in the denominator (restricted + unrestricted),
+#' which is more generous and less analytically precise. A third variant uses only
+#' long-term debt in the numerator. This implementation uses total liabilities /
+#' unrestricted net assets as the most commonly cited nonprofit version.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
-#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ)
-#'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{equity}, 990)
-#'   \item \code{F9_01_NAFB_UNRESTRICT_EOY}: Unrestricted net assets from Part I (\code{equity}, 990EZ)
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero when liabilities are non-negative and unrestricted net assets
+#' are positive. Unbounded above when unrestricted net assets are very small. Values
+#' below zero occur when unrestricted net assets are negative (accumulated deficits
+#' exceed unrestricted equity), an acute financial distress signal. The ratio is
+#' undefined (NA) when unrestricted net assets equal zero.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values below 1.0 mean total liabilities are less than the unrestricted
+#'     equity base — generally considered strong.
+#'   \item Values between 1.0 and 3.0 indicate moderate leverage.
+#'   \item Values above 5.0 indicate very high leverage relative to the equity base
+#'     and are a common vulnerability threshold.
+#'   \item Negative values indicate negative unrestricted net assets, which almost
+#'     always signals significant financial stress.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt})
+#'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{equity})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

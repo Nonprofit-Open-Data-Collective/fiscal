@@ -38,25 +38,74 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{casr}   — cash ratio (raw)
-#'     \item \code{casr_w} — winsorized version
-#'     \item \code{casr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{casr_p} — percentile rank (1-100)
+#'     \item \code{cash_liq}   — cash ratio (raw)
+#'     \item \code{cash_liq_w} — winsorized version
+#'     \item \code{cash_liq_z} — standardized z-score (based on winsorized values)
+#'     \item \code{cash_liq_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The cash ratio is the most conservative liquidity measure, using only cash and
-#' short-term savings — excluding receivables — against current liabilities. It
-#' answers the question: if no revenue came in and nothing could be collected, could
-#' the organization cover its immediate obligations today?
+#' \strong{Primary uses and key insights}
 #'
-#' Compared to \code{\link{get_cr}} (current ratio) and \code{\link{get_qr}} (quick
-#' ratio), the cash ratio sets the strictest liquidity threshold. Cited by Zietlow (2012).
+#' The cash liquidity ratio is the most conservative liquidity test: it asks whether
+#' an organization could cover its most immediate obligations using only cash and
+#' savings, without collecting any receivables or selling any investments. It is
+#' sometimes called the absolute liquidity ratio or cash coverage ratio. For nonprofits
+#' with long or uncertain receivables collection cycles (e.g., government reimbursement
+#' contracts, multi-year pledge collections), it provides a pessimistic but useful
+#' lower bound on liquidity.
 #'
-#' **Variables used:**
+#' This ratio is stricter than both the quick ratio (\code{\link{get_quick_ratio}})
+#' and the current ratio (\code{\link{get_current_ratio}}), which both include
+#' receivables in the numerator.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' The commercial equivalent (sometimes called the "super-quick" ratio) uses only
+#' cash and marketable securities. The nonprofit version here uses cash (line 1B) plus
+#' savings/temporary investments (line 2B) as the numerator, and accounts payable plus
+#' grants payable as the denominator. This follows the same liability proxy used across
+#' the package (Tuckman & Chang 1991).
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' Cash and savings are the two fields on the 990 that most unambiguously represent
+#' immediately available funds. The denominator (accounts payable + grants payable)
+#' represents the most pressing and legally enforceable near-term obligations. Together
+#' this pair provides the most conservative 990-based liquidity measure available.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
+#' current payables. The empirical range for nonprofits is approximately \[0, 20\],
+#' with most values between 0.1 and 5.0. Very high values are common for grant-making
+#' foundations and endowed organizations that carry minimal accounts payable.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values below 0.5 suggest the organization cannot cover even half of its
+#'     near-term payables from cash alone and is reliant on receivables collection
+#'     or short-term borrowing to meet obligations.
+#'   \item Values of 1.0 or above indicate full cash coverage of current liabilities.
+#'   \item Because this is a highly conservative measure, values somewhat below 1.0
+#'     are normal and not necessarily problematic if receivables are healthy.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
+#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
 #'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
 #'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
 #' }

@@ -40,18 +40,61 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{stdr}   — short term debt ratio (raw)
-#'     \item \code{stdr_w} — winsorized version
-#'     \item \code{stdr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{stdr_p} — percentile rank (1-100)
+#'     \item \code{debt_shortterm}   — short term debt ratio (raw)
+#'     \item \code{debt_shortterm_w} — winsorized version
+#'     \item \code{debt_shortterm_z} — standardized z-score (based on winsorized values)
+#'     \item \code{debt_shortterm_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The short term debt ratio measures the size of near-term financial obligations relative
-#' to the organization's total equity base. Higher values indicate greater near-term
-#' financial pressure and reduced capacity to absorb unexpected costs.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The short term debt ratio measures what share of total net assets is represented
+#' by near-term payables (accounts payable plus grants payable). It is a measure of
+#' the pressure that immediate obligations place on the equity base. A high ratio means
+#' current payables are large relative to net assets, which can signal cash flow stress
+#' even for organizations that appear solvent on a long-term basis.
+#'
+#' Note that unlike most debt ratios, the denominator here is net assets rather than
+#' total liabilities or total assets. This measures the short-term burden relative to
+#' the equity cushion.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Some formulations use total current liabilities (including all short-term items) /
+#' total net assets. This implementation uses accounts payable plus grants payable as
+#' the best available proxy for current liabilities on the 990, consistent with the
+#' approach used across this package's liquidity measures. Total net assets (Part X
+#' line 33B) is used as the denominator rather than unrestricted net assets, for
+#' broader applicability.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero when net assets are positive. Negative values occur when net
+#' assets are negative (accumulated deficit), which makes the ratio uninterpretable as
+#' a burden measure. Unbounded above when net assets approach zero. Typical values for
+#' financially stable nonprofits are in the \[0, 0.30\] range.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values below 0.10 indicate that short-term payables are modest relative to
+#'     the equity base — a comfortable position.
+#'   \item Values above 0.30 suggest that near-term obligations are placing meaningful
+#'     pressure on net assets.
+#'   \item Organizations with very low net assets may show very high or unstable ratios
+#'     even with normal payables levels.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
 #'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})

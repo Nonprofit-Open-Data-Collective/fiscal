@@ -35,25 +35,68 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{brr}   — monthly burn rate in dollars (raw)
-#'     \item \code{brr_w} — winsorized version
-#'     \item \code{brr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{brr_p} — percentile rank (1-100)
+#'     \item \code{cash_burn}   — monthly burn rate in dollars (raw)
+#'     \item \code{cash_burn_w} — winsorized version
+#'     \item \code{cash_burn_z} — standardized z-score (based on winsorized values)
+#'     \item \code{cash_burn_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' Burn rate measures the average monthly decrease in cash over the reporting period.
-#' Positive values indicate net cash consumption (spending down reserves); negative
-#' values indicate net cash accumulation. Unlike ratio-based measures, burn rate is
-#' expressed in dollar terms and is sensitive to organizational size.
+#' \strong{Primary uses and key insights}
 #'
-#' Note that \code{F9_10_ASSET_CASH_BOY} (beginning-of-year cash, Part X line 1A)
-#' may not be present in all efile datasets. Researchers working with multi-year
-#' panels can compute this by lagging the prior year's \code{F9_10_ASSET_CASH_EOY}.
+#' The burn rate ratio compares end-of-year cash to beginning-of-year cash, measuring
+#' the rate at which an organization is accumulating or depleting its cash position over
+#' a single fiscal year. A ratio below 1.0 means the organization ended the year with
+#' less cash than it started with (burning cash); a ratio above 1.0 means it accumulated
+#' cash. It is most useful for detecting multi-year cash erosion trends before they
+#' reach a crisis point.
 #'
-#' Cited by Ritchie et al. (2007) and Calabrese (2013).
+#' \strong{Formula variations and their sources}
 #'
-#' **Variables used:**
+#' The term "burn rate" originates in startup finance, where it refers to monthly cash
+#' outflows. The nonprofit adaptation here is an annual version: EOY cash divided by BOY
+#' cash. An alternative formulation computes the dollar change (EOY - BOY) divided by
+#' annual expenses to express the burn as a fraction of the operating budget, but that
+#' version requires an additional variable and is better captured by the days/months of
+#' cash functions (\code{\link{get_days_cash_operations}}, \code{\link{get_months_cash_operations}}).
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' The EOY/BOY ratio is the simplest formulation and requires only two fields from the
+#' Part X balance sheet. It directly answers "is the cash position improving or
+#' deteriorating year-over-year?" without requiring expense data, making it calculable
+#' even for organizations where Part IX data is incomplete.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley. — Discusses cash trend analysis for nonprofits.
+#'   \item Nonprofit Finance Fund. (Annual). \emph{State of the Nonprofit Sector Survey}.
+#'     — Annual survey tracks cash position changes as a sector-wide indicator.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
+#' depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
+#' near-complete cash exhaustion. The ratio is undefined (NA) when beginning-of-year
+#' cash is zero, which occurs in the first year of operation or after a complete cash
+#' drawdown.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item A ratio consistently below 1.0 over multiple years is a warning sign.
+#'     A single year below 1.0 may reflect planned spending from reserves.
+#'   \item A ratio consistently above 1.0 suggests the organization is building
+#'     liquidity reserves, which is generally positive up to a point.
+#'   \item Ratios below 0.50 in a single year (cash halved) warrant investigation
+#'     into whether the decline reflects a structural revenue problem or a planned
+#'     capital expenditure.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, end of year (\code{cash_eoy})
 #'   \item \code{F9_10_ASSET_CASH_BOY}: Cash on hand, beginning of year (\code{cash_boy})

@@ -44,23 +44,65 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{iidr}   — investment income dependency ratio (raw)
-#'     \item \code{iidr_w} — winsorized version
-#'     \item \code{iidr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{iidr_p} — percentile rank (1-100)
+#'     \item \code{invest_income}   — investment income dependency ratio (raw)
+#'     \item \code{invest_income_w} — winsorized version
+#'     \item \code{invest_income_z} — standardized z-score (based on winsorized values)
+#'     \item \code{invest_income_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The investment income dependency ratio measures the share of total revenue derived from
-#' investment-related sources. Higher values may indicate a financially stable endowment
-#' base but also greater exposure to market fluctuations.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The investment income dependency ratio measures the share of total revenue from
+#' investment-related sources: interest, dividend income, rental income, bond proceeds,
+#' and proceeds from asset sales. It captures financial portfolio dependency — the
+#' degree to which the organization's budget relies on endowment returns, rental
+#' properties, or investment gains.
+#'
+#' A high ratio may be a sign of financial maturity (large endowment generating
+#' returns) or financial risk (dependency on volatile investment markets). During
+#' periods of market decline or low interest rates, organizations with high investment
+#' income ratios face greater revenue volatility.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Investment income + bond income + rental income + asset sale income) / total
+#' revenue (Part VIII lines 3 + 4 + 6a(ii) + 7d / line 12A). Note that this combines
+#' recurring investment income with potentially one-time asset sale proceeds; some
+#' analysts separate these. The asset sale proceeds (line 7d) are particularly
+#' volatile and may distort the ratio in years with large asset disposals.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     \emph{VOLUNTAS}, 5(3), 273-290.
+#'   \item Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
+#'     organizations. \emph{Journal of Public Administration Research and Theory},
+#'     19(4), 947-966.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
+#' large asset sale gains. Values below zero can result from asset sale losses or
+#' negative investment returns.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item Values above 0.30 indicate significant financial asset dependency and
+#'     warrant monitoring of portfolio performance.
+#'   \item Large year-over-year swings in this ratio often reflect one-time asset
+#'     transactions rather than structural revenue changes.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}: Investment income (\code{invest_income})
-#'   \item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Bond proceeds (\code{bond_proceeds})
-#'   \item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Rental income (\code{rent_income})
-#'   \item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Asset sale income (\code{asset_sale_income})
+#'   \item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Income from bond proceeds (\code{bond_proceeds})
+#'   \item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Gross rental income (\code{rent_income})
+#'   \item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Net gain from asset sales (\code{asset_sale_income})
 #'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
 #' }
 #'

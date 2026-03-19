@@ -48,26 +48,88 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{doch}   — days of operating cash on hand (raw)
-#'     \item \code{doch_w} — winsorized version
-#'     \item \code{doch_z} — standardized z-score (based on winsorized values)
-#'     \item \code{doch_p} — percentile rank (1-100)
+#'     \item \code{days_cash_ops}   — days of operating cash on hand (raw)
+#'     \item \code{days_cash_ops_w} — winsorized version
+#'     \item \code{days_cash_ops_z} — standardized z-score (based on winsorized values)
+#'     \item \code{days_cash_ops_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' Days of operating cash on hand estimates how many days an organization could sustain
-#' operations using only its liquid assets if all other revenue ceased. Daily expenses
-#' exclude non-cash depreciation to approximate actual cash outflows. The monthly
-#' equivalent is \code{\link{get_moch}}.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' Days of cash on hand expresses liquidity in an operationally intuitive unit: how
+#' many days of expenses could the organization cover if all revenue stopped today?
+#' It converts the raw dollar amount of liquid assets into a time-based runway
+#' measure that is easier for non-financial audiences (boards, program staff, funders)
+#' to interpret than a ratio. It is widely used in nonprofit financial management,
+#' healthcare finance, and government financial reporting.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' The denominator in this implementation is cash operating expenses per day,
+#' computed as (total expenses - depreciation) / 365. Depreciation is subtracted
+#' because it is a non-cash charge that does not represent actual cash outflow.
+#' Some formulations use total expenses without the depreciation adjustment, which
+#' is more conservative (produces lower days values). The monthly equivalent is
+#' \code{\link{get_months_cash_operations}}, which uses /12 instead of /365.
+#'
+#' The numerator includes cash, savings, pledges receivable, and accounts receivable —
+#' the same four items used in the quick ratio (\code{\link{get_quick_ratio}}). Some
+#' stricter formulations use only cash and savings (excluding receivables); some broader
+#' ones add investments held for sale. The four-item version follows the Healthcare
+#' Financial Management Association (HFMA) standard, which is the most commonly cited
+#' benchmark source.
+#'
+#' \strong{Why this formula was chosen}
+#'
+#' The HFMA definition is the most widely benchmarked version and is increasingly
+#' applied to nonprofits outside healthcare. Subtracting depreciation from the
+#' denominator follows standard financial management practice (Zietlow et al. 2007)
+#' because the ratio is intended to measure cash coverage of cash expenses.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
-#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
-#'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
+#'   \item Healthcare Financial Management Association (HFMA). \emph{Key Hospital
+#'     Financial Statistics and Ratio Medians}. Annual report. — Source for the most
+#'     widely cited days-of-cash benchmarks; originally healthcare-focused but
+#'     increasingly applied to nonprofits broadly.
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley. — Adopts the HFMA approach for nonprofits.
+#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
+#'     Sector Quarterly}, 20(4), 445-460.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero and unbounded above, expressed in days. The typical range for
+#' nonprofits is approximately \[0, 365\]. Values above 365 (more than one year of
+#' cash) indicate very large liquid reserves relative to expenses, which is uncommon
+#' for operating nonprofits but typical for foundations.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item \strong{60-90 days} is a commonly cited minimum threshold in nonprofit
+#'     financial management guidance (Nonprofit Finance Fund).
+#'   \item \strong{Below 30 days} is generally considered a distress indicator.
+#'   \item \strong{90-180 days} is considered healthy for most operating nonprofits.
+#'   \item Healthcare nonprofits are typically benchmarked at higher levels (150+ days)
+#'     due to longer receivables cycles from insurance reimbursements.
+#'   \item Organizations with highly predictable revenue (e.g., stable government
+#'     contracts) can responsibly operate with lower cash reserves than those with
+#'     volatile or grant-dependent income.
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand (\code{cash})
+#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
+#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable (\code{pledges_receivable})
+#'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation, depletion, and amortization (\code{depreciation})
+#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

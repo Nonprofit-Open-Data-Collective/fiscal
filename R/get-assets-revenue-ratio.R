@@ -35,22 +35,68 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{arr}   — asset revenue ratio (raw)
-#'     \item \code{arr_w} — winsorized version
-#'     \item \code{arr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{arr_p} — percentile rank (1-100)
+#'     \item \code{assets_rev}   — asset revenue ratio (raw)
+#'     \item \code{assets_rev_w} — winsorized version
+#'     \item \code{assets_rev_z} — standardized z-score (based on winsorized values)
+#'     \item \code{assets_rev_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The asset revenue ratio indicates how large an organization's asset base is relative to
-#' the revenue it generates each year. A higher ratio may indicate asset-heavy operations,
-#' significant endowment holdings, or declining revenue.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The asset revenue ratio measures how many dollars of assets are held per dollar of
+#' annual revenue. It is an asset intensity measure: capital-intensive organizations
+#' (hospitals, universities, housing providers with large real estate portfolios) show
+#' high ratios; lean operating nonprofits show low ratios. It can also be interpreted
+#' as an approximate measure of how long the organization could theoretically operate
+#' on its asset base — though this is not a direct liquidity measure.
+#'
+#' A related interpretation is efficiency: a lower ratio may indicate more efficient
+#' use of assets to generate revenue, though this is not universally true for nonprofits
+#' where asset accumulation may reflect reserve-building rather than operational
+#' inefficiency.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' Total assets EOY / total revenue. The inverse (revenue / assets) is sometimes called
+#' the asset turnover ratio and is more common in commercial analysis. For nonprofits,
+#' the assets-to-revenue direction is more intuitive because it expresses asset intensity
+#' in terms of revenue multiples. Some studies use average assets ((BOY + EOY)/2) in
+#' the denominator to account for mid-year asset changes, but the EOY value is used
+#' here for consistency and data availability.
+#'
+#' \strong{Canonical citations}
+#'
 #' \itemize{
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
+#'     compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
+#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
+#' Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
+#' organizations and capital-intensive nonprofits may show values of 10 or higher.
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item There is no universal benchmark. The ratio is most meaningful for
+#'     within-subsector comparisons.
+#'   \item A ratio below 1.0 means annual revenue exceeds total assets — common for
+#'     lean service organizations with minimal physical assets.
+#'   \item Very high ratios (above 10) typically indicate either a capital-heavy asset
+#'     base (real estate, equipment) or a small revenue base relative to accumulated
+#'     assets (endowed organizations).
+#' }
+#'
+#' \strong{Variables used:}
+#' \itemize{
+#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, end of year (\code{total_assets}, 990)
 #'   \item \code{F9_08_REV_TOT_TOT}: Total revenue from Part VIII (\code{total_revenue}, 990)
-#'   \item \code{F9_01_REV_TOT_CY}: Total revenue from Part I (\code{total_revenue}, 990EZ)
+#'   \item \code{F9_01_REV_TOT_CY}: Total revenue from Part I (\code{total_revenue}, 990EZ fallback)
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

@@ -39,24 +39,69 @@
 #' @return Object of class \code{data.frame}: the original dataframe appended with four
 #'   new columns:
 #'   \itemize{
-#'     \item \code{predpm}   — pre-depreciation profitability margin (raw)
-#'     \item \code{predpm_w} — winsorized version
-#'     \item \code{predpm_z} — standardized z-score (based on winsorized values)
-#'     \item \code{predpm_p} — percentile rank (1-100)
+#'     \item \code{profit_predepr}   — pre-depreciation profitability margin (raw)
+#'     \item \code{profit_predepr_w} — winsorized version
+#'     \item \code{profit_predepr_z} — standardized z-score (based on winsorized values)
+#'     \item \code{profit_predepr_p} — percentile rank (1-100)
 #'   }
 #'
 #' @details
-#' The pre-depreciation profitability margin adds back depreciation to measure the
-#' cash-based surplus as a share of revenue. Because depreciation is a non-cash expense,
-#' this metric more closely approximates actual cash flow than \code{\link{get_podpm}}.
-#' Higher values relative to the post-depreciation margin reflect the impact of large
-#' non-cash depreciation charges.
+#' \strong{Primary uses and key insights}
 #'
-#' **Variables used:**
+#' The pre-depreciation profit margin approximates cash flow from operations by
+#' adding back non-cash depreciation charges to the surplus. Since depreciation is
+#' an accounting allocation of past capital expenditure rather than a current cash
+#' outflow, this measure better reflects the organization's actual cash-generating
+#' ability. A positive pre-depreciation margin alongside a negative post-depreciation
+#' margin indicates the organization is cash-flow positive but "booking" a loss due
+#' to large depreciation charges.
+#'
+#' \strong{Formula variations and their sources}
+#'
+#' (Total revenue - (Total expenses - Depreciation)) / Total revenue. Equivalently,
+#' (revenue - expenses + depreciation) / revenue. This is the simplest cash flow
+#' approximation available from 990 data; it does not account for changes in working
+#' capital, capital expenditures, or debt service, which are not directly reported
+#' on the 990.
+#'
+#' The EBITDA margin used in commercial analysis is similar in spirit but also adds
+#' back interest, taxes, and amortization. The pre-depreciation margin here adds only
+#' depreciation (and amortization where included), making it a more conservative
+#' approximation.
+#'
+#' \strong{Canonical citations}
+#'
+#' \itemize{
+#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
+#'     Working Paper 04-016}.
+#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+#'     for Nonprofit Organizations}. Wiley.
+#' }
+#'
+#' \strong{Definitional range}
+#'
+#' Bounded above at 1.0; unbounded below. Always equal to or greater than the
+#' post-depreciation margin (\code{\link{get_profit_margin_postdepr}}) since adding
+#' back depreciation can only increase the margin. The typical range is approximately
+#' \[-0.20, 0.40\].
+#'
+#' \strong{Benchmarks and rules of thumb}
+#'
+#' \itemize{
+#'   \item A pre-depreciation margin above zero with a post-depreciation margin below
+#'     zero is a common and generally manageable pattern for capital-intensive nonprofits.
+#'   \item If both margins are negative, the organization is generating a cash flow
+#'     deficit, not just an accounting loss.
+#'   \item The spread between the two margins approximates depreciation / revenue,
+#'     which indicates the rate of capital consumption relative to revenue.
+#' }
+#'
+#' \strong{Variables used:}
 #' \itemize{
 #'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{revenue})
 #'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation, depletion, and amortization (\code{depreciation})
+#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 #' }
 #'
 #' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in

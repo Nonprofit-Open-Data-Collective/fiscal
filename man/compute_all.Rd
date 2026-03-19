@@ -13,33 +13,21 @@ compute_all(
 )
 }
 \arguments{
-\item{df}{A \code{data.frame} containing IRS 990 efile financial fields.
-Should include a \code{RETURN_TYPE} column for accurate 990 vs 990-EZ
-detection during sanitization.}
+\item{df}{A \code{data.frame} containing IRS 990 efile financial fields.}
 
-\item{metrics}{Character vector specifying which versions of each ratio to
-return. Any combination of \code{"ratio"} (raw value), \code{"w"}
-(winsorized), \code{"z"} (z-score), and \code{"p"} (percentile rank).
-Defaults to all four: \code{c("ratio","w","z","p")}.}
+\item{metrics}{Character vector of metric variants to return. Any combination
+of \code{"ratio"}, \code{"w"}, \code{"z"}, \code{"p"}. Defaults to all four.}
 
-\item{append_to_df}{Logical. If \code{TRUE} (default), the selected metric
-columns are appended to the full original data frame. If \code{FALSE},
-returns only the \code{.IDVARS} identifier columns plus the selected
-metric columns.}
+\item{append_to_df}{Logical. If \code{TRUE} (default), returns the original
+\code{df} with metric columns appended. If \code{FALSE}, returns only
+\code{.IDVARS} identifier columns plus the selected metric columns.}
 
-\item{winsorize}{The winsorization proportion passed to every ratio function
-(between 0 and 1, default \code{0.98}).}
+\item{winsorize}{Winsorization proportion (default \code{0.98}).}
 
-\item{verbose}{Logical. If \code{TRUE} (default), prints a progress message
-as each ratio is computed.}
+\item{verbose}{Logical. If \code{TRUE} (default), prints progress messages.}
 }
 \value{
-A \code{data.frame}. When \code{append_to_df = TRUE} (default),
-the original \code{df} with the selected metric columns appended.
-When \code{append_to_df = FALSE}, a slim data frame containing only the
-\code{.IDVARS} identifier columns and the selected metric columns.
-Column names follow the pattern \code{<abbr>} (raw), \code{<abbr>_w},
-\code{<abbr>_z}, \code{<abbr>_p}.
+A \code{data.frame}.
 }
 \description{
 Applies every \code{get_*()} ratio function in the \code{fiscal} package to
@@ -47,34 +35,10 @@ a data frame in a single call. The data frame is sanitized once up front
 using \code{\link{sanitize_financials}}, then each function is called with
 \code{sanitize = FALSE} to avoid redundant imputation passes.
 }
-\details{
-The sanitization step imputes zero for NA values in financial fields that
-represent a genuinely missing zero (i.e., the organization did not report
-the line because it was zero, not because the field is inapplicable).
-See \code{\link{sanitize_financials}} for the rules governing which fields
-are imputed for which filer types.
-
-Functions are called in a consistent order grouped by topic:
-liquidity, leverage, revenue composition, expense ratios,
-balance sheet structure, and performance ratios.
-
-Any function that errors (e.g., because required columns are absent from
-\code{df}) is skipped with a warning rather than stopping the entire run,
-so a partial dataset still returns the ratios that can be computed.
-}
 \examples{
 library( fiscal )
 data( dat10k )
-
-# Default: full df with all four metric variants appended
 d <- compute_all( dat10k )
 dim( d )
-
-# Return only raw ratios appended to the full df
-d <- compute_all( dat10k, metrics = "ratio" )
-
-# Return ID columns + winsorized ratios only (slim output)
-d <- compute_all( dat10k, metrics = "w", append_to_df = FALSE )
-head( d )
 
 }
