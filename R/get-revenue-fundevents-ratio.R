@@ -1,0 +1,94 @@
+###---------------------------------------------------
+###   FUNDRAISING EVENTS REVENUE RATIO
+###---------------------------------------------------
+
+#' @title
+#' Fundraising Events Revenue Ratio
+#'
+#' @description
+#' Fundraising event contributions as a share of total revenue.
+#'
+#' **Formula:**
+#' ```
+#' revenue_fundevents = fundraising_event_revenue / total_revenue
+#' ```
+#'
+#' **Calculated For:** 990 filers only.
+#'
+#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param fundraising_event_revenue Gross revenue from fundraising events.
+#'   (On 990: Part VIII, line 1c; \code{F9_08_REV_CONTR_FUNDR_EVNT})
+#' @param total_revenue Total revenue.
+#'   (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
+#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#'   financial fields before computing, respecting form scope.
+#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#'   statistics and density plots for all four output columns.
+#'
+#' @usage
+#' get_revenue_fundevents_ratio( df,
+   fundraising_event_revenue = "F9_08_REV_CONTR_FUNDR_EVNT",
+   total_revenue             = "F9_08_REV_TOT_TOT",
+#'   winsorize  = 0.98,
+#'   sanitize   = TRUE,
+#'   summarize  = FALSE )
+#'
+#' @return The original \code{data.frame} with four columns appended:
+#'   \code{revenue_fundevents}, \code{revenue_fundevents_w},
+#'   \code{revenue_fundevents_z}, \code{revenue_fundevents_p}.
+#'
+#' @import dplyr
+#' @import stringr
+#' @import magrittr
+#' @examples
+#' library( fiscal )
+#' data( dat10k )
+#' d <- get_revenue_fundevents_ratio( df = dat10k )
+#' head( d[ , c( "revenue_fundevents", "revenue_fundevents_w", "revenue_fundevents_z", "revenue_fundevents_p" ) ] )
+#'
+#' @export
+get_revenue_fundevents_ratio <- function( df,
+                     fundraising_event_revenue = "F9_08_REV_CONTR_FUNDR_EVNT",
+                     total_revenue             = "F9_08_REV_TOT_TOT",
+                     winsorize  = 0.98,
+                     sanitize   = TRUE,
+                     summarize  = FALSE )
+{
+  validate_inputs( winsorize, fundraising_event_revenue, total_revenue,
+                   "fundraising_event_revenue", "total_revenue" )
+
+  vars <- c( fundraising_event_revenue, total_revenue )
+  KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
+  dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
+  dt   <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
+  if ( sanitize ) { dt <- sanitize_financials( dt ) }
+
+  num <- resolve_col( dt, fundraising_event_revenue )
+  den <- resolve_col( dt, total_revenue )
+
+  message( paste0( "Total revenue equal to zero: ", sum( den == 0, na.rm = TRUE ),
+                   " case(s) replaced with NA." ) )
+  den[ den == 0 ] <- NA
+
+  revenue_fundevents <- num / den
+
+  v <- winsorize_var( revenue_fundevents, winsorize )
+  REVENUE_FUNDEVENTS <- data.frame(
+    revenue_fundevents   = v$raw,
+    revenue_fundevents_w = v$winsorized,
+    revenue_fundevents_z = v$z,
+    revenue_fundevents_p = v$pctile )
+
+  if ( summarize ) {
+    print( summary( REVENUE_FUNDEVENTS ) )
+    op <- par( mfrow = c(2,2) )
+    on.exit( par(op), add = TRUE )
+    plot( density( REVENUE_FUNDEVENTS$revenue_fundevents,   na.rm = TRUE ), main = "REVENUE_FUNDEVENTS (raw)" )
+    plot( density( REVENUE_FUNDEVENTS$revenue_fundevents_w, na.rm = TRUE ), main = "REVENUE_FUNDEVENTS Winsorized" )
+    plot( density( REVENUE_FUNDEVENTS$revenue_fundevents_z, na.rm = TRUE ), main = "REVENUE_FUNDEVENTS Standardized (Z)" )
+    plot( density( REVENUE_FUNDEVENTS$revenue_fundevents_p, na.rm = TRUE ), main = "REVENUE_FUNDEVENTS Percentile" )
+  }
+
+  return( cbind( df, REVENUE_FUNDEVENTS ) )
+}
