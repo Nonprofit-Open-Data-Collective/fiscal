@@ -20,21 +20,21 @@ get_expenses_feesforservice_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{mgmt_fees}{Management fees (total). (On 990: Part IX, line 11a Col A; \code{F9_09_EXP_FEE_SVC_MGMT_TOT})}
+\item{mgmt_fees}{Management fees (total).}
 
-\item{legal_fees}{Legal fees (total). (On 990: Part IX, line 11b Col A; \code{F9_09_EXP_FEE_SVC_LEGAL_TOT})}
+\item{legal_fees}{Legal fees (total).}
 
-\item{accounting_fees}{Accounting fees (total). (On 990: Part IX, line 11c Col A; \code{F9_09_EXP_FEE_SVC_ACC_TOT})}
+\item{accounting_fees}{Accounting fees (total).}
 
-\item{lobbying_fees}{Lobbying fees (total). (On 990: Part IX, line 11d Col A; \code{F9_09_EXP_FEE_SVC_LOB_TOT})}
+\item{lobbying_fees}{Lobbying fees (total).}
 
-\item{prof_fundraising_fees}{Professional fundraising fees (total). (On 990: Part IX, line 11e Col A; \code{F9_09_EXP_FEE_SVC_FUNDR_TOT})}
+\item{prof_fundraising_fees}{Professional fundraising fees (total).}
 
-\item{investment_mgmt_fees}{Investment management fees (total). (On 990: Part IX, line 11f Col A; \code{F9_09_EXP_FEE_SVC_INVEST_TOT})}
+\item{investment_mgmt_fees}{Investment management fees (total).}
 
-\item{other_fees}{Other fees for services (total). (On 990: Part IX, line 11g Col A; \code{F9_09_EXP_FEE_SVC_OTH_TOT})}
+\item{other_fees}{Other fees for services (total).}
 
-\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -43,9 +43,13 @@ get_expenses_feesforservice_ratio( df,
 \item{summarize}{Logical (default \code{FALSE}).}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{expenses_feesforservice}, \code{expenses_feesforservice_w},
-\code{expenses_feesforservice_z}, \code{expenses_feesforservice_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{expenses_feesforservice} (raw ratio)
+\item \code{expenses_feesforservice_w} (winsorized)
+\item \code{expenses_feesforservice_z} (z-score)
+\item \code{expenses_feesforservice_p} (percentile rank, 1-100)
+}
 }
 \description{
 Total fees paid for outside services (management, legal, accounting, lobbying,
@@ -63,46 +67,54 @@ functional expenses.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The fees for services ratio measures the share of total expenses paid to outside
 contractors across seven categories: management consultants, legal, accounting,
 lobbying, professional fundraisers, investment managers, and other. It captures
 the degree to which the organization outsources professional expertise.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Sum of seven Part IX fee fields (lines 11a-11g, Column A) / total expenses (line 25A).
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Most nonprofits show values in the [0.01, 0.20] range.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item No universal benchmark; most meaningful within-subsector or over time.
 \item High investment management fees relative to total expenses may indicate
 poor endowment management or excessive fee structures.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_09_EXP_FEE_SVC_MGMT_TOT}: Management fees (\code{mgmt_fees})
 \item \code{F9_09_EXP_FEE_SVC_LEGAL_TOT}: Legal fees (\code{legal_fees})
-\item \code{F9_09_EXP_FEE_SVC_ACC_TOT}: Accounting fees (\code{accounting_fees})
+\item \code{F9_09_EXP_FEE_SVC_ACC_TOT}:
+Accounting fees (\code{accounting_fees})
 \item \code{F9_09_EXP_FEE_SVC_LOB_TOT}: Lobbying fees (\code{lobbying_fees})
-\item \code{F9_09_EXP_FEE_SVC_FUNDR_TOT}: Professional fundraising fees (\code{prof_fundraising_fees})
-\item \code{F9_09_EXP_FEE_SVC_INVEST_TOT}: Investment management fees (\code{investment_mgmt_fees})
-\item \code{F9_09_EXP_FEE_SVC_OTH_TOT}: Other fees for services (\code{other_fees})
+\item \code{F9_09_EXP_FEE_SVC_FUNDR_TOT}:
+Professional fundraising fees (\code{prof_fundraising_fees})
+\item \code{F9_09_EXP_FEE_SVC_INVEST_TOT}:
+Investment management fees (\code{investment_mgmt_fees})
+\item \code{F9_09_EXP_FEE_SVC_OTH_TOT}:
+Other fees for services (\code{other_fees})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 }
 \examples{

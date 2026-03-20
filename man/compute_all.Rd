@@ -30,9 +30,9 @@ of \code{"ratio"}, \code{"w"}, \code{"z"}, \code{"p"}. Defaults to all four.}
 A \code{data.frame}.
 }
 \description{
-Applies every \code{get_*()} ratio function in the \code{fiscal} package to
+Applies every \verb{get_*()} ratio function in the \code{fiscal} package to
 a data frame in a single call. The data frame is sanitized once up front
-using \code{\link{sanitize_financials}}, then each function is called with
+using \code{\link[=sanitize_financials]{sanitize_financials()}}, then each function is called with
 \code{sanitize = FALSE} to avoid redundant imputation passes.
 }
 \examples{

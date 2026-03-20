@@ -15,54 +15,55 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param member_benefits Benefits paid to or for members (total).
-#'   (On 990: Part IX, line 4 Column A; \code{F9_09_EXP_BEN_PAID_MEMB_TOT} (scope: 990 + 990EZ))
+#')
 #' @param total_expenses Total functional expenses.
-#'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#'
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The member benefits expense ratio measures the share of total functional expenses
 #' paid out as direct benefits to members. Primarily relevant for membership associations
 #' (unions, trade associations, professional societies) where member benefit payments
 #' are a core activity. For most public benefit nonprofits this ratio is near zero.
 #'
-#' \strong{Formula}
+#' ## Formula
 #'
 #' Benefits paid to or for members (Part IX line 4, Column A) / total expenses.
-#' PZ scope — available to both 990 and 990EZ filers.
+#' PZ scope - available to both 990 and 990EZ filers.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
-#'     and Society}, 20(4), 94-112.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good. *Policy
+#'     and Society*, 20(4), 94-112.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
 #' (above 0.50) for mutual benefit organizations.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Interpret in the context of the organization's exempt purpose and subsection code.
-#'   \item Non-zero values for 501(c)(3) organizations should be reviewed for compliance
+#'
+#'   - Interpret in the context of the organization's exempt purpose and subsection code.
+#'   - Non-zero values for 501(c)(3) organizations should be reviewed for compliance
 #'     with private benefit restrictions.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_09_EXP_BEN_PAID_MEMB_TOT}: Benefits paid to members (\code{member_benefits})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#' ## Variables used:
+#'
+#'   - `F9_09_EXP_BEN_PAID_MEMB_TOT`: 
+#'     Benefits paid to members (`member_benefits`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
 #'   statistics and density plots for all four output columns.
 #'
 #' @usage
@@ -73,9 +74,12 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{expenses_membbenefits}, \code{expenses_membbenefits_w},
-#'   \code{expenses_membbenefits_z}, \code{expenses_membbenefits_p}.
+#' @return The original `data.frame` with four new columns:
+#'
+#'   - `expenses_membbenefits` (raw ratio)
+#'   - `expenses_membbenefits_w` (winsorized)
+#'   - `expenses_membbenefits_z` (z-score)
+#'   - `expenses_membbenefits_p` (percentile rank, 1-100)
 #'
 #' @import dplyr
 #' @import stringr

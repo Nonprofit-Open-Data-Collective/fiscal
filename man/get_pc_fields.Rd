@@ -12,7 +12,7 @@ A character vector of column names.
 \description{
 Returns financial fields that appear only on the full Form 990
 (Parts VIII, IX, and X). These fields are not present on the 990-EZ.
-Used by \code{\link{sanitize_financials}} to restrict zero-imputation to
+Used by \code{\link[=sanitize_financials]{sanitize_financials()}} to restrict zero-imputation to
 full 990 filers.
 }
 \examples{

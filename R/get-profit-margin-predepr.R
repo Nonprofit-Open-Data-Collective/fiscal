@@ -15,15 +15,15 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param revenue Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
-#' @param expenses Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
-#' @param depreciation Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param revenue Total revenue.
+#' @param expenses Total functional expenses.
+#' @param depreciation Depreciation, depletion, and amortization.
 #' @param numerator Optional. A pre-calculated column for the numerator
 #'   (revenue minus non-depreciation expenses). Cannot be combined with
-#'   \code{revenue}, \code{expenses}, or \code{depreciation}.
+#'   `revenue`, `expenses`, or `depreciation`.
 #' @param denominator Optional. A pre-calculated column for the denominator. Cannot be
-#'   combined with \code{revenue}.
+#'   combined with `revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -36,17 +36,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{profit_predepr}   — pre-depreciation profitability margin (raw)
-#'     \item \code{profit_predepr_w} — winsorized version
-#'     \item \code{profit_predepr_z} — standardized z-score (based on winsorized values)
-#'     \item \code{profit_predepr_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `profit_predepr`   - pre-depreciation profitability margin (raw)
+#'     - `profit_predepr_w` - winsorized version
+#'     - `profit_predepr_z` - standardized z-score (based on winsorized values)
+#'     - `profit_predepr_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The pre-depreciation profit margin approximates cash flow from operations by
 #' adding back non-cash depreciation charges to the surplus. Since depreciation is
@@ -56,7 +56,7 @@
 #' margin indicates the organization is cash-flow positive but "booking" a loss due
 #' to large depreciation charges.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' (Total revenue - (Total expenses - Depreciation)) / Total revenue. Equivalently,
 #' (revenue - expenses + depreciation) / revenue. This is the simplest cash flow
@@ -69,50 +69,50 @@
 #' depreciation (and amortization where included), making it a more conservative
 #' approximation.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
-#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
-#'     Working Paper 04-016}.
-#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-#'     for Nonprofit Organizations}. Wiley.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. *Harvard Business School
+#'     Working Paper 04-016*.
+#'   - Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+#'     for Nonprofit Organizations*. Wiley.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded above at 1.0; unbounded below. Always equal to or greater than the
-#' post-depreciation margin (\code{\link{get_profit_margin_postdepr}}) since adding
+#' post-depreciation margin ([get_profit_margin_postdepr()]) since adding
 #' back depreciation can only increase the margin. The typical range is approximately
 #' \[-0.20, 0.40\].
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item A pre-depreciation margin above zero with a post-depreciation margin below
+#'
+#'   - A pre-depreciation margin above zero with a post-depreciation margin below
 #'     zero is a common and generally manageable pattern for capital-intensive nonprofits.
-#'   \item If both margins are negative, the organization is generating a cash flow
+#'   - If both margins are negative, the organization is generating a cash flow
 #'     deficit, not just an accounting loss.
-#'   \item The spread between the two margins approximates depreciation / revenue,
+#'   - The spread between the two margins approximates depreciation / revenue,
 #'     which indicates the rate of capital consumption relative to revenue.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{revenue})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_TOT_TOT`: Total revenue (`revenue`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`expenses`)
+#'   - `F9_09_EXP_DEPREC_TOT`: Depreciation and amortization (`depreciation`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

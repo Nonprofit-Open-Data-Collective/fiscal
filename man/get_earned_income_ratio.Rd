@@ -17,15 +17,15 @@ get_earned_income_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{program_service_rev}{Program service revenue. (On 990: Part VIII, line 2g; \code{F9_08_REV_PROG_TOT_TOT})}
+\item{program_service_rev}{Program service revenue.}
 
-\item{membership_dues}{Membership dues and assessments. (On 990: Part VIII, line 4; \code{F9_08_REV_CONTR_MEMBSHIP_DUE})}
+\item{membership_dues}{Membership dues and assessments.}
 
-\item{royalties}{Royalties. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_ROY_TOT})}
+\item{royalties}{Royalties.}
 
-\item{other_revenue}{Other miscellaneous revenue. (On 990: Part VIII, line 11e; \code{F9_08_REV_MISC_OTH_TOT})}
+\item{other_revenue}{Other miscellaneous revenue.}
 
-\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{numerator}{Optional. A pre-aggregated column for earned revenue. Cannot be combined
 with the individual component arguments.}
@@ -49,12 +49,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{earned_income}   — earned income dependency ratio (raw)
-\item \code{earned_income_w} — winsorized version
-\item \code{earned_income_z} — standardized z-score (based on winsorized values)
-\item \code{earned_income_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `earned_income`   - earned income dependency ratio (raw)
+- `earned_income_w` - winsorized version
+- `earned_income_z` - standardized z-score (based on winsorized values)
+- `earned_income_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Share of total revenue derived from earned (non-donation) income sources.
@@ -70,28 +70,29 @@ earned_revenue = program_service_revenue + membership_dues
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The earned income dependency ratio measures the combined share of revenue from
-program services, membership dues, royalties, and miscellaneous revenue — the
+program services, membership dues, royalties, and miscellaneous revenue - the
 sources that flow from the organization's own activities rather than from voluntary
-contributions. It is the revenue-side complement to \code{\link{get_self_sufficiency_ratio}},
+contributions. It is the revenue-side complement to \code{\link[=get_self_sufficiency_ratio]{get_self_sufficiency_ratio()}},
 which compares program revenue to total expenses.
 
 Organizations with high earned income ratios are often considered more financially
 resilient because earned revenue is tied to service delivery rather than donor
 preferences, though it also creates exposure to market competition and customer
 retention challenges.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Program service revenue + membership dues + royalties + other miscellaneous revenue)
 / total revenue (Part VIII lines 2g + 1b + 5 + 11d-11e / line 12A). This broad
 definition of earned income follows several studies (Young 2007). A narrower version
-uses only program service revenue (see \code{\link{get_revenue_programs_ratio}}).
+uses only program service revenue (see \code{\link[=get_revenue_programs_ratio]{get_revenue_programs_ratio()}}).
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Young, D.R. (2007). \emph{Financing Nonprofits}. AltaMira Press.
 \item Weisbrod, B.A. (1998). The nonprofit mission and its financing. \emph{Journal
@@ -99,28 +100,32 @@ of Policy Analysis and Management}, 17(2), 165-174.
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Organizations heavily reliant on philanthropy show values near
 zero; fee-based service providers may show values above 0.90.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item No universal threshold. Context matters: an advocacy organization is expected
 to show a low earned income ratio; a hospital is expected to show a high one.
 \item Used in revenue concentration studies: a low ratio combined with high donation
 dependence indicates philanthropic concentration risk.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev})
-\item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Membership dues (\code{membership_dues})
+\item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}:
+Membership dues (\code{membership_dues})
 \item \code{F9_08_REV_OTH_ROY_TOT}: Royalties (\code{royalties})
 \item \code{F9_08_REV_MISC_OTH_TOT}: Other miscellaneous revenue (\code{other_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

@@ -14,9 +14,9 @@ get_cash_on_hand( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Short-term investments (savings), EOY.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -34,12 +34,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{cash_on_hand}   — cash on hand in dollars (raw)
-\item \code{cash_on_hand_w} — winsorized version
-\item \code{cash_on_hand_z} — standardized z-score (based on winsorized values)
-\item \code{cash_on_hand_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `cash_on_hand`   - cash on hand in dollars (raw)
+- `cash_on_hand_w` - winsorized version
+- `cash_on_hand_z` - standardized z-score (based on winsorized values)
+- `cash_on_hand_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Absolute dollar amount of cash and liquid savings held at end of year.
@@ -52,7 +52,7 @@ Absolute dollar amount of cash and liquid savings held at end of year.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 Cash on hand is a simple dollar-denominated liquidity measure rather than a ratio.
 It answers the most direct version of the liquidity question: how much immediately
@@ -60,10 +60,11 @@ spendable money does the organization have right now? It is most useful for
 communicating financial position to non-technical audiences (boards, funders),
 for absolute comparison against known fixed costs (monthly payroll, rent), and
 as the numerator input for ratio-based measures such as months of cash
-(\code{\link{get_months_cash_operations}}) and days of cash
-(\code{\link{get_days_cash_operations}}).
+(\code{\link[=get_months_cash_operations]{get_months_cash_operations()}}) and days of cash
+(\code{\link[=get_days_cash_operations]{get_days_cash_operations()}}).
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Some practitioners define cash on hand as cash only (Part X line 1B), excluding
 savings. Others include marketable securities or investments held for sale. This
@@ -71,37 +72,39 @@ implementation uses cash plus savings (lines 1B + 2B) as the most common definit
 in the nonprofit financial management literature (Zietlow et al. 2007), since
 savings accounts and money market funds are effectively as liquid as operating
 cash for most organizations.
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 Lines 1B (cash) and 2B (savings and temporary cash investments) are the two most
 reliably liquid items on the 990 balance sheet and are the least subject to
 valuation uncertainty. Pledges and receivables are excluded because their timing
 and collectibility are uncertain. This definition is consistent with the "cash and
 cash equivalents" concept in nonprofit financial management practice.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-for Nonprofit Organizations}. Wiley. — Standard practitioner reference for
+for Nonprofit Organizations}. Wiley. - Standard practitioner reference for
 cash management in nonprofits.
 \item Calabrese, T.D. (2013). Running on empty: The operating reserves of U.S.
 nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
-281-302. — Examines operating cash and reserves as components of financial
+281-302. - Examines operating cash and reserves as components of financial
 sustainability.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Cash on hand is bounded below at zero (cannot be negative on a properly prepared
 balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
 so comparison across organizations of different sizes requires normalization. Use
-\code{\link{get_months_cash_operations}} or \code{\link{get_days_cash_operations}}
+\code{\link[=get_months_cash_operations]{get_months_cash_operations()}} or \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}
 for size-adjusted comparisons.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item As an absolute measure, benchmarks depend entirely on the organization's
 expense base. A common practitioner rule is to maintain at least 60-90 days
@@ -111,11 +114,13 @@ expenses in accessible reserves, of which cash and savings should form the core.
 \item Very large cash balances relative to annual expenses may attract scrutiny
 from donors and regulators about whether resources are being deployed toward mission.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
+}
 }
 }
 \examples{

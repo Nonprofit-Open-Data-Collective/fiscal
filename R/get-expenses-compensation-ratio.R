@@ -17,24 +17,24 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param officer_comp Compensation of current officers, directors, and key employees (total).
-#'   (On 990: Part IX, line 5 Column A; \code{F9_09_EXP_COMP_DTK_TOT})
+#'
 #' @param disqualified_comp Compensation of disqualified persons (total).
-#'   (On 990: Part IX, line 6 Column A; \code{F9_09_EXP_COMP_DSQ_PERS_TOT})
+#'
 #' @param other_salaries Other salaries and wages (total).
-#'   (On 990: Part IX, line 7 Column A; \code{F9_09_EXP_OTH_SAL_WAGE_TOT})
+#'
 #' @param pension_contributions Pension plan accruals and contributions (total).
-#'   (On 990: Part IX, line 8 Column A; \code{F9_09_EXP_PENSION_CONTR_TOT})
+#'
 #' @param other_employee_benefits Other employee benefits (total).
-#'   (On 990: Part IX, line 9 Column A; \code{F9_09_EXP_OTH_EMPL_BEN_TOT})
+#'
 #' @param payroll_taxes Payroll taxes (total).
-#'   (On 990: Part IX, line 10 Column A; \code{F9_09_EXP_PAYROLL_TAX_TOT})
+#'
 #' @param total_expenses Total functional expenses.
-#'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#'
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The compensation expense ratio measures the share of total functional expenses
 #' devoted to all forms of employee compensation: salaries, benefits, payroll taxes,
@@ -42,48 +42,52 @@
 #' largest single expense category (60-80\% of total expenses). It is a fundamental
 #' indicator of labor intensity and human capital investment.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' Sum of six Part IX compensation fields (lines 5-10, Column A) / total expenses
 #' (line 25A): officer compensation, disqualified person compensation, other salaries,
 #' pension contributions, other employee benefits, and payroll taxes.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
-#'     and Society}, 20(4), 94-112.
-#'   \item Leete, L. (2001). Whither the nonprofit wage differential? \emph{Journal of
-#'     Labor Economics}, 19(1), 136-170.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good. *Policy
+#'     and Society*, 20(4), 94-112.
+#'   - Leete, L. (2001). Whither the nonprofit wage differential? *Journal of
+#'     Labor Economics*, 19(1), 136-170.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Most service-delivery nonprofits fall in the \[0.50, 0.85\] range.
 #' Grant-making organizations may show ratios below 0.20.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item No universal benchmark — labor intensity varies fundamentally by mission type.
-#'   \item Human services, health, and education nonprofits typically show ratios above 0.60.
-#'   \item A sharp year-over-year increase may indicate revenue contraction rather than
+#'
+#'   - No universal benchmark - labor intensity varies fundamentally by mission type.
+#'   - Human services, health, and education nonprofits typically show ratios above 0.60.
+#'   - A sharp year-over-year increase may indicate revenue contraction rather than
 #'     compensation growth.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_09_EXP_COMP_DTK_TOT}: Officer/director compensation (\code{officer_comp})
-#'   \item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}: Disqualified person compensation (\code{disqualified_comp})
-#'   \item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}: Other salaries and wages (\code{other_salaries})
-#'   \item \code{F9_09_EXP_PENSION_CONTR_TOT}: Pension contributions (\code{pension_contributions})
-#'   \item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}: Other employee benefits (\code{other_employee_benefits})
-#'   \item \code{F9_09_EXP_PAYROLL_TAX_TOT}: Payroll taxes (\code{payroll_taxes})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}).
-#' @param summarize Logical (default \code{FALSE}).
+#' ## Variables used:
+#'
+#'   - `F9_09_EXP_COMP_DTK_TOT`: Officer/director compensation (`officer_comp`)
+#'   - `F9_09_EXP_COMP_DSQ_PERS_TOT`: 
+#'     Disqualified person compensation (`disqualified_comp`)
+#'   - `F9_09_EXP_OTH_SAL_WAGE_TOT`: 
+#'     Other salaries and wages (`other_salaries`)
+#'   - `F9_09_EXP_PENSION_CONTR_TOT`: 
+#'     Pension contributions (`pension_contributions`)
+#'   - `F9_09_EXP_OTH_EMPL_BEN_TOT`: 
+#'     Other employee benefits (`other_employee_benefits`)
+#'   - `F9_09_EXP_PAYROLL_TAX_TOT`: Payroll taxes (`payroll_taxes`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`).
+#' @param summarize Logical (default `FALSE`).
 #'
 #' @usage
 #' get_expenses_compensation_ratio( df,
@@ -98,21 +102,28 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{expenses_compensation}, \code{expenses_compensation_w},
-#'   \code{expenses_compensation_z}, \code{expenses_compensation_p}.
+#' @return The original `data.frame` with four new columns:
+#'
+#'   - `expenses_compensation` (raw ratio)
+#'   - `expenses_compensation_w` (winsorized)
+#'   - `expenses_compensation_z` (z-score)
+#'   - `expenses_compensation_p` (percentile rank, 1-100)
 #'
 #' @details
 #' **Variables used:**
-#' \itemize{
-#'   \item \code{F9_09_EXP_COMP_DTK_TOT}: Officer/director compensation (\code{officer_comp})
-#'   \item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}: Disqualified person compensation (\code{disqualified_comp})
-#'   \item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}: Other salaries and wages (\code{other_salaries})
-#'   \item \code{F9_09_EXP_PENSION_CONTR_TOT}: Pension contributions (\code{pension_contributions})
-#'   \item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}: Other employee benefits (\code{other_employee_benefits})
-#'   \item \code{F9_09_EXP_PAYROLL_TAX_TOT}: Payroll taxes (\code{payroll_taxes})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#' }
+#'
+#'   - `F9_09_EXP_COMP_DTK_TOT`: Officer/director compensation (`officer_comp`)
+#'   - `F9_09_EXP_COMP_DSQ_PERS_TOT`: 
+#'     Disqualified person compensation (`disqualified_comp`)
+#'   - `F9_09_EXP_OTH_SAL_WAGE_TOT`: 
+#'     Other salaries and wages (`other_salaries`)
+#'   - `F9_09_EXP_PENSION_CONTR_TOT`: 
+#'     Pension contributions (`pension_contributions`)
+#'   - `F9_09_EXP_OTH_EMPL_BEN_TOT`: 
+#'     Other employee benefits (`other_employee_benefits`)
+#'   - `F9_09_EXP_PAYROLL_TAX_TOT`: Payroll taxes (`payroll_taxes`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'
 #'
 #' @import dplyr
 #' @import stringr

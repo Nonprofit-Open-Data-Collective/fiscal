@@ -12,7 +12,7 @@ A character vector of column names.
 \description{
 Returns the character vector of column names that identify a filing record
 across all efile tables. These are retained alongside financial fields in
-the working subset inside every \code{get_*()} function.
+the working subset inside every \verb{get_*()} function.
 }
 \examples{
 get_idvars()

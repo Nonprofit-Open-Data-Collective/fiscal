@@ -99,10 +99,10 @@ get_org_type <- function( x ) {
 #' Generate full NTEE v2 code
 #'
 #' Combines the normalized NTEE code, industry group, and organization type
-#' into the three-part structure: \code{[INDUSTRY]-[NTEE]-[ORGTYPE]}.
+#' into the three-part structure: `[INDUSTRY]-[NTEE]-[ORGTYPE]`.
 #'
 #' @param x Character vector of raw NTEE codes.
-#' @return Character vector of NTEE v2 codes (e.g., \code{"EDU-B29-RG"}).
+#' @return Character vector of NTEE v2 codes (e.g., `"EDU-B29-RG"`).
 #' @examples
 #' get_nteev2( c("B29", "B8443", "E0521", "B01", "B0129") )
 #' @export
@@ -138,62 +138,62 @@ get_ntmaj12 <- function( nteev2 ) {
 #'
 #' @description
 #' Downloads one or more IRS 990 efile tables for a given tax year directly
-#' from the NCCS public S3 bucket using \code{data.table::fread()}, merges
-#' them with keyed \code{data.table} joins, optionally attaches BMF
-#' organizational metadata, and returns a single \code{data.frame}.
+#' from the NCCS public S3 bucket using `data.table::fread()`, merges
+#' them with keyed `data.table` joins, optionally attaches BMF
+#' organizational metadata, and returns a single `data.frame`.
 #'
-#' @param year Integer. The tax year to retrieve (e.g., \code{2021}).
+#' @param year Integer. The tax year to retrieve (e.g., `2021`).
 #' @param tables Character vector of table codes to retrieve. Defaults to
-#'   \code{c("P00","P01","P08","P09","P10")}, which correspond to:
-#'   \itemize{
-#'     \item \code{P00} — Return header (filing metadata)
-#'     \item \code{P01} — Part I summary (revenue, expenses, net assets)
-#'     \item \code{P08} — Part VIII revenue detail (990 filers only)
-#'     \item \code{P09} — Part IX expense detail (990 filers only)
-#'     \item \code{P10} — Part X balance sheet (990 filers only)
-#'   }
-#' @param include_bmf Logical. If \code{TRUE} (default), downloads the NCCS
+#'   `c("P00","P01","P08","P09","P10")`, which correspond to:
+#'
+#'     - `P00` - Return header (filing metadata)
+#'     - `P01` - Part I summary (revenue, expenses, net assets)
+#'     - `P08` - Part VIII revenue detail (990 filers only)
+#'     - `P09` - Part IX expense detail (990 filers only)
+#'     - `P10` - Part X balance sheet (990 filers only)
+#'
+#' @param include_bmf Logical. If `TRUE` (default), downloads the NCCS
 #'   Unified BMF and left-joins organizational metadata (NTEE codes, census
-#'   fields, recent financial summaries) onto the efile data by \code{EIN2}.
+#'   fields, recent financial summaries) onto the efile data by `EIN2`.
 #' @param efile_root Character. Base URL for the NCCS efile S3 bucket. Defaults
-#'   to \code{"https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/"}.
+#'   to `"https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/"`.
 #'   Update this when NCCS releases a new version of the dataset.
 #' @param bmf_url Character. Full URL for the Unified BMF CSV. Defaults to
-#'   \code{"https://nccsdata.s3.us-east-1.amazonaws.com/bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv"}.
+#'   `"https://nccsdata.s3.us-east-1.amazonaws.com/bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv"`.
 #' @param timeout Integer. HTTP timeout in seconds for each file download.
-#'   Defaults to \code{300} (5 minutes). R's built-in default of 60 seconds
+#'   Defaults to `300` (5 minutes). R's built-in default of 60 seconds
 #'   is too short for the BMF (~200 MB) on slow connections. The original
 #'   timeout value is restored after the function exits.
-#' @param verbose Logical. If \code{TRUE} (default), prints progress messages
+#' @param verbose Logical. If `TRUE` (default), prints progress messages
 #'   including row/column counts after each download.
 #'
-#' @return A \code{data.frame} containing the merged efile tables, with BMF
-#'   fields appended as additional columns if \code{include_bmf = TRUE}.
+#' @return A `data.frame` containing the merged efile tables, with BMF
+#'   fields appended as additional columns if `include_bmf = TRUE`.
 #'
 #' @details
-#' \strong{Why \code{data.table} rather than base R or an external database:}
-#' \code{data.table::fread()} streams CSV files directly from S3 URLs into
+#' ## Why `data.table` rather than base R or an external database:
+#' `data.table::fread()` streams CSV files directly from S3 URLs into
 #' memory-efficient column-oriented storage without requiring a local copy.
-#' Before each merge, \code{data.table::setkey()} builds an index on the join
-#' column in-place (no copy), so the subsequent \code{merge.data.table()} call
+#' Before each merge, `data.table::setkey()` builds an index on the join
+#' column in-place (no copy), so the subsequent `merge.data.table()` call
 #' uses a binary-search join rather than a hash-sort copy. Each right-hand
 #' table is removed from the environment immediately after joining to free RAM.
-#' Together these three choices — streaming reads, keyed joins, and eager
-#' cleanup — give substantially lower peak memory usage than \code{base::merge()}
-#' while adding no external dependencies beyond \code{data.table}.
+#' Together these three choices - streaming reads, keyed joins, and eager
+#' cleanup - give substantially lower peak memory usage than `base::merge()`
+#' while adding no external dependencies beyond `data.table`.
 #'
-#' \strong{Join strategy:}
-#' Efile tables share two key columns: \code{OBJECTID} (a unique filing
-#' identifier present in every table) and \code{EIN2} (present in most).
+#' ## Join strategy:
+#' Efile tables share two key columns: `OBJECTID` (a unique filing
+#' identifier present in every table) and `EIN2` (present in most).
 #' Tables are merged sequentially as full outer joins on all shared columns,
 #' so organizations that filed only one of the component forms (e.g., 990EZ
 #' filers who have P00 and P01 data but no P08/P09/P10) are retained with
-#' \code{NA} in the columns from tables they did not file.
+#' `NA` in the columns from tables they did not file.
 #'
-#' \strong{BMF processing:}
-#' The BMF is deduplicated to one row per EIN (most recent \code{ORG_RULING_DATE}
+#' ## BMF processing:
+#' The BMF is deduplicated to one row per EIN (most recent `ORG_RULING_DATE`
 #' retained). NTEE codes are normalized via the NCCS NTEE v2 system
-#' (\code{\link{get_clean_ntee}}, \code{\link{get_nteev2}}), and a curated
+#' ([get_clean_ntee()], [get_nteev2()]), and a curated
 #' subset of fields is retained before the left-join onto the efile data.
 #'
 #' @examples
@@ -306,7 +306,7 @@ retrieve_efile_data <- function(
 
   if (verbose) message( "  ", nrow(bmf), " BMF records loaded. Deduplicating by EIN ..." )
 
-  # Keep one row per EIN — most recent ruling date
+  # Keep one row per EIN - most recent ruling date
   data.table::setDT(bmf)
   data.table::setorder( bmf, EIN, -ORG_RULING_DATE )
   bmf <- bmf[ !duplicated(EIN) ]

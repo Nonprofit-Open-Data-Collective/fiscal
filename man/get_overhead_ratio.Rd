@@ -13,16 +13,13 @@ get_overhead_ratio( df,
   summarize  = FALSE )
 }
 \arguments{
-\item{df}{A data.frame containing the fields required for computing the metric.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{mgmt_expenses}{Management and general expenses
-(Form 990, Part IX, line 25C; \code{F9_09_EXP_TOT_MGMT}).}
+\item{mgmt_expenses}{Management and general expenses.}
 
-\item{total_expenses}{Total functional expenses
-(Form 990, Part IX, line 25A; \code{F9_09_EXP_TOT_TOT}).}
+\item{total_expenses}{Total functional expenses.}
 
-\item{fundraising_expenses}{Fundraising expenses
-(Form 990, Part IX, line 25D; \code{F9_09_EXP_TOT_FUNDR}).}
+\item{fundraising_expenses}{Fundraising expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -40,38 +37,36 @@ The original \code{data.frame} with four columns appended:
 \description{
 Combined management and fundraising expenses as a share of total expenses.
 
-\strong{Formula}
+\strong{Formula:}
 
-\code{overhead = (mgmt_expenses + fundraising_expenses) / total_expenses}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{overhead = ( mgmt_expenses + fundraising_expenses ) / total_expenses
+}\if{html}{\out{</div>}}
 
-\strong{Calculated for:} 990 filers only.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
 
 The overhead ratio measures the combined share of total expenses devoted to
-management and fundraising. It is a standard definition used in the nonprofit
+management and fundraising. It is the standard definition used in the nonprofit
 accountability literature and by charity watchdog ratings. The overhead ratio
-complements \code{\link[=get_program_expenses_ratio]{get_program_expenses_ratio()}}: the two sum to 1.0. However, its
-use as a primary quality indicator has been widely criticized.
+complements \code{\link[=get_program_expenses_ratio]{get_program_expenses_ratio()}}: the two sum to 1.0.
+However, its use as a primary quality indicator has been widely criticized.
 }
 
-\subsection{Formula variations and sources}{
+\subsection{Formula variations and their sources}{
 
-The standard version is:
-
-\verb{management and general + fundraising) / total expenses}
-
-using Form 990 Part IX, lines 25C + 25D divided by line 25A.
-
-The administrative-only version, \code{\link[=get_expenses_admin_ratio]{get_expenses_admin_ratio()}}, excludes
-fundraising.
+(Management and general + Fundraising) / Total expenses (Part IX lines 25C + 25D /
+25A). The administrative-only version (\code{\link[=get_expenses_admin_ratio]{get_expenses_admin_ratio()}})
+excludes fundraising.
 }
 
 \subsection{Canonical citations}{
 \itemize{
-\item Charity Navigator, \emph{Financial Health Methodology}. Uses overhead ratio as a
-primary rating factor.
+\item Charity Navigator. \emph{Financial Health Methodology}. charitynavigator.org.
+\itemize{
+\item Uses overhead ratio as a primary rating factor (target: overhead 25\% or less).
+}
 \item Lecy, J.D. & Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
 \emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563.
 \item Hager, M.A. & Flack, T. (2004). The pros and cons of financial efficiency
@@ -81,20 +76,19 @@ standards. \emph{Nonprofit Overhead Cost Project Brief 5}. Urban Institute.
 
 \subsection{Definitional range}{
 
-Bounded between 0 and 1. Empirical range is approximately 0.05 to 0.50 for
-most operating nonprofits.
+Bounded [0, 1]. Empirical range approximately [0.05, 0.50] for most operating nonprofits.
 }
 
 \subsection{Benchmarks and rules of thumb}{
 \itemize{
-\item \verb{<= 25\%}: Charity Navigator threshold for a full efficiency score.
-\item \verb{<= 35\%}: BBB Wise Giving Alliance standard.
-\item Very low overhead can indicate underinvestment in organizational capacity
-rather than genuine efficiency.
+\item \strong{25\% or less}: Charity Navigator threshold for a full efficiency score.
+\item \strong{35\% or less}: BBB Wise Giving Alliance standard.
+\item Low overhead can indicate underinvestment in organizational capacity
+(the starvation cycle) rather than genuine efficiency.
 }
 }
 
-\subsection{Variables used}{
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_09_EXP_TOT_MGMT}: Management and general expenses (\code{mgmt_expenses})
 \item \code{F9_09_EXP_TOT_FUNDR}: Fundraising expenses (\code{fundraising_expenses})

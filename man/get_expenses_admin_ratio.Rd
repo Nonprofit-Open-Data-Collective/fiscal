@@ -14,9 +14,9 @@ get_expenses_admin_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{mgmt_expenses}{Management and general expenses. (On 990: Part IX, line 25C; \code{F9_09_EXP_TOT_MGMT})}
+\item{mgmt_expenses}{Management and general expenses.}
 
-\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -34,12 +34,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{expenses_admin}   — administrative overhead ratio (raw)
-\item \code{expenses_admin_w} — winsorized version
-\item \code{expenses_admin_z} — standardized z-score (based on winsorized values)
-\item \code{expenses_admin_p} — percentile rank (1–100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `expenses_admin`   - administrative overhead ratio (raw)
+- `expenses_admin_w` - winsorized version
+- `expenses_admin_z` - standardized z-score (based on winsorized values)
+- `expenses_admin_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Share of total expenses devoted to management and general administration.
@@ -52,45 +52,47 @@ Share of total expenses devoted to management and general administration.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The administrative overhead ratio measures what fraction of total expenses is
-devoted to management and general administration — the governance, compliance,
+devoted to management and general administration - the governance, compliance,
 financial management, and executive functions of the organization. It is the
-management component of the broader overhead ratio (\code{\link{get_overhead_ratio}}),
+management component of the broader overhead ratio (\code{\link[=get_overhead_ratio]{get_overhead_ratio()}}),
 which adds fundraising expenses.
 
 A high administrative ratio may indicate organizational complexity, compliance
 burden, or inefficiency; a very low ratio may indicate underinvestment in governance
 and financial systems. The appropriate level depends heavily on organizational size
 and mission type.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Management and general expenses (Part IX line 25C) / total functional expenses
 (line 25A). This is the most common operationalization. An alternative includes
 unallocated costs or uses a broader definition of overhead, but the Part IX column
 breakdown (program, management, fundraising) is the standard basis.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Lecy, J.D. & Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
 \emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563.
 \item Overhead Myth Campaign (GuideStar, BBB Wise Giving, Charity Navigator, 2013).
-\item Nunnenkamp, P. & Öhler, H. (2012). Throwing foreign aid at HIV/AIDS in
+\item Nunnenkamp, P. & Ohler, H. (2012). Throwing foreign aid at HIV/AIDS in
 developing countries: Missing the target? \emph{World Development}, 40(10),
-1978-1994. — Uses administrative ratios in cross-organizational comparisons.
+1978-1994. - Uses administrative ratios in cross-organizational comparisons.
+}
 }
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. In combination with program and fundraising ratios, all three
 sum to 1.0 by construction. The empirical range for most nonprofits is approximately
 [0.05, 0.35].
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Charity Navigator targets management and general expenses at or below 15\\%
 of total expenses for a favorable score.
@@ -98,11 +100,13 @@ of total expenses for a favorable score.
 \item Very large or complex organizations may legitimately show higher ratios
 due to the fixed cost nature of executive leadership and compliance functions.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_09_EXP_TOT_MGMT}: Management and general expenses (\code{mgmt_expenses})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 }
 \examples{

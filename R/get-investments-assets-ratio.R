@@ -15,16 +15,16 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param pub_traded_securities Investments in publicly traded securities, EOY.
-#'   (On 990: Part X, line 11B; \code{F9_10_ASSET_INVEST_SEC_EOY} (scope: 990 + 990EZ))
+#')
 #' @param total_assets Total assets, EOY.
-#'   (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY} (scope: 990 + 990EZ))
+#')
 #' @param other_securities Investments in other securities, EOY.
-#'   (On 990: Part X, line 12B; \code{F9_10_ASSET_INVEST_SEC_OTH_EOY} (scope: 990 + 990EZ))
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#')
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The investment assets ratio measures what share of total assets is held in financial
 #' securities (publicly traded and other investments). It distinguishes financially
@@ -32,45 +32,47 @@
 #' A high ratio indicates significant financial reserves; a low ratio indicates assets
 #' are primarily operational. Most informative for endowed organizations and foundations.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' (Publicly traded securities + other securities) / total assets. Both investment
 #' fields (Part X lines 11B and 12B) are PZ scope. A more comprehensive version
 #' would include program-related investments (line 13B).
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
-#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-#'   \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
-#'     Leadership}, 23(3), 281-302.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
+#'   - Calabrese, T.D. (2013). Running on empty. *Nonprofit Management and
+#'     Leadership*, 23(3), 281-302.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Most operating nonprofits show values near zero; foundations
 #' and endowed institutions may show values above 0.80.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item No universal benchmark. Operating nonprofits with values above 0.30 are
+#'
+#'   - No universal benchmark. Operating nonprofits with values above 0.30 are
 #'     typically holding significant endowment or reserve portfolios.
-#'   \item A high investment ratio combined with a high debt ratio may indicate
-#'     borrowing to fund operations while holding investments — worth scrutinizing.
-#' }
+#'   - A high investment ratio combined with a high debt ratio may indicate
+#'     borrowing to fund operations while holding investments - worth scrutinizing.
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_INVEST_SEC_EOY}: Publicly traded securities, EOY (\code{pub_traded_securities})
-#'   \item \code{F9_10_ASSET_INVEST_SEC_OTH_EOY}: Other securities, EOY (\code{other_securities})
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_INVEST_SEC_EOY`: 
+#'     Publicly traded securities, EOY (`pub_traded_securities`)
+#'   - `F9_10_ASSET_INVEST_SEC_OTH_EOY`: 
+#'     Other securities, EOY (`other_securities`)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
 #'   statistics and density plots for all four output columns.
 #'
 #' @usage
@@ -82,9 +84,12 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{investments_assets}, \code{investments_assets_w},
-#'   \code{investments_assets_z}, \code{investments_assets_p}.
+#' @return The original `data.frame` with four new columns:
+#'
+#'   - `investments_assets` (raw ratio)
+#'   - `investments_assets_w` (winsorized)
+#'   - `investments_assets_z` (z-score)
+#'   - `investments_assets_p` (percentile rank, 1-100)
 #'
 #' @import dplyr
 #' @import stringr

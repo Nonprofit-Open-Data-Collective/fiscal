@@ -14,11 +14,9 @@ get_revenue_fundevents_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{fundraising_event_revenue}{Gross revenue from fundraising events.
-(On 990: Part VIII, line 1c; \code{F9_08_REV_CONTR_FUNDR_EVNT})}
+\item{fundraising_event_revenue}{Gross revenue from fundraising events.}
 
-\item{total_revenue}{Total revenue.
-(On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{revenue_fundevents}, \code{revenue_fundevents_w},
-\code{revenue_fundevents_z}, \code{revenue_fundevents_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{revenue_fundevents} (raw ratio)
+\item \code{revenue_fundevents_w} (winsorized)
+\item \code{revenue_fundevents_z} (z-score)
+\item \code{revenue_fundevents_p} (percentile rank, 1-100)
+}
 }
 \description{
 Fundraising event contributions as a share of total revenue.
@@ -44,14 +46,14 @@ Fundraising event contributions as a share of total revenue.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Revenue Fundevents Ratio — Revenue composition measure}
+\subsection{Revenue Fundevents Ratio - Revenue composition measure}{
 
 Formula: fundraising event revenue / total revenue. Bounded [0, 1].
 
 Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures gross event revenue as a share of total revenue; net event income after direct expenses is reported elsewhere.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -59,11 +61,14 @@ Fundraising events (galas, walks, auctions) generate contributed revenue but typ
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_08_REV_CONTR_FUNDR_EVNT}: Numerator (\code{fundraising_event_revenue})
+\item \code{F9_08_REV_CONTR_FUNDR_EVNT}:
+Numerator (\code{fundraising_event_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

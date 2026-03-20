@@ -17,15 +17,15 @@ get_investment_income_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{invest_income}{Investment income. (On 990: Part VIII, line 3; \code{F9_08_REV_OTH_INVEST_INCOME_TOT})}
+\item{invest_income}{Investment income.}
 
-\item{bond_proceeds}{Tax-exempt bond proceeds. (On 990: Part VIII, line 7a; \code{F9_08_REV_OTH_INVEST_BOND_TOT})}
+\item{bond_proceeds}{Tax-exempt bond proceeds.}
 
-\item{rent_income}{Gross rents from personal property. (On 990: Part VIII, line 6b; \code{F9_08_REV_OTH_RENT_GRO_PERS})}
+\item{rent_income}{Gross rents from personal property.}
 
-\item{asset_sale_income}{Net gain from sales of assets other than inventory. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_SALE_ASSET_OTH})}
+\item{asset_sale_income}{Net gain from sales of assets other than inventory.}
 
-\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{numerator}{Optional. A pre-aggregated column for investment income. Cannot be
 combined with the individual component arguments.}
@@ -49,12 +49,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{invest_income}   — investment income dependency ratio (raw)
-\item \code{invest_income_w} — winsorized version
-\item \code{invest_income_z} — standardized z-score (based on winsorized values)
-\item \code{invest_income_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `invest_income`   - investment income dependency ratio (raw)
+- `invest_income_w` - winsorized version
+- `invest_income_z` - standardized z-score (based on winsorized values)
+- `invest_income_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Measures reliance on investment-related revenue as a share of total revenue.
@@ -69,11 +69,11 @@ investment_income = invest_income + bond_proceeds + rent_income + asset_sale_inc
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The investment income dependency ratio measures the share of total revenue from
 investment-related sources: interest, dividend income, rental income, bond proceeds,
-and proceeds from asset sales. It captures financial portfolio dependency — the
+and proceeds from asset sales. It captures financial portfolio dependency - the
 degree to which the organization's budget relies on endowment returns, rental
 properties, or investment gains.
 
@@ -81,17 +81,18 @@ A high ratio may be a sign of financial maturity (large endowment generating
 returns) or financial risk (dependency on volatile investment markets). During
 periods of market decline or low interest rates, organizations with high investment
 income ratios face greater revenue volatility.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Investment income + bond income + rental income + asset sale income) / total
 revenue (Part VIII lines 3 + 4 + 6a(ii) + 7d / line 12A). Note that this combines
 recurring investment income with potentially one-time asset sale proceeds; some
 analysts separate these. The asset sale proceeds (line 7d) are particularly
 volatile and may distort the ratio in years with large asset disposals.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -99,29 +100,36 @@ volatile and may distort the ratio in years with large asset disposals.
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1] in most years, but values above 1.0 are possible in years with
 large asset sale gains. Values below zero can result from asset sale losses or
 negative investment returns.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Values above 0.30 indicate significant financial asset dependency and
 warrant monitoring of portfolio performance.
 \item Large year-over-year swings in this ratio often reflect one-time asset
 transactions rather than structural revenue changes.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}: Investment income (\code{invest_income})
-\item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Income from bond proceeds (\code{bond_proceeds})
-\item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Gross rental income (\code{rent_income})
-\item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Net gain from asset sales (\code{asset_sale_income})
+\item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}:
+Investment income (\code{invest_income})
+\item \code{F9_08_REV_OTH_INVEST_BOND_TOT}:
+Income from bond proceeds (\code{bond_proceeds})
+\item \code{F9_08_REV_OTH_RENT_GRO_PERS}:
+Gross rental income (\code{rent_income})
+\item \code{F9_08_REV_OTH_SALE_ASSET_OTH}:
+Net gain from asset sales (\code{asset_sale_income})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

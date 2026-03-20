@@ -14,7 +14,7 @@ Character vector of NTEE v2 codes (e.g., \code{"EDU-B29-RG"}).
 }
 \description{
 Combines the normalized NTEE code, industry group, and organization type
-into the three-part structure: \code{[INDUSTRY]-[NTEE]-[ORGTYPE]}.
+into the three-part structure: \verb{[INDUSTRY]-[NTEE]-[ORGTYPE]}.
 }
 \examples{
 get_nteev2( c("B29", "B8443", "E0521", "B01", "B0129") )

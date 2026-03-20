@@ -15,53 +15,53 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param payments_to_affiliates Payments to affiliates (total).
-#'   (On 990: Part IX, line 21 Column A; \code{F9_09_EXP_PAY_AFFIL_TOT})
+#'
 #' @param total_expenses Total functional expenses.
-#'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#'
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The payments to affiliates ratio measures the share of total functional expenses
 #' transferred to affiliated organizations. It captures inter-organizational resource
 #' flows within nonprofit families (federated structures, supporting organizations,
 #' shared-services models).
 #'
-#' \strong{Formula}
+#' ## Formula
 #'
 #' Payments to affiliates (Part IX line 21, Column A) / total expenses (line 25A).
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
-#'     and Society}, 20(4), 94-112.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good. *Policy
+#'     and Society*, 20(4), 94-112.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
 #' for federated intermediaries.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Interpret in the context of organizational structure.
-#'   \item Large payments to affiliates absent a known federated structure warrant
+#'
+#'   - Interpret in the context of organizational structure.
+#'   - Large payments to affiliates absent a known federated structure warrant
 #'     review of related-party transaction disclosures.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_09_EXP_PAY_AFFIL_TOT}: Payments to affiliates (\code{payments_to_affiliates})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#' ## Variables used:
+#'
+#'   - `F9_09_EXP_PAY_AFFIL_TOT`: Payments to affiliates (`payments_to_affiliates`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
 #'   statistics and density plots for all four output columns.
 #'
 #' @usage
@@ -72,9 +72,12 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{expenses_affiliates}, \code{expenses_affiliates_w},
-#'   \code{expenses_affiliates_z}, \code{expenses_affiliates_p}.
+#' @return The original `data.frame` with four new columns:
+#'
+#'   - `expenses_affiliates` (raw ratio)
+#'   - `expenses_affiliates_w` (winsorized)
+#'   - `expenses_affiliates_z` (z-score)
+#'   - `expenses_affiliates_p` (percentile rank, 1-100)
 #'
 #' @import dplyr
 #' @import stringr

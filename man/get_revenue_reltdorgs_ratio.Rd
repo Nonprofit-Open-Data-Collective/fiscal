@@ -14,11 +14,9 @@ get_revenue_reltdorgs_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{related_org_revenue}{Contributions from related organizations.
-(On 990: Part VIII, line 1d; \code{F9_08_REV_CONTR_RLTD_ORG})}
+\item{related_org_revenue}{Contributions from related organizations.}
 
-\item{total_revenue}{Total revenue.
-(On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{revenue_reltdorgs}, \code{revenue_reltdorgs_w},
-\code{revenue_reltdorgs_z}, \code{revenue_reltdorgs_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{revenue_reltdorgs} (raw ratio)
+\item \code{revenue_reltdorgs_w} (winsorized)
+\item \code{revenue_reltdorgs_z} (z-score)
+\item \code{revenue_reltdorgs_p} (percentile rank, 1-100)
+}
 }
 \description{
 Revenue from related organizations as a share of total revenue.
@@ -44,14 +46,14 @@ Revenue from related organizations as a share of total revenue.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Revenue Reltdorgs Ratio — Revenue composition measure}
+\subsection{Revenue Reltdorgs Ratio - Revenue composition measure}{
 
 Formula: related organization revenue / total revenue. Bounded [0, 1].
 
 Revenue from related organizations (subsidiaries, affiliates, supporting organizations) may indicate resource sharing within a nonprofit family rather than arm's-length fundraising. High values warrant review of organizational structure and transfer pricing.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -59,11 +61,13 @@ Revenue from related organizations (subsidiaries, affiliates, supporting organiz
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_CONTR_RLTD_ORG}: Numerator (\code{related_org_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

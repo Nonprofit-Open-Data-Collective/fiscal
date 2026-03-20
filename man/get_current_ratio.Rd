@@ -20,21 +20,21 @@ get_current_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Short-term investments (savings), EOY.}
 
-\item{pledges_receivable}{Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
+\item{pledges_receivable}{Net pledges and grants receivable, EOY.}
 
-\item{accounts_receivable}{Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
+\item{accounts_receivable}{Accounts receivable, net, EOY.}
 
-\item{investment_sales}{Investments held for sale or use, EOY. (On 990: Part X, line 8B; \code{F9_10_ASSET_INV_SALE_EOY})}
+\item{investment_sales}{Investments held for sale or use, EOY.}
 
-\item{prepaid_expenses}{Prepaid expenses and deferred charges, EOY. (On 990: Part X, line 9B; \code{F9_10_ASSET_EXP_PREPAID_EOY})}
+\item{prepaid_expenses}{Prepaid expenses and deferred charges, EOY.}
 
-\item{accounts_payable}{Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})}
+\item{accounts_payable}{Accounts payable and accrued expenses, EOY.}
 
-\item{grants_payable}{Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})}
+\item{grants_payable}{Grants and similar amounts payable, EOY.}
 
 \item{numerator}{Optional. A pre-aggregated column name for current assets, bypassing
 the individual asset arguments. Cannot be combined with those arguments.}
@@ -59,12 +59,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{current}   — current ratio (raw)
-\item \code{current_w} — winsorized version
-\item \code{current_z} — standardized z-score (based on winsorized values)
-\item \code{current_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `current`   - current ratio (raw)
+- `current_w` - winsorized version
+- `current_z` - standardized z-score (based on winsorized values)
+- `current_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Measures short-term liquidity by comparing current assets to current liabilities.
@@ -81,7 +81,7 @@ current_liabilities = accounts_payable + grants_payable
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The current ratio is the most widely used measure of short-term liquidity in both
 commercial and nonprofit finance. It asks whether an organization has sufficient
@@ -90,18 +90,18 @@ additional borrowing, or emergency fundraising. For nonprofits it is particularl
 important as a stress-test, because grant revenue often arrives in irregular cycles
 that do not align with payroll and vendor payment schedules.
 
-Unlike the quick ratio (\code{\link{get_quick_ratio}}), the current ratio includes
+Unlike the quick ratio (\code{\link[=get_quick_ratio]{get_quick_ratio()}}), the current ratio includes
 prepaid expenses and investments held for sale, making it a somewhat more generous
 (and less conservative) measure of liquidity. In practice for nonprofits, the two
 ratios often move together since prepaid expenses are rarely a large share of assets.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The standard commercial definition (current assets / current liabilities) uses balance
 sheet categories that are explicitly labelled as current. The 990 balance sheet (Part X)
 does not use current vs. non-current labels. This implementation follows the
 operationalization in Tuckman & Chang (1991) and subsequent studies by defining:
-
 \itemize{
 \item \strong{Current assets}: cash + savings + pledges receivable + accounts
 receivable + investments held for sale + prepaid expenses (Part X lines 1, 2, 3,
@@ -112,17 +112,18 @@ lines 17, 18). Mortgage and note obligations are excluded as long-term.
 
 Some analysts also include inventory (Part X line 11) in current assets, but that
 line is not widely populated in nonprofit 990 filings and is excluded here.
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 The asset components selected are the most reliably current items available on the
 990 balance sheet. The liability components exclude long-term debt, which matches
 the intent of the current ratio (near-term coverage) while working within the
 structural constraints of the 990. This formulation is consistent with the majority
 of nonprofit financial health studies and the NCCS financial indicators project.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
@@ -133,15 +134,16 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 The current ratio is bounded below at zero and unbounded above. Values below 1.0
 mean current liabilities exceed current assets. The empirical range for nonprofits
 is approximately [0, 15], with most organizations clustered between 0.5 and 5.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item A ratio of 1.0 is the conventional adequacy threshold: liabilities are
 exactly covered by current assets.
@@ -152,17 +154,23 @@ receivables rather than strong financial health.
 \item Zietlow et al. (2007) report nonprofit sector medians generally in the
 [1.0, 2.5] range, with substantial subsector variation.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
-\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}:
+Net pledges receivable, EOY (\code{pledges_receivable})
 \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
 \item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investment_sales})
-\item \code{F9_10_ASSET_EXP_PREPAID_EOY}: Prepaid expenses and deferred charges, EOY (\code{prepaid_expenses})
-\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
-\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+\item \code{F9_10_ASSET_EXP_PREPAID_EOY}:
+Prepaid expenses and deferred charges, EOY (\code{prepaid_expenses})
+\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}:
+Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}:
+Grants and similar amounts payable, EOY (\code{grants_payable})
+}
 }
 }
 \examples{

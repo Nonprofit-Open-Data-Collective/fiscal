@@ -18,17 +18,17 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param cash Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})
-#' @param savings Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})
-#' @param pledges_receivable Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})
-#' @param accounts_receivable Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})
-#' @param accounts_payable Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})
-#' @param grants_payable Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param cash Cash on hand, EOY.
+#' @param savings Short-term investments (savings), EOY.
+#' @param pledges_receivable Net pledges and grants receivable, EOY.
+#' @param accounts_receivable Accounts receivable, net, EOY.
+#' @param accounts_payable Accounts payable and accrued expenses, EOY.
+#' @param grants_payable Grants and similar amounts payable, EOY.
 #' @param numerator Optional. A pre-aggregated column for quick assets. Cannot be combined
 #'   with the individual asset arguments.
 #' @param denominator Optional. A pre-aggregated column for current liabilities. Cannot be
-#'   combined with \code{accounts_payable} or \code{grants_payable}.
+#'   combined with `accounts_payable` or `grants_payable`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -44,22 +44,22 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{quick}   — quick ratio (raw)
-#'     \item \code{quick_w} — winsorized version
-#'     \item \code{quick_z} — standardized z-score (based on winsorized values)
-#'     \item \code{quick_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `quick`   - quick ratio (raw)
+#'     - `quick_w` - winsorized version
+#'     - `quick_z` - standardized z-score (based on winsorized values)
+#'     - `quick_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The quick ratio (also called the acid-test ratio) is a short-term liquidity measure
 #' that asks whether an organization could pay all of its current obligations immediately,
 #' using only assets that can be converted to cash within days or weeks rather than months.
-#' Unlike the current ratio (\code{\link{get_current_ratio}}), it excludes inventory and
+#' Unlike the current ratio ([get_current_ratio()]), it excludes inventory and
 #' prepaid expenses, which are less reliably liquid. For nonprofits this distinction is
 #' especially meaningful: prepaid expenses (insurance premiums, deposits) cannot be
 #' recovered quickly, so including them in a liquidity test is misleading.
@@ -69,19 +69,19 @@
 #' liquidity positions across organizations of different sizes. It is a common component
 #' of multi-ratio financial health scoring models in the nonprofit literature.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The standard for-profit formula (Brigham & Houston 2019) defines quick assets as
 #' cash + marketable securities + net receivables, and current liabilities as all
 #' obligations due within one year. Nonprofit applications require two adaptations:
 #'
-#' \enumerate{
-#'   \item \strong{Receivables}: Pledges receivable are included in the nonprofit
+#'
+#'   - **Receivables**: Pledges receivable are included in the nonprofit
 #'     version because they are a normal operating asset with a defined cash-in timeline.
 #'     Some analysts exclude multi-year pledges (only the current-year portion is truly
 #'     liquid), but the 990 Part X does not break pledges into current vs. long-term
 #'     portions, so the full net amount is used here.
-#'   \item \strong{Current liabilities}: For-profit firms sum all current liabilities
+#'   - **Current liabilities**: For-profit firms sum all current liabilities
 #'     (accounts payable, short-term debt, accrued liabilities, current portion of
 #'     long-term debt, deferred revenue, etc.). The 990 balance sheet does not label
 #'     liabilities as current vs. long-term. This implementation uses accounts payable
@@ -90,15 +90,15 @@
 #'     payable (line 23B) are excluded because they are long-term in nature, and
 #'     unsecured notes (line 24B) are excluded because they typically carry defined
 #'     maturity dates outside a 12-month window.
-#' }
+#'
 #'
 #' An alternative numerator used by some analysts (Hager 2001) adds short-term investments
-#' held for sale (\code{F9_10_ASSET_INV_SALE_EOY}) on the grounds that these can be
+#' held for sale (`F9_10_ASSET_INV_SALE_EOY`) on the grounds that these can be
 #' liquidated quickly. That field is excluded here because many nonprofits classify
 #' long-term endowment holdings under the same line, making it an unreliable current
 #' asset proxy.
 #'
-#' \strong{Why this formula was chosen}
+#' ## Why this formula was chosen
 #'
 #' The formula implemented here follows the approach used in the majority of empirical
 #' nonprofit financial health studies: a restricted numerator (cash, savings, and
@@ -108,31 +108,31 @@
 #' paper establishing financial vulnerability indicators for nonprofits, and with the
 #' panel analyses in Greenlee & Trussel (2000) and Keating et al. (2005).
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460. — Introduced the four-indicator financial
+#'
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460. - Introduced the four-indicator financial
 #'     vulnerability framework for nonprofits; liquidity is a core component.
-#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
-#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
-#'     199-210. — Applied and extended Tuckman & Chang using logistic regression on
+#'   - Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. *Nonprofit Management and Leadership*, 11(2),
+#'     199-210. - Applied and extended Tuckman & Chang using logistic regression on
 #'     IRS 990 data.
-#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
-#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
-#'     Working Paper 04-016}. — Comprehensive review of ratio-based vulnerability
+#'   - Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. *Harvard Business School
+#'     Working Paper 04-016*. - Comprehensive review of ratio-based vulnerability
 #'     measures, including liquidity.
-#'   \item Hager, M.A. (2001). Financial vulnerability among arts organizations: A test
-#'     of the Tuckman-Chang measures. \emph{Nonprofit and Voluntary Sector Quarterly},
-#'     30(2), 376-392. — Tests alternative operationalizations including extended
+#'   - Hager, M.A. (2001). Financial vulnerability among arts organizations: A test
+#'     of the Tuckman-Chang measures. *Nonprofit and Voluntary Sector Quarterly*,
+#'     30(2), 376-392. - Tests alternative operationalizations including extended
 #'     liquidity numerators in an arts sector context.
-#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-#'     for Nonprofit Organizations}. Wiley. — Practitioner text with the most detailed
+#'   - Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+#'     for Nonprofit Organizations*. Wiley. - Practitioner text with the most detailed
 #'     discussion of quick ratio benchmarks specific to nonprofits.
-#' }
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' The quick ratio is bounded below at zero (no asset values are negative on a
 #' properly prepared balance sheet) and is unbounded above. In practice the empirical
@@ -148,48 +148,51 @@
 #' uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
 #' extremes.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
 #' For commercial firms the standard benchmark is 1.0 or above, meaning liquid assets
 #' are sufficient to cover current liabilities without selling inventory. Nonprofit
 #' benchmarks are less settled and vary substantially by subsector:
 #'
-#' \itemize{
-#'   \item \strong{General guidance}: A ratio above 1.0 is conventionally adequate.
+#'
+#'   - **General guidance**: A ratio above 1.0 is conventionally adequate.
 #'     Ratios between 0.5 and 1.0 indicate potential short-term stress. Ratios below
 #'     0.5 are the most common criterion for classifying an organization as financially
 #'     vulnerable (Tuckman & Chang 1991).
-#'   \item \strong{Subsector variation}: Health care and social service organizations
+#'   - **Subsector variation**: Health care and social service organizations
 #'     carry higher accounts receivable (insurance reimbursements, government contracts)
 #'     and typically show lower quick ratios than arts or membership organizations.
 #'     Zietlow et al. (2007) report median quick ratios in the 0.7-1.5 range across
 #'     nonprofit subsectors.
-#'   \item \strong{Higher is not always better}: Very high quick ratios (above 3-5) may
+#'   - **Higher is not always better**: Very high quick ratios (above 3-5) may
 #'     signal excessive cash hoarding rather than financial health. Some funders and
 #'     rating agencies flag very high reserve ratios alongside very low ones.
-#'   \item \strong{Trend matters more than level}: A declining quick ratio over
+#'   - **Trend matters more than level**: A declining quick ratio over
 #'     consecutive years is a stronger warning signal than any single year's value.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and short-term investments, EOY (\code{savings})
-#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable, EOY (\code{pledges_receivable})
-#'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
-#'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
-#'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
+#'   - `F9_10_ASSET_SAVING_EOY`: Savings and short-term investments, EOY (`savings`)
+#'   - `F9_10_ASSET_PLEDGE_NET_EOY`: 
+#'     Net pledges receivable, EOY (`pledges_receivable`)
+#'   - `F9_10_ASSET_ACC_NET_EOY`: Accounts receivable, net, EOY (`accounts_receivable`)
+#'   - `F9_10_LIAB_ACC_PAYABLE_EOY`: 
+#'     Accounts payable and accrued expenses, EOY (`accounts_payable`)
+#'   - `F9_10_LIAB_GRANT_PAYABLE_EOY`: 
+#'     Grants and similar amounts payable, EOY (`grants_payable`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

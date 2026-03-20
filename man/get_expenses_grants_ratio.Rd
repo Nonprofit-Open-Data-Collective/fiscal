@@ -16,17 +16,13 @@ get_expenses_grants_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{us_org_grants}{Grants to domestic organizations and governments (total).
-(On 990: Part IX, line 1 Column A; \code{F9_09_EXP_GRANT_US_ORG_TOT})}
+\item{us_org_grants}{Grants to domestic organizations and governments (total).}
 
-\item{us_indiv_grants}{Grants and assistance to domestic individuals (total).
-(On 990: Part IX, line 2 Column A; \code{F9_09_EXP_GRANT_US_INDIV_TOT})}
+\item{us_indiv_grants}{Grants and assistance to domestic individuals (total).}
 
-\item{foreign_grants}{Grants to foreign organizations and governments (total).
-(On 990: Part IX, line 3 Column A; \code{F9_09_EXP_GRANT_FRGN_TOT})}
+\item{foreign_grants}{Grants to foreign organizations and governments (total).}
 
-\item{total_expenses}{Total functional expenses.
-(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -52,50 +48,58 @@ entities as a share of total functional expenses.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The grants-to-others ratio measures the share of total expenses paid out as grants
 to other organizations, individuals, or foreign entities. It is the defining
-characteristic of grant-making and pass-through organizations — foundations,
-federated funders, and community chests — where the primary activity is resource
+characteristic of grant-making and pass-through organizations - foundations,
+federated funders, and community chests - where the primary activity is resource
 redistribution rather than direct service delivery.
+}
 
-\strong{Formula}
+\subsection{Formula}{
 
 (Domestic org grants + domestic individual grants + foreign grants) / total expenses.
 Note: US organization grants (line 1) are PZ scope; other components are PC scope.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Near zero for direct-service organizations; near 1.0 for
 pure pass-through grant-makers.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Subsector comparisons are essential: a 0.80 ratio is expected for a
 community foundation; anomalous for a hospital.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_09_EXP_GRANT_US_ORG_TOT}: Grants to domestic organizations (\code{us_org_grants})
-\item \code{F9_09_EXP_GRANT_US_INDIV_TOT}: Grants to domestic individuals (\code{us_indiv_grants})
+\item \code{F9_09_EXP_GRANT_US_ORG_TOT}:
+Grants to domestic organizations (\code{us_org_grants})
+\item \code{F9_09_EXP_GRANT_US_INDIV_TOT}:
+Grants to domestic individuals (\code{us_indiv_grants})
 \item \code{F9_09_EXP_GRANT_FRGN_TOT}: Grants to foreign entities (\code{foreign_grants})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 
 \strong{Variables used:}
 \itemize{
-\item \code{F9_09_EXP_GRANT_US_ORG_TOT}: Grants to domestic orgs (\code{us_org_grants})
-\item \code{F9_09_EXP_GRANT_US_INDIV_TOT}: Grants to domestic individuals (\code{us_indiv_grants})
+\item \code{F9_09_EXP_GRANT_US_ORG_TOT}:
+Grants to domestic orgs (\code{us_org_grants})
+\item \code{F9_09_EXP_GRANT_US_INDIV_TOT}:
+Grants to domestic individuals (\code{us_indiv_grants})
 \item \code{F9_09_EXP_GRANT_FRGN_TOT}: Grants to foreign entities (\code{foreign_grants})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 }

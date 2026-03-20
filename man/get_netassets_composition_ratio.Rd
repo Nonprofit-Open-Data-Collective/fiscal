@@ -14,9 +14,9 @@ get_netassets_composition_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{unrestricted_net_assets}{Unrestricted net assets, EOY. (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY})}
+\item{unrestricted_net_assets}{Unrestricted net assets, EOY.}
 
-\item{total_net_assets}{Total net assets, EOY. (On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY})}
+\item{total_net_assets}{Total net assets, EOY.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -34,12 +34,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{netassets_comp}   — net assets composition ratio (raw)
-\item \code{netassets_comp_w} — winsorized version
-\item \code{netassets_comp_z} — standardized z-score (based on winsorized values)
-\item \code{netassets_comp_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `netassets_comp`   - net assets composition ratio (raw)
+- `netassets_comp_w` - winsorized version
+- `netassets_comp_z` - standardized z-score (based on winsorized values)
+- `netassets_comp_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Share of total net assets that are unrestricted and available for general use.
@@ -52,10 +52,10 @@ Share of total net assets that are unrestricted and available for general use.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The net assets composition ratio measures what fraction of total net assets is
-unrestricted — available for general operations without donor-imposed constraints.
+unrestricted - available for general operations without donor-imposed constraints.
 A high ratio means the organization has substantial financial flexibility; a low
 ratio means most net assets are restricted and cannot be redirected to cover
 operating shortfalls or unexpected needs.
@@ -65,46 +65,51 @@ concept because all equity is by definition "unrestricted." It is particularly
 relevant for organizations that receive large restricted gifts or endowments, where
 total net assets may look strong but the unrestricted portion available for operations
 may be minimal.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Unrestricted net assets (Part X line 27B) / total net assets (Part X line 33B).
 An alternative formulation divides unrestricted net assets by total assets, which
 is more conservative and is sometimes used in rating agency analyses. The net assets
 denominator version is more common in the academic literature.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS: International Journal of Voluntary and Nonprofit Organizations},
-5(3), 273-290. — Discusses the role of unrestricted resources in financial
+5(3), 273-290. - Discusses the role of unrestricted resources in financial
 flexibility.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
-Leadership}, 23(3), 281-302. — Examines unrestricted reserve composition.
+Leadership}, 23(3), 281-302. - Examines unrestricted reserve composition.
+}
 }
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1] when both numerator and denominator are positive: zero means all
 net assets are restricted; one means all net assets are unrestricted. Values outside
 this range occur when either unrestricted or total net assets are negative.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Values above 0.50 indicate that at least half of net assets are
-unrestricted — generally considered healthy.
+unrestricted - generally considered healthy.
 \item Values below 0.20 suggest heavy donor-restricted balance sheets and
 limited financial flexibility.
 \item Organizations with large endowments will show low ratios if the endowment
 is permanently restricted, which may not indicate financial weakness.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{unrestricted_net_assets})
+\item \code{F9_10_NAFB_UNRESTRICT_EOY}:
+Unrestricted net assets, EOY (\code{unrestricted_net_assets})
 \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{total_net_assets})
+}
 }
 }
 \examples{

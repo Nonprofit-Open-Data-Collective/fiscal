@@ -15,15 +15,12 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param revenues_less_expenses Revenues less expenses (net surplus or deficit) for the
 #'   current year. Accepts one or two column names; if two are provided they are coalesced
 #'   with the 990 value taking priority over 990EZ.
-#'   (On 990: Part I, line 19 CY; \code{F9_01_EXP_REV_LESS_EXP_CY};
-#'   If \code{F9_01_EXP_REV_LESS_EXP_CY} is unavailable, it is computed as
-#'   \code{F9_01_REV_TOT_CY} minus \code{F9_01_EXP_TOT_CY}.)
-#' @param total_assets Total assets, EOY. (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY};
-#'   On EZ: Part II, line 25B; \code{F9_01_NAFB_ASSET_TOT_EOY})
+#'
+#' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -35,17 +32,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{return_assets}   — return on assets (raw)
-#'     \item \code{return_assets_w} — winsorized version
-#'     \item \code{return_assets_z} — standardized z-score (based on winsorized values)
-#'     \item \code{return_assets_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `return_assets`   - return on assets (raw)
+#'     - `return_assets_w` - winsorized version
+#'     - `return_assets_z` - standardized z-score (based on winsorized values)
+#'     - `return_assets_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' Return on assets (ROA) measures how effectively an organization uses its entire asset
 #' base to generate a financial surplus. In the nonprofit context this is sometimes called
@@ -53,13 +50,13 @@
 #' rather than financial securities. A positive ROA indicates the organization ended the
 #' year with more resources than it spent; a negative ROA indicates a deficit year.
 #'
-#' ROA is most useful as a longitudinal indicator — watching whether an organization is
+#' ROA is most useful as a longitudinal indicator - watching whether an organization is
 #' becoming more or less efficient at generating surpluses per dollar of assets over
-#' time — and for cross-sectional comparisons within subsectors where asset structures
+#' time - and for cross-sectional comparisons within subsectors where asset structures
 #' are similar. It is frequently used as a dependent variable in financial vulnerability
 #' models and as a component of composite fiscal health scores.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' In commercial accounting, ROA is typically computed as net income divided by average
 #' total assets (the mean of beginning- and end-of-year values), to avoid the distortion
@@ -71,46 +68,46 @@
 #'
 #' The numerator also differs from the commercial definition. Commercial ROA uses net
 #' income after taxes. For nonprofits, the equivalent is revenues less expenses
-#' (\code{F9_01_EXP_REV_LESS_EXP_CY}, Part I line 19), which is the IRS-reported
+#' (`F9_01_EXP_REV_LESS_EXP_CY`, Part I line 19), which is the IRS-reported
 #' summary figure for the change in net assets before other adjustments. Some studies
 #' use the Part XI reconciliation value instead, but that field is 990-only and has
 #' higher rates of missing data. The Part I summary field is available on both 990 and
-#' 990EZ forms (scope: PZ) and is used here for broader coverage.
+#' 990EZ forms and is used here for broader coverage.
 #'
-#' \strong{Why this formula was chosen}
+#' ## Why this formula was chosen
 #'
 #' End-of-year total assets in the denominator is the most common operationalization in
 #' the nonprofit empirical literature and is the most reproducible given 990 data
 #' availability. The Part I revenues-less-expenses numerator was chosen over the Part XI
 #' reconciliation figure because it covers 990EZ filers, has lower rates of missingness,
 #' and is the value most analysts expect when referencing the "net income" line on the
-#' annual filing. The result is closely related to \code{\link{get_surplus_margin_ratio}}
+#' annual filing. The result is closely related to [get_surplus_margin_ratio()]
 #' (which scales the same numerator by total revenue rather than total assets), and
-#' to \code{\link{get_return_netassets_ratio}} (which scales by beginning net assets).
+#' to [get_return_netassets_ratio()] (which scales by beginning net assets).
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
-#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
-#'     199-210. — One of the earliest systematic applications of ROA to nonprofit
+#'
+#'   - Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. *Nonprofit Management and Leadership*, 11(2),
+#'     199-210. - One of the earliest systematic applications of ROA to nonprofit
 #'     financial health prediction using 990 data.
-#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
-#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
-#'     Working Paper 04-016}. — Provides comparative analysis of ROA alongside other
+#'   - Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. *Harvard Business School
+#'     Working Paper 04-016*. - Provides comparative analysis of ROA alongside other
 #'     fiscal health indicators.
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460. — Foundational paper; ROA variants appear
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460. - Foundational paper; ROA variants appear
 #'     as components of composite vulnerability scores in subsequent applications.
-#'   \item Wicker, P., Feiler, S. & Breuer, C. (2013). Organizational mission and
+#'   - Wicker, P., Feiler, S. & Breuer, C. (2013). Organizational mission and
 #'     financial vulnerability: A financial health analysis of German nonprofit sport
-#'     clubs. \emph{VOLUNTAS: International Journal of Voluntary and Nonprofit
-#'     Organizations}, 24(4), 991-1013. — Applies ROA in a cross-national nonprofit
+#'     clubs. *VOLUNTAS: International Journal of Voluntary and Nonprofit
+#'     Organizations*, 24(4), 991-1013. - Applies ROA in a cross-national nonprofit
 #'     context; demonstrates subsector variation.
-#' }
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
 #' revenues. Positive values indicate surplus years; negative values indicate deficit
@@ -125,45 +122,46 @@
 #' or by organizations whose assets consist almost entirely of illiquid fixed property,
 #' making the denominator a poor proxy for the operational resource base.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item \strong{Near-zero is normal}: Unlike commercial firms where consistent positive
+#'
+#'   - **Near-zero is normal**: Unlike commercial firms where consistent positive
 #'     ROA is expected, nonprofits typically operate close to break-even by design.
 #'     An ROA consistently near zero is a sign of disciplined budget management, not
 #'     poor performance.
-#'   \item \strong{Moderate positive surplus}: Values in the range of 0.02 to 0.07
-#'     (2-7\%) are generally considered healthy — the organization is building modest
+#'   - **Moderate positive surplus**: Values in the range of 0.02 to 0.07
+#'     (2-7\%) are generally considered healthy - the organization is building modest
 #'     reserves without appearing to hoard resources at the expense of mission delivery.
-#'   \item \strong{Sustained negative ROA}: Two or more consecutive years with ROA
+#'   - **Sustained negative ROA**: Two or more consecutive years with ROA
 #'     below -0.05 is a common threshold used in financial vulnerability studies to
 #'     classify an organization as at risk (Greenlee & Trussel 2000, Keating et al.
 #'     2005).
-#'   \item \strong{Subsector variation}: Arts and culture organizations tend to have
+#'   - **Subsector variation**: Arts and culture organizations tend to have
 #'     more variable ROA than human services organizations with stable government
 #'     contracts. Health care nonprofits tend toward thin positive margins.
-#'   \item \strong{Asset structure matters}: Capital-intensive organizations
+#'   - **Asset structure matters**: Capital-intensive organizations
 #'     (hospitals, universities, housing providers) have large denominators and will
 #'     mechanically produce low ROA even when financially healthy. Comparisons across
 #'     capital structures require caution.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses}, 990 + 990EZ)
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets}, 990)
-#'   \item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{total_assets}, 990EZ)
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_01_EXP_REV_LESS_EXP_CY`: 
+#'     Revenues less expenses, current year (`revenues_less_expenses`, 990 + 990EZ)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`, 990)
+#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I (`total_assets`, 990EZ)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

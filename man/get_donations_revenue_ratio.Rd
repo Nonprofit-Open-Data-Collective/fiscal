@@ -15,11 +15,11 @@ get_donations_revenue_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{contributions}{Total contributions, EOY. (On 990: Part VIII, line 1h; \code{F9_08_REV_CONTR_TOT})}
+\item{contributions}{Total contributions, EOY.}
 
-\item{fundraising_revenue}{Net fundraising event revenue. (On 990: Part VIII, line 8c; \code{F9_08_REV_OTH_FUNDR_NET_TOT})}
+\item{fundraising_revenue}{Net fundraising event revenue.}
 
-\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{numerator}{Optional. A pre-aggregated column name for donation revenue, bypassing
 \code{contributions} and \code{fundraising_revenue}. Cannot be combined with those arguments.}
@@ -43,12 +43,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{donations_rev}   — donation/grant dependence ratio (raw)
-\item \code{donations_rev_w} — winsorized version
-\item \code{donations_rev_z} — standardized z-score (based on winsorized values)
-\item \code{donations_rev_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `donations_rev`   - donation/grant dependence ratio (raw)
+- `donations_rev_w` - winsorized version
+- `donations_rev_z` - standardized z-score (based on winsorized values)
+- `donations_rev_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Measures reliance on contributions and fundraising as a share of total revenue.
@@ -63,7 +63,7 @@ donation_revenue = contributions + fundraising_revenue
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The donations and grant dependence ratio measures the combined share of total
 revenue from contributions (individual donations, foundation grants, corporate
@@ -74,42 +74,47 @@ A high ratio indicates the organization relies heavily on the goodwill of donors
 and the fundraising environment rather than earned or contractual income. This
 creates vulnerability to donor fatigue, economic downturns (when charitable giving
 declines), and changes in donor priorities.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Total contributions + net fundraising event revenue) / total revenue (Part VIII
 lines 1h + 8c / line 12A). Government grants are included in total contributions
 (line 1h) in this formulation. For a pure private philanthropy measure that excludes
-government grants, combine this ratio with \code{\link{get_grants_govt_ratio}}.
+government grants, combine this ratio with \code{\link[=get_grants_govt_ratio]{get_grants_govt_ratio()}}.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
 \item Froelich, K.A. (1999). Diversification of revenue strategies. \emph{Nonprofit
 and Voluntary Sector Quarterly}, 28(3), 246-268.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Values near 1.0 characterize traditional charitable organizations
 with minimal earned income; values near 0 characterize fee-based service providers.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item No universal threshold. Revenue diversification theory suggests values
 above 0.70-0.80 warrant monitoring of donor concentration and retention.
 \item Organizations above 0.90 have almost no earned or contractual income buffer
 if philanthropic support declines.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_CONTR_TOT}: Total contributions (\code{contributions})
-\item \code{F9_08_REV_OTH_FUNDR_NET_TOT}: Net fundraising event revenue (\code{fundraising_revenue})
+\item \code{F9_08_REV_OTH_FUNDR_NET_TOT}:
+Net fundraising event revenue (\code{fundraising_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

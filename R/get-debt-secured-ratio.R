@@ -15,14 +15,14 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param secured_mortgages_notes Secured mortgages and notes payable, EOY.
-#'   (On 990: Part X, line 23B; \code{F9_10_LIAB_MTG_NOTE_EOY})
+#'
 #' @param total_liabilities Total liabilities, EOY.
-#'   (On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY})
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#'
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The secured debt ratio measures what share of total liabilities consists of
 #' mortgages and notes payable secured by collateral. It is a liability composition
@@ -34,42 +34,42 @@
 #' as collateral, limiting flexibility. It is particularly relevant for housing
 #' nonprofits, healthcare organizations, and educational institutions.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' Secured mortgages and notes payable (Part X line 23B) / total liabilities (line 26B).
-#' The complement is approximately \code{\link{get_debt_unsecured_ratio}} (line 24B /
+#' The complement is approximately [get_debt_unsecured_ratio()] (line 24B /
 #' line 26B), though the two do not sum to 1.0 because there are other liability categories.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
-#'     compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
+#'     compensation in nonprofit organizations. *Policy and Society*, 20(4), 94-112.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
 #' organizations (housing, healthcare, higher education) can show values above 0.70.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item No standard benchmark. Most informative when tracked over time or compared
+#'
+#'   - No standard benchmark. Most informative when tracked over time or compared
 #'     within subsectors with similar capital structures.
-#'   \item For organizations with high secured debt ratios, lenders will scrutinize
+#'   - For organizations with high secured debt ratios, lenders will scrutinize
 #'     the collateral value and debt service coverage.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Secured mortgages and notes payable, EOY (\code{secured_mortgages_notes})
-#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{total_liabilities})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#' ## Variables used:
+#'
+#'   - `F9_10_LIAB_MTG_NOTE_EOY`: Secured mortgages and notes payable, EOY (`secured_mortgages_notes`)
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`total_liabilities`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
 #'   statistics and density plots for all four output columns.
 #'
 #' @usage
@@ -80,9 +80,9 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{debt_secured}, \code{debt_secured_w},
-#'   \code{debt_secured_z}, \code{debt_secured_p}.
+#' @return The original `data.frame` with four columns appended:
+#'   `debt_secured`, `debt_secured_w`,
+#'   `debt_secured_z`, `debt_secured_p`.
 #'
 #' @import dplyr
 #' @import stringr

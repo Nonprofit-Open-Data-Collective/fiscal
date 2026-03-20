@@ -15,9 +15,9 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param cash_eoy Cash on hand, end of year. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})
-#' @param cash_boy Cash on hand, beginning of year. (On 990: Part X, line 1A; \code{F9_10_ASSET_CASH_BOY})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param cash_eoy Cash on hand, end of year.
+#' @param cash_boy Cash on hand, beginning of year.
 #' @param months_in_period Number of months in the reporting period. Defaults to 12 for
 #'   a standard annual filing. Adjust for short-year filers.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
@@ -32,17 +32,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{cash_burn}   — monthly burn rate in dollars (raw)
-#'     \item \code{cash_burn_w} — winsorized version
-#'     \item \code{cash_burn_z} — standardized z-score (based on winsorized values)
-#'     \item \code{cash_burn_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `cash_burn`   - monthly burn rate in dollars (raw)
+#'     - `cash_burn_w` - winsorized version
+#'     - `cash_burn_z` - standardized z-score (based on winsorized values)
+#'     - `cash_burn_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The burn rate ratio compares end-of-year cash to beginning-of-year cash, measuring
 #' the rate at which an organization is accumulating or depleting its cash position over
@@ -51,32 +51,32 @@
 #' cash. It is most useful for detecting multi-year cash erosion trends before they
 #' reach a crisis point.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The term "burn rate" originates in startup finance, where it refers to monthly cash
 #' outflows. The nonprofit adaptation here is an annual version: EOY cash divided by BOY
 #' cash. An alternative formulation computes the dollar change (EOY - BOY) divided by
 #' annual expenses to express the burn as a fraction of the operating budget, but that
 #' version requires an additional variable and is better captured by the days/months of
-#' cash functions (\code{\link{get_days_cash_operations}}, \code{\link{get_months_cash_operations}}).
+#' cash functions ([get_days_cash_operations()], [get_months_cash_operations()]).
 #'
-#' \strong{Why this formula was chosen}
+#' ## Why this formula was chosen
 #'
 #' The EOY/BOY ratio is the simplest formulation and requires only two fields from the
 #' Part X balance sheet. It directly answers "is the cash position improving or
 #' deteriorating year-over-year?" without requiring expense data, making it calculable
 #' even for organizations where Part IX data is incomplete.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-#'     for Nonprofit Organizations}. Wiley. — Discusses cash trend analysis for nonprofits.
-#'   \item Nonprofit Finance Fund. (Annual). \emph{State of the Nonprofit Sector Survey}.
-#'     — Annual survey tracks cash position changes as a sector-wide indicator.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+#'     for Nonprofit Organizations*. Wiley. - Discusses cash trend analysis for nonprofits.
+#'   - Nonprofit Finance Fund. (Annual). *State of the Nonprofit Sector Survey*.
+#'     - Annual survey tracks cash position changes as a sector-wide indicator.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
 #' depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
@@ -84,33 +84,33 @@
 #' cash is zero, which occurs in the first year of operation or after a complete cash
 #' drawdown.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item A ratio consistently below 1.0 over multiple years is a warning sign.
+#'
+#'   - A ratio consistently below 1.0 over multiple years is a warning sign.
 #'     A single year below 1.0 may reflect planned spending from reserves.
-#'   \item A ratio consistently above 1.0 suggests the organization is building
+#'   - A ratio consistently above 1.0 suggests the organization is building
 #'     liquidity reserves, which is generally positive up to a point.
-#'   \item Ratios below 0.50 in a single year (cash halved) warrant investigation
+#'   - Ratios below 0.50 in a single year (cash halved) warrant investigation
 #'     into whether the decline reflects a structural revenue problem or a planned
 #'     capital expenditure.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, end of year (\code{cash_eoy})
-#'   \item \code{F9_10_ASSET_CASH_BOY}: Cash on hand, beginning of year (\code{cash_boy})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, end of year (`cash_eoy`)
+#'   - `F9_10_ASSET_CASH_BOY`: Cash on hand, beginning of year (`cash_boy`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

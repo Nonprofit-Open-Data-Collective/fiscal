@@ -27,6 +27,6 @@ validate_inputs(
 Invisibly \code{NULL}; called for its side-effect of stopping on invalid input.
 }
 \description{
-Checks that \code{winsorize} is in \code{[0, 1]} and that numerator and
+Checks that \code{winsorize} is in \verb{[0, 1]} and that numerator and
 denominator arguments are not in an inconsistent NULL state.
 }

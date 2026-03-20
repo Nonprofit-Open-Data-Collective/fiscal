@@ -14,11 +14,9 @@ get_revenue_programs_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{program_service_revenue}{Total program service revenue.
-(On 990: Part VIII, line 2g Column A; \code{F9_08_REV_PROG_TOT_TOT})}
+\item{program_service_revenue}{Total program service revenue.}
 
-\item{total_revenue}{Total revenue.
-(On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{revenue_programs}, \code{revenue_programs_w},
-\code{revenue_programs_z}, \code{revenue_programs_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{revenue_programs} (raw ratio)
+\item \code{revenue_programs_w} (winsorized)
+\item \code{revenue_programs_z} (z-score)
+\item \code{revenue_programs_p} (percentile rank, 1-100)
+}
 }
 \description{
 Program service revenue as a share of total revenue.
@@ -44,14 +46,14 @@ Program service revenue as a share of total revenue.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Revenue Programs Ratio — Revenue composition measure}
+\subsection{Revenue Programs Ratio - Revenue composition measure}{
 
 Formula: program service revenue / total revenue. Bounded [0, 1].
 
 Pure program service share, distinct from get_earned_income_ratio which also includes dues, royalties, and misc.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -59,11 +61,13 @@ Pure program service share, distinct from get_earned_income_ratio which also inc
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_PROG_TOT_TOT}: Numerator (\code{program_service_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

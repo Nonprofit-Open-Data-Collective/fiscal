@@ -15,13 +15,9 @@ get_debt_assets_ratio( df,
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
 \item{debt}{Total liabilities, EOY. Accepts one or two column names; if two are provided
-they are coalesced with the 990 value taking priority over 990EZ.
-(On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
-On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})}
+they are coalesced with the 990 value taking priority over 990EZ.}
 
-\item{assets}{Total assets, EOY. Accepts one or two column names.
-(On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY};
-On EZ: Part II, line 25B; \code{F9_01_NAFB_ASSET_TOT_EOY})}
+\item{assets}{Total assets, EOY. Accepts one or two column names.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -39,12 +35,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{debt_assets}   — debt to asset ratio (raw)
-\item \code{debt_assets_w} — winsorized version
-\item \code{debt_assets_z} — standardized z-score (based on winsorized values)
-\item \code{debt_assets_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `debt_assets`   - debt to asset ratio (raw)
+- `debt_assets_w` - winsorized version
+- `debt_assets_z` - standardized z-score (based on winsorized values)
+- `debt_assets_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Proportion of total assets financed through liabilities.
@@ -57,7 +53,7 @@ Proportion of total assets financed through liabilities.
 \strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The debt to asset ratio (also called the leverage ratio or debt ratio) measures
 what fraction of total assets is financed by liabilities rather than equity (net
@@ -70,8 +66,9 @@ For nonprofits this ratio is particularly important because: (1) they cannot rai
 equity capital by issuing stock, so debt is the primary external financing mechanism;
 and (2) funders, lenders, and rating agencies commonly use this ratio to assess
 creditworthiness and organizational stability.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The commercial formula is identical: total liabilities / total assets. Nonprofit
 applications use the same ratio but may define "total liabilities" differently.
@@ -82,16 +79,17 @@ long-term obligations reported on the balance sheet.
 Some studies use only long-term debt in the numerator to focus on structural
 leverage rather than near-term obligations. The full liabilities version is used
 here as the most comprehensive and commonly cited measure.
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 Total liabilities / total assets is the most universally understood and reported
 leverage measure. Using total liabilities rather than a subset avoids definitional
 ambiguity about which obligations to include. The PZ scope (both 990 and 990EZ)
 maximizes coverage across all filing types.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
@@ -103,8 +101,9 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Theoretically bounded [0, 1] when net assets are positive: zero means no debt;
 one means liabilities equal total assets (zero net assets). Values above 1.0 occur
@@ -112,9 +111,9 @@ when total liabilities exceed total assets, i.e., the organization has negative 
 assets (accumulated deficits exceed equity). This is a distress indicator but not
 uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
 long-term debt.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item \strong{Below 0.50}: Generally considered financially stable; assets
 are more than twice liabilities.
@@ -125,13 +124,15 @@ in Tuckman & Chang (1991).
 \item Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
 indicator in their logistic regression models.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
 \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ fallback)
 \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}, 990)
 \item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ fallback)
+}
 }
 }
 \examples{

@@ -16,13 +16,13 @@ get_cash_liquidity_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Short-term investments (savings), EOY.}
 
-\item{accounts_payable}{Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})}
+\item{accounts_payable}{Accounts payable and accrued expenses, EOY.}
 
-\item{grants_payable}{Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})}
+\item{grants_payable}{Grants and similar amounts payable, EOY.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -40,12 +40,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{cash_liq}   — cash ratio (raw)
-\item \code{cash_liq_w} — winsorized version
-\item \code{cash_liq_z} — standardized z-score (based on winsorized values)
-\item \code{cash_liq_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `cash_liq`   - cash ratio (raw)
+- `cash_liq_w` - winsorized version
+- `cash_liq_z` - standardized z-score (based on winsorized values)
+- `cash_liq_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Measures immediate liquidity using only cash and cash equivalents against current liabilities.
@@ -60,7 +60,7 @@ current_liabilities = accounts_payable + grants_payable
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The cash liquidity ratio is the most conservative liquidity test: it asks whether
 an organization could cover its most immediate obligations using only cash and
@@ -70,27 +70,29 @@ with long or uncertain receivables collection cycles (e.g., government reimburse
 contracts, multi-year pledge collections), it provides a pessimistic but useful
 lower bound on liquidity.
 
-This ratio is stricter than both the quick ratio (\code{\link{get_quick_ratio}})
-and the current ratio (\code{\link{get_current_ratio}}), which both include
+This ratio is stricter than both the quick ratio (\code{\link[=get_quick_ratio]{get_quick_ratio()}})
+and the current ratio (\code{\link[=get_current_ratio]{get_current_ratio()}}), which both include
 receivables in the numerator.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The commercial equivalent (sometimes called the "super-quick" ratio) uses only
 cash and marketable securities. The nonprofit version here uses cash (line 1B) plus
 savings/temporary investments (line 2B) as the numerator, and accounts payable plus
 grants payable as the denominator. This follows the same liability proxy used across
 the package (Tuckman & Chang 1991).
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 Cash and savings are the two fields on the 990 that most unambiguously represent
 immediately available funds. The denominator (accounts payable + grants payable)
 represents the most pressing and legally enforceable near-term obligations. Together
 this pair provides the most conservative 990-based liquidity measure available.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
@@ -98,16 +100,17 @@ Sector Quarterly}, 20(4), 445-460.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
 current payables. The empirical range for nonprofits is approximately [0, 20],
 with most values between 0.1 and 5.0. Very high values are common for grant-making
 foundations and endowed organizations that carry minimal accounts payable.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Values below 0.5 suggest the organization cannot cover even half of its
 near-term payables from cash alone and is reliant on receivables collection
@@ -116,13 +119,17 @@ or short-term borrowing to meet obligations.
 \item Because this is a highly conservative measure, values somewhat below 1.0
 are normal and not necessarily problematic if receivables are healthy.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
-\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
-\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
+\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}:
+Accounts payable and accrued expenses, EOY (\code{accounts_payable})
+\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}:
+Grants and similar amounts payable, EOY (\code{grants_payable})
+}
 }
 }
 \examples{

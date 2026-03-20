@@ -17,14 +17,14 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param contributions Total contributions, EOY. (On 990: Part VIII, line 1h; \code{F9_08_REV_CONTR_TOT})
-#' @param fundraising_revenue Net fundraising event revenue. (On 990: Part VIII, line 8c; \code{F9_08_REV_OTH_FUNDR_NET_TOT})
-#' @param total_revenue Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param contributions Total contributions, EOY.
+#' @param fundraising_revenue Net fundraising event revenue.
+#' @param total_revenue Total revenue.
 #' @param numerator Optional. A pre-aggregated column name for donation revenue, bypassing
-#'   \code{contributions} and \code{fundraising_revenue}. Cannot be combined with those arguments.
+#'   `contributions` and `fundraising_revenue`. Cannot be combined with those arguments.
 #' @param denominator Optional. A pre-aggregated column name for the denominator. Cannot be
-#'   combined with \code{total_revenue}.
+#'   combined with `total_revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -37,17 +37,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{donations_rev}   — donation/grant dependence ratio (raw)
-#'     \item \code{donations_rev_w} — winsorized version
-#'     \item \code{donations_rev_z} — standardized z-score (based on winsorized values)
-#'     \item \code{donations_rev_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `donations_rev`   - donation/grant dependence ratio (raw)
+#'     - `donations_rev_w` - winsorized version
+#'     - `donations_rev_z` - standardized z-score (based on winsorized values)
+#'     - `donations_rev_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The donations and grant dependence ratio measures the combined share of total
 #' revenue from contributions (individual donations, foundation grants, corporate
@@ -59,52 +59,53 @@
 #' creates vulnerability to donor fatigue, economic downturns (when charitable giving
 #' declines), and changes in donor priorities.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' (Total contributions + net fundraising event revenue) / total revenue (Part VIII
 #' lines 1h + 8c / line 12A). Government grants are included in total contributions
 #' (line 1h) in this formulation. For a pure private philanthropy measure that excludes
-#' government grants, combine this ratio with \code{\link{get_grants_govt_ratio}}.
+#' government grants, combine this ratio with [get_grants_govt_ratio()].
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
-#'     \emph{VOLUNTAS}, 5(3), 273-290.
-#'   \item Froelich, K.A. (1999). Diversification of revenue strategies. \emph{Nonprofit
-#'     and Voluntary Sector Quarterly}, 28(3), 246-268.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     *VOLUNTAS*, 5(3), 273-290.
+#'   - Froelich, K.A. (1999). Diversification of revenue strategies. *Nonprofit
+#'     and Voluntary Sector Quarterly*, 28(3), 246-268.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
 #' with minimal earned income; values near 0 characterize fee-based service providers.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item No universal threshold. Revenue diversification theory suggests values
+#'
+#'   - No universal threshold. Revenue diversification theory suggests values
 #'     above 0.70-0.80 warrant monitoring of donor concentration and retention.
-#'   \item Organizations above 0.90 have almost no earned or contractual income buffer
+#'   - Organizations above 0.90 have almost no earned or contractual income buffer
 #'     if philanthropic support declines.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_CONTR_TOT}: Total contributions (\code{contributions})
-#'   \item \code{F9_08_REV_OTH_FUNDR_NET_TOT}: Net fundraising event revenue (\code{fundraising_revenue})
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_CONTR_TOT`: Total contributions (`contributions`)
+#'   - `F9_08_REV_OTH_FUNDR_NET_TOT`: 
+#'     Net fundraising event revenue (`fundraising_revenue`)
+#'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

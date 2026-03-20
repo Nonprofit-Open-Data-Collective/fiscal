@@ -15,9 +15,9 @@ get_cash_burn_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash_eoy}{Cash on hand, end of year. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash_eoy}{Cash on hand, end of year.}
 
-\item{cash_boy}{Cash on hand, beginning of year. (On 990: Part X, line 1A; \code{F9_10_ASSET_CASH_BOY})}
+\item{cash_boy}{Cash on hand, beginning of year.}
 
 \item{months_in_period}{Number of months in the reporting period. Defaults to 12 for
 a standard annual filing. Adjust for short-year filers.}
@@ -38,12 +38,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{cash_burn}   — monthly burn rate in dollars (raw)
-\item \code{cash_burn_w} — winsorized version
-\item \code{cash_burn_z} — standardized z-score (based on winsorized values)
-\item \code{cash_burn_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `cash_burn`   - monthly burn rate in dollars (raw)
+- `cash_burn_w` - winsorized version
+- `cash_burn_z` - standardized z-score (based on winsorized values)
+- `cash_burn_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Monthly rate at which an organization draws down its cash reserves.
@@ -56,7 +56,7 @@ Monthly rate at which an organization draws down its cash reserves.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The burn rate ratio compares end-of-year cash to beginning-of-year cash, measuring
 the rate at which an organization is accumulating or depleting its cash position over
@@ -64,42 +64,47 @@ a single fiscal year. A ratio below 1.0 means the organization ended the year wi
 less cash than it started with (burning cash); a ratio above 1.0 means it accumulated
 cash. It is most useful for detecting multi-year cash erosion trends before they
 reach a crisis point.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The term "burn rate" originates in startup finance, where it refers to monthly cash
 outflows. The nonprofit adaptation here is an annual version: EOY cash divided by BOY
 cash. An alternative formulation computes the dollar change (EOY - BOY) divided by
 annual expenses to express the burn as a fraction of the operating budget, but that
 version requires an additional variable and is better captured by the days/months of
-cash functions (\code{\link{get_days_cash_operations}}, \code{\link{get_months_cash_operations}}).
+cash functions (\code{\link[=get_days_cash_operations]{get_days_cash_operations()}}, \code{\link[=get_months_cash_operations]{get_months_cash_operations()}}).
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 The EOY/BOY ratio is the simplest formulation and requires only two fields from the
 Part X balance sheet. It directly answers "is the cash position improving or
 deteriorating year-over-year?" without requiring expense data, making it calculable
 even for organizations where Part IX data is incomplete.
-
-\strong{Canonical citations}
-
-\itemize{
-\item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-for Nonprofit Organizations}. Wiley. — Discusses cash trend analysis for nonprofits.
-\item Nonprofit Finance Fund. (Annual). \emph{State of the Nonprofit Sector Survey}.
-— Annual survey tracks cash position changes as a sector-wide indicator.
 }
 
-\strong{Definitional range}
+\subsection{Canonical citations}{
+\itemize{
+\item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+for Nonprofit Organizations}. Wiley. - Discusses cash trend analysis for nonprofits.
+\item Nonprofit Finance Fund. (Annual). \emph{State of the Nonprofit Sector Survey}.
+\itemize{
+\item Annual survey tracks cash position changes as a sector-wide indicator.
+}
+}
+}
+
+\subsection{Definitional range}{
 
 Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
 depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
 near-complete cash exhaustion. The ratio is undefined (NA) when beginning-of-year
 cash is zero, which occurs in the first year of operation or after a complete cash
 drawdown.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item A ratio consistently below 1.0 over multiple years is a warning sign.
 A single year below 1.0 may reflect planned spending from reserves.
@@ -109,11 +114,13 @@ liquidity reserves, which is generally positive up to a point.
 into whether the decline reflects a structural revenue problem or a planned
 capital expenditure.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, end of year (\code{cash_eoy})
 \item \code{F9_10_ASSET_CASH_BOY}: Cash on hand, beginning of year (\code{cash_boy})
+}
 }
 }
 \examples{

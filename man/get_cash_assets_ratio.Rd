@@ -15,14 +15,11 @@ get_cash_assets_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY.
-(On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{total_assets}{Total assets, EOY.
-(On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY})}
+\item{total_assets}{Total assets, EOY.}
 
-\item{savings}{Savings and temporary cash investments, EOY.
-(On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Savings and temporary cash investments, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -48,7 +45,7 @@ Cash and savings as a share of total assets; measures the liquid composition of 
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The cash and savings to assets ratio measures what fraction of an organization's
 total asset base is held in immediately liquid form. It is an asset composition
@@ -57,43 +54,46 @@ holds a large share of its resources in cash (potentially signalling under-inves
 in mission-related assets), while a low ratio may indicate heavy investment in
 fixed assets or program-related investments.
 
-This metric is distinct from \code{\link{get_cash_liquidity_ratio}}, which compares
+This metric is distinct from \code{\link[=get_cash_liquidity_ratio]{get_cash_liquidity_ratio()}}, which compares
 the same cash+savings numerator to current liabilities (a coverage test), and from
-\code{\link{get_cash_on_hand}}, which reports the dollar amount rather than a proportion.
+\code{\link[=get_cash_on_hand]{get_cash_on_hand()}}, which reports the dollar amount rather than a proportion.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The Stata-derived version of this ratio (cs_ta) used in nonprofit financial structure
 studies uses exactly this formulation: (cash + savings) / total assets EOY. Some
 balance sheet decomposition studies include pledges receivable and accounts receivable
 in the numerator to capture all near-liquid items, but this implementation follows
 the narrower two-item definition to maintain comparability with the cash ratio literature.
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 Cash (line 1B) and savings (line 2B) are the two most reliable, narrowly liquid
 items on the 990 balance sheet. Total assets (line 16B) is the standard denominator
 for asset composition ratios. This pairing cleanly answers the question: what share
 of total resources is in immediately spendable form?
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
 compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]: zero means no liquid assets; one means the entire asset base is
 cash and savings. In practice most nonprofits fall in the [0.05, 0.50] range.
 Values above 0.60 are uncommon for operating nonprofits and may indicate excess
 cash hoarding.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item There is no universally accepted benchmark. Values below 0.05 suggest minimal
 liquid cushion; values above 0.60 may indicate under-deployment of assets toward
@@ -101,12 +101,14 @@ mission.
 \item Grant-making foundations and endowed institutions naturally show higher ratios
 than operating nonprofits, which invest more in program assets and fixed equipment.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
 \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+}
 }
 }
 \examples{

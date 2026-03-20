@@ -12,7 +12,7 @@ impute_zero(dat, vars, ez_rows)
 \item{vars}{Character vector of financial column names to consider.}
 
 \item{ez_rows}{Logical vector (length \code{nrow(dat)}) marking 990-EZ rows,
-as returned by \code{\link{detect_ez_rows}}.}
+as returned by \code{\link[=detect_ez_rows]{detect_ez_rows()}}.}
 }
 \value{
 The modified \code{data.frame} with zeros imputed where appropriate.

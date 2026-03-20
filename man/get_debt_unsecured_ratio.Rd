@@ -14,11 +14,9 @@ get_debt_unsecured_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{unsecured_notes_loans}{Unsecured notes and loans payable, EOY.
-(On 990: Part X, line 24B; \code{F9_10_LIAB_NOTE_UNSEC_EOY})}
+\item{unsecured_notes_loans}{Unsecured notes and loans payable, EOY.}
 
-\item{total_liabilities}{Total liabilities, EOY.
-(On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY})}
+\item{total_liabilities}{Total liabilities, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -44,43 +42,50 @@ Unsecured notes and loans payable as a share of total liabilities.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The unsecured debt ratio measures what share of total liabilities consists of
 unsecured notes and loans payable (Part X line 24B), typically including lines
-of credit and unsecured bank loans. Used alongside \code{\link{get_debt_secured_ratio}},
+of credit and unsecured bank loans. Used alongside \code{\link[=get_debt_secured_ratio]{get_debt_secured_ratio()}},
 it provides a decomposition of the liability structure.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Unsecured notes and loans payable (Part X line 24B) / total liabilities (line 26B).
 A direct read from two 990 balance sheet fields.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Most nonprofits carry no unsecured notes, so the distribution
 is highly concentrated at zero with a long right tail.
-
-\strong{Benchmarks and rules of thumb}
-
-\itemize{
-\item No established benchmark. Presence of unsecured debt is not inherently
-negative — many healthy nonprofits use lines of credit for cash flow management
-— but a large and growing ratio warrants scrutiny.
-\item Trend analysis is more informative than a single year's value.
 }
 
-\strong{Variables used:}
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
-\item \code{F9_10_LIAB_NOTE_UNSEC_EOY}: Unsecured notes and loans payable, EOY (\code{unsecured_notes_loans})
+\item No established benchmark. Presence of unsecured debt is not inherently
+negative - many healthy nonprofits use lines of credit for cash flow management
+\itemize{
+\item but a large and growing ratio warrants scrutiny.
+}
+\item Trend analysis is more informative than a single year's value.
+}
+}
+
+\subsection{Variables used:}{
+\itemize{
+\item \code{F9_10_LIAB_NOTE_UNSEC_EOY}:
+Unsecured notes and loans payable, EOY (\code{unsecured_notes_loans})
 \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{total_liabilities})
+}
 }
 }
 \examples{

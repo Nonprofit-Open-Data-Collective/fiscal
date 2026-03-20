@@ -16,13 +16,13 @@ get_investments_assets_ratio( df,
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
 \item{pub_traded_securities}{Investments in publicly traded securities, EOY.
-(On 990: Part X, line 11B; \code{F9_10_ASSET_INVEST_SEC_EOY} (scope: 990 + 990EZ))}
+)}
 
 \item{total_assets}{Total assets, EOY.
-(On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY} (scope: 990 + 990EZ))}
+)}
 
 \item{other_securities}{Investments in other securities, EOY.
-(On 990: Part X, line 12B; \code{F9_10_ASSET_INVEST_SEC_OTH_EOY} (scope: 990 + 990EZ))}
+)}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -33,9 +33,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{investments_assets}, \code{investments_assets_w},
-\code{investments_assets_z}, \code{investments_assets_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{investments_assets} (raw ratio)
+\item \code{investments_assets_w} (winsorized)
+\item \code{investments_assets_z} (z-score)
+\item \code{investments_assets_p} (percentile rank, 1-100)
+}
 }
 \description{
 Investment securities as a share of total assets.
@@ -48,48 +52,54 @@ Investment securities as a share of total assets.
 \strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The investment assets ratio measures what share of total assets is held in financial
 securities (publicly traded and other investments). It distinguishes financially
 oriented organizations (endowments, foundations) from operationally oriented ones.
 A high ratio indicates significant financial reserves; a low ratio indicates assets
 are primarily operational. Most informative for endowed organizations and foundations.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Publicly traded securities + other securities) / total assets. Both investment
 fields (Part X lines 11B and 12B) are PZ scope. A more comprehensive version
 would include program-related investments (line 13B).
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
 Leadership}, 23(3), 281-302.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Most operating nonprofits show values near zero; foundations
 and endowed institutions may show values above 0.80.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item No universal benchmark. Operating nonprofits with values above 0.30 are
 typically holding significant endowment or reserve portfolios.
 \item A high investment ratio combined with a high debt ratio may indicate
-borrowing to fund operations while holding investments — worth scrutinizing.
+borrowing to fund operations while holding investments - worth scrutinizing.
+}
 }
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_ASSET_INVEST_SEC_EOY}: Publicly traded securities, EOY (\code{pub_traded_securities})
-\item \code{F9_10_ASSET_INVEST_SEC_OTH_EOY}: Other securities, EOY (\code{other_securities})
+\item \code{F9_10_ASSET_INVEST_SEC_EOY}:
+Publicly traded securities, EOY (\code{pub_traded_securities})
+\item \code{F9_10_ASSET_INVEST_SEC_OTH_EOY}:
+Other securities, EOY (\code{other_securities})
 \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+}
 }
 }
 \examples{

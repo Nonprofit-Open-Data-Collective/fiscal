@@ -19,26 +19,19 @@ get_expenses_compensation_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{officer_comp}{Compensation of current officers, directors, and key employees (total).
-(On 990: Part IX, line 5 Column A; \code{F9_09_EXP_COMP_DTK_TOT})}
+\item{officer_comp}{Compensation of current officers, directors, and key employees (total).}
 
-\item{disqualified_comp}{Compensation of disqualified persons (total).
-(On 990: Part IX, line 6 Column A; \code{F9_09_EXP_COMP_DSQ_PERS_TOT})}
+\item{disqualified_comp}{Compensation of disqualified persons (total).}
 
-\item{other_salaries}{Other salaries and wages (total).
-(On 990: Part IX, line 7 Column A; \code{F9_09_EXP_OTH_SAL_WAGE_TOT})}
+\item{other_salaries}{Other salaries and wages (total).}
 
-\item{pension_contributions}{Pension plan accruals and contributions (total).
-(On 990: Part IX, line 8 Column A; \code{F9_09_EXP_PENSION_CONTR_TOT})}
+\item{pension_contributions}{Pension plan accruals and contributions (total).}
 
-\item{other_employee_benefits}{Other employee benefits (total).
-(On 990: Part IX, line 9 Column A; \code{F9_09_EXP_OTH_EMPL_BEN_TOT})}
+\item{other_employee_benefits}{Other employee benefits (total).}
 
-\item{payroll_taxes}{Payroll taxes (total).
-(On 990: Part IX, line 10 Column A; \code{F9_09_EXP_PAYROLL_TAX_TOT})}
+\item{payroll_taxes}{Payroll taxes (total).}
 
-\item{total_expenses}{Total functional expenses.
-(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -47,9 +40,13 @@ get_expenses_compensation_ratio( df,
 \item{summarize}{Logical (default \code{FALSE}).}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{expenses_compensation}, \code{expenses_compensation_w},
-\code{expenses_compensation_z}, \code{expenses_compensation_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{expenses_compensation} (raw ratio)
+\item \code{expenses_compensation_w} (winsorized)
+\item \code{expenses_compensation_z} (z-score)
+\item \code{expenses_compensation_p} (percentile rank, 1-100)
+}
 }
 \description{
 Total compensation and employee-related expenses as a share of total functional expenses.
@@ -64,61 +61,73 @@ Total compensation and employee-related expenses as a share of total functional 
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The compensation expense ratio measures the share of total functional expenses
 devoted to all forms of employee compensation: salaries, benefits, payroll taxes,
 and pension contributions. For most service-delivering nonprofits this is the
 largest single expense category (60-80\\% of total expenses). It is a fundamental
 indicator of labor intensity and human capital investment.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Sum of six Part IX compensation fields (lines 5-10, Column A) / total expenses
 (line 25A): officer compensation, disqualified person compensation, other salaries,
 pension contributions, other employee benefits, and payroll taxes.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 \item Leete, L. (2001). Whither the nonprofit wage differential? \emph{Journal of
 Labor Economics}, 19(1), 136-170.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Most service-delivery nonprofits fall in the [0.50, 0.85] range.
 Grant-making organizations may show ratios below 0.20.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
-\item No universal benchmark — labor intensity varies fundamentally by mission type.
+\item No universal benchmark - labor intensity varies fundamentally by mission type.
 \item Human services, health, and education nonprofits typically show ratios above 0.60.
 \item A sharp year-over-year increase may indicate revenue contraction rather than
 compensation growth.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_09_EXP_COMP_DTK_TOT}: Officer/director compensation (\code{officer_comp})
-\item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}: Disqualified person compensation (\code{disqualified_comp})
-\item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}: Other salaries and wages (\code{other_salaries})
-\item \code{F9_09_EXP_PENSION_CONTR_TOT}: Pension contributions (\code{pension_contributions})
-\item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}: Other employee benefits (\code{other_employee_benefits})
+\item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}:
+Disqualified person compensation (\code{disqualified_comp})
+\item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}:
+Other salaries and wages (\code{other_salaries})
+\item \code{F9_09_EXP_PENSION_CONTR_TOT}:
+Pension contributions (\code{pension_contributions})
+\item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}:
+Other employee benefits (\code{other_employee_benefits})
 \item \code{F9_09_EXP_PAYROLL_TAX_TOT}: Payroll taxes (\code{payroll_taxes})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 
 \strong{Variables used:}
 \itemize{
 \item \code{F9_09_EXP_COMP_DTK_TOT}: Officer/director compensation (\code{officer_comp})
-\item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}: Disqualified person compensation (\code{disqualified_comp})
-\item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}: Other salaries and wages (\code{other_salaries})
-\item \code{F9_09_EXP_PENSION_CONTR_TOT}: Pension contributions (\code{pension_contributions})
-\item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}: Other employee benefits (\code{other_employee_benefits})
+\item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}:
+Disqualified person compensation (\code{disqualified_comp})
+\item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}:
+Other salaries and wages (\code{other_salaries})
+\item \code{F9_09_EXP_PENSION_CONTR_TOT}:
+Pension contributions (\code{pension_contributions})
+\item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}:
+Other employee benefits (\code{other_employee_benefits})
 \item \code{F9_09_EXP_PAYROLL_TAX_TOT}: Payroll taxes (\code{payroll_taxes})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 }

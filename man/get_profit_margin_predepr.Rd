@@ -15,11 +15,11 @@ get_profit_margin_predepr( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{revenue}{Total revenue.}
 
-\item{expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{expenses}{Total functional expenses.}
 
-\item{depreciation}{Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})}
+\item{depreciation}{Depreciation, depletion, and amortization.}
 
 \item{numerator}{Optional. A pre-calculated column for the numerator
 (revenue minus non-depreciation expenses). Cannot be combined with
@@ -44,12 +44,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{profit_predepr}   — pre-depreciation profitability margin (raw)
-\item \code{profit_predepr_w} — winsorized version
-\item \code{profit_predepr_z} — standardized z-score (based on winsorized values)
-\item \code{profit_predepr_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `profit_predepr`   - pre-depreciation profitability margin (raw)
+- `profit_predepr_w` - winsorized version
+- `profit_predepr_z` - standardized z-score (based on winsorized values)
+- `profit_predepr_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Operating surplus or deficit as a share of total revenue, before depreciation.
@@ -62,7 +62,7 @@ Operating surplus or deficit as a share of total revenue, before depreciation.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The pre-depreciation profit margin approximates cash flow from operations by
 adding back non-cash depreciation charges to the surplus. Since depreciation is
@@ -71,8 +71,9 @@ outflow, this measure better reflects the organization's actual cash-generating
 ability. A positive pre-depreciation margin alongside a negative post-depreciation
 margin indicates the organization is cash-flow positive but "booking" a loss due
 to large depreciation charges.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Total revenue - (Total expenses - Depreciation)) / Total revenue. Equivalently,
 (revenue - expenses + depreciation) / revenue. This is the simplest cash flow
@@ -84,9 +85,9 @@ The EBITDA margin used in commercial analysis is similar in spirit but also adds
 back interest, taxes, and amortization. The pre-depreciation margin here adds only
 depreciation (and amortization where included), making it a more conservative
 approximation.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
 financial vulnerability in the nonprofit sector. \emph{Harvard Business School
@@ -94,16 +95,17 @@ Working Paper 04-016}.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded above at 1.0; unbounded below. Always equal to or greater than the
-post-depreciation margin (\code{\link{get_profit_margin_postdepr}}) since adding
+post-depreciation margin (\code{\link[=get_profit_margin_postdepr]{get_profit_margin_postdepr()}}) since adding
 back depreciation can only increase the margin. The typical range is approximately
 [-0.20, 0.40].
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item A pre-depreciation margin above zero with a post-depreciation margin below
 zero is a common and generally manageable pattern for capital-intensive nonprofits.
@@ -112,12 +114,14 @@ deficit, not just an accounting loss.
 \item The spread between the two margins approximates depreciation / revenue,
 which indicates the rate of capital consumption relative to revenue.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{revenue})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{expenses})
 \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
+}
 }
 }
 \examples{

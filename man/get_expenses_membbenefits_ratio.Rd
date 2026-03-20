@@ -15,10 +15,9 @@ get_expenses_membbenefits_ratio( df,
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
 \item{member_benefits}{Benefits paid to or for members (total).
-(On 990: Part IX, line 4 Column A; \code{F9_09_EXP_BEN_PAID_MEMB_TOT} (scope: 990 + 990EZ))}
+)}
 
-\item{total_expenses}{Total functional expenses.
-(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +28,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{expenses_membbenefits}, \code{expenses_membbenefits_w},
-\code{expenses_membbenefits_z}, \code{expenses_membbenefits_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{expenses_membbenefits} (raw ratio)
+\item \code{expenses_membbenefits_w} (winsorized)
+\item \code{expenses_membbenefits_z} (z-score)
+\item \code{expenses_membbenefits_p} (percentile rank, 1-100)
+}
 }
 \description{
 Benefits paid to or for members as a share of total expenses.
@@ -44,42 +47,47 @@ Benefits paid to or for members as a share of total expenses.
 \strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The member benefits expense ratio measures the share of total functional expenses
 paid out as direct benefits to members. Primarily relevant for membership associations
 (unions, trade associations, professional societies) where member benefit payments
 are a core activity. For most public benefit nonprofits this ratio is near zero.
+}
 
-\strong{Formula}
+\subsection{Formula}{
 
 Benefits paid to or for members (Part IX line 4, Column A) / total expenses.
-PZ scope — available to both 990 and 990EZ filers.
+PZ scope - available to both 990 and 990EZ filers.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Near zero for most public benefit charities; potentially high
 (above 0.50) for mutual benefit organizations.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Interpret in the context of the organization's exempt purpose and subsection code.
 \item Non-zero values for 501(c)(3) organizations should be reviewed for compliance
 with private benefit restrictions.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_09_EXP_BEN_PAID_MEMB_TOT}: Benefits paid to members (\code{member_benefits})
+\item \code{F9_09_EXP_BEN_PAID_MEMB_TOT}:
+Benefits paid to members (\code{member_benefits})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 }
 \examples{

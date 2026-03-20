@@ -17,11 +17,11 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param cash Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})
-#' @param savings Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})
-#' @param accounts_payable Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})
-#' @param grants_payable Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param cash Cash on hand, EOY.
+#' @param savings Short-term investments (savings), EOY.
+#' @param accounts_payable Accounts payable and accrued expenses, EOY.
+#' @param grants_payable Grants and similar amounts payable, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -35,17 +35,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{cash_liq}   — cash ratio (raw)
-#'     \item \code{cash_liq_w} — winsorized version
-#'     \item \code{cash_liq_z} — standardized z-score (based on winsorized values)
-#'     \item \code{cash_liq_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `cash_liq`   - cash ratio (raw)
+#'     - `cash_liq_w` - winsorized version
+#'     - `cash_liq_z` - standardized z-score (based on winsorized values)
+#'     - `cash_liq_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The cash liquidity ratio is the most conservative liquidity test: it asks whether
 #' an organization could cover its most immediate obligations using only cash and
@@ -55,11 +55,11 @@
 #' contracts, multi-year pledge collections), it provides a pessimistic but useful
 #' lower bound on liquidity.
 #'
-#' This ratio is stricter than both the quick ratio (\code{\link{get_quick_ratio}})
-#' and the current ratio (\code{\link{get_current_ratio}}), which both include
+#' This ratio is stricter than both the quick ratio ([get_quick_ratio()])
+#' and the current ratio ([get_current_ratio()]), which both include
 #' receivables in the numerator.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The commercial equivalent (sometimes called the "super-quick" ratio) uses only
 #' cash and marketable securities. The nonprofit version here uses cash (line 1B) plus
@@ -67,58 +67,60 @@
 #' grants payable as the denominator. This follows the same liability proxy used across
 #' the package (Tuckman & Chang 1991).
 #'
-#' \strong{Why this formula was chosen}
+#' ## Why this formula was chosen
 #'
 #' Cash and savings are the two fields on the 990 that most unambiguously represent
 #' immediately available funds. The denominator (accounts payable + grants payable)
 #' represents the most pressing and legally enforceable near-term obligations. Together
 #' this pair provides the most conservative 990-based liquidity measure available.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-#'     for Nonprofit Organizations}. Wiley.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
+#'   - Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+#'     for Nonprofit Organizations*. Wiley.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
 #' current payables. The empirical range for nonprofits is approximately \[0, 20\],
 #' with most values between 0.1 and 5.0. Very high values are common for grant-making
 #' foundations and endowed organizations that carry minimal accounts payable.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Values below 0.5 suggest the organization cannot cover even half of its
+#'
+#'   - Values below 0.5 suggest the organization cannot cover even half of its
 #'     near-term payables from cash alone and is reliant on receivables collection
 #'     or short-term borrowing to meet obligations.
-#'   \item Values of 1.0 or above indicate full cash coverage of current liabilities.
-#'   \item Because this is a highly conservative measure, values somewhat below 1.0
+#'   - Values of 1.0 or above indicate full cash coverage of current liabilities.
+#'   - Because this is a highly conservative measure, values somewhat below 1.0
 #'     are normal and not necessarily problematic if receivables are healthy.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand, EOY (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (\code{savings})
-#'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
-#'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
+#'   - `F9_10_ASSET_SAVING_EOY`: Savings and temporary cash investments, EOY (`savings`)
+#'   - `F9_10_LIAB_ACC_PAYABLE_EOY`: 
+#'     Accounts payable and accrued expenses, EOY (`accounts_payable`)
+#'   - `F9_10_LIAB_GRANT_PAYABLE_EOY`: 
+#'     Grants and similar amounts payable, EOY (`grants_payable`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

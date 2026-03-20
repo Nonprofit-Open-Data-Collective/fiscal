@@ -5,21 +5,21 @@
 #' Compute all fiscal health metrics in one call
 #'
 #' @description
-#' Applies every \code{get_*()} ratio function in the \code{fiscal} package to
+#' Applies every `get_*()` ratio function in the `fiscal` package to
 #' a data frame in a single call. The data frame is sanitized once up front
-#' using \code{\link{sanitize_financials}}, then each function is called with
-#' \code{sanitize = FALSE} to avoid redundant imputation passes.
+#' using [sanitize_financials()], then each function is called with
+#' `sanitize = FALSE` to avoid redundant imputation passes.
 #'
-#' @param df A \code{data.frame} containing IRS 990 efile financial fields.
+#' @param df A `data.frame` containing IRS 990 efile financial fields.
 #' @param metrics Character vector of metric variants to return. Any combination
-#'   of \code{"ratio"}, \code{"w"}, \code{"z"}, \code{"p"}. Defaults to all four.
-#' @param append_to_df Logical. If \code{TRUE} (default), returns the original
-#'   \code{df} with metric columns appended. If \code{FALSE}, returns only
-#'   \code{.IDVARS} identifier columns plus the selected metric columns.
-#' @param winsorize Winsorization proportion (default \code{0.98}).
-#' @param verbose Logical. If \code{TRUE} (default), prints progress messages.
+#'   of `"ratio"`, `"w"`, `"z"`, `"p"`. Defaults to all four.
+#' @param append_to_df Logical. If `TRUE` (default), returns the original
+#'   `df` with metric columns appended. If `FALSE`, returns only
+#'   `.IDVARS` identifier columns plus the selected metric columns.
+#' @param winsorize Winsorization proportion (default `0.98`).
+#' @param verbose Logical. If `TRUE` (default), prints progress messages.
 #'
-#' @return A \code{data.frame}.
+#' @return A `data.frame`.
 #'
 #' @examples
 #' library( fiscal )

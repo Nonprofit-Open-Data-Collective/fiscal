@@ -15,12 +15,11 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param liabilities Total liabilities, EOY. Accepts one or two column names; if two are
 #'   provided they are coalesced with the 990 value taking priority over 990EZ.
-#'   (On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
-#'   On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})
-#' @param net_assets Unrestricted net assets, EOY. (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY})
+#'
+#' @param net_assets Unrestricted net assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -32,72 +31,73 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{debt_netassets}   — debt to net assets ratio (raw)
-#'     \item \code{debt_netassets_w} — winsorized version
-#'     \item \code{debt_netassets_z} — standardized z-score (based on winsorized values)
-#'     \item \code{debt_netassets_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `debt_netassets`   - debt to net assets ratio (raw)
+#'     - `debt_netassets_w` - winsorized version
+#'     - `debt_netassets_z` - standardized z-score (based on winsorized values)
+#'     - `debt_netassets_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The debt to net assets ratio compares total liabilities to unrestricted net assets,
-#' similar to \code{\link{get_debt_equity_ratio}}. The key distinction is in scope:
+#' similar to [get_debt_equity_ratio()]. The key distinction is in scope:
 #' this function accepts both 990 and 990EZ filers (PZ scope) because it can use the
-#' Part I liabilities field as a fallback for 990EZ filers, whereas \code{\link{get_debt_equity_ratio}}
+#' Part I liabilities field as a fallback for 990EZ filers, whereas [get_debt_equity_ratio()]
 #' requires the Part X unrestricted net assets breakdown which is only on the full 990.
 #'
 #' The practical use case for this function is cross-sectional analyses that include
-#' both 990 and 990EZ filers. For full-990-only datasets, \code{\link{get_debt_equity_ratio}}
+#' both 990 and 990EZ filers. For full-990-only datasets, [get_debt_equity_ratio()]
 #' provides a more precise measure.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
-#' See \code{\link{get_debt_equity_ratio}} for a full discussion of formula variations.
-#' This implementation uses \code{F9_10_NAFB_UNRESTRICT_EOY} as the denominator
+#' See [get_debt_equity_ratio()] for a full discussion of formula variations.
+#' This implementation uses `F9_10_NAFB_UNRESTRICT_EOY` as the denominator
 #' (unrestricted net assets, Part X line 27B) and falls back to the Part I summary
 #' liabilities field for the numerator when needed. The Part X unrestricted net assets
 #' field is not available on 990EZ, so 990EZ filers will have NA for this ratio.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
 #'
-#' Same as \code{\link{get_debt_equity_ratio}}: bounded below at zero when both
+#'
+#' ## Definitional range
+#'
+#' Same as [get_debt_equity_ratio()]: bounded below at zero when both
 #' numerator and denominator are positive; unbounded above; negative when unrestricted
 #' net assets are negative.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' See \code{\link{get_debt_equity_ratio}} for benchmarks. As a rule of thumb, values
+#' See [get_debt_equity_ratio()] for benchmarks. As a rule of thumb, values
 #' above 3.0-5.0 are commonly flagged as high leverage in the nonprofit vulnerability
 #' literature.
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{liabilities}, 990)
-#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{liabilities}, 990EZ fallback)
-#'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{net_assets})
-#' }
+#' ## Variables used:
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`liabilities`, 990)
+#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I (`liabilities`, 990EZ fallback)
+#'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
+#'     Unrestricted net assets, EOY (`net_assets`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

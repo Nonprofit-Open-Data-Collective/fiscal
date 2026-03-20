@@ -2,30 +2,26 @@
 ###   PROGRAM EXPENSE RATIO
 ###---------------------------------------------------
 
-#' @title Program Expense Ratio
+#' @title
+#' Program Expense Ratio
 #'
 #' @description
 #' Share of total expenses devoted to program services.
 #'
-#' **Formula**
+#' **Formula:**
+#' ```
+#' per = program_expenses / total_expenses
+#' ```
 #'
-#' `per = program_expenses / total_expenses`
+#' **Calculated For:** 990 + 990EZ filers.
 #'
-#' **Calculated for:** 990 and 990-EZ filers.
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param program_expenses Program service expenses.
+#' @param total_expenses Total functional expenses. Accepts one or two column names; if two
+#'   are provided they are coalesced with the 990 value taking priority over 990EZ.
 #'
-#' @param df A data.frame containing the fields required for computing the metric.
-#' @param program_expenses Program service expenses
-#'   (Form 990, Part IX, line 25B; `F9_09_EXP_TOT_PROG`).
-#' @param total_expenses Total functional expenses. Accepts one or two column names;
-#'   if two are provided, they are coalesced with the 990 value taking priority over
-#'   the 990-EZ value. Sources include Form 990, Part IX, line 25A
-#'   (`F9_09_EXP_TOT_TOT`) and Form 990-EZ, Part I, line 17
-#'   (`F9_01_EXP_TOT_CY`).
-#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
-#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for missing
-#'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
-#'   statistics and density plots for all four output columns.
+#' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
+#'   winsorizes at the 1st and 99th percentiles.
 #'
 #' @usage
 #' get_program_expenses_ratio( df,
@@ -35,83 +31,91 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return The original data.frame with four appended columns:
-#' - `prog_exp`: raw program expense ratio
-#' - `prog_exp_w`: winsorized ratio
-#' - `prog_exp_z`: standardized z-score based on winsorized values
-#' - `prog_exp_p`: percentile rank
+#' @return Object of class `data.frame`: the original dataframe appended with four
+#'   new columns:
+#'
+#'     - `prog_exp`   - program expense ratio (raw)
+#'     - `prog_exp_w` - winsorized version
+#'     - `prog_exp_z` - standardized z-score (based on winsorized values)
+#'     - `prog_exp_p` - percentile rank (1-100)
+#'
 #'
 #' @details
 #' ## Primary uses and key insights
 #'
-#' The program expense ratio is one of the most widely cited metrics in nonprofit
-#' financial analysis. It measures the share of total expenses devoted directly to
-#' mission-related program services, as opposed to management, administration, and
-#' fundraising. It is commonly used in charity ratings and by donors, funders, and
-#' boards as a shorthand measure of financial efficiency.
+#' The program expense ratio is arguably the most widely cited single metric in
+#' nonprofit financial analysis. It measures what fraction of total expenses is devoted
+#' directly to mission-related program services, as opposed to management, administration,
+#' and fundraising. It is the primary basis for charity rating systems (Charity Navigator,
+#' Better Business Bureau Wise Giving Alliance) and is commonly used by donors, funders,
+#' and board members as a shorthand efficiency measure.
 #'
-#' It is also one of the most criticized metrics in the literature. The measure can
-#' be gamed through cost allocation practices, overhead is often necessary for long-term
-#' effectiveness, and the "ideal" ratio varies substantially by mission, scale, and
-#' organizational model.
+#' However, it is also one of the most criticized metrics in the literature because it
+#' can be gamed (by misallocating shared costs to programs), because overhead is
+#' necessary for organizational effectiveness, and because the "ideal" program ratio
+#' varies substantially by mission type and operating model.
 #'
-#' ## Formula variations and sources
+#' ## Formula variations and their sources
 #'
-#' The standard formulation is program service expenses divided by total functional
-#' expenses, using Form 990 Part IX line 25B divided by line 25A.
-#'
-#' For 990-EZ filers, total expenses from Part I may be used as a denominator fallback.
-#' However, because the 990-EZ does not separately report program expenses, this ratio
-#' is primarily meaningful for full Form 990 filers.
+#' Program service expenses / total functional expenses (Part IX line 25B / line 25A).
+#' For 990EZ filers, Part I total expenses is used as the denominator fallback; however,
+#' the 990EZ does not separately report program expenses, so this ratio is primarily
+#' meaningful for full-990 filers.
 #'
 #' An alternative formulation uses total revenue rather than total expenses in the
-#' denominator, but the expense-based version is more standard and avoids distortions
-#' caused by surplus or deficit years.
+#' denominator, but the expense-to-expense version is standard and avoids distortions
+#' from surplus or deficit years.
 #'
 #' ## Canonical citations
 #'
-#' - Tuckman, H.P. and Chang, C.F. (1991). A methodology for measuring the financial
-#'   vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
-#'   Sector Quarterly*, 20(4), 445-460.
-#' - Charity Navigator, *Financial Health Methodology*. Uses the program expense ratio
-#'   as a major rating component.
-#' - Lecy, J.D. and Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
-#'   *Nonprofit and Voluntary Sector Quarterly*, 44(3), 539-563.
-#' - Overhead Myth Campaign (GuideStar, BBB Wise Giving Alliance, Charity Navigator,
-#'   2013). Industry statement cautioning against overreliance on overhead ratios.
+#'
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
+#'   - Charity Navigator. *Financial Health Methodology*. charitynavigator.org.
+#'     - Uses program expense ratio as a primary rating component (target: 75 percent or more).
+#'   - Lecy, J.D. & Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
+#'     *Nonprofit and Voluntary Sector Quarterly*, 44(3), 539-563. - Critical
+#'     analysis of program expense ratio benchmarks and their perverse incentives.
+#'   - Overhead Myth Campaign (GuideStar, BBB Wise Giving, Charity Navigator, 2013).
+#'     - Industry statement cautioning against overreliance on overhead ratios.
+#'
 #'
 #' ## Definitional range
 #'
-#' The ratio is bounded between 0 and 1. A value of 0 indicates no spending on
-#' programs, while a value of 1 indicates that all reported spending is allocated to
-#' programs. In practice, values above 0.95 are unusual and may reflect accounting
-#' allocation choices. The empirical range for many operating nonprofits is roughly
-#' 0.50 to 0.95.
+#' Bounded zero to one. Zero means no spending on programs (all overhead); one means
+#' all spending is on programs (no administration or fundraising). In practice, values
+#' above 0.95 are unusual and may reflect accounting misallocation. The empirical
+#' range for most operating nonprofits is approximately 0.50 to 0.95.
 #'
 #' ## Benchmarks and rules of thumb
 #'
-#' - `>= 75%`: Charity Navigator threshold for a favorable efficiency score.
-#' - `>= 65%`: BBB Wise Giving Alliance minimum standard.
-#' - `< 50%`: Often flagged as a concern, though it may be legitimate for organizations
-#'   in startup phases or those with unusually high fundraising requirements.
-#' - Very high program ratios can sometimes reflect underinvestment in administrative
-#'   capacity rather than true efficiency.
 #'
-#' ## Variables used
+#'   - **75 percent or more**: Charity Navigator's threshold for a favorable efficiency score.
+#'   - **65 percent or more**: BBB Wise Giving Alliance minimum standard.
+#'   - **Below 50 percent**: Commonly flagged as a concern, though legitimate for
+#'     organizations in startup phases or those with high fundraising requirements.
+#'   - Caution: high program ratios achieved by underinvesting in administration
+#'     (the "starvation cycle") can signal long-term organizational weakness despite
+#'     appearing efficient in the short term (Lecy & Searing 2015).
 #'
-#' - `F9_09_EXP_TOT_PROG`: Program service expenses (`program_expenses`, Form 990)
-#' - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`, Form 990)
-#' - `F9_01_EXP_TOT_CY`: Total expenses (`total_expenses`, 990-EZ fallback)
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_09_EXP_TOT_PROG`: Program service expenses (`program_expenses`, 990)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`, 990)
+#'   - `F9_01_EXP_TOT_CY`: Total expenses from Part I (`total_expenses`, 990EZ fallback)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

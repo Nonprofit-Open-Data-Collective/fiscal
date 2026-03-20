@@ -17,14 +17,14 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param accounts_payable Accounts payable and accrued expenses, EOY. (On 990: Part X, line 17B; \code{F9_10_LIAB_ACC_PAYABLE_EOY})
-#' @param grants_payable Grants and similar amounts payable, EOY. (On 990: Part X, line 18B; \code{F9_10_LIAB_GRANT_PAYABLE_EOY})
-#' @param net_assets Total net assets, EOY. (On 990: Part X, line 33B; \code{F9_10_NAFB_TOT_EOY})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param accounts_payable Accounts payable and accrued expenses, EOY.
+#' @param grants_payable Grants and similar amounts payable, EOY.
+#' @param net_assets Total net assets, EOY.
 #' @param numerator Optional. A pre-aggregated column for short-term liabilities. Cannot be
-#'   combined with \code{accounts_payable} or \code{grants_payable}.
+#'   combined with `accounts_payable` or `grants_payable`.
 #' @param denominator Optional. A pre-aggregated column for the denominator. Cannot be
-#'   combined with \code{net_assets}.
+#'   combined with `net_assets`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -37,17 +37,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{debt_shortterm}   — short term debt ratio (raw)
-#'     \item \code{debt_shortterm_w} — winsorized version
-#'     \item \code{debt_shortterm_z} — standardized z-score (based on winsorized values)
-#'     \item \code{debt_shortterm_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `debt_shortterm`   - short term debt ratio (raw)
+#'     - `debt_shortterm_w` - winsorized version
+#'     - `debt_shortterm_z` - standardized z-score (based on winsorized values)
+#'     - `debt_shortterm_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The short term debt ratio measures what share of total net assets is represented
 #' by near-term payables (accounts payable plus grants payable). It is a measure of
@@ -59,7 +59,7 @@
 #' total liabilities or total assets. This measures the short-term burden relative to
 #' the equity cushion.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' Some formulations use total current liabilities (including all short-term items) /
 #' total net assets. This implementation uses accounts payable plus grants payable as
@@ -68,48 +68,50 @@
 #' line 33B) is used as the denominator rather than unrestricted net assets, for
 #' broader applicability.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero when net assets are positive. Negative values occur when net
 #' assets are negative (accumulated deficit), which makes the ratio uninterpretable as
 #' a burden measure. Unbounded above when net assets approach zero. Typical values for
 #' financially stable nonprofits are in the \[0, 0.30\] range.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Values below 0.10 indicate that short-term payables are modest relative to
-#'     the equity base — a comfortable position.
-#'   \item Values above 0.30 suggest that near-term obligations are placing meaningful
+#'
+#'   - Values below 0.10 indicate that short-term payables are modest relative to
+#'     the equity base - a comfortable position.
+#'   - Values above 0.30 suggest that near-term obligations are placing meaningful
 #'     pressure on net assets.
-#'   \item Organizations with very low net assets may show very high or unstable ratios
+#'   - Organizations with very low net assets may show very high or unstable ratios
 #'     even with normal payables levels.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses, EOY (\code{accounts_payable})
-#'   \item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable, EOY (\code{grants_payable})
-#'   \item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{net_assets})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_LIAB_ACC_PAYABLE_EOY`: 
+#'     Accounts payable and accrued expenses, EOY (`accounts_payable`)
+#'   - `F9_10_LIAB_GRANT_PAYABLE_EOY`: 
+#'     Grants and similar amounts payable, EOY (`grants_payable`)
+#'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`net_assets`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

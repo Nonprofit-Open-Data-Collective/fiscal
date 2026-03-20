@@ -15,14 +15,12 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param program_service_rev Program service revenue. Accepts one or two column names;
 #'   if two are provided they are coalesced with the 990 value taking priority over 990EZ.
-#'   (On 990: Part VIII, line 2g; \code{F9_08_REV_PROG_TOT_TOT};
-#'   On EZ: Part I, line 2; \code{F9_01_REV_PROG_TOT_CY})
+#'
 #' @param total_expenses Total functional expenses. Accepts one or two column names.
-#'   (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT};
-#'   On EZ: Part I, line 17; \code{F9_01_EXP_TOT_CY})
+#'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -34,17 +32,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{self_suff}   — self sufficiency ratio (raw)
-#'     \item \code{self_suff_w} — winsorized version
-#'     \item \code{self_suff_z} — standardized z-score (based on winsorized values)
-#'     \item \code{self_suff_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `self_suff`   - self sufficiency ratio (raw)
+#'     - `self_suff_w` - winsorized version
+#'     - `self_suff_z` - standardized z-score (based on winsorized values)
+#'     - `self_suff_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The self-sufficiency ratio (SSR) measures whether an organization's earned program
 #' service revenue is sufficient to cover its total expenses. A ratio of 1.0 means
@@ -58,7 +56,7 @@
 #' sometimes considered more financially resilient because earned revenue is more
 #' predictable and controllable than philanthropic support.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' Program service revenue / total expenses. Some studies (Young 2007) use total
 #' earned income (including membership dues and investment income) in the numerator
@@ -66,57 +64,57 @@
 #' revenue only, consistent with the most common definition in the financial
 #' vulnerability literature.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Young, D.R. (2007). Financing nonprofits: Putting theory into practice.
-#'     AltaMira Press. — Extensive discussion of earned income and self-sufficiency
+#'
+#'   - Young, D.R. (2007). Financing nonprofits: Putting theory into practice.
+#'     AltaMira Press. - Extensive discussion of earned income and self-sufficiency
 #'     concepts.
-#'   \item Weisbrod, B.A. (1998). The nonprofit mission and its financing.
-#'     \emph{Journal of Policy Analysis and Management}, 17(2), 165-174. — Examines
+#'   - Weisbrod, B.A. (1998). The nonprofit mission and its financing.
+#'     *Journal of Policy Analysis and Management*, 17(2), 165-174. - Examines
 #'     the tension between earned income and mission.
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#' }
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero; values above 1.0 are possible (and indicate program revenue
-#' exceeds total expenses — a surplus from earned income alone). The typical range for
+#' exceeds total expenses - a surplus from earned income alone). The typical range for
 #' nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
 #' nonprofits depend on some contributed income.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item \strong{SSR > 1.0}: Fully self-sufficient from program revenue; uncommon
+#'
+#'   - **SSR > 1.0**: Fully self-sufficient from program revenue; uncommon
 #'     but characteristic of mature social enterprises and fee-based service providers.
-#'   \item \strong{SSR 0.50-1.0}: Majority of costs covered by program revenue;
+#'   - **SSR 0.50-1.0**: Majority of costs covered by program revenue;
 #'     moderate philanthropy dependence.
-#'   \item \strong{SSR < 0.25}: Heavily dependent on contributed income; common for
+#'   - **SSR < 0.25**: Heavily dependent on contributed income; common for
 #'     advocacy organizations, arts nonprofits, and grant-funded research entities.
-#'   \item High SSR is not universally better — organizations serving low-income
+#'   - High SSR is not universally better - organizations serving low-income
 #'     populations often cannot charge market-rate fees and require subsidy by design.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev}, 990)
-#'   \item \code{F9_01_REV_PROG_TOT_CY}: Program revenue from Part I (\code{program_service_rev}, 990EZ fallback)
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, 990)
-#'   \item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ fallback)
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_PROG_TOT_TOT`: Program service revenue (`program_service_rev`, 990)
+#'   - `F9_01_REV_PROG_TOT_CY`: Program revenue from Part I (`program_service_rev`, 990EZ fallback)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`, 990)
+#'   - `F9_01_EXP_TOT_CY`: Total expenses from Part I (`total_expenses`, 990EZ fallback)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

@@ -16,14 +16,9 @@ get_return_netassets_ratio( df,
 
 \item{revenues_less_expenses}{Revenues less expenses (net surplus or deficit) for the
 current year. Accepts one or two column names; if two are provided they are coalesced
-with the 990 value taking priority over 990EZ.
-(On 990: Part I, line 19 CY; \code{F9_01_EXP_REV_LESS_EXP_CY};
-If \code{F9_01_EXP_REV_LESS_EXP_CY} is unavailable, it is computed as
-\code{F9_01_REV_TOT_CY} minus \code{F9_01_EXP_TOT_CY}.)}
+with the 990 value taking priority over 990EZ.}
 
-\item{net_assets_boy}{Total net assets, beginning of year. Accepts one or two column names.
-(On 990: Part X, line 33A; \code{F9_10_NAFB_TOT_BOY};
-On EZ: Part I, line 22 BOY; \code{F9_01_NAFB_TOT_BOY})}
+\item{net_assets_boy}{Total net assets, beginning of year. Accepts one or two column names.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -41,12 +36,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{return_netassets}   — return on net assets (raw)
-\item \code{return_netassets_w} — winsorized version
-\item \code{return_netassets_z} — standardized z-score (based on winsorized values)
-\item \code{return_netassets_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `return_netassets`   - return on net assets (raw)
+- `return_netassets_w` - winsorized version
+- `return_netassets_z` - standardized z-score (based on winsorized values)
+- `return_netassets_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Net surplus or deficit as a share of beginning-of-year net assets.
@@ -59,20 +54,21 @@ Net surplus or deficit as a share of beginning-of-year net assets.
 \strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 Return on net assets (RONA) measures how effectively the organization used its equity
 base to generate a surplus. By using beginning-of-year net assets as the denominator,
 it expresses the annual surplus as a percentage return on the organizational equity
-in place at the start of the year — analogous to return on equity (ROE) in commercial
+in place at the start of the year - analogous to return on equity (ROE) in commercial
 finance.
 
-RONA is closely related to \code{\link{get_netassets_growth_ratio}}: both measure
+RONA is closely related to \code{\link[=get_netassets_growth_ratio]{get_netassets_growth_ratio()}}: both measure
 year-over-year equity change, but RONA uses the reported revenues-less-expenses figure
 while the growth ratio uses the direct balance sheet comparison (EOY - BOY). The two
 can differ when there are other net asset adjustments (line 20 on Form 990 Part I).
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 Revenues less expenses / net assets BOY. Using beginning-of-year net assets in the
 denominator (rather than ending or average) avoids circular dependency: the ending
@@ -82,9 +78,9 @@ approach in the nonprofit literature (Greenlee & Trussel 2000).
 An alternative uses average net assets ((BOY + EOY)/2), which smooths distortions
 from large mid-year transactions, but requires two balance sheet fields and is
 not standard in the 990-based literature.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
 of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
@@ -94,16 +90,17 @@ financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
 \item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Unbounded in both directions. A value of 0 means break-even. The typical range for
 nonprofits is approximately [-0.30, 0.30]. The ratio is undefined (NA) when
 beginning net assets equal zero. Extreme values occur when BOY net assets are near
 zero (small denominator) rather than when the surplus itself is large.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Small positive values (0.02 to 0.10) are considered healthy.
 \item Sustained negative RONA over multiple years is a financial vulnerability
@@ -111,12 +108,15 @@ indicator (Greenlee & Trussel 2000).
 \item Like all ratio measures, RONA is most useful in trend analysis and
 within-subsector comparisons rather than as an absolute benchmark.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenues less expenses, current year (\code{revenues_less_expenses})
+\item \code{F9_01_EXP_REV_LESS_EXP_CY}:
+Revenues less expenses, current year (\code{revenues_less_expenses})
 \item \code{F9_10_NAFB_TOT_BOY}: Total net assets, BOY (\code{net_assets_boy}, 990)
 \item \code{F9_01_NAFB_TOT_BOY}: Net assets from Part I, BOY (\code{net_assets_boy}, 990EZ fallback)
+}
 }
 }
 \examples{

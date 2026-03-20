@@ -15,12 +15,11 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param total_assets Total assets, EOY. (On 990: Part X, line 16B; On EZ: Part II, line 25B; \code{F9_10_ASSET_TOT_EOY})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param total_assets Total assets, EOY.
 #' @param total_revenue Total revenue. Accepts one or two column names; if two are provided
 #'   they are coalesced with the 990 value taking priority over 990EZ.
-#'   (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT};
-#'   On EZ: Part I, line 9; \code{F9_01_REV_TOT_CY})
+#'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -32,31 +31,31 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{assets_rev}   — asset revenue ratio (raw)
-#'     \item \code{assets_rev_w} — winsorized version
-#'     \item \code{assets_rev_z} — standardized z-score (based on winsorized values)
-#'     \item \code{assets_rev_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `assets_rev`   - asset revenue ratio (raw)
+#'     - `assets_rev_w` - winsorized version
+#'     - `assets_rev_z` - standardized z-score (based on winsorized values)
+#'     - `assets_rev_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The asset revenue ratio measures how many dollars of assets are held per dollar of
 #' annual revenue. It is an asset intensity measure: capital-intensive organizations
 #' (hospitals, universities, housing providers with large real estate portfolios) show
 #' high ratios; lean operating nonprofits show low ratios. It can also be interpreted
 #' as an approximate measure of how long the organization could theoretically operate
-#' on its asset base — though this is not a direct liquidity measure.
+#' on its asset base - though this is not a direct liquidity measure.
 #'
 #' A related interpretation is efficiency: a lower ratio may indicate more efficient
 #' use of assets to generate revenue, though this is not universally true for nonprofits
 #' where asset accumulation may reflect reserve-building rather than operational
 #' inefficiency.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' Total assets EOY / total revenue. The inverse (revenue / assets) is sometimes called
 #' the asset turnover ratio and is more common in commercial analysis. For nonprofits,
@@ -65,49 +64,49 @@
 #' the denominator to account for mid-year asset changes, but the EOY value is used
 #' here for consistency and data availability.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
-#'     compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
-#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
-#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
+#'     compensation in nonprofit organizations. *Policy and Society*, 20(4), 94-112.
+#'   - Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
 #' Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
 #' organizations and capital-intensive nonprofits may show values of 10 or higher.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item There is no universal benchmark. The ratio is most meaningful for
+#'
+#'   - There is no universal benchmark. The ratio is most meaningful for
 #'     within-subsector comparisons.
-#'   \item A ratio below 1.0 means annual revenue exceeds total assets — common for
+#'   - A ratio below 1.0 means annual revenue exceeds total assets - common for
 #'     lean service organizations with minimal physical assets.
-#'   \item Very high ratios (above 10) typically indicate either a capital-heavy asset
+#'   - Very high ratios (above 10) typically indicate either a capital-heavy asset
 #'     base (real estate, equipment) or a small revenue base relative to accumulated
 #'     assets (endowed organizations).
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, end of year (\code{total_assets}, 990)
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue from Part VIII (\code{total_revenue}, 990)
-#'   \item \code{F9_01_REV_TOT_CY}: Total revenue from Part I (\code{total_revenue}, 990EZ fallback)
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, end of year (`total_assets`, 990)
+#'   - `F9_08_REV_TOT_TOT`: Total revenue from Part VIII (`total_revenue`, 990)
+#'   - `F9_01_REV_TOT_CY`: Total revenue from Part I (`total_revenue`, 990EZ fallback)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

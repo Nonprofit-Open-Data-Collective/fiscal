@@ -12,18 +12,15 @@ get_program_expenses_ratio( df,
   summarize = FALSE )
 }
 \arguments{
-\item{df}{A data.frame containing the fields required for computing the metric.}
+\item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{program_expenses}{Program service expenses
-(Form 990, Part IX, line 25B; \code{F9_09_EXP_TOT_PROG}).}
+\item{program_expenses}{Program service expenses.}
 
-\item{total_expenses}{Total functional expenses. Accepts one or two column names;
-if two are provided, they are coalesced with the 990 value taking priority over
-the 990-EZ value. Sources include Form 990, Part IX, line 25A
-(\code{F9_09_EXP_TOT_TOT}) and Form 990-EZ, Part I, line 17
-(\code{F9_01_EXP_TOT_CY}).}
+\item{total_expenses}{Total functional expenses. Accepts one or two column names; if two
+are provided they are coalesced with the 990 value taking priority over 990EZ.}
 
-\item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+\item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
+winsorizes at the 1st and 99th percentiles.}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -36,91 +33,97 @@ the results and plots density curves for all four output columns
 (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
 }
 \value{
-The original data.frame with four appended columns:
-\itemize{
-\item \code{prog_exp}: raw program expense ratio
-\item \code{prog_exp_w}: winsorized ratio
-\item \code{prog_exp_z}: standardized z-score based on winsorized values
-\item \code{prog_exp_p}: percentile rank
-}
+Object of class \code{data.frame}: the original dataframe appended with four
+new columns:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `prog_exp`   - program expense ratio (raw)
+- `prog_exp_w` - winsorized version
+- `prog_exp_z` - standardized z-score (based on winsorized values)
+- `prog_exp_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Share of total expenses devoted to program services.
 
-\strong{Formula}
+\strong{Formula:}
 
-\code{per = program_expenses / total_expenses}
+\if{html}{\out{<div class="sourceCode">}}\preformatted{per = program_expenses / total_expenses
+}\if{html}{\out{</div>}}
 
-\strong{Calculated for:} 990 and 990-EZ filers.
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
 
-The program expense ratio is one of the most widely cited metrics in nonprofit
-financial analysis. It measures the share of total expenses devoted directly to
-mission-related program services, as opposed to management, administration, and
-fundraising. It is commonly used in charity ratings and by donors, funders, and
-boards as a shorthand measure of financial efficiency.
+The program expense ratio is arguably the most widely cited single metric in
+nonprofit financial analysis. It measures what fraction of total expenses is devoted
+directly to mission-related program services, as opposed to management, administration,
+and fundraising. It is the primary basis for charity rating systems (Charity Navigator,
+Better Business Bureau Wise Giving Alliance) and is commonly used by donors, funders,
+and board members as a shorthand efficiency measure.
 
-It is also one of the most criticized metrics in the literature. The measure can
-be gamed through cost allocation practices, overhead is often necessary for long-term
-effectiveness, and the "ideal" ratio varies substantially by mission, scale, and
-organizational model.
+However, it is also one of the most criticized metrics in the literature because it
+can be gamed (by misallocating shared costs to programs), because overhead is
+necessary for organizational effectiveness, and because the "ideal" program ratio
+varies substantially by mission type and operating model.
 }
 
-\subsection{Formula variations and sources}{
+\subsection{Formula variations and their sources}{
 
-The standard formulation is program service expenses divided by total functional
-expenses, using Form 990 Part IX line 25B divided by line 25A.
-
-For 990-EZ filers, total expenses from Part I may be used as a denominator fallback.
-However, because the 990-EZ does not separately report program expenses, this ratio
-is primarily meaningful for full Form 990 filers.
+Program service expenses / total functional expenses (Part IX line 25B / line 25A).
+For 990EZ filers, Part I total expenses is used as the denominator fallback; however,
+the 990EZ does not separately report program expenses, so this ratio is primarily
+meaningful for full-990 filers.
 
 An alternative formulation uses total revenue rather than total expenses in the
-denominator, but the expense-based version is more standard and avoids distortions
-caused by surplus or deficit years.
+denominator, but the expense-to-expense version is standard and avoids distortions
+from surplus or deficit years.
 }
 
 \subsection{Canonical citations}{
 \itemize{
-\item Tuckman, H.P. and Chang, C.F. (1991). A methodology for measuring the financial
+\item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
-\item Charity Navigator, \emph{Financial Health Methodology}. Uses the program expense ratio
-as a major rating component.
-\item Lecy, J.D. and Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
-\emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563.
-\item Overhead Myth Campaign (GuideStar, BBB Wise Giving Alliance, Charity Navigator,
-2013). Industry statement cautioning against overreliance on overhead ratios.
+\item Charity Navigator. \emph{Financial Health Methodology}. charitynavigator.org.
+\itemize{
+\item Uses program expense ratio as a primary rating component (target: 75 percent or more).
+}
+\item Lecy, J.D. & Searing, E.A. (2015). Anatomy of the nonprofit starvation cycle.
+\emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563. - Critical
+analysis of program expense ratio benchmarks and their perverse incentives.
+\item Overhead Myth Campaign (GuideStar, BBB Wise Giving, Charity Navigator, 2013).
+\itemize{
+\item Industry statement cautioning against overreliance on overhead ratios.
+}
 }
 }
 
 \subsection{Definitional range}{
 
-The ratio is bounded between 0 and 1. A value of 0 indicates no spending on
-programs, while a value of 1 indicates that all reported spending is allocated to
-programs. In practice, values above 0.95 are unusual and may reflect accounting
-allocation choices. The empirical range for many operating nonprofits is roughly
-0.50 to 0.95.
+Bounded zero to one. Zero means no spending on programs (all overhead); one means
+all spending is on programs (no administration or fundraising). In practice, values
+above 0.95 are unusual and may reflect accounting misallocation. The empirical
+range for most operating nonprofits is approximately 0.50 to 0.95.
 }
 
 \subsection{Benchmarks and rules of thumb}{
 \itemize{
-\item \verb{>= 75\%}: Charity Navigator threshold for a favorable efficiency score.
-\item \verb{>= 65\%}: BBB Wise Giving Alliance minimum standard.
-\item \verb{< 50\%}: Often flagged as a concern, though it may be legitimate for organizations
-in startup phases or those with unusually high fundraising requirements.
-\item Very high program ratios can sometimes reflect underinvestment in administrative
-capacity rather than true efficiency.
+\item \strong{75 percent or more}: Charity Navigator's threshold for a favorable efficiency score.
+\item \strong{65 percent or more}: BBB Wise Giving Alliance minimum standard.
+\item \strong{Below 50 percent}: Commonly flagged as a concern, though legitimate for
+organizations in startup phases or those with high fundraising requirements.
+\item Caution: high program ratios achieved by underinvesting in administration
+(the "starvation cycle") can signal long-term organizational weakness despite
+appearing efficient in the short term (Lecy & Searing 2015).
 }
 }
 
-\subsection{Variables used}{
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_09_EXP_TOT_PROG}: Program service expenses (\code{program_expenses}, Form 990)
-\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, Form 990)
-\item \code{F9_01_EXP_TOT_CY}: Total expenses (\code{total_expenses}, 990-EZ fallback)
+\item \code{F9_09_EXP_TOT_PROG}: Program service expenses (\code{program_expenses}, 990)
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses}, 990)
+\item \code{F9_01_EXP_TOT_CY}: Total expenses from Part I (\code{total_expenses}, 990EZ fallback)
 }
 }
 }

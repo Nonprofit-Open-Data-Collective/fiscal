@@ -18,17 +18,17 @@ get_months_cash_operations( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Short-term investments (savings), EOY.}
 
-\item{pledges_receivable}{Pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
+\item{pledges_receivable}{Pledges and grants receivable, EOY.}
 
-\item{accounts_receivable}{Accounts receivable, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
+\item{accounts_receivable}{Accounts receivable, EOY.}
 
-\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
-\item{depreciation}{Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})}
+\item{depreciation}{Depreciation, depletion, and amortization.}
 
 \item{numerator}{Optional. A pre-aggregated column name for liquid assets, bypassing the
 individual \code{cash}, \code{savings}, \code{pledges_receivable}, and
@@ -54,12 +54,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{months_cash_ops}   — months of operating cash on hand (raw)
-\item \code{months_cash_ops_w} — winsorized version
-\item \code{months_cash_ops_z} — standardized z-score (based on winsorized values)
-\item \code{months_cash_ops_p} — percentile rank (1–100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `months_cash_ops`   - months of operating cash on hand (raw)
+- `months_cash_ops_w` - winsorized version
+- `months_cash_ops_z` - standardized z-score (based on winsorized values)
+- `months_cash_ops_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Number of months the organization can operate using available liquid assets.
@@ -75,40 +75,44 @@ monthly_expenses = ( total_expenses - depreciation ) / 12
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
-Months of cash on hand is the monthly expression of \code{\link{get_days_cash_operations}},
+Months of cash on hand is the monthly expression of \code{\link[=get_days_cash_operations]{get_days_cash_operations()}},
 expressing the same liquidity concept in a unit that is more natural for annual
 budget planning and board reporting. It is one of the most commonly reported metrics
 in nonprofit financial dashboards and funder due diligence.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The denominator uses (total expenses - depreciation) / 12. Subtracting depreciation
 follows standard practice (Zietlow et al. 2007) because the ratio measures cash
 coverage of cash expenses. Some formulations use total expenses without the
 depreciation adjustment; others use a rolling 12-month average of monthly expenses
 to smooth seasonal variation, which is not possible with annual 990 data.
-
-\strong{Canonical citations}
-
-\itemize{
-\item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
-— Uses months of cash as a primary financial health indicator.
-\item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-for Nonprofit Organizations}. Wiley.
-\item GuideStar/Candid. \emph{Nonprofit Finance Indicators}. — Months of cash is
-one of the core metrics in the GuideStar financial health profile.
 }
 
-\strong{Definitional range}
+\subsection{Canonical citations}{
+\itemize{
+\item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
+\itemize{
+\item Uses months of cash as a primary financial health indicator.
+}
+\item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
+for Nonprofit Organizations}. Wiley.
+\item GuideStar/Candid. \emph{Nonprofit Finance Indicators}. - Months of cash is
+one of the core metrics in the GuideStar financial health profile.
+}
+}
+
+\subsection{Definitional range}{
 
 Bounded below at zero; unbounded above. The typical operating range for nonprofits
 is approximately [0, 24] months, with values above 12 months uncommon for
 operating organizations (more typical for foundations).
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item \strong{Less than 1 month}: Acute liquidity risk.
 \item \strong{1-3 months}: Below adequate; common recommendation is at least
@@ -119,15 +123,18 @@ organizations with volatile revenue or major capital needs on the horizon.
 \item The Nonprofit Finance Fund recommends 3-6 months as a target for most
 operating nonprofits.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
-\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable (\code{pledges_receivable})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}:
+Net pledges receivable (\code{pledges_receivable})
 \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
+}
 }
 }
 \examples{

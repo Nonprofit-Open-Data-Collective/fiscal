@@ -18,16 +18,16 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param program_service_rev Program service revenue. (On 990: Part VIII, line 2g; \code{F9_08_REV_PROG_TOT_TOT})
-#' @param membership_dues Membership dues and assessments. (On 990: Part VIII, line 4; \code{F9_08_REV_CONTR_MEMBSHIP_DUE})
-#' @param royalties Royalties. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_ROY_TOT})
-#' @param other_revenue Other miscellaneous revenue. (On 990: Part VIII, line 11e; \code{F9_08_REV_MISC_OTH_TOT})
-#' @param total_revenue Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param program_service_rev Program service revenue.
+#' @param membership_dues Membership dues and assessments.
+#' @param royalties Royalties.
+#' @param other_revenue Other miscellaneous revenue.
+#' @param total_revenue Total revenue.
 #' @param numerator Optional. A pre-aggregated column for earned revenue. Cannot be combined
 #'   with the individual component arguments.
 #' @param denominator Optional. A pre-aggregated column for total revenue. Cannot be combined
-#'   with \code{total_revenue}.
+#'   with `total_revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -42,22 +42,22 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{earned_income}   — earned income dependency ratio (raw)
-#'     \item \code{earned_income_w} — winsorized version
-#'     \item \code{earned_income_z} — standardized z-score (based on winsorized values)
-#'     \item \code{earned_income_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `earned_income`   - earned income dependency ratio (raw)
+#'     - `earned_income_w` - winsorized version
+#'     - `earned_income_z` - standardized z-score (based on winsorized values)
+#'     - `earned_income_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The earned income dependency ratio measures the combined share of revenue from
-#' program services, membership dues, royalties, and miscellaneous revenue — the
+#' program services, membership dues, royalties, and miscellaneous revenue - the
 #' sources that flow from the organization's own activities rather than from voluntary
-#' contributions. It is the revenue-side complement to \code{\link{get_self_sufficiency_ratio}},
+#' contributions. It is the revenue-side complement to [get_self_sufficiency_ratio()],
 #' which compares program revenue to total expenses.
 #'
 #' Organizations with high earned income ratios are often considered more financially
@@ -65,55 +65,56 @@
 #' preferences, though it also creates exposure to market competition and customer
 #' retention challenges.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' (Program service revenue + membership dues + royalties + other miscellaneous revenue)
 #' / total revenue (Part VIII lines 2g + 1b + 5 + 11d-11e / line 12A). This broad
 #' definition of earned income follows several studies (Young 2007). A narrower version
-#' uses only program service revenue (see \code{\link{get_revenue_programs_ratio}}).
+#' uses only program service revenue (see [get_revenue_programs_ratio()]).
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Young, D.R. (2007). \emph{Financing Nonprofits}. AltaMira Press.
-#'   \item Weisbrod, B.A. (1998). The nonprofit mission and its financing. \emph{Journal
-#'     of Policy Analysis and Management}, 17(2), 165-174.
-#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
-#'     \emph{VOLUNTAS}, 5(3), 273-290.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Young, D.R. (2007). *Financing Nonprofits*. AltaMira Press.
+#'   - Weisbrod, B.A. (1998). The nonprofit mission and its financing. *Journal
+#'     of Policy Analysis and Management*, 17(2), 165-174.
+#'   - Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     *VOLUNTAS*, 5(3), 273-290.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\]. Organizations heavily reliant on philanthropy show values near
 #' zero; fee-based service providers may show values above 0.90.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item No universal threshold. Context matters: an advocacy organization is expected
+#'
+#'   - No universal threshold. Context matters: an advocacy organization is expected
 #'     to show a low earned income ratio; a hospital is expected to show a high one.
-#'   \item Used in revenue concentration studies: a low ratio combined with high donation
+#'   - Used in revenue concentration studies: a low ratio combined with high donation
 #'     dependence indicates philanthropic concentration risk.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev})
-#'   \item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Membership dues (\code{membership_dues})
-#'   \item \code{F9_08_REV_OTH_ROY_TOT}: Royalties (\code{royalties})
-#'   \item \code{F9_08_REV_MISC_OTH_TOT}: Other miscellaneous revenue (\code{other_revenue})
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_PROG_TOT_TOT`: Program service revenue (`program_service_rev`)
+#'   - `F9_08_REV_CONTR_MEMBSHIP_DUE`: 
+#'     Membership dues (`membership_dues`)
+#'   - `F9_08_REV_OTH_ROY_TOT`: Royalties (`royalties`)
+#'   - `F9_08_REV_MISC_OTH_TOT`: Other miscellaneous revenue (`other_revenue`)
+#'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

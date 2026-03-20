@@ -14,11 +14,9 @@ get_revenue_membdues_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{membership_dues}{Membership dues received.
-(On 990: Part VIII, line 1b; \code{F9_08_REV_CONTR_MEMBSHIP_DUE})}
+\item{membership_dues}{Membership dues received.}
 
-\item{total_revenue}{Total revenue.
-(On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{revenue_membdues}, \code{revenue_membdues_w},
-\code{revenue_membdues_z}, \code{revenue_membdues_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{revenue_membdues} (raw ratio)
+\item \code{revenue_membdues_w} (winsorized)
+\item \code{revenue_membdues_z} (z-score)
+\item \code{revenue_membdues_p} (percentile rank, 1-100)
+}
 }
 \description{
 Membership dues as a share of total revenue.
@@ -44,14 +46,14 @@ Membership dues as a share of total revenue.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Revenue Membdues Ratio — Revenue composition measure}
+\subsection{Revenue Membdues Ratio - Revenue composition measure}{
 
 Formula: membership dues / total revenue. Bounded [0, 1].
 
 Membership dues provide relatively predictable recurring revenue tied to member retention. A high ratio indicates a membership-model organization whose financial health depends on maintaining and growing the member base.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -59,11 +61,13 @@ Membership dues provide relatively predictable recurring revenue tied to member 
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Numerator (\code{membership_dues})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 }
 \examples{

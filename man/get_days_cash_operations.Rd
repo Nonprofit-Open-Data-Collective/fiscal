@@ -18,17 +18,17 @@ get_days_cash_operations( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{cash}{Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})}
+\item{cash}{Cash on hand, EOY.}
 
-\item{savings}{Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})}
+\item{savings}{Short-term investments (savings), EOY.}
 
-\item{pledges_receivable}{Net pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})}
+\item{pledges_receivable}{Net pledges and grants receivable, EOY.}
 
-\item{accounts_receivable}{Accounts receivable, net, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})}
+\item{accounts_receivable}{Accounts receivable, net, EOY.}
 
-\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
-\item{depreciation}{Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})}
+\item{depreciation}{Depreciation, depletion, and amortization.}
 
 \item{numerator}{Optional. A pre-aggregated column name for liquid assets. Cannot be
 combined with the individual asset arguments.}
@@ -53,12 +53,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{days_cash_ops}   — days of operating cash on hand (raw)
-\item \code{days_cash_ops_w} — winsorized version
-\item \code{days_cash_ops_z} — standardized z-score (based on winsorized values)
-\item \code{days_cash_ops_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `days_cash_ops`   - days of operating cash on hand (raw)
+- `days_cash_ops_w` - winsorized version
+- `days_cash_ops_z` - standardized z-score (based on winsorized values)
+- `days_cash_ops_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Measures how many days an organization can operate using available liquid assets.
@@ -74,7 +74,7 @@ daily_expenses = ( total_expenses - depreciation ) / 365
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 Days of cash on hand expresses liquidity in an operationally intuitive unit: how
 many days of expenses could the organization cover if all revenue stopped today?
@@ -82,53 +82,56 @@ It converts the raw dollar amount of liquid assets into a time-based runway
 measure that is easier for non-financial audiences (boards, program staff, funders)
 to interpret than a ratio. It is widely used in nonprofit financial management,
 healthcare finance, and government financial reporting.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 The denominator in this implementation is cash operating expenses per day,
 computed as (total expenses - depreciation) / 365. Depreciation is subtracted
 because it is a non-cash charge that does not represent actual cash outflow.
 Some formulations use total expenses without the depreciation adjustment, which
 is more conservative (produces lower days values). The monthly equivalent is
-\code{\link{get_months_cash_operations}}, which uses /12 instead of /365.
+\code{\link[=get_months_cash_operations]{get_months_cash_operations()}}, which uses /12 instead of /365.
 
-The numerator includes cash, savings, pledges receivable, and accounts receivable —
-the same four items used in the quick ratio (\code{\link{get_quick_ratio}}). Some
+The numerator includes cash, savings, pledges receivable, and accounts receivable -
+the same four items used in the quick ratio (\code{\link[=get_quick_ratio]{get_quick_ratio()}}). Some
 stricter formulations use only cash and savings (excluding receivables); some broader
 ones add investments held for sale. The four-item version follows the Healthcare
 Financial Management Association (HFMA) standard, which is the most commonly cited
 benchmark source.
+}
 
-\strong{Why this formula was chosen}
+\subsection{Why this formula was chosen}{
 
 The HFMA definition is the most widely benchmarked version and is increasingly
 applied to nonprofits outside healthcare. Subtracting depreciation from the
 denominator follows standard financial management practice (Zietlow et al. 2007)
 because the ratio is intended to measure cash coverage of cash expenses.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Healthcare Financial Management Association (HFMA). \emph{Key Hospital
-Financial Statistics and Ratio Medians}. Annual report. — Source for the most
+Financial Statistics and Ratio Medians}. Annual report. - Source for the most
 widely cited days-of-cash benchmarks; originally healthcare-focused but
 increasingly applied to nonprofits broadly.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-for Nonprofit Organizations}. Wiley. — Adopts the HFMA approach for nonprofits.
+for Nonprofit Organizations}. Wiley. - Adopts the HFMA approach for nonprofits.
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded below at zero and unbounded above, expressed in days. The typical range for
 nonprofits is approximately [0, 365]. Values above 365 (more than one year of
 cash) indicate very large liquid reserves relative to expenses, which is uncommon
 for operating nonprofits but typical for foundations.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item \strong{60-90 days} is a commonly cited minimum threshold in nonprofit
 financial management guidance (Nonprofit Finance Fund).
@@ -140,15 +143,18 @@ due to longer receivables cycles from insurance reimbursements.
 contracts) can responsibly operate with lower cash reserves than those with
 volatile or grant-dependent income.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand (\code{cash})
 \item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
-\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable (\code{pledges_receivable})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}:
+Net pledges receivable (\code{pledges_receivable})
 \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
+}
 }
 }
 \examples{

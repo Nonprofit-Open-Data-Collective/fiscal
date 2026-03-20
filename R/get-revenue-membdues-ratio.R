@@ -15,38 +15,38 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param membership_dues Membership dues received.
-#'   (On 990: Part VIII, line 1b; \code{F9_08_REV_CONTR_MEMBSHIP_DUE})
+#'
 #' @param total_revenue Total revenue.
-#'   (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98}).
+#'
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @details
-#' \strong{Revenue Membdues Ratio — Revenue composition measure}
+#' ## Revenue Membdues Ratio - Revenue composition measure
 #'
 #' Formula: membership dues / total revenue. Bounded \[0, 1\].
 #'
 #' Membership dues provide relatively predictable recurring revenue tied to member retention. A high ratio indicates a membership-model organization whose financial health depends on maintaining and growing the member base.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
-#'     \emph{VOLUNTAS}, 5(3), 273-290.
-#'   \item Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
-#'     organizations. \emph{Journal of Public Administration Research and Theory},
+#'
+#'   - Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     *VOLUNTAS*, 5(3), 273-290.
+#'   - Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
+#'     organizations. *Journal of Public Administration Research and Theory*,
 #'     19(4), 947-966.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Numerator (\code{membership_dues})
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_CONTR_MEMBSHIP_DUE`: Numerator (`membership_dues`)
+#'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, imputes zero for NA
 #'   financial fields before computing, respecting form scope.
-#' @param summarize Logical (default \code{FALSE}). If \code{TRUE}, prints summary
+#' @param summarize Logical (default `FALSE`). If `TRUE`, prints summary
 #'   statistics and density plots for all four output columns.
 #'
 #' @usage
@@ -57,9 +57,12 @@
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
-#' @return The original \code{data.frame} with four columns appended:
-#'   \code{revenue_membdues}, \code{revenue_membdues_w},
-#'   \code{revenue_membdues_z}, \code{revenue_membdues_p}.
+#' @return The original `data.frame` with four new columns:
+#'
+#'   - `revenue_membdues` (raw ratio)
+#'   - `revenue_membdues_w` (winsorized)
+#'   - `revenue_membdues_z` (z-score)
+#'   - `revenue_membdues_p` (percentile rank, 1-100)
 #'
 #' @import dplyr
 #' @import stringr

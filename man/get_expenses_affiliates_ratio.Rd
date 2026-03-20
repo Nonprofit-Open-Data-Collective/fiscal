@@ -14,11 +14,9 @@ get_expenses_affiliates_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{payments_to_affiliates}{Payments to affiliates (total).
-(On 990: Part IX, line 21 Column A; \code{F9_09_EXP_PAY_AFFIL_TOT})}
+\item{payments_to_affiliates}{Payments to affiliates (total).}
 
-\item{total_expenses}{Total functional expenses.
-(On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -29,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{expenses_affiliates}, \code{expenses_affiliates_w},
-\code{expenses_affiliates_z}, \code{expenses_affiliates_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{expenses_affiliates} (raw ratio)
+\item \code{expenses_affiliates_w} (winsorized)
+\item \code{expenses_affiliates_z} (z-score)
+\item \code{expenses_affiliates_p} (percentile rank, 1-100)
+}
 }
 \description{
 Payments to affiliates as a share of total expenses.
@@ -44,41 +46,45 @@ Payments to affiliates as a share of total expenses.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The payments to affiliates ratio measures the share of total functional expenses
 transferred to affiliated organizations. It captures inter-organizational resource
 flows within nonprofit families (federated structures, supporting organizations,
 shared-services models).
+}
 
-\strong{Formula}
+\subsection{Formula}{
 
 Payments to affiliates (Part IX line 21, Column A) / total expenses (line 25A).
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Bounded [0, 1]. Near zero for standalone organizations; potentially above 0.50
 for federated intermediaries.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Interpret in the context of organizational structure.
 \item Large payments to affiliates absent a known federated structure warrant
 review of related-party transaction disclosures.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_09_EXP_PAY_AFFIL_TOT}: Payments to affiliates (\code{payments_to_affiliates})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 }
 \examples{

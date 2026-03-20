@@ -14,10 +14,9 @@ get_land_assets_gross_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{land_buildings}{Net land, buildings, and equipment (after depreciation), EOY.
-(On 990: Part X, line 10c; \code{F9_10_ASSET_LAND_BLDG_DEPREC})}
+\item{land_buildings}{Net land, buildings, and equipment (after depreciation), EOY.}
 
-\item{total_assets}{Total assets, EOY. (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY})}
+\item{total_assets}{Total assets, EOY.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -35,12 +34,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{land_assets_gross}   — land asset ratio (raw)
-\item \code{land_assets_gross_w} — winsorized version
-\item \code{land_assets_gross_z} — standardized z-score (based on winsorized values)
-\item \code{land_assets_gross_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `land_assets_gross`   - land asset ratio (raw)
+- `land_assets_gross_w` - winsorized version
+- `land_assets_gross_z` - standardized z-score (based on winsorized values)
+- `land_assets_gross_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Share of total assets invested in land, buildings, and equipment.
@@ -53,7 +52,7 @@ Share of total assets invested in land, buildings, and equipment.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The land, buildings, and equipment to assets ratio (gross version) measures what
 share of total assets is represented by the gross book value of fixed physical
@@ -63,46 +62,51 @@ indicates a lean service organization whose assets are primarily financial.
 
 The gross version uses the accumulated depreciation field (Part X line 10b) as a
 proxy for the gross value of the fixed asset base. This is distinct from the net
-version (\code{\link{get_land_assets_net_ratio}}), which uses the net book value
+version (\code{\link[=get_land_assets_net_ratio]{get_land_assets_net_ratio()}}), which uses the net book value
 after depreciation (Part X line 10cB). The gross version gives a better picture
 of the original investment in fixed assets; the net version better reflects
 current book value.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 F9_10_ASSET_LAND_BLDG_DEPREC (accumulated depreciation, line 10b) / total assets.
 Note: this field contains the accumulated depreciation amount, not the gross cost.
 Using it as a proxy for the scale of fixed asset investment is an approximation.
-For a cleaner measure of fixed asset intensity, \code{\link{get_land_assets_net_ratio}}
+For a cleaner measure of fixed asset intensity, \code{\link[=get_land_assets_net_ratio]{get_land_assets_net_ratio()}}
 uses the net value directly.
-
-\strong{Canonical citations}
-
-\itemize{
-\item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
-and Society}, 20(4), 94-112. — Asset composition analysis for nonprofits.
 }
 
-\strong{Definitional range}
+\subsection{Canonical citations}{
+\itemize{
+\item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
+and Society}, 20(4), 94-112. - Asset composition analysis for nonprofits.
+}
+}
+
+\subsection{Definitional range}{
 
 Bounded [0, 1] in normal conditions. The distribution is highly right-skewed:
 most nonprofits with no owned real estate show values near zero, while
 capital-intensive organizations (healthcare, housing, higher education) may show
 values above 0.50.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item Most informative for within-subsector comparisons.
 \item High values indicate illiquidity risk: if the majority of assets are
 fixed property, the organization has limited ability to quickly convert assets
 to cash in a financial emergency.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Accumulated depreciation on land and buildings (\code{land_buildings})
+\item \code{F9_10_ASSET_LAND_BLDG_DEPREC}:
+Accumulated depreciation on land and buildings (\code{land_buildings})
 \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
+}
 }
 }
 \examples{

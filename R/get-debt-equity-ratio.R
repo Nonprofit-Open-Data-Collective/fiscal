@@ -15,14 +15,12 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param debt Total liabilities, EOY. Accepts one or two column names; if two are provided
 #'   they are coalesced with the 990 value taking priority.
-#'   (On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
-#'   On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})
+#'
 #' @param equity Unrestricted net assets, EOY. Accepts one or two column names.
-#'   (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY};
-#'   On EZ: \code{F9_01_NAFB_UNRESTRICT_EOY})
+#'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -34,32 +32,32 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{debt_equity}   — debt to equity ratio (raw)
-#'     \item \code{debt_equity_w} — winsorized version
-#'     \item \code{debt_equity_z} — standardized z-score (based on winsorized values)
-#'     \item \code{debt_equity_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `debt_equity`   - debt to equity ratio (raw)
+#'     - `debt_equity_w` - winsorized version
+#'     - `debt_equity_z` - standardized z-score (based on winsorized values)
+#'     - `debt_equity_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The debt to equity ratio compares total obligations to the organization's equity
-#' cushion — its unrestricted net assets. In the nonprofit context, unrestricted net
+#' cushion - its unrestricted net assets. In the nonprofit context, unrestricted net
 #' assets represent the accumulated surplus that the organization controls without
 #' donor restriction: the purest measure of its financial equity. A high ratio signals
 #' that liabilities substantially exceed the equity base, meaning a relatively small
 #' revenue shortfall could impair the ability to meet obligations.
 #'
-#' This ratio is closely related to \code{\link{get_debt_assets_ratio}} (DAR), but
+#' This ratio is closely related to [get_debt_assets_ratio()] (DAR), but
 #' uses unrestricted net assets as the denominator instead of total assets. It is a
 #' stricter solvency measure because unrestricted net assets are typically much smaller
 #' than total assets, and because restricted assets cannot be used to pay general
 #' obligations.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The commercial debt/equity ratio uses total debt / shareholders' equity. The
 #' nonprofit adaptation substitutes unrestricted net assets for equity, following
@@ -71,17 +69,17 @@
 #' long-term debt in the numerator. This implementation uses total liabilities /
 #' unrestricted net assets as the most commonly cited nonprofit version.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#'   \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
-#'     nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
+#'   - Bowman, W. (2011). Financial capacity and sustainability of ordinary
+#'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero when liabilities are non-negative and unrestricted net assets
 #' are positive. Unbounded above when unrestricted net assets are very small. Values
@@ -89,33 +87,34 @@
 #' exceed unrestricted equity), an acute financial distress signal. The ratio is
 #' undefined (NA) when unrestricted net assets equal zero.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Values below 1.0 mean total liabilities are less than the unrestricted
-#'     equity base — generally considered strong.
-#'   \item Values between 1.0 and 3.0 indicate moderate leverage.
-#'   \item Values above 5.0 indicate very high leverage relative to the equity base
+#'
+#'   - Values below 1.0 mean total liabilities are less than the unrestricted
+#'     equity base - generally considered strong.
+#'   - Values between 1.0 and 3.0 indicate moderate leverage.
+#'   - Values above 5.0 indicate very high leverage relative to the equity base
 #'     and are a common vulnerability threshold.
-#'   \item Negative values indicate negative unrestricted net assets, which almost
+#'   - Negative values indicate negative unrestricted net assets, which almost
 #'     always signals significant financial stress.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt})
-#'   \item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{equity})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`)
+#'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
+#'     Unrestricted net assets, EOY (`equity`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

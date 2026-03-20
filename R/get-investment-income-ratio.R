@@ -17,16 +17,16 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param invest_income Investment income. (On 990: Part VIII, line 3; \code{F9_08_REV_OTH_INVEST_INCOME_TOT})
-#' @param bond_proceeds Tax-exempt bond proceeds. (On 990: Part VIII, line 7a; \code{F9_08_REV_OTH_INVEST_BOND_TOT})
-#' @param rent_income Gross rents from personal property. (On 990: Part VIII, line 6b; \code{F9_08_REV_OTH_RENT_GRO_PERS})
-#' @param asset_sale_income Net gain from sales of assets other than inventory. (On 990: Part VIII, line 7d; \code{F9_08_REV_OTH_SALE_ASSET_OTH})
-#' @param total_revenue Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param invest_income Investment income.
+#' @param bond_proceeds Tax-exempt bond proceeds.
+#' @param rent_income Gross rents from personal property.
+#' @param asset_sale_income Net gain from sales of assets other than inventory.
+#' @param total_revenue Total revenue.
 #' @param numerator Optional. A pre-aggregated column for investment income. Cannot be
 #'   combined with the individual component arguments.
 #' @param denominator Optional. A pre-aggregated column for total revenue. Cannot be
-#'   combined with \code{total_revenue}.
+#'   combined with `total_revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -41,21 +41,21 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{invest_income}   — investment income dependency ratio (raw)
-#'     \item \code{invest_income_w} — winsorized version
-#'     \item \code{invest_income_z} — standardized z-score (based on winsorized values)
-#'     \item \code{invest_income_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `invest_income`   - investment income dependency ratio (raw)
+#'     - `invest_income_w` - winsorized version
+#'     - `invest_income_z` - standardized z-score (based on winsorized values)
+#'     - `invest_income_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The investment income dependency ratio measures the share of total revenue from
 #' investment-related sources: interest, dividend income, rental income, bond proceeds,
-#' and proceeds from asset sales. It captures financial portfolio dependency — the
+#' and proceeds from asset sales. It captures financial portfolio dependency - the
 #' degree to which the organization's budget relies on endowment returns, rental
 #' properties, or investment gains.
 #'
@@ -64,7 +64,7 @@
 #' periods of market decline or low interest rates, organizations with high investment
 #' income ratios face greater revenue volatility.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' (Investment income + bond income + rental income + asset sale income) / total
 #' revenue (Part VIII lines 3 + 4 + 6a(ii) + 7d / line 12A). Note that this combines
@@ -72,49 +72,53 @@
 #' analysts separate these. The asset sale proceeds (line 7d) are particularly
 #' volatile and may distort the ratio in years with large asset disposals.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
-#'     \emph{VOLUNTAS}, 5(3), 273-290.
-#'   \item Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
-#'     organizations. \emph{Journal of Public Administration Research and Theory},
+#'
+#'   - Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
+#'     *VOLUNTAS*, 5(3), 273-290.
+#'   - Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
+#'     organizations. *Journal of Public Administration Research and Theory*,
 #'     19(4), 947-966.
-#' }
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
 #' large asset sale gains. Values below zero can result from asset sale losses or
 #' negative investment returns.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Values above 0.30 indicate significant financial asset dependency and
+#'
+#'   - Values above 0.30 indicate significant financial asset dependency and
 #'     warrant monitoring of portfolio performance.
-#'   \item Large year-over-year swings in this ratio often reflect one-time asset
+#'   - Large year-over-year swings in this ratio often reflect one-time asset
 #'     transactions rather than structural revenue changes.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}: Investment income (\code{invest_income})
-#'   \item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Income from bond proceeds (\code{bond_proceeds})
-#'   \item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Gross rental income (\code{rent_income})
-#'   \item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Net gain from asset sales (\code{asset_sale_income})
-#'   \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_08_REV_OTH_INVEST_INCOME_TOT`: 
+#'     Investment income (`invest_income`)
+#'   - `F9_08_REV_OTH_INVEST_BOND_TOT`: 
+#'     Income from bond proceeds (`bond_proceeds`)
+#'   - `F9_08_REV_OTH_RENT_GRO_PERS`: 
+#'     Gross rental income (`rent_income`)
+#'   - `F9_08_REV_OTH_SALE_ASSET_OTH`: 
+#'     Net gain from asset sales (`asset_sale_income`)
+#'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

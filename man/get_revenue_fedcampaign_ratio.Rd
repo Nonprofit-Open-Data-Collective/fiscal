@@ -14,10 +14,9 @@ get_revenue_fedcampaign_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{federated_campaigns}{Federated campaign contributions.
-(On 990: Part VIII, line 1a; \code{F9_08_REV_CONTR_FED_CAMP})}
+\item{federated_campaigns}{Federated campaign contributions.}
 
-\item{total_revenue}{Total revenue. (On 990: Part VIII, line 12A; \code{F9_08_REV_TOT_TOT})}
+\item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -28,9 +27,13 @@ financial fields before computing, respecting form scope.}
 statistics and density plots for all four output columns.}
 }
 \value{
-The original \code{data.frame} with four columns appended:
-\code{revenue_fedcampaign}, \code{revenue_fedcampaign_w},
-\code{revenue_fedcampaign_z}, \code{revenue_fedcampaign_p}.
+The original \code{data.frame} with four new columns:
+\itemize{
+\item \code{revenue_fedcampaign} (raw ratio)
+\item \code{revenue_fedcampaign_w} (winsorized)
+\item \code{revenue_fedcampaign_z} (z-score)
+\item \code{revenue_fedcampaign_p} (percentile rank, 1-100)
+}
 }
 \description{
 Federated campaign contributions as a share of total revenue.
@@ -43,14 +46,14 @@ Federated campaign contributions as a share of total revenue.
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Revenue Fedcampaign Ratio — Revenue composition measure}
+\subsection{Revenue Fedcampaign Ratio - Revenue composition measure}{
 
 Formula: federated campaign contributions / total revenue. Bounded [0, 1].
 
 Federated campaigns (United Way, Combined Federal Campaign) are a specific channel of collective giving. Organizations heavily funded through federated campaigns face dependency on a single intermediary.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
@@ -58,11 +61,13 @@ Federated campaigns (United Way, Combined Federal Campaign) are a specific chann
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_CONTR_FED_CAMP}: Numerator (\code{federated_campaigns})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
+}
 }
 
 \strong{Variables used:}

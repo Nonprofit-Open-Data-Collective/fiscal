@@ -15,14 +15,12 @@
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param debt Total liabilities, EOY. Accepts one or two column names; if two are provided
 #'   they are coalesced with the 990 value taking priority over 990EZ.
-#'   (On 990: Part X, line 26B; \code{F9_10_LIAB_TOT_EOY};
-#'   On EZ: Part II, line 26B; \code{F9_01_NAFB_LIAB_TOT_EOY})
+#'
 #' @param assets Total assets, EOY. Accepts one or two column names.
-#'   (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY};
-#'   On EZ: Part II, line 25B; \code{F9_01_NAFB_ASSET_TOT_EOY})
+#'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -34,17 +32,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{debt_assets}   — debt to asset ratio (raw)
-#'     \item \code{debt_assets_w} — winsorized version
-#'     \item \code{debt_assets_z} — standardized z-score (based on winsorized values)
-#'     \item \code{debt_assets_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `debt_assets`   - debt to asset ratio (raw)
+#'     - `debt_assets_w` - winsorized version
+#'     - `debt_assets_z` - standardized z-score (based on winsorized values)
+#'     - `debt_assets_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The debt to asset ratio (also called the leverage ratio or debt ratio) measures
 #' what fraction of total assets is financed by liabilities rather than equity (net
@@ -58,7 +56,7 @@
 #' and (2) funders, lenders, and rating agencies commonly use this ratio to assess
 #' creditworthiness and organizational stability.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The commercial formula is identical: total liabilities / total assets. Nonprofit
 #' applications use the same ratio but may define "total liabilities" differently.
@@ -70,28 +68,28 @@
 #' leverage rather than near-term obligations. The full liabilities version is used
 #' here as the most comprehensive and commonly cited measure.
 #'
-#' \strong{Why this formula was chosen}
+#' ## Why this formula was chosen
 #'
 #' Total liabilities / total assets is the most universally understood and reported
 #' leverage measure. Using total liabilities rather than a subset avoids definitional
 #' ambiguity about which obligations to include. The PZ scope (both 990 and 990EZ)
 #' maximizes coverage across all filing types.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
-#'     vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
-#'     Sector Quarterly}, 20(4), 445-460.
-#'   \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
-#'     of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
+#'
+#'   - Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
+#'     vulnerability of charitable nonprofit organizations. *Nonprofit and Voluntary
+#'     Sector Quarterly*, 20(4), 445-460.
+#'   - Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
+#'     of charitable organizations. *Nonprofit Management and Leadership*, 11(2),
 #'     199-210.
-#'   \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
-#'     financial vulnerability in the nonprofit sector. \emph{Harvard Business School
-#'     Working Paper 04-016}.
-#' }
+#'   - Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
+#'     financial vulnerability in the nonprofit sector. *Harvard Business School
+#'     Working Paper 04-016*.
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
 #' one means liabilities equal total assets (zero net assets). Values above 1.0 occur
@@ -100,36 +98,36 @@
 #' uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
 #' long-term debt.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item \strong{Below 0.50}: Generally considered financially stable; assets
+#'
+#'   - **Below 0.50**: Generally considered financially stable; assets
 #'     are more than twice liabilities.
-#'   \item \strong{0.50-0.70}: Moderate leverage; manageable but warrants monitoring.
-#'   \item \strong{Above 0.70}: High leverage; common vulnerability threshold used
+#'   - **0.50-0.70**: Moderate leverage; manageable but warrants monitoring.
+#'   - **Above 0.70**: High leverage; common vulnerability threshold used
 #'     in Tuckman & Chang (1991).
-#'   \item \strong{Above 1.0}: Negative net assets; acute financial risk.
-#'   \item Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
+#'   - **Above 1.0**: Negative net assets; acute financial risk.
+#'   - Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
 #'     indicator in their logistic regression models.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
-#'   \item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ fallback)
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}, 990)
-#'   \item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ fallback)
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`, 990)
+#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I (`debt`, 990EZ fallback)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`assets`, 990)
+#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I (`assets`, 990EZ fallback)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

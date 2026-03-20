@@ -26,7 +26,7 @@
 #'
 #' Returns the character vector of column names that identify a filing record
 #' across all efile tables. These are retained alongside financial fields in
-#' the working subset inside every \code{get_*()} function.
+#' the working subset inside every `get_*()` function.
 #'
 #' @return A character vector of column names.
 #' @examples
@@ -42,17 +42,17 @@ get_idvars <- function() .IDVARS
 # Used by sanitize_financials() and the sanitize= argument in individual functions.
 
 .PC_FIELDS <- c(
-  # Part VIII — revenue detail (990 only)
+  # Part VIII - revenue detail (990 only)
   "F9_08_REV_CONTR_GOVT_GRANT", "F9_08_REV_CONTR_MEMBSHIP_DUE",
   "F9_08_REV_CONTR_TOT", "F9_08_REV_MISC_OTH_TOT",
   "F9_08_REV_OTH_FUNDR_NET_TOT", "F9_08_REV_OTH_INVEST_BOND_TOT",
   "F9_08_REV_OTH_INVEST_INCOME_TOT", "F9_08_REV_OTH_RENT_GRO_PERS",
   "F9_08_REV_OTH_ROY_TOT", "F9_08_REV_OTH_SALE_ASSET_OTH",
   "F9_08_REV_PROG_TOT_TOT", "F9_08_REV_TOT_TOT",
-  # Part IX — expense detail (990 only)
+  # Part IX - expense detail (990 only)
   "F9_09_EXP_DEPREC_TOT", "F9_09_EXP_TOT_FUNDR",
   "F9_09_EXP_TOT_MGMT", "F9_09_EXP_TOT_PROG", "F9_09_EXP_TOT_TOT",
-  # Part X — balance sheet (990 only)
+  # Part X - balance sheet (990 only)
   "F9_10_ASSET_ACC_NET_EOY", "F9_10_ASSET_CASH_BOY", "F9_10_ASSET_CASH_EOY",
   "F9_10_ASSET_EXP_PREPAID_EOY", "F9_10_ASSET_INV_SALE_EOY",
   "F9_10_ASSET_LAND_BLDG_DEPREC", "F9_10_ASSET_LAND_BLDG_NET_EOY",
@@ -64,7 +64,7 @@ get_idvars <- function() .IDVARS
 )
 
 .PZ_FIELDS <- c(
-  # Part I — summary (both 990 and 990EZ)
+  # Part I - summary (both 990 and 990EZ)
   "F9_01_EXP_REV_LESS_EXP_CY", "F9_01_EXP_TOT_CY",
   "F9_01_NAFB_ASSET_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
   "F9_01_NAFB_TOT_BOY", "F9_01_NAFB_TOT_EOY",
@@ -75,7 +75,7 @@ get_idvars <- function() .IDVARS
 #'
 #' Returns financial fields that appear only on the full Form 990
 #' (Parts VIII, IX, and X). These fields are not present on the 990-EZ.
-#' Used by \code{\link{sanitize_financials}} to restrict zero-imputation to
+#' Used by [sanitize_financials()] to restrict zero-imputation to
 #' full 990 filers.
 #'
 #' @return A character vector of column names.
@@ -88,7 +88,7 @@ get_pc_fields <- function() .PC_FIELDS
 #'
 #' Returns financial fields that appear on both the full Form 990 and the
 #' 990-EZ (Part I summary fields). Zero-imputation via
-#' \code{\link{sanitize_financials}} is applied to these fields for all filers.
+#' [sanitize_financials()] is applied to these fields for all filers.
 #'
 #' @return A character vector of column names.
 #' @examples
@@ -99,12 +99,12 @@ get_pz_fields <- function() .PZ_FIELDS
 #' Detect 990-EZ filer rows in an efile dataset
 #'
 #' Returns a logical vector marking rows that belong to 990-EZ filers.
-#' Uses the \code{RETURN_TYPE} column when present; otherwise infers filer
+#' Uses the `RETURN_TYPE` column when present; otherwise infers filer
 #' type from field availability (rows with Part I data but missing Part VIII
 #' total revenue are treated as 990-EZ filers).
 #'
-#' @param df A \code{data.frame} containing efile data.
-#' @return A logical vector of length \code{nrow(df)}.
+#' @param df A `data.frame` containing efile data.
+#' @return A logical vector of length `nrow(df)`.
 #' @examples
 #' data( dat10k )
 #' table( detect_ez_rows( dat10k ) )
@@ -125,7 +125,7 @@ detect_ez_rows <- function( df ) {
     return( !is.na( df[["F9_01_REV_TOT_CY"]] ) & is.na( df[["F9_08_REV_TOT_TOT"]] ) )
   }
 
-  # Cannot determine — assume all are 990 filers (conservative: no EZ masking)
+  # Cannot determine - assume all are 990 filers (conservative: no EZ masking)
   return( rep( FALSE, nrow( df ) ) )
 }
 
@@ -138,11 +138,11 @@ detect_ez_rows <- function( df ) {
 #' that are not 990-EZ filers. PZ-scope fields (990 + 990-EZ) are imputed
 #' for all rows. Rows where every financial variable is NA are left untouched.
 #'
-#' @param dat A \code{data.frame} (the working subset, not the full dataset).
+#' @param dat A `data.frame` (the working subset, not the full dataset).
 #' @param vars Character vector of financial column names to consider.
-#' @param ez_rows Logical vector (length \code{nrow(dat)}) marking 990-EZ rows,
-#'   as returned by \code{\link{detect_ez_rows}}.
-#' @return The modified \code{data.frame} with zeros imputed where appropriate.
+#' @param ez_rows Logical vector (length `nrow(dat)`) marking 990-EZ rows,
+#'   as returned by [detect_ez_rows()].
+#' @return The modified `data.frame` with zeros imputed where appropriate.
 #' @examples
 #' data( dat10k )
 #' ez <- detect_ez_rows( dat10k )
@@ -154,7 +154,7 @@ impute_zero <- function( dat, vars, ez_rows ) {
   pz_vars <- intersect( vars, .PZ_FIELDS )
 
   # All-NA guard: if every financial variable in dat is NA for a row,
-  # that row is a non-filer or a record with no financial data — do not impute.
+  # that row is a non-filer or a record with no financial data - do not impute.
   fin_vars_present <- intersect( c( pc_vars, pz_vars ), colnames( dat ) )
   if ( length( fin_vars_present ) > 0 ) {
     all_na_rows <- rowSums( !is.na( dplyr::select( dat, dplyr::any_of( fin_vars_present ) ) ) ) == 0
@@ -188,7 +188,7 @@ impute_zero <- function( dat, vars, ez_rows ) {
 #' against non-digit content. Stops if letters are detected in any column;
 #' warns if silent coercion was needed.
 #'
-#' @param d A \code{data.frame}.
+#' @param d A `data.frame`.
 #' @param vars Character vector of column names to coerce.
 #' @return The data frame with the specified columns coerced to numeric.
 #' @export
@@ -224,11 +224,11 @@ coerce_numeric <- function( d, vars ) {
 #' Given one or two candidate column names and a data frame, returns a single
 #' numeric vector. If both columns are present, they are coalesced with the
 #' first (990 PC) taking priority and the second (990-EZ) filling in where
-#' the first is \code{NA}.
+#' the first is `NA`.
 #'
-#' @param dat A \code{data.frame}.
+#' @param dat A `data.frame`.
 #' @param cols Character vector of one or two column names.
-#' @return A numeric vector of length \code{nrow(dat)}.
+#' @return A numeric vector of length `nrow(dat)`.
 #' @export
 resolve_col <- function( dat, cols ) {
 
@@ -243,7 +243,7 @@ resolve_col <- function( dat, cols ) {
     return( dat[[ present ]] )
   }
 
-  # Two columns present: coalesce — first column (990-PC) takes priority,
+  # Two columns present: coalesce - first column (990-PC) takes priority,
   # filling in from the second (990-EZ) only where the first is NA.
   out <- dat[[ present[1] ]]
   out[ is.na( out ) ] <- dat[[ present[2] ]][ is.na( out ) ]
@@ -254,9 +254,9 @@ resolve_col <- function( dat, cols ) {
 #' Winsorize a numeric vector and return raw, winsorized, z-score, and percentile versions
 #'
 #' @param x Numeric vector.
-#' @param winsorize Winsorization proportion between 0 and 1 (default \code{0.98},
+#' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`,
 #'   which clips at the 1st and 99th percentiles).
-#' @return A named list with elements \code{raw}, \code{winsorized}, \code{z}, \code{pctile}.
+#' @return A named list with elements `raw`, `winsorized`, `z`, `pctile`.
 #' @export
 winsorize_var <- function( x, winsorize = 0.98 ) {
 
@@ -279,15 +279,15 @@ winsorize_var <- function( x, winsorize = 0.98 ) {
 
 #' Validate numerator and denominator inputs for get_* functions
 #'
-#' Checks that \code{winsorize} is in \code{[0, 1]} and that numerator and
+#' Checks that `winsorize` is in `[0, 1]` and that numerator and
 #' denominator arguments are not in an inconsistent NULL state.
 #'
 #' @param winsorize Numeric scalar.
-#' @param num_args Numerator argument value (may be \code{NULL}).
-#' @param den_args Denominator argument value (may be \code{NULL}).
+#' @param num_args Numerator argument value (may be `NULL`).
+#' @param den_args Denominator argument value (may be `NULL`).
 #' @param num_name Name of numerator argument used in error messages.
 #' @param den_name Name of denominator argument used in error messages.
-#' @return Invisibly \code{NULL}; called for its side-effect of stopping on invalid input.
+#' @return Invisibly `NULL`; called for its side-effect of stopping on invalid input.
 #' @export
 validate_inputs <- function( winsorize, num_args, den_args,
                               num_name = "numerator", den_name = "denominator" ) {
@@ -317,8 +317,8 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #' between fields available to all filers (990 + 990EZ) and fields that only appear on
 #' the full 990 form.
 #'
-#' @param df A \code{data.frame} containing IRS 990 efile financial fields. Should
-#'   contain a \code{RETURN_TYPE} column (values \code{"990"} or \code{"990EZ"}) for
+#' @param df A `data.frame` containing IRS 990 efile financial fields. Should
+#'   contain a `RETURN_TYPE` column (values `"990"` or `"990EZ"`) for
 #'   accurate filer-type detection. If absent, filer type is inferred from field
 #'   availability.
 #' @param pz_vars Character vector of column names for fields present on both 990 and
@@ -329,25 +329,25 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #'   990 filers; 990EZ filer rows are left as NA. Defaults to the full set of PC
 #'   financial fields used by this package.
 #'
-#' @return A \code{data.frame} identical in structure to \code{df}, with NA values
-#'   replaced by zero in the applicable financial columns. The original \code{df} is
+#' @return A `data.frame` identical in structure to `df`, with NA values
+#'   replaced by zero in the applicable financial columns. The original `df` is
 #'   not modified.
 #'
 #' @details
 #' In IRS 990 efile data, organizations often leave financial line items blank when the
 #' value is zero rather than explicitly reporting zero. These blanks are typically
-#' encoded as \code{NA} in processed datasets. For ratio calculations this is
+#' encoded as `NA` in processed datasets. For ratio calculations this is
 #' problematic: a nonprofit with no investment income genuinely has a zero in that
 #' field, not a missing value.
 #'
-#' \code{sanitize_financials()} corrects this by imputing zero for NA values in
+#' `sanitize_financials()` corrects this by imputing zero for NA values in
 #' financial fields, subject to an important constraint: fields that only exist on the
 #' full 990 form (Part VIII, IX, and X) should not be imputed to zero for 990EZ
 #' filers, since those fields simply don't exist on the EZ form. Fields from Part I
 #' (the summary section) appear on both forms and can be safely imputed for all filers.
 #'
-#' Filer type is determined from the \code{RETURN_TYPE} column when present
-#' (\code{"990"} = full filer, \code{"990EZ"} = short-form filer). If \code{RETURN_TYPE}
+#' Filer type is determined from the `RETURN_TYPE` column when present
+#' (`"990"` = full filer, `"990EZ"` = short-form filer). If `RETURN_TYPE`
 #' is absent, filer type is inferred: rows with Part I data but missing Part VIII data
 #' are treated as 990EZ filers.
 #'

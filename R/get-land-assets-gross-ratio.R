@@ -15,10 +15,10 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
+#' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param land_buildings Net land, buildings, and equipment (after depreciation), EOY.
-#'   (On 990: Part X, line 10c; \code{F9_10_ASSET_LAND_BLDG_DEPREC})
-#' @param total_assets Total assets, EOY. (On 990: Part X, line 16B; \code{F9_10_ASSET_TOT_EOY})
+#'
+#' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -30,17 +30,17 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{land_assets_gross}   — land asset ratio (raw)
-#'     \item \code{land_assets_gross_w} — winsorized version
-#'     \item \code{land_assets_gross_z} — standardized z-score (based on winsorized values)
-#'     \item \code{land_assets_gross_p} — percentile rank (1-100)
-#'   }
+#'
+#'     - `land_assets_gross`   - land asset ratio (raw)
+#'     - `land_assets_gross_w` - winsorized version
+#'     - `land_assets_gross_z` - standardized z-score (based on winsorized values)
+#'     - `land_assets_gross_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
 #' The land, buildings, and equipment to assets ratio (gross version) measures what
 #' share of total assets is represented by the gross book value of fixed physical
@@ -50,57 +50,58 @@
 #'
 #' The gross version uses the accumulated depreciation field (Part X line 10b) as a
 #' proxy for the gross value of the fixed asset base. This is distinct from the net
-#' version (\code{\link{get_land_assets_net_ratio}}), which uses the net book value
+#' version ([get_land_assets_net_ratio()]), which uses the net book value
 #' after depreciation (Part X line 10cB). The gross version gives a better picture
 #' of the original investment in fixed assets; the net version better reflects
 #' current book value.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' F9_10_ASSET_LAND_BLDG_DEPREC (accumulated depreciation, line 10b) / total assets.
 #' Note: this field contains the accumulated depreciation amount, not the gross cost.
 #' Using it as a proxy for the scale of fixed asset investment is an approximation.
-#' For a cleaner measure of fixed asset intensity, \code{\link{get_land_assets_net_ratio}}
+#' For a cleaner measure of fixed asset intensity, [get_land_assets_net_ratio()]
 #' uses the net value directly.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
-#'     and Society}, 20(4), 94-112. — Asset composition analysis for nonprofits.
-#' }
 #'
-#' \strong{Definitional range}
+#'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good. *Policy
+#'     and Society*, 20(4), 94-112. - Asset composition analysis for nonprofits.
+#'
+#'
+#' ## Definitional range
 #'
 #' Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
 #' most nonprofits with no owned real estate show values near zero, while
 #' capital-intensive organizations (healthcare, housing, higher education) may show
 #' values above 0.50.
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item Most informative for within-subsector comparisons.
-#'   \item High values indicate illiquidity risk: if the majority of assets are
+#'
+#'   - Most informative for within-subsector comparisons.
+#'   - High values indicate illiquidity risk: if the majority of assets are
 #'     fixed property, the organization has limited ability to quickly convert assets
 #'     to cash in a financial emergency.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Accumulated depreciation on land and buildings (\code{land_buildings})
-#'   \item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_LAND_BLDG_DEPREC`: 
+#'     Accumulated depreciation on land and buildings (`land_buildings`)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr

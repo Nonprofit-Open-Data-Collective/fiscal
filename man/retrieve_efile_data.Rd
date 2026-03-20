@@ -20,13 +20,13 @@ retrieve_efile_data(
 
 \item{tables}{Character vector of table codes to retrieve. Defaults to
 \code{c("P00","P01","P08","P09","P10")}, which correspond to:
-\itemize{
-\item \code{P00} — Return header (filing metadata)
-\item \code{P01} — Part I summary (revenue, expenses, net assets)
-\item \code{P08} — Part VIII revenue detail (990 filers only)
-\item \code{P09} — Part IX expense detail (990 filers only)
-\item \code{P10} — Part X balance sheet (990 filers only)
-}}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `P00` - Return header (filing metadata)
+- `P01` - Part I summary (revenue, expenses, net assets)
+- `P08` - Part VIII revenue detail (990 filers only)
+- `P09` - Part IX expense detail (990 filers only)
+- `P10` - Part X balance sheet (990 filers only)
+}\if{html}{\out{</div>}}}
 
 \item{include_bmf}{Logical. If \code{TRUE} (default), downloads the NCCS
 Unified BMF and left-joins organizational metadata (NTEE codes, census
@@ -58,30 +58,36 @@ them with keyed \code{data.table} joins, optionally attaches BMF
 organizational metadata, and returns a single \code{data.frame}.
 }
 \details{
-\strong{Why \code{data.table} rather than base R or an external database:}
+\subsection{Why \code{data.table} rather than base R or an external database:}{
+
 \code{data.table::fread()} streams CSV files directly from S3 URLs into
 memory-efficient column-oriented storage without requiring a local copy.
 Before each merge, \code{data.table::setkey()} builds an index on the join
 column in-place (no copy), so the subsequent \code{merge.data.table()} call
 uses a binary-search join rather than a hash-sort copy. Each right-hand
 table is removed from the environment immediately after joining to free RAM.
-Together these three choices — streaming reads, keyed joins, and eager
-cleanup — give substantially lower peak memory usage than \code{base::merge()}
+Together these three choices - streaming reads, keyed joins, and eager
+cleanup - give substantially lower peak memory usage than \code{base::merge()}
 while adding no external dependencies beyond \code{data.table}.
+}
 
-\strong{Join strategy:}
+\subsection{Join strategy:}{
+
 Efile tables share two key columns: \code{OBJECTID} (a unique filing
 identifier present in every table) and \code{EIN2} (present in most).
 Tables are merged sequentially as full outer joins on all shared columns,
 so organizations that filed only one of the component forms (e.g., 990EZ
 filers who have P00 and P01 data but no P08/P09/P10) are retained with
 \code{NA} in the columns from tables they did not file.
+}
 
-\strong{BMF processing:}
+\subsection{BMF processing:}{
+
 The BMF is deduplicated to one row per EIN (most recent \code{ORG_RULING_DATE}
 retained). NTEE codes are normalized via the NCCS NTEE v2 system
-(\code{\link{get_clean_ntee}}, \code{\link{get_nteev2}}), and a curated
+(\code{\link[=get_clean_ntee]{get_clean_ntee()}}, \code{\link[=get_nteev2]{get_nteev2()}}), and a curated
 subset of fields is retained before the left-join onto the efile data.
+}
 }
 \examples{
 \dontrun{

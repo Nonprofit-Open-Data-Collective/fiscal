@@ -12,7 +12,7 @@ A character vector of column names.
 \description{
 Returns financial fields that appear on both the full Form 990 and the
 990-EZ (Part I summary fields). Zero-imputation via
-\code{\link{sanitize_financials}} is applied to these fields for all filers.
+\code{\link[=sanitize_financials]{sanitize_financials()}} is applied to these fields for all filers.
 }
 \examples{
 get_pz_fields()

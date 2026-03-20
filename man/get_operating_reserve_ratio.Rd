@@ -15,11 +15,11 @@ get_operating_reserve_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{unrestricted_net_assets}{Unrestricted net assets, EOY. (On 990: Part X, line 27B; \code{F9_10_NAFB_UNRESTRICT_EOY})}
+\item{unrestricted_net_assets}{Unrestricted net assets, EOY.}
 
-\item{net_fixed_assets}{Net land, buildings, and equipment, EOY. (On 990: Part X, line 10C; \code{F9_10_ASSET_LAND_BLDG_NET_EOY})}
+\item{net_fixed_assets}{Net land, buildings, and equipment, EOY.}
 
-\item{total_expenses}{Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})}
+\item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -37,12 +37,12 @@ the results and plots density curves for all four output columns
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
-\itemize{
-\item \code{op_reserve}   — operating reserves ratio (raw)
-\item \code{op_reserve_w} — winsorized version
-\item \code{op_reserve_z} — standardized z-score (based on winsorized values)
-\item \code{op_reserve_p} — percentile rank (1-100)
-}
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `op_reserve`   - operating reserves ratio (raw)
+- `op_reserve_w` - winsorized version
+- `op_reserve_z` - standardized z-score (based on winsorized values)
+- `op_reserve_p` - percentile rank (1-100)
+}\if{html}{\out{</div>}}
 }
 \description{
 Liquid unrestricted net assets available to cover operating expenses, expressed
@@ -58,7 +58,7 @@ operating_reserves = unrestricted_net_assets - net_fixed_assets
 \strong{Calculated For:} 990 filers only.
 }
 \details{
-\strong{Primary uses and key insights}
+\subsection{Primary uses and key insights}{
 
 The operating reserve ratio answers a key sustainability question: how many months
 of operations can the organization fund from its unrestricted liquid assets, excluding
@@ -66,42 +66,46 @@ illiquid fixed property? It is the recommended primary reserve adequacy metric o
 Nonprofit Finance Fund and is widely used in financial health assessments, lender due
 diligence, and board reporting.
 
-Unlike days/months of cash measures (\code{\link{get_days_cash_operations}},
-\code{\link{get_months_cash_operations}}), which count only cash and receivables,
+Unlike days/months of cash measures (\code{\link[=get_days_cash_operations]{get_days_cash_operations()}},
+\code{\link[=get_months_cash_operations]{get_months_cash_operations()}}), which count only cash and receivables,
 the operating reserve ratio starts from the full unrestricted equity base and removes
-fixed assets — giving a broader picture of the liquid reserves available to sustain
+fixed assets - giving a broader picture of the liquid reserves available to sustain
 operations.
+}
 
-\strong{Formula variations and their sources}
+\subsection{Formula variations and their sources}{
 
 (Unrestricted net assets - net fixed assets) / (total expenses / 12). This
 implementation follows the Nonprofit Finance Fund and Zietlow et al. (2007)
 definition. An alternative adds back mortgage debt to fixed assets
-(\code{\link{get_liquid_assets_months}}) to more precisely isolate the unencumbered
+(\code{\link[=get_liquid_assets_months]{get_liquid_assets_months()}}) to more precisely isolate the unencumbered
 value of fixed property. Some formulations use unrestricted net assets alone
 (without subtracting fixed assets), which produces higher values.
+}
 
-\strong{Canonical citations}
-
+\subsection{Canonical citations}{
 \itemize{
 \item Nonprofit Finance Fund. \emph{Operating Reserve Policy Toolkit for Nonprofits}.
-— Primary source for the operating reserve ratio definition and benchmarks.
+\itemize{
+\item Primary source for the operating reserve ratio definition and benchmarks.
+}
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
-Leadership}, 23(3), 281-302. — Empirical analysis of operating reserve levels
+Leadership}, 23(3), 281-302. - Empirical analysis of operating reserve levels
 across the U.S. nonprofit sector.
 }
+}
 
-\strong{Definitional range}
+\subsection{Definitional range}{
 
 Unbounded in both directions when expressed in months. Negative values occur when
 unrestricted net assets are negative or when net fixed assets exceed unrestricted net
 assets. Values above 24 months are uncommon for operating organizations and may
 indicate accumulation beyond what is needed for operating risk management.
+}
 
-\strong{Benchmarks and rules of thumb}
-
+\subsection{Benchmarks and rules of thumb}{
 \itemize{
 \item \strong{Less than 1 month}: Acute vulnerability.
 \item \strong{1-3 months}: Below the commonly recommended minimum.
@@ -111,12 +115,16 @@ revenue, major capital needs, or large fixed cost bases.
 \item The Nonprofit Finance Fund recommends a minimum of 3 months as a policy
 target for most organizations.
 }
+}
 
-\strong{Variables used:}
+\subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_NAFB_UNRESTRICT_EOY}: Unrestricted net assets, EOY (\code{unrestricted_net_assets})
-\item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Net land, buildings, and equipment (\code{net_fixed_assets})
+\item \code{F9_10_NAFB_UNRESTRICT_EOY}:
+Unrestricted net assets, EOY (\code{unrestricted_net_assets})
+\item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}:
+Net land, buildings, and equipment (\code{net_fixed_assets})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+}
 }
 }
 \examples{

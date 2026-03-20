@@ -18,19 +18,19 @@
 #'
 #' **Calculated For:** 990 filers only.
 #'
-#' @param df A \code{data.frame} containing the fields required for computing the metric.
-#' @param cash Cash on hand, EOY. (On 990: Part X, line 1B; \code{F9_10_ASSET_CASH_EOY})
-#' @param savings Short-term investments (savings), EOY. (On 990: Part X, line 2B; \code{F9_10_ASSET_SAVING_EOY})
-#' @param pledges_receivable Pledges and grants receivable, EOY. (On 990: Part X, line 3B; \code{F9_10_ASSET_PLEDGE_NET_EOY})
-#' @param accounts_receivable Accounts receivable, EOY. (On 990: Part X, line 4B; \code{F9_10_ASSET_ACC_NET_EOY})
-#' @param total_expenses Total functional expenses. (On 990: Part IX, line 25A; \code{F9_09_EXP_TOT_TOT})
-#' @param depreciation Depreciation, depletion, and amortization. (On 990: Part IX, line 22A; \code{F9_09_EXP_DEPREC_TOT})
+#' @param df A `data.frame` containing the fields required for computing the metric.
+#' @param cash Cash on hand, EOY.
+#' @param savings Short-term investments (savings), EOY.
+#' @param pledges_receivable Pledges and grants receivable, EOY.
+#' @param accounts_receivable Accounts receivable, EOY.
+#' @param total_expenses Total functional expenses.
+#' @param depreciation Depreciation, depletion, and amortization.
 #' @param numerator Optional. A pre-aggregated column name for liquid assets, bypassing the
-#'   individual \code{cash}, \code{savings}, \code{pledges_receivable}, and
-#'   \code{accounts_receivable} arguments. Cannot be combined with those arguments.
+#'   individual `cash`, `savings`, `pledges_receivable`, and
+#'   `accounts_receivable` arguments. Cannot be combined with those arguments.
 #' @param denominator Optional. A pre-aggregated column name for the denominator (annual
 #'   non-depreciation expenses). The function divides this by 12 internally. Cannot be
-#'   combined with \code{total_expenses} or \code{depreciation}.
+#'   combined with `total_expenses` or `depreciation`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #'
@@ -46,24 +46,24 @@
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
-#' @return Object of class \code{data.frame}: the original dataframe appended with four
+#' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
-#'   \itemize{
-#'     \item \code{months_cash_ops}   — months of operating cash on hand (raw)
-#'     \item \code{months_cash_ops_w} — winsorized version
-#'     \item \code{months_cash_ops_z} — standardized z-score (based on winsorized values)
-#'     \item \code{months_cash_ops_p} — percentile rank (1–100)
-#'   }
+#'
+#'     - `months_cash_ops`   - months of operating cash on hand (raw)
+#'     - `months_cash_ops_w` - winsorized version
+#'     - `months_cash_ops_z` - standardized z-score (based on winsorized values)
+#'     - `months_cash_ops_p` - percentile rank (1-100)
+#'
 #'
 #' @details
-#' \strong{Primary uses and key insights}
+#' ## Primary uses and key insights
 #'
-#' Months of cash on hand is the monthly expression of \code{\link{get_days_cash_operations}},
+#' Months of cash on hand is the monthly expression of [get_days_cash_operations()],
 #' expressing the same liquidity concept in a unit that is more natural for annual
 #' budget planning and board reporting. It is one of the most commonly reported metrics
 #' in nonprofit financial dashboards and funder due diligence.
 #'
-#' \strong{Formula variations and their sources}
+#' ## Formula variations and their sources
 #'
 #' The denominator uses (total expenses - depreciation) / 12. Subtracting depreciation
 #' follows standard practice (Zietlow et al. 2007) because the ratio measures cash
@@ -71,55 +71,56 @@
 #' depreciation adjustment; others use a rolling 12-month average of monthly expenses
 #' to smooth seasonal variation, which is not possible with annual 990 data.
 #'
-#' \strong{Canonical citations}
+#' ## Canonical citations
 #'
-#' \itemize{
-#'   \item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
-#'     — Uses months of cash as a primary financial health indicator.
-#'   \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
-#'     for Nonprofit Organizations}. Wiley.
-#'   \item GuideStar/Candid. \emph{Nonprofit Finance Indicators}. — Months of cash is
+#'
+#'   - Nonprofit Finance Fund. *State of the Nonprofit Sector Survey* (annual).
+#'     - Uses months of cash as a primary financial health indicator.
+#'   - Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+#'     for Nonprofit Organizations*. Wiley.
+#'   - GuideStar/Candid. *Nonprofit Finance Indicators*. - Months of cash is
 #'     one of the core metrics in the GuideStar financial health profile.
-#' }
 #'
-#' \strong{Definitional range}
+#'
+#' ## Definitional range
 #'
 #' Bounded below at zero; unbounded above. The typical operating range for nonprofits
 #' is approximately \[0, 24\] months, with values above 12 months uncommon for
 #' operating organizations (more typical for foundations).
 #'
-#' \strong{Benchmarks and rules of thumb}
+#' ## Benchmarks and rules of thumb
 #'
-#' \itemize{
-#'   \item \strong{Less than 1 month}: Acute liquidity risk.
-#'   \item \strong{1-3 months}: Below adequate; common recommendation is at least
+#'
+#'   - **Less than 1 month**: Acute liquidity risk.
+#'   - **1-3 months**: Below adequate; common recommendation is at least
 #'     3 months.
-#'   \item \strong{3-6 months}: Generally considered healthy for most nonprofits.
-#'   \item \strong{6+ months}: Strong reserve position; may be appropriate for
+#'   - **3-6 months**: Generally considered healthy for most nonprofits.
+#'   - **6+ months**: Strong reserve position; may be appropriate for
 #'     organizations with volatile revenue or major capital needs on the horizon.
-#'   \item The Nonprofit Finance Fund recommends 3-6 months as a target for most
+#'   - The Nonprofit Finance Fund recommends 3-6 months as a target for most
 #'     operating nonprofits.
-#' }
 #'
-#' \strong{Variables used:}
-#' \itemize{
-#'   \item \code{F9_10_ASSET_CASH_EOY}: Cash on hand (\code{cash})
-#'   \item \code{F9_10_ASSET_SAVING_EOY}: Savings (\code{savings})
-#'   \item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Net pledges receivable (\code{pledges_receivable})
-#'   \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable (\code{accounts_receivable})
-#'   \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-#'   \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
-#' }
 #'
-#' @param sanitize Logical (default \code{TRUE}). If \code{TRUE}, NA values in
+#' ## Variables used:
+#'
+#'   - `F9_10_ASSET_CASH_EOY`: Cash on hand (`cash`)
+#'   - `F9_10_ASSET_SAVING_EOY`: Savings (`savings`)
+#'   - `F9_10_ASSET_PLEDGE_NET_EOY`: 
+#'     Net pledges receivable (`pledges_receivable`)
+#'   - `F9_10_ASSET_ACC_NET_EOY`: Accounts receivable (`accounts_receivable`)
+#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'   - `F9_09_EXP_DEPREC_TOT`: Depreciation and amortization (`depreciation`)
+#'
+#'
+#' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
 #'   the financial input columns are imputed to zero before the ratio is computed,
 #'   respecting form scope: Part X and VIII/IX fields (990 only) are imputed only
 #'   for 990 filers; Part I summary fields (990 + 990EZ) are imputed for all filers.
 #'   The returned dataframe always contains the original unmodified input columns.
 #'
-#' @param summarize Logical. If \code{TRUE}, prints a \code{summary()} of
+#' @param summarize Logical. If `TRUE`, prints a `summary()` of
 #'   the results and plots density curves for all four output columns
-#'   (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.
+#'   (raw, winsorized, z-score, percentile). Defaults to `FALSE`.
 #'
 #' @import dplyr
 #' @import stringr
