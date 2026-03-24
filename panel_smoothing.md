@@ -119,6 +119,59 @@ These are then normalized to sum to 1.
 
 ## Examples
 
+### The Math
+
+Let's use the X variable in the demo data from a single organization to show how the different weights impact the smoothed results. 
+
+| id |  x | year |
+| :- | -: | ---: |
+| A  |  1 | 2021 |
+| A  |  2 | 2022 |
+| A  |  3 | 2023 |
+| A  |  4 | 2024 |
+
+For ID "A" with x = 1, 2, 3, 4 and window = 3:
+
+**equal weights**: 0.33, 0.33, 0.33
+
+```r
+2021 uses 1,2,3 → 2
+2022 uses 1,2,3 → 2
+2023 uses 2,3,4 → 3
+2024 uses 2,3,4 → 3
+```
+
+So result is: `c( 2, 2, 3, 3 )`
+
+**half weights**: left 0.50, 0.25, 0.25; center 0.25, 0.50, 0.25; right 0.25, 0.25, 0.50
+
+Raw weights are based on distance from the focal point with the current value receiving half of the weight and the other half distributed equally to the remaining values in the window. 
+
+```
+1, 1/2, 1/2 normalized → 0.5, 0.25, 0.25
+so 1*0.5 + 2*0.25 + 3*0.25 = 1.75
+2022 centered on 2: 0.25,0.5,0.25 on 1,2,3 → 2
+2023 centered on 3: 0.25,0.5,0.25 on 2,3,4 → 3
+2024 at end: 2,3,4 with focal point at 4 gives 0.25,0.25,0.5 → 3.25
+```
+
+So result is: `c( 1.75, 2.00, 3.00, 3.25 )`
+
+**decay weights**: 1, 1/2, 1/4
+
+```
+2021 edge weights: 1, 1/2, 1/4 normalized → 0.5714, 0.2857, 0.1429
+2022 centered: 1/2, 1, 1/2 normalized → 0.25, 0.5, 0.25
+2023 centered: same
+2024 edge: mirror of 2021
+```
+
+So result is approximately: `c( 1.5714, 2.0000, 3.0000, 3.4286 )`
+
+Note that if there is a missing value then weights associated with the missing value are redistributed so weights always sum to 1. 
+
+{2,NA,4} with weight {0.50,0.25,0.25} becomes {2,4} with weights {0.625,0.375}
+
 ### Equal Weights
 
 ```r
