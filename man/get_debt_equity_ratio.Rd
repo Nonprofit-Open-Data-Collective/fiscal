@@ -7,7 +7,8 @@
 get_debt_equity_ratio( df,
   debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"    ),
   equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY"  ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ they are coalesced with the 990 value taking priority.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -50,7 +57,26 @@ Compares total liabilities to unrestricted net assets.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{der = total_liabilities / unrestricted_net_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero when liabilities are non-negative and unrestricted net assets
+are positive. Unbounded above when unrestricted net assets are very small. Values
+below zero occur when unrestricted net assets are negative (accumulated deficits
+exceed unrestricted equity), an acute financial distress signal. The ratio is
+undefined (NA) when unrestricted net assets equal zero.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values below 1.0 mean total liabilities are less than the unrestricted
+equity base -- generally considered strong.
+\item Values between 1.0 and 3.0 indicate moderate leverage.
+\item Values above 5.0 indicate very high leverage relative to the equity base
+and are a common vulnerability threshold.
+\item Negative values indicate negative unrestricted net assets, which almost
+always signals significant financial stress.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -89,27 +115,6 @@ vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Volunta
 Sector Quarterly}, 20(4), 445-460.
 \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero when liabilities are non-negative and unrestricted net assets
-are positive. Unbounded above when unrestricted net assets are very small. Values
-below zero occur when unrestricted net assets are negative (accumulated deficits
-exceed unrestricted equity), an acute financial distress signal. The ratio is
-undefined (NA) when unrestricted net assets equal zero.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values below 1.0 mean total liabilities are less than the unrestricted
-equity base - generally considered strong.
-\item Values between 1.0 and 3.0 indicate moderate leverage.
-\item Values above 5.0 indicate very high leverage relative to the equity base
-and are a common vulnerability threshold.
-\item Negative values indicate negative unrestricted net assets, which almost
-always signals significant financial stress.
 }
 }
 

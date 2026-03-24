@@ -18,7 +18,19 @@
 #' daily_expenses    = ( total_expenses - depreciation ) / 365
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Unbounded in both directions. Negative values occur when unrestricted net assets are
+#' negative (accumulated deficits exceed equity) or when fixed assets net of debt
+#' exceed liquid resources. Values above 365 indicate more than one year of coverage.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **180-365 days**: Considered a solid reserve position for endowed organizations.
+#'   - A large gap between this metric and [get_days_cash_operations()] indicates
+#'     liquidity concentrated in investments rather than accessible cash.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param net_assets Unrestricted net assets, EOY.
@@ -34,6 +46,11 @@
 #'   `total_expenses` or `depreciation`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_days_cash_investments( df,
@@ -43,7 +60,8 @@
 #'   mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
 #'   total_expenses    = "F9_09_EXP_TOT_TOT",
 #'   depreciation      = "F9_09_EXP_DEPREC_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -100,25 +118,6 @@
 #'     281-302.
 #'
 #'
-#' ## Definitional range
-#'
-#' Unbounded in both directions. Negative values occur when unrestricted net assets are
-#' negative (accumulated deficits exceed equity) or when fixed assets net of debt
-#' exceed liquid resources. Values above 365 indicate more than one year of coverage.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Because this measure is broader than days of cash alone, benchmarks are
-#'     higher: 180-365 days is considered a solid reserve position for endowed
-#'     organizations.
-#'   - For operating nonprofits without significant investment portfolios, results
-#'     should be interpreted alongside [get_days_cash_operations()].
-#'   - A large gap between this metric and [get_days_cash_operations()]
-#'     indicates that much of the organization's liquidity is tied up in investments
-#'     rather than immediately accessible cash.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
@@ -162,7 +161,8 @@ get_days_cash_investments <- function( df,
                       depreciation      = "F9_09_EXP_DEPREC_TOT",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -208,13 +208,14 @@ get_days_cash_investments <- function( df,
     den <- ( dt[[ total_expenses ]] - dt[[ depreciation ]] ) / 365
   }
 
-  message( paste0( "Daily operating expenses equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Daily operating expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   doci <- num / den
 
-  v <- winsorize_var( doci, winsorize )
+  v <- apply_transformations( doci, winsorize, range )
   DAYS_CASH_INV <- data.frame( days_cash_inv   = v$raw,
                       days_cash_inv_w = v$winsorized,
                       days_cash_inv_z = v$z,

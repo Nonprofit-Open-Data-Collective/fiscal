@@ -2,19 +2,52 @@
 % Please edit documentation in R/utils.R
 \name{winsorize_var}
 \alias{winsorize_var}
-\title{Winsorize a numeric vector and return raw, winsorized, z-score, and percentile versions}
+\title{Backward-compatible alias for apply_transformations()}
 \usage{
-winsorize_var(x, winsorize = 0.98)
+winsorize_var(
+  x,
+  winsorize = 0.98,
+  offset = 0.001,
+  range = "np",
+  normalize_type = NULL
+)
 }
 \arguments{
-\item{x}{Numeric vector.}
+\item{x}{Numeric vector (the computed ratio, before any transformation).}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98},
-which clips at the 1st and 99th percentiles).}
+which clips at the 1st and 99th percentiles for \code{"np"} range).}
+
+\item{offset}{Sentinel offset applied to fixed bounds (default \code{0.001}).
+Observations clipped to a fixed bound are stored as \verb{bound ± offset} so
+they remain identifiable in the \verb{_w} column.}
+
+\item{range}{Character string describing the theoretical range of the ratio.
+Controls how the lower and upper winsorization bounds are determined:
+\describe{
+\item{\code{"np"}}{Negative to positive (unbounded both directions). Winsorizes
+symmetrically at the \code{(1-winsorize)/2} and \code{1-(1-winsorize)/2}
+percentiles. Default behaviour.}
+\item{\code{"zp"}}{Zero to positive. The lower bound is fixed at \code{-offset}
+(flagging truncated-at-zero values) and the upper bound is the
+\code{winsorize} percentile of the full distribution.}
+\item{\code{"zo"}}{Zero to one. Both bounds are fixed (\code{-offset} and
+\code{1+offset}), flagging values outside \verb{[0, 1]}. No percentile-based
+clipping is applied.}
+\item{\code{"nz"}}{Negative to zero. The upper bound is fixed at \code{+offset}
+and the lower bound is the \code{1-winsorize} percentile.}
+\item{\code{"lo;hi"}}{Custom numeric range, e.g. \code{"0;10"}. The lower bound
+is fixed at \code{lo - offset} and the upper bound at \code{hi + offset}.}
+}}
+
+\item{normalize_type}{Transformation type override passed to
+\code{\link[=find_best_normalization]{find_best_normalization()}}. One of \code{NULL} (auto-detect), \code{"asinh"},
+\code{"logit"}, \code{"rank_normal"}, or \code{"hurdle"}. Default \code{NULL}.}
 }
 \value{
-A named list with elements \code{raw}, \code{winsorized}, \code{z}, \code{pctile}.
+Same as \code{\link[=apply_transformations]{apply_transformations()}}.
 }
 \description{
-Winsorize a numeric vector and return raw, winsorized, z-score, and percentile versions
+\code{winsorize_var()} is a deprecated alias retained for backward compatibility.
+New code should use \code{\link[=apply_transformations]{apply_transformations()}} directly.
 }

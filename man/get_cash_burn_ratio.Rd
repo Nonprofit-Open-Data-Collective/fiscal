@@ -8,7 +8,8 @@ get_cash_burn_ratio( df,
   cash_eoy         = "F9_10_ASSET_CASH_EOY",
   cash_boy         = "F9_10_ASSET_CASH_BOY",
   months_in_period = 12,
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -24,6 +25,12 @@ a standard annual filing. Adjust for short-year filers.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -53,7 +60,23 @@ Monthly rate at which an organization draws down its cash reserves.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{brr = ( cash_boy - cash_eoy ) / months_in_period
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
+depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
+near-complete cash exhaustion. The ratio is undefined (NA) when beginning-of-year
+cash is zero, which occurs in the first year of operation or after a complete cash
+drawdown.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item A ratio consistently below 1.0 over multiple years is a warning sign;
+a single year below 1.0 may reflect planned reserve spending.
+\item \strong{Below 0.50} in a single year (cash halved) warrants investigation.
+\item A ratio consistently above 1.0 indicates accumulating liquidity reserves.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -92,27 +115,6 @@ for Nonprofit Organizations}. Wiley. - Discusses cash trend analysis for nonprof
 \itemize{
 \item Annual survey tracks cash position changes as a sector-wide indicator.
 }
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
-depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
-near-complete cash exhaustion. The ratio is undefined (NA) when beginning-of-year
-cash is zero, which occurs in the first year of operation or after a complete cash
-drawdown.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item A ratio consistently below 1.0 over multiple years is a warning sign.
-A single year below 1.0 may reflect planned spending from reserves.
-\item A ratio consistently above 1.0 suggests the organization is building
-liquidity reserves, which is generally positive up to a point.
-\item Ratios below 0.50 in a single year (cash halved) warrant investigation
-into whether the decline reflects a structural revenue problem or a planned
-capital expenditure.
 }
 }
 

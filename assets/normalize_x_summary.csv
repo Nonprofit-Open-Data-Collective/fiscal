@@ -1,0 +1,48 @@
+variable,issue,transform_applied,quality,n_nonmissing,raw_skew,final_skew,raw_kurtosis,final_kurtosis,guess_reason
+expenses_grants_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),ok,2095,2.518037231399094,0.9754773000863518,5.381552274838988,-0.6144816936833633,"bounded [0,1] with substantial zero mass (p0=0.646)"
+investments_assets_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),ok,2095,2.1954669772256943,1.1943108750441622,3.8185057784693477,-0.12078774023719419,"bounded [0,1] with substantial zero mass (p0=0.692)"
+land_assets_net_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),ok,2095,1.0335706995401703,-0.12377060150181042,-0.23040580988765091,-1.381608409624357,"bounded [0,1] with substantial zero mass (p0=0.333)"
+revenue_fundevents_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),ok,2095,7.075431645184458,1.5237437364418787,64.43802949793107,0.820641374154941,"bounded [0,1] with substantial zero mass (p0=0.749)"
+revenue_programs_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),ok,2095,0.7723313141934481,-0.09213688820600925,-0.9446217689479282,-1.4077418544581262,"bounded [0,1] with substantial zero mass (p0=0.343)"
+cash_burn_w,Mixed-sign with right skew,rank_normal,ok,2095,3.723417414867907,0.8404261146439824,13.598893368949053,-0.4333694681094875,mixed-sign or otherwise messy support
+netassets_comp_w,Mixed-sign with left skew,rank_normal,ok,2095,-1.705741105393425,-0.4843739373993466,1.7559247610086341,0.11375504452640461,mixed-sign or otherwise messy support
+earned_income_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,0.5929254037141948,-0.2833717540410764,-1.2155910504529208,-1.1445943250739734,"bounded [0,1] with substantial zero mass (p0=0.263)"
+expenses_admin_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,2.3889487353587553,-0.7458058072386734,7.564545376159815,0.059871262285426496,"bounded [0,1] with substantial zero mass (p0=0.119)"
+expenses_compensation_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,-0.16298833636979357,-0.6876281106354186,-1.0562525067794732,-0.21848783242879044,"bounded [0,1] with substantial zero mass (p0=0.144)"
+expenses_feesforservice_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,2.9572914800805816,-0.743491355779027,9.426846957094318,0.07994454926760719,"bounded [0,1] with substantial zero mass (p0=0.118)"
+fundr_eff_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,2.555230275204805,0.28812896532817817,6.815248274303663,-1.4807990013151073,"bounded [0,1] with substantial zero mass (p0=0.465)"
+grants_govt_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,1.8010200586578657,0.3054061576741317,2.0211641506743554,-1.4485422422548517,"bounded [0,1] with substantial zero mass (p0=0.468)"
+overhead_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),strong,2095,2.3889487353587553,-0.7458058072386734,7.564545376159815,0.059871262285426496,"bounded [0,1] with substantial zero mass (p0=0.119)"
+cash_assets_w,"Bounded [0,1] with boundary pile-up",logit,strong,2095,0.8524276430274352,0.3380254268768576,-0.7057827033516442,0.6883143904970228,"bounded [0,1] with limited boundary pile-up"
+assets_rev_w,Mixed-sign with right skew,rank_normal,strong,2095,5.16942391402226,-0.0045365187499363255,33.286573972252825,-0.0857962362369098,mixed-sign or otherwise messy support
+cash_liq_w,Mixed-sign with right skew,rank_normal,strong,2095,4.148427189716498,-0.0017898715586576013,17.342684548977477,-0.28317225999280105,mixed-sign or otherwise messy support
+current_w,Mixed-sign with right skew,rank_normal,strong,2095,4.134937135163733,-0.008229884044642075,17.199573019344985,-0.27185404968811255,mixed-sign or otherwise messy support
+days_cash_inv_w,Mixed-sign with right skew,rank_normal,strong,2095,5.4385831207700495,-0.004600175792267648,50.571997800124734,-0.07841868940788954,mixed-sign or otherwise messy support
+days_cash_ops_w,Mixed-sign with right skew,rank_normal,strong,2095,5.492455270878619,-0.007923249655450774,34.84815163862467,-0.08136575400378421,mixed-sign or otherwise messy support
+debt_assets_w,Mixed-sign with right skew,rank_normal,strong,2095,1.3521767390526176,-0.07296808943005074,0.8371585328807551,-0.2995026619709802,mixed-sign or otherwise messy support
+debt_equity_w,Mixed-sign with right skew,rank_normal,strong,2095,2.306292190569103,-0.003969339995597493,17.76509852127294,-0.18348420106192487,mixed-sign or otherwise messy support
+debt_netassets_w,Mixed-sign with right skew,rank_normal,strong,2095,2.306292190569103,-0.003969339995597493,17.76509852127294,-0.18348420106192487,mixed-sign or otherwise messy support
+debt_shortterm_w,Mixed-sign with right skew,rank_normal,strong,2095,2.6925360010828543,0.02534655744623892,6.568028860789957,-0.5009933675459872,mixed-sign or otherwise messy support
+donations_rev_w,"Bounded [0,1] with substantial upper-bound mass",rank_normal,strong,2095,-0.46046391222676647,-0.08393574993395653,-1.3412085288953222,-0.20147099961826642,"bounded [0,1] with heavy boundary mass (p0=0.000, p1=0.106)"
+equity_w,Mixed-sign with left skew,rank_normal,strong,2095,-1.3521767389697419,0.07296808943005134,0.8371585327106801,-0.29950266197098063,mixed-sign or otherwise messy support
+invest_income_w,Mixed-sign with right skew,rank_normal,strong,2095,6.180085419010205,0.21357948210606306,45.49450786942073,-0.11775290654703685,mixed-sign or otherwise messy support
+land_assets_gross_w,Mixed-sign with right skew,rank_normal,strong,2095,1.6562011809546087,0.43840135700588667,1.7098653765699918,-0.7283406273514399,mixed-sign or otherwise messy support
+liquid_assets_months_w,Mixed-sign with right skew,rank_normal,strong,2095,7.288576357692947,-0.007140378145429589,63.69152036864308,-0.061946964339233634,mixed-sign or otherwise messy support
+months_cash_ops_w,Mixed-sign with right skew,rank_normal,strong,2095,5.492454764761651,-0.007923249655450774,34.84814714581562,-0.08136575400378421,mixed-sign or otherwise messy support
+netassets_growth_w,Mixed-sign with right skew,rank_normal,strong,2095,4.735287104316384,0.009719537684257566,26.82339193300934,-0.20347764465207074,mixed-sign or otherwise messy support
+op_reserve_w,Mixed-sign with right skew,rank_normal,strong,2095,6.8873098794857235,-0.005891839466710122,59.690581073587495,-0.06648708028269734,mixed-sign or otherwise messy support
+profit_postdepr_w,Mixed-sign with left skew,rank_normal,strong,2095,-6.553426285473601,0.0034136105282023895,62.317791130364085,-0.08238413333864436,mixed-sign or otherwise messy support
+profit_predepr_w,Mixed-sign with left skew,rank_normal,strong,2095,-6.061083526385946,0.0034135949813684815,56.50680371207538,-0.08238415630562823,mixed-sign or otherwise messy support
+quick_w,Mixed-sign with right skew,rank_normal,strong,2095,4.158705251360486,-0.006399087681600969,17.46292875892548,-0.2720440813450766,mixed-sign or otherwise messy support
+return_assets_w,Mixed-sign with left skew,rank_normal,strong,2095,-4.281948973244432,-0.013591487286991912,32.688982614562576,-0.13901122693096202,mixed-sign or otherwise messy support
+return_netassets_w,Mixed-sign with right skew,rank_normal,strong,2095,4.688271989732736,0.012674557709126942,26.937185797078286,-0.2002990682793242,mixed-sign or otherwise messy support
+self_suff_w,Mixed-sign with right skew,rank_normal,strong,2095,0.8073985688279238,0.4499117321401018,-0.737209808477179,-0.33037984843264523,mixed-sign or otherwise messy support
+surplus_margin_w,Mixed-sign with left skew,rank_normal,strong,2095,-10.5199131039044,-1.074207003637754e-05,137.44884803050266,-0.05540665864120964,mixed-sign or otherwise messy support
+debt_secured_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,2.4320834100239552,1.9696570617068192,4.418995172889709,2.472467404289943,"bounded [0,1] with substantial zero mass (p0=0.809)"
+debt_unsecured_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,3.7129678030201116,2.828234959415808,12.875048139572048,6.879641930902981,"bounded [0,1] with substantial zero mass (p0=0.880)"
+expenses_affiliates_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,10.23246389488714,3.125774125390208,121.53640928139019,8.788672888359969,"bounded [0,1] with substantial zero mass (p0=0.895)"
+expenses_membbenefits_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,14.664848778969972,7.716607476566243,229.29610463800032,62.625957902866574,"bounded [0,1] with substantial zero mass (p0=0.977)"
+revenue_fedcampaign_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,14.14888366610133,3.3649402289777646,214.5789907393452,10.434093869819653,"bounded [0,1] with substantial zero mass (p0=0.907)"
+revenue_membdues_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,4.783340687031633,2.2360872718182074,23.173797004808005,3.6664840634030105,"bounded [0,1] with substantial zero mass (p0=0.836)"
+revenue_reltdorgs_w,"Bounded [0,1] with substantial zero mass",hurdle (rank positive part),weak,2095,8.025521692543288,3.2362849160640055,70.19383263254146,9.544128628415443,"bounded [0,1] with substantial zero mass (p0=0.901)"
+prog_exp_w,"Bounded [0,1] with boundary pile-up",logit,weak,2095,-1.8236993155923527,-1.148616482664413,2.74634726203327,4.023450259254559,"bounded [0,1] with limited boundary pile-up"

@@ -15,7 +15,21 @@
 #' short_term_liabilities = accounts_payable + grants_payable
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded below at zero when net assets are positive. Negative values occur when net
+#' assets are negative (accumulated deficit), which makes the ratio uninterpretable as
+#' a burden measure. Unbounded above when net assets approach zero. Typical values for
+#' financially stable nonprofits are in the \[0, 0.30\] range.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values below 0.10 indicate modest short-term payables relative to the
+#'     equity base -- a comfortable position.
+#'   - Values above 0.30 suggest near-term obligations are placing meaningful
+#'     pressure on net assets.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param accounts_payable Accounts payable and accrued expenses, EOY.
@@ -27,13 +41,19 @@
 #'   combined with `net_assets`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_debt_shortterm_ratio( df,
 #'   accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
 #'   grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
 #'   net_assets       = "F9_10_NAFB_TOT_EOY",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -76,24 +96,6 @@
 #'     Sector Quarterly*, 20(4), 445-460.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero when net assets are positive. Negative values occur when net
-#' assets are negative (accumulated deficit), which makes the ratio uninterpretable as
-#' a burden measure. Unbounded above when net assets approach zero. Typical values for
-#' financially stable nonprofits are in the \[0, 0.30\] range.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values below 0.10 indicate that short-term payables are modest relative to
-#'     the equity base - a comfortable position.
-#'   - Values above 0.30 suggest that near-term obligations are placing meaningful
-#'     pressure on net assets.
-#'   - Organizations with very low net assets may show very high or unstable ratios
-#'     even with normal payables levels.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_ACC_PAYABLE_EOY`: 
@@ -131,7 +133,8 @@ get_debt_shortterm_ratio <- function( df,
                       net_assets       = "F9_10_NAFB_TOT_EOY",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -174,13 +177,14 @@ get_debt_shortterm_ratio <- function( df,
     den <- dt[[ net_assets ]]
   }
 
-  message( paste0( "Net assets equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Net assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   stdr <- num / den
 
-  v <- winsorize_var( stdr, winsorize )
+  v <- apply_transformations( stdr, winsorize, range )
   DEBT_SHORTTERM <- data.frame( debt_shortterm   = v$raw,
                       debt_shortterm_w = v$winsorized,
                       debt_shortterm_z = v$z,

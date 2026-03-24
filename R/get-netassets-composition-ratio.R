@@ -13,19 +13,38 @@
 #' nacr = unrestricted_net_assets / total_net_assets
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\] when both numerator and denominator are positive: zero means all
+#' net assets are restricted; one means all net assets are unrestricted. Values outside
+#' this range occur when either unrestricted or total net assets are negative.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Above 0.50**: At least half of net assets are unrestricted -- generally healthy.
+#'   - **Below 0.20**: Heavy donor-restricted balance sheet; limited flexibility.
+#'   - Organizations with large permanent endowments may show low ratios without
+#'     financial weakness.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
 #' @param total_net_assets Total net assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_netassets_composition_ratio( df,
 #'   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
 #'   total_net_assets        = "F9_10_NAFB_TOT_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -71,23 +90,6 @@
 #'     Leadership*, 23(3), 281-302. - Examines unrestricted reserve composition.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\] when both numerator and denominator are positive: zero means all
-#' net assets are restricted; one means all net assets are unrestricted. Values outside
-#' this range occur when either unrestricted or total net assets are negative.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values above 0.50 indicate that at least half of net assets are
-#'     unrestricted - generally considered healthy.
-#'   - Values below 0.20 suggest heavy donor-restricted balance sheets and
-#'     limited financial flexibility.
-#'   - Organizations with large endowments will show low ratios if the endowment
-#'     is permanently restricted, which may not indicate financial weakness.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
@@ -120,7 +122,8 @@
 get_netassets_composition_ratio <- function( df,
                       unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
                       total_net_assets        = "F9_10_NAFB_TOT_EOY",
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -143,13 +146,14 @@ get_netassets_composition_ratio <- function( df,
   u <- resolve_col( dt, unrestricted_net_assets )
   t <- resolve_col( dt, total_net_assets )
 
-  message( paste0( "Total net assets equal to zero: ", sum( t == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  t[ t == 0 ] <- NA
+  nan.count <- sum( t == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total net assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  t[ t == 0 ] <- NaN
 
   nacr <- u / t
 
-  v <- winsorize_var( nacr, winsorize )
+  v <- apply_transformations( nacr, winsorize, range )
   NETASSETS_COMP <- data.frame( netassets_comp   = v$raw,
                       netassets_comp_w = v$winsorized,
                       netassets_comp_z = v$z,

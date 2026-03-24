@@ -12,6 +12,7 @@ retrieve_efile_data(
   bmf_url =
     "https://nccsdata.s3.us-east-1.amazonaws.com/bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv",
   timeout = 300,
+  retry_max = 3L,
   verbose = TRUE
 )
 }
@@ -43,6 +44,14 @@ Update this when NCCS releases a new version of the dataset.}
 Defaults to \code{300} (5 minutes). R's built-in default of 60 seconds
 is too short for the BMF (~200 MB) on slow connections. The original
 timeout value is restored after the function exits.}
+
+\item{retry_max}{Integer. Maximum number of attempts for each individual
+table download. Default \code{3}. On each failed attempt a short random
+back-off (\code{1}–\code{5} seconds) is observed before retrying, which is usually
+sufficient to recover from transient SSL or connection-reset errors. If
+all \code{retry_max} attempts fail the table is skipped and a warning is
+issued; the year's data is still returned from whichever tables
+succeeded.}
 
 \item{verbose}{Logical. If \code{TRUE} (default), prints progress messages
 including row/column counts after each download.}
@@ -79,6 +88,16 @@ Tables are merged sequentially as full outer joins on all shared columns,
 so organizations that filed only one of the component forms (e.g., 990EZ
 filers who have P00 and P01 data but no P08/P09/P10) are retained with
 \code{NA} in the columns from tables they did not file.
+}
+
+\subsection{Table-level retry logic:}{
+
+Each table download is attempted up to \code{retry_max} times. Failures are
+caught individually so a single flaky table (e.g. a transient SSL error
+on P09) does not abort the other four. Failed tables are retried with a
+random 1–5 second back-off between attempts. If a table still fails after
+all attempts it is skipped entirely: the returned data frame will be
+missing its columns but will contain full data from all successful tables.
 }
 
 \subsection{BMF processing:}{

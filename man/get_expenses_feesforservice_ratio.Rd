@@ -13,7 +13,8 @@ get_expenses_feesforservice_ratio( df,
   investment_mgmt_fees = "F9_09_EXP_FEE_SVC_INVEST_TOT",
   other_fees           = "F9_09_EXP_FEE_SVC_OTH_TOT",
   total_expenses       = "F9_09_EXP_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -37,6 +38,12 @@ get_expenses_feesforservice_ratio( df,
 \item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}).}
 
@@ -64,6 +71,17 @@ functional expenses.
                           / total_expenses
 }\if{html}{\out{</div>}}
 
+\strong{Definitional Range}
+
+Bounded [0, 1]. Most nonprofits show values in the [0.01, 0.20] range.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universal benchmark; most meaningful within subsector or over time.
+\item Unusually high investment management fees relative to total expenses may
+indicate poor endowment management or excessive fee structures.
+}
+
 \strong{Calculated For:} 990 filers only.
 }
 \details{
@@ -84,19 +102,6 @@ Sum of seven Part IX fee fields (lines 11a-11g, Column A) / total expenses (line
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Most nonprofits show values in the [0.01, 0.20] range.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No universal benchmark; most meaningful within-subsector or over time.
-\item High investment management fees relative to total expenses may indicate
-poor endowment management or excessive fee structures.
 }
 }
 

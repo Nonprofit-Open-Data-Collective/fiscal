@@ -7,7 +7,8 @@
 get_program_expenses_ratio( df,
   program_expenses = "F9_09_EXP_TOT_PROG",
   total_expenses   = c( "F9_09_EXP_TOT_TOT", "F9_01_EXP_TOT_CY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ are provided they are coalesced with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -50,7 +57,25 @@ Share of total expenses devoted to program services.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{per = program_expenses / total_expenses
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Definitional Range}
+
+Bounded zero to one. Zero means no spending on programs (all overhead); one means
+all spending is on programs (no administration or fundraising). In practice, values
+above 0.95 are unusual and may reflect accounting misallocation. The empirical
+range for most operating nonprofits is approximately 0.50 to 0.95.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{>= 75\%}: Charity Navigator threshold for a favorable efficiency score.
+\item \strong{>= 65\%}: BBB Wise Giving Alliance minimum standard.
+\item \strong{Below 50\%}: Commonly flagged as a concern, though legitimate for
+startup-phase organizations.
+\item Caution: high ratios achieved by underinvesting in administration
+(the "starvation cycle") can signal long-term organizational weakness
+(Lecy & Searing 2015).
+}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -96,26 +121,6 @@ analysis of program expense ratio benchmarks and their perverse incentives.
 \itemize{
 \item Industry statement cautioning against overreliance on overhead ratios.
 }
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded zero to one. Zero means no spending on programs (all overhead); one means
-all spending is on programs (no administration or fundraising). In practice, values
-above 0.95 are unusual and may reflect accounting misallocation. The empirical
-range for most operating nonprofits is approximately 0.50 to 0.95.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{75 percent or more}: Charity Navigator's threshold for a favorable efficiency score.
-\item \strong{65 percent or more}: BBB Wise Giving Alliance minimum standard.
-\item \strong{Below 50 percent}: Commonly flagged as a concern, though legitimate for
-organizations in startup phases or those with high fundraising requirements.
-\item Caution: high program ratios achieved by underinvesting in administration
-(the "starvation cycle") can signal long-term organizational weakness despite
-appearing efficient in the short term (Lecy & Searing 2015).
 }
 }
 

@@ -16,7 +16,33 @@
 #' current_liabilities = accounts_payable + grants_payable
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' The quick ratio is bounded below at zero (no asset values are negative on a
+#' properly prepared balance sheet) and is unbounded above. In practice the empirical
+#' range for nonprofits is approximately \[0, 10\], with extreme values above 5 typically
+#' indicating cash hoarding, an unusually large receivables balance, or an organization
+#' with minimal current liabilities (e.g., a grant-making foundation with no accounts
+#' payable).
+#'
+#' Values below zero can occur when net receivables are negative (allowances for
+#' uncollectible pledges exceed gross pledges) or when the denominator carries
+#' accounting adjustments. Very large values can result when current liabilities are
+#' near zero, producing ratios that are mathematically valid but practically
+#' uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
+#' extremes.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Above 1.0**: Conventionally adequate; liquid assets cover current liabilities.
+#'   - **0.5-1.0**: Potential short-term stress.
+#'   - **Below 0.5**: Common vulnerability threshold (Tuckman & Chang 1991).
+#'   - Very high values (above 3-5) may signal excess cash hoarding rather than
+#'     financial health.
+#'   - A declining trend over consecutive years is a stronger warning signal than
+#'     any single year's value.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -31,6 +57,11 @@
 #'   combined with `accounts_payable` or `grants_payable`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_quick_ratio( df,
@@ -40,7 +71,8 @@
 #'   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
 #'   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
 #'   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -132,45 +164,6 @@
 #'     discussion of quick ratio benchmarks specific to nonprofits.
 #'
 #'
-#' ## Definitional range
-#'
-#' The quick ratio is bounded below at zero (no asset values are negative on a
-#' properly prepared balance sheet) and is unbounded above. In practice the empirical
-#' range for nonprofits is approximately \[0, 10\], with extreme values above 5 typically
-#' indicating cash hoarding, an unusually large receivables balance, or an organization
-#' with minimal current liabilities (e.g., a grant-making foundation with no accounts
-#' payable).
-#'
-#' Values below zero can occur when net receivables are negative (allowances for
-#' uncollectible pledges exceed gross pledges) or when the denominator carries
-#' accounting adjustments. Very large values can result when current liabilities are
-#' near zero, producing ratios that are mathematically valid but practically
-#' uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
-#' extremes.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#' For commercial firms the standard benchmark is 1.0 or above, meaning liquid assets
-#' are sufficient to cover current liabilities without selling inventory. Nonprofit
-#' benchmarks are less settled and vary substantially by subsector:
-#'
-#'
-#'   - **General guidance**: A ratio above 1.0 is conventionally adequate.
-#'     Ratios between 0.5 and 1.0 indicate potential short-term stress. Ratios below
-#'     0.5 are the most common criterion for classifying an organization as financially
-#'     vulnerable (Tuckman & Chang 1991).
-#'   - **Subsector variation**: Health care and social service organizations
-#'     carry higher accounts receivable (insurance reimbursements, government contracts)
-#'     and typically show lower quick ratios than arts or membership organizations.
-#'     Zietlow et al. (2007) report median quick ratios in the 0.7-1.5 range across
-#'     nonprofit subsectors.
-#'   - **Higher is not always better**: Very high quick ratios (above 3-5) may
-#'     signal excessive cash hoarding rather than financial health. Some funders and
-#'     rating agencies flag very high reserve ratios alongside very low ones.
-#'   - **Trend matters more than level**: A declining quick ratio over
-#'     consecutive years is a stronger warning signal than any single year's value.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
@@ -215,7 +208,8 @@ get_quick_ratio <- function( df,
                     grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
                     numerator   = NULL,
                     denominator = NULL,
-                    winsorize = 0.98 ,
+                    winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -261,13 +255,14 @@ get_quick_ratio <- function( df,
     den <- dt[[ accounts_payable ]] + dt[[ grants_payable ]]
   }
 
-  message( paste0( "Current liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Current liabilities equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   qr <- num / den
 
-  v <- winsorize_var( qr, winsorize )
+  v <- apply_transformations( qr, winsorize, range )
   QUICK <- data.frame( quick   = v$raw,
                     quick_w = v$winsorized,
                     quick_z = v$z,

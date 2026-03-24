@@ -19,7 +19,20 @@
 #' current_liabilities = accounts_payable + grants_payable
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' The current ratio is bounded below at zero and unbounded above. Values below 1.0
+#' mean current liabilities exceed current assets. The empirical range for nonprofits
+#' is approximately \[0, 15\], with most organizations clustered between 0.5 and 5.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **1.0**: Conventional adequacy threshold -- liabilities exactly covered.
+#'   - **Below 0.5**: Indicates acute short-term risk (Tuckman & Chang 1991).
+#'   - **Above 3.0-4.0**: May indicate excess cash or slow receivables collection.
+#'   - Sector medians generally fall in the \[1.0, 2.5\] range (Zietlow et al. 2007).
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -37,6 +50,11 @@
 #'   with those arguments.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_current_ratio( df,
@@ -48,7 +66,8 @@
 #'   prepaid_expenses    = "F9_10_ASSET_EXP_PREPAID_EOY",
 #'   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
 #'   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -115,25 +134,6 @@
 #'     for Nonprofit Organizations*. Wiley.
 #'
 #'
-#' ## Definitional range
-#'
-#' The current ratio is bounded below at zero and unbounded above. Values below 1.0
-#' mean current liabilities exceed current assets. The empirical range for nonprofits
-#' is approximately \[0, 15\], with most organizations clustered between 0.5 and 5.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - A ratio of 1.0 is the conventional adequacy threshold: liabilities are
-#'     exactly covered by current assets.
-#'   - Tuckman & Chang (1991) use a ratio below 1.0 as a financial vulnerability
-#'     indicator. Values below 0.5 indicate acute short-term risk.
-#'   - Values above 3.0-4.0 may indicate excess cash or slow collection of
-#'     receivables rather than strong financial health.
-#'   - Zietlow et al. (2007) report nonprofit sector medians generally in the
-#'     \[1.0, 2.5\] range, with substantial subsector variation.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
@@ -183,7 +183,8 @@ get_current_ratio <- function( df,
                     grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
                     numerator   = NULL,
                     denominator = NULL,
-                    winsorize = 0.98 ,
+                    winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -232,13 +233,14 @@ get_current_ratio <- function( df,
     den <- dt[[ accounts_payable ]] + dt[[ grants_payable ]]
   }
 
-  message( paste0( "Current liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Current liabilities equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   cr <- num / den
 
-  v <- winsorize_var( cr, winsorize )
+  v <- apply_transformations( cr, winsorize, range )
   CURRENT <- data.frame( current   = v$raw,
                     current_w = v$winsorized,
                     current_z = v$z,

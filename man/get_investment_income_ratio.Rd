@@ -10,7 +10,8 @@ get_investment_income_ratio( df,
   rent_income      = "F9_08_REV_OTH_RENT_GRO_PERS",
   asset_sale_income= "F9_08_REV_OTH_SALE_ASSET_OTH",
   total_revenue    = "F9_08_REV_TOT_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -35,6 +36,12 @@ combined with \code{total_revenue}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -65,6 +72,20 @@ Measures reliance on investment-related revenue as a share of total revenue.
 
 investment_income = invest_income + bond_proceeds + rent_income + asset_sale_income
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1] in most years, but values above 1.0 are possible in years with
+large asset sale gains. Values below zero can result from asset sale losses or
+negative investment returns.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values above 0.30 indicate significant financial asset dependency and warrant
+monitoring of portfolio performance.
+\item Large year-over-year swings often reflect one-time asset transactions rather
+than structural revenue changes.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -99,22 +120,6 @@ volatile and may distort the ratio in years with large asset disposals.
 \item Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
 organizations. \emph{Journal of Public Administration Research and Theory},
 19(4), 947-966.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1] in most years, but values above 1.0 are possible in years with
-large asset sale gains. Values below zero can result from asset sale losses or
-negative investment returns.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values above 0.30 indicate significant financial asset dependency and
-warrant monitoring of portfolio performance.
-\item Large year-over-year swings in this ratio often reflect one-time asset
-transactions rather than structural revenue changes.
 }
 }
 

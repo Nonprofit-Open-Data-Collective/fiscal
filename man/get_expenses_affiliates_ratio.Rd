@@ -7,7 +7,8 @@
 get_expenses_affiliates_ratio( df,
   payments_to_affiliates    = "F9_09_EXP_PAY_AFFIL_TOT",
   total_expenses            = "F9_09_EXP_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -19,6 +20,12 @@ get_expenses_affiliates_ratio( df,
 \item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -43,6 +50,18 @@ Payments to affiliates as a share of total expenses.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{expenses_affiliates = payments_to_affiliates / total_expenses
 }\if{html}{\out{</div>}}
 
+\strong{Definitional Range}
+
+Bounded [0, 1]. Near zero for standalone organizations; potentially above 0.50
+for federated intermediaries.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Interpret in the context of organizational structure.
+\item Large payments to affiliates in the absence of a known federated structure
+warrant review of related-party transaction disclosures.
+}
+
 \strong{Calculated For:} 990 filers only.
 }
 \details{
@@ -63,20 +82,6 @@ Payments to affiliates (Part IX line 21, Column A) / total expenses (line 25A).
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Near zero for standalone organizations; potentially above 0.50
-for federated intermediaries.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Interpret in the context of organizational structure.
-\item Large payments to affiliates absent a known federated structure warrant
-review of related-party transaction disclosures.
 }
 }
 

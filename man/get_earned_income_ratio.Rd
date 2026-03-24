@@ -10,7 +10,8 @@ get_earned_income_ratio( df,
   royalties           = "F9_08_REV_OTH_ROY_TOT",
   other_revenue       = "F9_08_REV_MISC_OTH_TOT",
   total_revenue       = "F9_08_REV_TOT_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -35,6 +36,12 @@ with \code{total_revenue}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -67,7 +74,20 @@ earned_revenue = program_service_revenue + membership_dues
                  + royalties + other_revenue
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Organizations heavily reliant on philanthropy show values near
+zero; fee-based service providers may show values above 0.90.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universal threshold -- context matters: an advocacy organization is expected
+to show a low ratio; a hospital is expected to show a high one.
+\item A low ratio combined with high donation dependence indicates philanthropic
+concentration risk.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -99,21 +119,6 @@ uses only program service revenue (see \code{\link[=get_revenue_programs_ratio]{
 of Policy Analysis and Management}, 17(2), 165-174.
 \item Chang, C.F. & Tuckman, H.P. (1994). Revenue diversification among nonprofits.
 \emph{VOLUNTAS}, 5(3), 273-290.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Organizations heavily reliant on philanthropy show values near
-zero; fee-based service providers may show values above 0.90.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No universal threshold. Context matters: an advocacy organization is expected
-to show a low earned income ratio; a hospital is expected to show a high one.
-\item Used in revenue concentration studies: a low ratio combined with high donation
-dependence indicates philanthropic concentration risk.
 }
 }
 

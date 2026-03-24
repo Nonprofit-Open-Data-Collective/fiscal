@@ -14,6 +14,20 @@
 #' fer = fundraising_expenses / total_contributions
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
+#' dollar) are possible, particularly for young organizations building donor bases or
+#' those in difficult fundraising environments. The typical range is approximately
+#' \[0, 0.50\] for most operating nonprofits.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **<= 10 cents per dollar (ratio <= 0.10)**: Charity Navigator threshold
+#'     for a full fundraising efficiency score.
+#'   - **<= 35 cents per dollar**: BBB Wise Giving Alliance standard.
+#'   - **Above 50 cents**: Commonly flagged as inefficient.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -21,12 +35,18 @@
 #' @param total_contributions Total contributions received.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_fundraising_efficiency_ratio( df,
 #'   fundraising_expenses = "F9_09_EXP_TOT_FUNDR",
 #'   total_contributions  = "F9_08_REV_CONTR_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -76,25 +96,6 @@
 #'     *Nonprofit and Voluntary Sector Quarterly*, 30(2), 376-392.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
-#' dollar) are possible, particularly for young organizations building donor bases or
-#' those in difficult fundraising environments. The typical range is approximately
-#' \[0, 0.50\] for most operating nonprofits.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **10 cents per dollar or less (ratio <= 0.10)**: Charity Navigator threshold
-#'     for a full fundraising efficiency score.
-#'   - **35 cents per dollar or less**: BBB Wise Giving Alliance standard.
-#'   - **Above 50 cents**: Commonly flagged as inefficient; may indicate
-#'     declining donor base or heavy reliance on expensive acquisition channels.
-#'   - **Zero**: Organizations with no fundraising expenses but positive
-#'     contributions (common for government-funded nonprofits) show a ratio of zero.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_TOT_FUNDR`: Total fundraising expenses (`fundraising_expenses`)
@@ -126,7 +127,8 @@
 get_fundraising_efficiency_ratio <- function( df,
                      fundraising_expenses = "F9_09_EXP_TOT_FUNDR",
                      total_contributions  = "F9_08_REV_CONTR_TOT",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -149,13 +151,14 @@ get_fundraising_efficiency_ratio <- function( df,
   f <- resolve_col( dt, fundraising_expenses )
   c <- resolve_col( dt, total_contributions )
 
-  message( paste0( "Total contributions equal to zero: ", sum( c == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  c[ c == 0 ] <- NA
+  nan.count <- sum( c == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total contributions equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  c[ c == 0 ] <- NaN
 
   fer <- f / c
 
-  v <- winsorize_var( fer, winsorize )
+  v <- apply_transformations( fer, winsorize, range )
   FUNDR_EFF <- data.frame( fundr_eff   = v$raw,
                      fundr_eff_w = v$winsorized,
                      fundr_eff_z = v$z,

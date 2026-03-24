@@ -11,7 +11,8 @@ get_months_cash_operations( df,
   accounts_receivable  = "F9_10_ASSET_ACC_NET_EOY",
   total_expenses       = "F9_09_EXP_TOT_TOT",
   depreciation         = "F9_09_EXP_DEPREC_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -40,6 +41,12 @@ combined with \code{total_expenses} or \code{depreciation}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -72,7 +79,22 @@ liquid_assets    = cash + savings + pledges_receivable + accounts_receivable
 monthly_expenses = ( total_expenses - depreciation ) / 12
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero; unbounded above. The typical operating range for nonprofits
+is approximately [0, 24] months, with values above 12 months uncommon for
+operating organizations (more typical for foundations).
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Less than 1 month}: Acute liquidity risk.
+\item \strong{1-3 months}: Below adequate; common guidance is at least 3 months.
+\item \strong{3-6 months}: Generally considered healthy for most operating nonprofits.
+\item \strong{6+ months}: Strong reserve position.
+\item The Nonprofit Finance Fund recommends 3-6 months as a target.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -102,26 +124,6 @@ to smooth seasonal variation, which is not possible with annual 990 data.
 for Nonprofit Organizations}. Wiley.
 \item GuideStar/Candid. \emph{Nonprofit Finance Indicators}. - Months of cash is
 one of the core metrics in the GuideStar financial health profile.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero; unbounded above. The typical operating range for nonprofits
-is approximately [0, 24] months, with values above 12 months uncommon for
-operating organizations (more typical for foundations).
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{Less than 1 month}: Acute liquidity risk.
-\item \strong{1-3 months}: Below adequate; common recommendation is at least
-3 months.
-\item \strong{3-6 months}: Generally considered healthy for most nonprofits.
-\item \strong{6+ months}: Strong reserve position; may be appropriate for
-organizations with volatile revenue or major capital needs on the horizon.
-\item The Nonprofit Finance Fund recommends 3-6 months as a target for most
-operating nonprofits.
 }
 }
 

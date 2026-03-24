@@ -42,33 +42,201 @@ get_idvars <- function() .IDVARS
 # Used by sanitize_financials() and the sanitize= argument in individual functions.
 
 .PC_FIELDS <- c(
+  # Part I - prior-year and UBI fields (990 only)
+  "F9_01_ACT_GVRN_UBIZ_REV_TOT", "F9_01_ACT_GVRN_UBIZ_TAXABLE_NET",
+  "F9_01_EXP_BEN_PAID_MEMB_PY", "F9_01_EXP_FUNDR_TOT_CY",
+  "F9_01_EXP_GRANT_SIMILAR_PY", "F9_01_EXP_OTH_PY",
+  "F9_01_EXP_PROF_FUNDR_TOT_CY", "F9_01_EXP_PROF_FUNDR_TOT_PY",
+  "F9_01_EXP_REV_LESS_EXP_PY", "F9_01_EXP_SAL_ETC_PY",
+  "F9_01_EXP_TOT_PY",
+  "F9_01_REV_CONTR_TOT_PY", "F9_01_REV_INVEST_TOT_PY",
+  "F9_01_REV_OTH_PY", "F9_01_REV_PROG_TOT_PY", "F9_01_REV_TOT_PY",
   # Part VIII - revenue detail (990 only)
-  "F9_08_REV_CONTR_GOVT_GRANT", "F9_08_REV_CONTR_MEMBSHIP_DUE",
-  "F9_08_REV_CONTR_TOT", "F9_08_REV_MISC_OTH_TOT",
-  "F9_08_REV_OTH_FUNDR_NET_TOT", "F9_08_REV_OTH_INVEST_BOND_TOT",
-  "F9_08_REV_OTH_INVEST_INCOME_TOT", "F9_08_REV_OTH_RENT_GRO_PERS",
-  "F9_08_REV_OTH_ROY_TOT", "F9_08_REV_OTH_SALE_ASSET_OTH",
-  "F9_08_REV_PROG_TOT_TOT", "F9_08_REV_TOT_TOT",
+  "F9_08_REV_CONTR_FED_CAMP", "F9_08_REV_CONTR_FUNDR_EVNT",
+  "F9_08_REV_CONTR_GOVT_GRANT", "F9_08_REV_CONTR_NONCSH",
+  "F9_08_REV_CONTR_OTH", "F9_08_REV_CONTR_RLTD_ORG", "F9_08_REV_CONTR_TOT",
+  "F9_08_REV_MISC_EXCL", "F9_08_REV_MISC_OTH_EXCL",
+  "F9_08_REV_MISC_OTH_RLTD", "F9_08_REV_MISC_OTH_TOT", "F9_08_REV_MISC_OTH_UBIZ",
+  "F9_08_REV_MISC_RLTD", "F9_08_REV_MISC_TOT", "F9_08_REV_MISC_UBIZ",
+  "F9_08_REV_OTH_FUNDR_NET_EXCL", "F9_08_REV_OTH_FUNDR_NET_RLTD",
+  "F9_08_REV_OTH_FUNDR_NET_UBIZ",
+  "F9_08_REV_OTH_GAMING_NET_EXCL", "F9_08_REV_OTH_GAMING_NET_RLTD",
+  "F9_08_REV_OTH_GAMING_NET_UBIZ",
+  "F9_08_REV_OTH_INVEST_BOND_EXCL", "F9_08_REV_OTH_INVEST_BOND_RLTD",
+  "F9_08_REV_OTH_INVEST_BOND_TOT", "F9_08_REV_OTH_INVEST_BOND_UBIZ",
+  "F9_08_REV_OTH_INVEST_INCOME_EXCL", "F9_08_REV_OTH_INVEST_INCOME_RLTD",
+  "F9_08_REV_OTH_INVEST_INCOME_UBIZ",
+  "F9_08_REV_OTH_INV_NET_EXCL", "F9_08_REV_OTH_INV_NET_RLTD",
+  "F9_08_REV_OTH_INV_NET_UBIZ",
+  "F9_08_REV_OTH_RENT_GRO_PERS", "F9_08_REV_OTH_RENT_GRO_REAL",
+  "F9_08_REV_OTH_RENT_INCOME_PERS", "F9_08_REV_OTH_RENT_INCOME_REAL",
+  "F9_08_REV_OTH_RENT_LESS_EXP_PERS", "F9_08_REV_OTH_RENT_LESS_EXP_REAL",
+  "F9_08_REV_OTH_RENT_NET_EXCL", "F9_08_REV_OTH_RENT_NET_RLTD",
+  "F9_08_REV_OTH_RENT_NET_TOT", "F9_08_REV_OTH_RENT_NET_UBIZ",
+  "F9_08_REV_OTH_ROY_EXCL", "F9_08_REV_OTH_ROY_RLTD",
+  "F9_08_REV_OTH_ROY_TOT", "F9_08_REV_OTH_ROY_UBIZ",
+  "F9_08_REV_OTH_SALE_ASSET_OTH", "F9_08_REV_OTH_SALE_ASSET_SEC",
+  "F9_08_REV_OTH_SALE_GAIN_NET_EXCL", "F9_08_REV_OTH_SALE_GAIN_NET_RLTD",
+  "F9_08_REV_OTH_SALE_GAIN_NET_UBIZ",
+  "F9_08_REV_OTH_SALE_GAIN_OTH", "F9_08_REV_OTH_SALE_GAIN_SEC",
+  "F9_08_REV_PROG_OTH_EXCL", "F9_08_REV_PROG_OTH_RLTD",
+  "F9_08_REV_PROG_OTH_TOT", "F9_08_REV_PROG_OTH_UBIZ",
+  "F9_08_REV_PROG_TOT", "F9_08_REV_PROG_TOT_TOT", "F9_08_REV_PROG_UBIZ",
+  "F9_08_REV_TOT_EXCL", "F9_08_REV_TOT_RLTD",
+  "F9_08_REV_TOT_TOT", "F9_08_REV_TOT_UBIZ",
   # Part IX - expense detail (990 only)
-  "F9_09_EXP_DEPREC_TOT", "F9_09_EXP_TOT_FUNDR",
-  "F9_09_EXP_TOT_MGMT", "F9_09_EXP_TOT_PROG", "F9_09_EXP_TOT_TOT",
+  "F9_09_EXP_AD_PROMO_FUNDR", "F9_09_EXP_AD_PROMO_MGMT",
+  "F9_09_EXP_AD_PROMO_PROG", "F9_09_EXP_AD_PROMO_TOT",
+  "F9_09_EXP_BEN_PAID_MEMB_PROG", "F9_09_EXP_BEN_PAID_MEMB_TOT",
+  "F9_09_EXP_COMP_DSQ_PERS_FUNDR", "F9_09_EXP_COMP_DSQ_PERS_MGMT",
+  "F9_09_EXP_COMP_DSQ_PERS_PROG", "F9_09_EXP_COMP_DSQ_PERS_TOT",
+  "F9_09_EXP_COMP_DTK_FUNDR", "F9_09_EXP_COMP_DTK_MGMT",
+  "F9_09_EXP_COMP_DTK_PROG", "F9_09_EXP_COMP_DTK_TOT",
+  "F9_09_EXP_CONF_MEETING_FUNDR", "F9_09_EXP_CONF_MEETING_MGMT",
+  "F9_09_EXP_CONF_MEETING_PROG", "F9_09_EXP_CONF_MEETING_TOT",
+  "F9_09_EXP_DEPREC_FUNDR", "F9_09_EXP_DEPREC_MGMT",
+  "F9_09_EXP_DEPREC_PROG", "F9_09_EXP_DEPREC_TOT",
+  "F9_09_EXP_FEE_SVC_ACC_FUNDR", "F9_09_EXP_FEE_SVC_ACC_MGMT",
+  "F9_09_EXP_FEE_SVC_ACC_PROG", "F9_09_EXP_FEE_SVC_ACC_TOT",
+  "F9_09_EXP_FEE_SVC_FUNDR_FUNDR", "F9_09_EXP_FEE_SVC_FUNDR_MGMT",
+  "F9_09_EXP_FEE_SVC_FUNDR_PROG", "F9_09_EXP_FEE_SVC_FUNDR_TOT",
+  "F9_09_EXP_FEE_SVC_INVEST_FUNDR", "F9_09_EXP_FEE_SVC_INVEST_MGMT",
+  "F9_09_EXP_FEE_SVC_INVEST_PROG", "F9_09_EXP_FEE_SVC_INVEST_TOT",
+  "F9_09_EXP_FEE_SVC_LEGAL_FUNDR", "F9_09_EXP_FEE_SVC_LEGAL_MGMT",
+  "F9_09_EXP_FEE_SVC_LEGAL_PROG", "F9_09_EXP_FEE_SVC_LEGAL_TOT",
+  "F9_09_EXP_FEE_SVC_LOB_FUNDR", "F9_09_EXP_FEE_SVC_LOB_MGMT",
+  "F9_09_EXP_FEE_SVC_LOB_PROG", "F9_09_EXP_FEE_SVC_LOB_TOT",
+  "F9_09_EXP_FEE_SVC_MGMT_FUNDR", "F9_09_EXP_FEE_SVC_MGMT_MGMT",
+  "F9_09_EXP_FEE_SVC_MGMT_PROG", "F9_09_EXP_FEE_SVC_MGMT_TOT",
+  "F9_09_EXP_FEE_SVC_OTH_FUNDR", "F9_09_EXP_FEE_SVC_OTH_MGMT",
+  "F9_09_EXP_FEE_SVC_OTH_PROG", "F9_09_EXP_FEE_SVC_OTH_TOT",
+  "F9_09_EXP_GRANT_FRGN_PROG", "F9_09_EXP_GRANT_FRGN_TOT",
+  "F9_09_EXP_GRANT_US_INDIV_PROG", "F9_09_EXP_GRANT_US_INDIV_TOT",
+  "F9_09_EXP_GRANT_US_ORG_PROG", "F9_09_EXP_GRANT_US_ORG_TOT",
+  "F9_09_EXP_INFO_TECH_FUNDR", "F9_09_EXP_INFO_TECH_MGMT",
+  "F9_09_EXP_INFO_TECH_PROG", "F9_09_EXP_INFO_TECH_TOT",
+  "F9_09_EXP_INSURANCE_FUNDR", "F9_09_EXP_INSURANCE_MGMT",
+  "F9_09_EXP_INSURANCE_PROG", "F9_09_EXP_INSURANCE_TOT",
+  "F9_09_EXP_INT_FUNDR", "F9_09_EXP_INT_MGMT",
+  "F9_09_EXP_INT_PROG", "F9_09_EXP_INT_TOT",
+  "F9_09_EXP_JOINT_COST_FUNDR", "F9_09_EXP_JOINT_COST_MGMT",
+  "F9_09_EXP_JOINT_COST_PROG", "F9_09_EXP_JOINT_COST_TOT",
+  "F9_09_EXP_OCCUPANCY_FUNDR", "F9_09_EXP_OCCUPANCY_MGMT",
+  "F9_09_EXP_OCCUPANCY_TOT",
+  "F9_09_EXP_OFFICE_FUNDR", "F9_09_EXP_OFFICE_MGMT",
+  "F9_09_EXP_OFFICE_PROG", "F9_09_EXP_OFFICE_TOT",
+  "F9_09_EXP_OTH_EMPL_BEN_FUNDR", "F9_09_EXP_OTH_EMPL_BEN_MGMT",
+  "F9_09_EXP_OTH_EMPL_BEN_PROG", "F9_09_EXP_OTH_EMPL_BEN_TOT",
+  "F9_09_EXP_OTH_FUNDR", "F9_09_EXP_OTH_MGMT",
+  "F9_09_EXP_OTH_OTH_FUNDR", "F9_09_EXP_OTH_OTH_MGMT",
+  "F9_09_EXP_OTH_OTH_PROG", "F9_09_EXP_OTH_OTH_TOT",
+  "F9_09_EXP_OTH_PROG", "F9_09_EXP_OTH_TOT",
+  "F9_09_EXP_OTH_SAL_WAGE_FUNDR", "F9_09_EXP_OTH_SAL_WAGE_MGMT",
+  "F9_09_EXP_OTH_SAL_WAGE_PROG",
+  "F9_09_EXP_PAYROLL_TAX_FUNDR", "F9_09_EXP_PAYROLL_TAX_MGMT",
+  "F9_09_EXP_PAY_AFFIL_FUNDR", "F9_09_EXP_PAY_AFFIL_MGMT",
+  "F9_09_EXP_PAY_AFFIL_PROG", "F9_09_EXP_PAY_AFFIL_TOT",
+  "F9_09_EXP_PENSION_CONTR_FUNDR", "F9_09_EXP_PENSION_CONTR_MGMT",
+  "F9_09_EXP_PENSION_CONTR_PROG", "F9_09_EXP_PENSION_CONTR_TOT",
+  "F9_09_EXP_ROY_FUNDR", "F9_09_EXP_ROY_MGMT",
+  "F9_09_EXP_ROY_PROG", "F9_09_EXP_ROY_TOT",
+  "F9_09_EXP_TOT_FUNDR", "F9_09_EXP_TOT_MGMT",
+  "F9_09_EXP_TOT_PROG", "F9_09_EXP_TOT_TOT",
+  "F9_09_EXP_TRAVEL_ENTMT_FUNDR", "F9_09_EXP_TRAVEL_ENTMT_MGMT",
+  "F9_09_EXP_TRAVEL_ENTMT_PROG", "F9_09_EXP_TRAVEL_ENTMT_TOT",
+  "F9_09_EXP_TRAVEL_FUNDR", "F9_09_EXP_TRAVEL_MGMT",
+  "F9_09_EXP_TRAVEL_PROG", "F9_09_EXP_TRAVEL_TOT",
   # Part X - balance sheet (990 only)
-  "F9_10_ASSET_ACC_NET_EOY", "F9_10_ASSET_CASH_BOY", "F9_10_ASSET_CASH_EOY",
-  "F9_10_ASSET_EXP_PREPAID_EOY", "F9_10_ASSET_INV_SALE_EOY",
-  "F9_10_ASSET_LAND_BLDG_DEPREC", "F9_10_ASSET_LAND_BLDG_NET_EOY",
-  "F9_10_ASSET_PLEDGE_NET_EOY", "F9_10_ASSET_SAVING_EOY", "F9_10_ASSET_TOT_EOY",
-  "F9_10_LIAB_ACC_PAYABLE_EOY", "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  "F9_10_LIAB_MTG_NOTE_EOY", "F9_10_LIAB_TOT_EOY",
+  "F9_10_ASSET_ACC_NET_BOY", "F9_10_ASSET_ACC_NET_EOY",
+  "F9_10_ASSET_CASH_BOY", "F9_10_ASSET_CASH_EOY",
+  "F9_10_ASSET_CASH_SAVING_BOY", "F9_10_ASSET_CASH_SAVING_EOY",
+  "F9_10_ASSET_EXP_PREPAID_BOY", "F9_10_ASSET_EXP_PREPAID_EOY",
+  "F9_10_ASSET_INTANGIBLE_BOY", "F9_10_ASSET_INTANGIBLE_EOY",
+  "F9_10_ASSET_INVEST_PROG_RLTD_BOY", "F9_10_ASSET_INVEST_PROG_RLTD_EOY",
+  "F9_10_ASSET_INV_SALE_BOY", "F9_10_ASSET_INV_SALE_EOY",
+  "F9_10_ASSET_LAND_BLDG", "F9_10_ASSET_LAND_BLDG_BOY",
+  "F9_10_ASSET_LAND_BLDG_DEPREC",
+  "F9_10_ASSET_LAND_BLDG_NET_BOY",
+  "F9_10_ASSET_LOAN_OFF_BOY", "F9_10_ASSET_LOAN_OFF_EOY",
+  "F9_10_ASSET_NOTE_LOAN_NET_BOY",
+  "F9_10_ASSET_OTH_BOY",
+  "F9_10_ASSET_PLEDGE_NET_BOY", "F9_10_ASSET_PLEDGE_NET_EOY",
+  "F9_10_ASSET_SAVING_BOY", "F9_10_ASSET_SAVING_EOY",
+  "F9_10_ASSET_TOT_BOY", "F9_10_ASSET_TOT_EOY",
+  "F9_10_LIAB_ACC_PAYABLE_EOY",
+  "F9_10_LIAB_ESCROW_ACC_EOY",
+  "F9_10_LIAB_GRANT_PAYABLE_BOY", "F9_10_LIAB_GRANT_PAYABLE_EOY",
+  "F9_10_LIAB_MTG_NOTE_EOY",
+  "F9_10_LIAB_NOTE_UNSEC_BOY", "F9_10_LIAB_NOTE_UNSEC_EOY",
+  "F9_10_LIAB_OTH_BOY", "F9_10_LIAB_OTH_EOY",
+  "F9_10_LIAB_REV_DEFERRED_BOY", "F9_10_LIAB_REV_DEFERRED_EOY",
+  "F9_10_LIAB_TAX_EXEMPT_BOND_BOY", "F9_10_LIAB_TAX_EXEMPT_BOND_EOY",
+  "F9_10_LIAB_TOT_BOY", "F9_10_LIAB_TOT_EOY",
+  "F9_10_NAFB_CAP_STCK_BOY", "F9_10_NAFB_CAP_STCK_EOY",
+  "F9_10_NAFB_CAP_SURPLUS_BOY", "F9_10_NAFB_CAP_SURPLUS_EOY",
+  "F9_10_NAFB_EARNING_RETAINED_BOY", "F9_10_NAFB_EARNING_RETAINED_EOY",
+  "F9_10_NAFB_RESTRICT_PERM_BOY", "F9_10_NAFB_RESTRICT_PERM_EOY",
+  "F9_10_NAFB_RESTRICT_TEMP_BOY", "F9_10_NAFB_RESTRICT_TEMP_EOY",
   "F9_10_NAFB_TOT_BOY", "F9_10_NAFB_TOT_EOY",
+  "F9_10_NAFB_TOT_LIAB_NAFB_BOY", "F9_10_NAFB_TOT_LIAB_NAFB_EOY",
   "F9_10_NAFB_UNRESTRICT_BOY", "F9_10_NAFB_UNRESTRICT_EOY"
 )
 
 .PZ_FIELDS <- c(
   # Part I - summary (both 990 and 990EZ)
-  "F9_01_EXP_REV_LESS_EXP_CY", "F9_01_EXP_TOT_CY",
-  "F9_01_NAFB_ASSET_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY",
+  "F9_01_EXP_BEN_PAID_MEMB_CY",
+  "F9_01_EXP_GRANT_SIMILAR_CY",
+  "F9_01_EXP_OTH_CY",
+  "F9_01_EXP_REV_LESS_EXP_CY",
+  "F9_01_EXP_SAL_ETC_CY",
+  "F9_01_EXP_TOT_CY",
+  "F9_01_NAFB_ASSET_TOT_BOY", "F9_01_NAFB_ASSET_TOT_EOY",
+  "F9_01_NAFB_LIAB_TOT_BOY", "F9_01_NAFB_LIAB_TOT_EOY",
   "F9_01_NAFB_TOT_BOY", "F9_01_NAFB_TOT_EOY",
-  "F9_01_NAFB_UNRESTRICT_EOY", "F9_01_REV_PROG_TOT_CY", "F9_01_REV_TOT_CY"
+  "F9_01_NAFB_UNRESTRICT_EOY",
+  "F9_01_REV_CONTR_TOT_CY",
+  "F9_01_REV_INVEST_TOT_CY",
+  "F9_01_REV_OTH_CY",
+  "F9_01_REV_PROG_TOT_CY",
+  "F9_01_REV_TOT_CY",
+  # Part VIII fields with PZ scope
+  "F9_08_REV_CONTR_MEMBSHIP_DUE",
+  "F9_08_REV_MISC_TOT_TOT",
+  "F9_08_REV_OTH_EVNT_DIRECT_EXP", "F9_08_REV_OTH_EVNT_NET_TOT",
+  "F9_08_REV_OTH_FUNDR_DIRECT_EXP",
+  "F9_08_REV_OTH_FUNDR_EVNT_0", "F9_08_REV_OTH_FUNDR_EVNT_1",
+  "F9_08_REV_OTH_FUNDR_NET_TOT",
+  "F9_08_REV_OTH_GAMING", "F9_08_REV_OTH_GAMING_DIRECT_EXP",
+  "F9_08_REV_OTH_GAMING_NET_TOT",
+  "F9_08_REV_OTH_INVEST_INCOME_TOT",
+  "F9_08_REV_OTH_INV_COST_GOODS", "F9_08_REV_OTH_INV_GRO_SALE",
+  "F9_08_REV_OTH_INV_NET_TOT",
+  "F9_08_REV_OTH_SALE_ASSET", "F9_08_REV_OTH_SALE_ASSET_OTH",
+  "F9_08_REV_OTH_SALE_GAIN_NET_TOT",
+  "F9_08_REV_OTH_SALE_LESS_COST", "F9_08_REV_OTH_SALE_LESS_COST_OTH",
+  "F9_08_REV_OTH_SALE_LESS_COST_SEC",
+  # Part IX fields with PZ scope
+  "F9_09_EXP_OCCUPANCY_PROG",
+  "F9_09_EXP_OTH_SAL_WAGE_TOT",
+  "F9_09_EXP_PAYROLL_TAX_PROG", "F9_09_EXP_PAYROLL_TAX_TOT",
+  # Part X fields with PZ scope
+  "F9_10_ASSET_CASH_SAVING_BOY", "F9_10_ASSET_CASH_SAVING_EOY",
+  "F9_10_ASSET_INVEST_SEC_BOY", "F9_10_ASSET_INVEST_SEC_EOY",
+  "F9_10_ASSET_INVEST_SEC_OTH_BOY", "F9_10_ASSET_INVEST_SEC_OTH_EOY",
+  "F9_10_ASSET_LAND_BLDG_DEPREC",
+  "F9_10_ASSET_LAND_BLDG_EOY",
+  "F9_10_ASSET_LAND_BLDG_NET_BOY", "F9_10_ASSET_LAND_BLDG_NET_EOY",
+  "F9_10_ASSET_LOAN_DSQ_PERS_BOY", "F9_10_ASSET_LOAN_DSQ_PERS_EOY",
+  "F9_10_ASSET_NOTE_LOAN_NET_EOY",
+  "F9_10_ASSET_OTH_EOY",
+  "F9_10_LIAB_ACC_PAYABLE_BOY", "F9_10_LIAB_ACC_PAYABLE_EOY",
+  "F9_10_LIAB_ESCROW_ACC_BOY",
+  "F9_10_LIAB_GRANT_PAYABLE_EOY",
+  "F9_10_LIAB_LOAN_OFF_BOY", "F9_10_LIAB_LOAN_OFF_EOY",
+  "F9_10_LIAB_MTG_NOTE_BOY",
+  "F9_10_NAFB_RESTRICT_BOY",
+  "F9_10_NAFB_TOT_BOY", "F9_10_NAFB_TOT_EOY",
+  "F9_10_NAFB_UNRESTRICT_BOY", "F9_10_NAFB_UNRESTRICT_EOY"
 )
 
 #' Return the vector of 990-only financial field names (PC scope)
@@ -251,29 +419,127 @@ resolve_col <- function( dat, cols ) {
 }
 
 
-#' Winsorize a numeric vector and return raw, winsorized, z-score, and percentile versions
+#' Apply winsorization, normalization, and percentile ranking to a ratio vector
 #'
-#' @param x Numeric vector.
+#' @description
+#' `apply_transformations()` is the central post-computation step called by
+#' every `get_*()` ratio function. It produces four versions of a ratio:
+#'
+#' - **raw** (`_raw`): the unmodified computed ratio.
+#' - **winsorized** (`_w`): outliers clipped to bounds determined by the
+#'   `range` argument and the `winsorize` proportion, via [winsorize_x()].
+#' - **normalized** (`_z`): a distribution-appropriate transformation of the
+#'   winsorized values. Parameters are fitted on the stable interior (non-NA,
+#'   non-sentinel observations) via [find_best_normalization()], then scored
+#'   on the full vector via [apply_normalization()], so sentinel pile-up at
+#'   winsorization bounds does not distort the centering and spread estimates.
+#' - **percentile** (`_p`): integer percentile rank (1-100) based on the raw
+#'   values, via [dplyr::ntile()].
+#'
+#' @param x Numeric vector (the computed ratio, before any transformation).
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`,
-#'   which clips at the 1st and 99th percentiles).
+#'   which clips at the 1st and 99th percentiles for `"np"` range).
+#' @param offset Sentinel offset applied to fixed bounds (default `0.001`).
+#'   Observations clipped to a fixed bound are stored as `bound ± offset` so
+#'   they remain identifiable in the `_w` column.
+#' @param range Character string describing the theoretical range of the ratio.
+#'   Controls how the lower and upper winsorization bounds are determined:
+#'   \describe{
+#'     \item{`"np"`}{Negative to positive (unbounded both directions). Winsorizes
+#'       symmetrically at the `(1-winsorize)/2` and `1-(1-winsorize)/2`
+#'       percentiles. Default behaviour.}
+#'     \item{`"zp"`}{Zero to positive. The lower bound is fixed at `-offset`
+#'       (flagging truncated-at-zero values) and the upper bound is the
+#'       `winsorize` percentile of the full distribution.}
+#'     \item{`"zo"`}{Zero to one. Both bounds are fixed (`-offset` and
+#'       `1+offset`), flagging values outside `[0, 1]`. No percentile-based
+#'       clipping is applied.}
+#'     \item{`"nz"`}{Negative to zero. The upper bound is fixed at `+offset`
+#'       and the lower bound is the `1-winsorize` percentile.}
+#'     \item{`"lo;hi"`}{Custom numeric range, e.g. `"0;10"`. The lower bound
+#'       is fixed at `lo - offset` and the upper bound at `hi + offset`.}
+#'   }
+#' @param normalize_type Transformation type override passed to
+#'   [find_best_normalization()]. One of `NULL` (auto-detect), `"asinh"`,
+#'   `"logit"`, `"rank_normal"`, or `"hurdle"`. Default `NULL`.
+#'
 #' @return A named list with elements `raw`, `winsorized`, `z`, `pctile`.
+#'
+#' @details
+#' **Winsorization**
+#'
+#' Delegated entirely to [winsorize_x()], which handles all range codes,
+#' computes sentinel flags, and returns the winsorized vector alongside
+#' diagnostic metadata.
+#'
+#' **Normalization (`_z` column)**
+#'
+#' [find_best_normalization()] is called first to fit transformation
+#' parameters (type, scale constant, center, spread) on the stable interior
+#' of the winsorized distribution. [apply_normalization()] then scores the
+#' full original vector using those fitted parameters. This two-step design
+#' means the fitted model can be reused on new data if needed.
+#'
+#' **Percentile rank (`_p` column)**
+#'
+#' Integer percentile rank from 1 to 100 based on the raw (pre-winsorized)
+#' values, computed with [dplyr::ntile()].
+#'
+#' @seealso [winsorize_x()], [find_best_normalization()],
+#'   [apply_normalization()], [normalize_x()], [plot_normalize_x()]
+#' @examples
+#' library( fiscal )
+#' data( dat10k )
+#'
+#' # winsorize and normalize the debt-to-assets ratio
+#' ratio <- dat10k$F9_10_LIAB_TOT_EOY / dat10k$F9_10_ASSET_TOT_EOY
+#' out   <- apply_transformations( ratio, winsorize = 0.98, range = "zo" )
+#' names( out )
+#' summary( out$z )
 #' @export
-winsorize_var <- function( x, winsorize = 0.98 ) {
+apply_transformations <- function( x, winsorize = 0.98, offset = 0.001,
+                                   range = "np", normalize_type = NULL ) {
 
-  top.p    <- 1 - ( 1 - winsorize ) / 2
-  bottom.p <-     ( 1 - winsorize ) / 2
+  # ---- 1. fit normalization on stable interior ----
+  # find_best_normalization() internally calls winsorize_x() to isolate
+  # sentinels before fitting; verbose = FALSE suppresses the fit summary.
+  fit <- find_best_normalization(
+    x         = x,
+    range     = range,
+    vtype     = normalize_type,
+    winsorize = winsorize,
+    offset    = offset,
+    verbose   = FALSE
+  )
 
-  top    <- quantile( x, top.p,    na.rm = TRUE )
-  bottom <- quantile( x, bottom.p, na.rm = TRUE )
+  # ---- 2. winsorize (re-use fitted settings for consistency) ----
+  w   <- winsorize_x( x = x, range = range, winsorize = winsorize,
+                      offset = offset )
+  x.w <- w$x_w
 
-  x.w <- x
-  x.w[ x.w > top    ] <- top
-  x.w[ x.w < bottom ] <- bottom
+  # ---- 3. score full vector using fitted parameters ----
+  x.z <- apply_normalization( x = x, fit = fit, verbose = FALSE )
 
-  x.z <- as.numeric( scale( x.w ) )
+  # ---- 4. percentile rank on raw values ----
   x.p <- dplyr::ntile( x, 100 )
 
   return( list( raw = x, winsorized = x.w, z = x.z, pctile = x.p ) )
+}
+
+
+#' Backward-compatible alias for apply_transformations()
+#'
+#' @description
+#' `winsorize_var()` is a deprecated alias retained for backward compatibility.
+#' New code should use [apply_transformations()] directly.
+#'
+#' @inheritParams apply_transformations
+#' @return Same as [apply_transformations()].
+#' @export
+winsorize_var <- function( x, winsorize = 0.98, offset = 0.001,
+                           range = "np", normalize_type = NULL ) {
+  apply_transformations( x, winsorize = winsorize, offset = offset,
+                         range = range, normalize_type = normalize_type )
 }
 
 

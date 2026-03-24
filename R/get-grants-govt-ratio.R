@@ -13,6 +13,20 @@
 #' ggr = government_grants / total_revenue
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Zero means no government funding; one means all revenue comes
+#' from government sources. The empirical distribution varies widely by subsector:
+#' social service organizations often show ratios above 0.50; arts organizations
+#' typically below 0.20.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values above 0.50 indicate majority government-funded organizations, which
+#'     face heightened vulnerability to government budget changes.
+#'   - Revenue diversification theory suggests maintaining no single source above
+#'     0.33-0.50 for optimal stability (Chang & Tuckman 1994).
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -20,12 +34,18 @@
 #' @param total_revenue Total revenue.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_grants_govt_ratio( df,
 #'   government_grants = "F9_08_REV_CONTR_GOVT_GRANT",
 #'   total_revenue     = "F9_08_REV_TOT_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -72,23 +92,6 @@
 #'     Sector Quarterly*, 28(3), 246-268.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Zero means no government funding; one means all revenue comes
-#' from government sources. The empirical distribution varies widely by subsector:
-#' social service organizations often show ratios above 0.50; arts organizations
-#' typically below 0.20.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values above 0.50 indicate majority government-funded organizations, which
-#'     face heightened vulnerability to government budget changes.
-#'   - Revenue diversification theory (Chang & Tuckman 1994) suggests maintaining
-#'     no single source above 0.33-0.50 for optimal stability, though this depends on
-#'     the predictability of each revenue source.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_08_REV_CONTR_GOVT_GRANT`: 
@@ -121,7 +124,8 @@
 get_grants_govt_ratio <- function( df,
                      government_grants = "F9_08_REV_CONTR_GOVT_GRANT",
                      total_revenue     = "F9_08_REV_TOT_TOT",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -141,13 +145,14 @@ get_grants_govt_ratio <- function( df,
   g <- resolve_col( dt, government_grants )
   r <- resolve_col( dt, total_revenue )
 
-  message( paste0( "Total revenue equal to zero: ", sum( r == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  r[ r == 0 ] <- NA
+  nan.count <- sum( r == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  r[ r == 0 ] <- NaN
 
   ggr <- g / r
 
-  v <- winsorize_var( ggr, winsorize )
+  v <- apply_transformations( ggr, winsorize, range )
   GRANTS_GOVT <- data.frame( grants_govt   = v$raw,
                      grants_govt_w = v$winsorized,
                      grants_govt_z = v$z,

@@ -13,6 +13,17 @@
 #' expenses_affiliates = payments_to_affiliates / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
+#' for federated intermediaries.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Interpret in the context of organizational structure.
+#'   - Large payments to affiliates in the absence of a known federated structure
+#'     warrant review of related-party transaction disclosures.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -21,6 +32,11 @@
 #' @param total_expenses Total functional expenses.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -40,19 +56,6 @@
 #'     and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
-#' for federated intermediaries.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Interpret in the context of organizational structure.
-#'   - Large payments to affiliates absent a known federated structure warrant
-#'     review of related-party transaction disclosures.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_PAY_AFFIL_TOT`: Payments to affiliates (`payments_to_affiliates`)
@@ -68,7 +71,8 @@
 #' get_expenses_affiliates_ratio( df,
 #'   payments_to_affiliates    = "F9_09_EXP_PAY_AFFIL_TOT",
 #'   total_expenses            = "F9_09_EXP_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -92,7 +96,8 @@
 get_expenses_affiliates_ratio <- function( df,
                      payments_to_affiliates    = "F9_09_EXP_PAY_AFFIL_TOT",
                      total_expenses            = "F9_09_EXP_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -108,13 +113,14 @@ get_expenses_affiliates_ratio <- function( df,
   num <- resolve_col( dt, payments_to_affiliates )
   den <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   expenses_affiliates <- num / den
 
-  v <- winsorize_var( expenses_affiliates, winsorize )
+  v <- apply_transformations( expenses_affiliates, winsorize, range )
   EXPENSES_AFFILIATES <- data.frame(
     expenses_affiliates   = v$raw,
     expenses_affiliates_w = v$winsorized,

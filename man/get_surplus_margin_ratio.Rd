@@ -7,7 +7,8 @@
 get_surplus_margin_ratio( df,
   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
   total_revenue          = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -22,6 +23,12 @@ with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -50,6 +57,21 @@ Net surplus or deficit as a share of total revenue.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{sm = revenues_less_expenses / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
+but in practice the empirical range for nonprofits is approximately [-0.30, 0.30]
+in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
+events (large gifts, major write-downs, asset sales).
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Near zero}: Normal and expected for nonprofits operating close to break-even.
+\item \strong{0.02-0.07} (2-7\%): Commonly considered a healthy surplus range.
+\item \strong{Below -0.05} for two or more consecutive years: Common vulnerability
+threshold (Greenlee & Trussel 2000).
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -90,27 +112,6 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 \item Tuckman, H.P. & Chang, C.F. (1992). Nonprofit equity: A behavioral model and
 its policy implications. \emph{Journal of Policy Analysis and Management}, 11(1),
 76-87.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
-but in practice the empirical range for nonprofits is approximately [-0.30, 0.30]
-in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
-events (large gifts, major write-downs, asset sales).
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{Near zero} is normal and expected for nonprofits operating close to
-break-even by design.
-\item \strong{0.02 to 0.07} (2-7\\%) is commonly considered a healthy surplus
-range - building modest reserves without appearing to hoard resources.
-\item \strong{Below -0.05} for two or more consecutive years is a common
-vulnerability threshold (Greenlee & Trussel 2000).
-\item Tuckman & Chang (1991) use a margin below zero as a vulnerability indicator;
-the magnitude matters for assessing severity.
 }
 }
 

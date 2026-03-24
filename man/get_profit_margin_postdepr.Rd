@@ -7,7 +7,8 @@
 get_profit_margin_postdepr( df,
   expenses  = "F9_09_EXP_TOT_TOT",
   revenue   = "F9_08_REV_TOT_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_profit_margin_postdepr( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -48,6 +55,21 @@ Operating surplus or deficit as a share of total revenue, after depreciation.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{podpm = ( total_revenue - total_expenses ) / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded above at 1.0; unbounded below. The typical range for nonprofits is
+approximately [-0.30, 0.30]. Extreme negative values may reflect major
+write-downs or one-time capital expenses.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Near zero}: Normal for nonprofits operating close to break-even.
+\item \strong{0.02-0.07} (2-7\%): Healthy.
+\item \strong{Below -0.05} for two or more consecutive years: Common vulnerability threshold.
+\item A persistent gap between post- and pre-depreciation margins signals capital
+consumption requiring future capital expenditure.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -80,24 +102,6 @@ Sector Quarterly}, 20(4), 445-460.
 \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
 financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded above at 1.0; unbounded below. The typical range for nonprofits is
-approximately [-0.30, 0.30]. Extreme negative values may reflect major
-write-downs or one-time capital expenses.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Near-zero is normal for nonprofits operating close to break-even.
-\item Values between 0.02 and 0.07 (2-7\\%) are healthy.
-\item Two or more consecutive years below -0.05 is a common vulnerability threshold.
-\item A persistent gap between PODPM and the pre-depreciation margin
-(\code{\link[=get_profit_margin_predepr]{get_profit_margin_predepr()}}) indicates significant capital asset
-consumption that may require future capital expenditure.
 }
 }
 

@@ -13,6 +13,19 @@
 #' lar = land_buildings_equipment / total_assets
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+#' most nonprofits with no owned real estate show values near zero, while
+#' capital-intensive organizations (healthcare, housing, higher education) may show
+#' values above 0.50.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Most informative for within-subsector comparisons.
+#'   - High values indicate illiquidity risk: if the majority of assets are fixed
+#'     property, the organization has limited ability to quickly convert assets to cash.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -21,12 +34,18 @@
 #' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_land_assets_gross_ratio( df,
 #'   land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
 #'   total_assets   = "F9_10_ASSET_TOT_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -70,22 +89,6 @@
 #'     and Society*, 20(4), 94-112. - Asset composition analysis for nonprofits.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
-#' most nonprofits with no owned real estate show values near zero, while
-#' capital-intensive organizations (healthcare, housing, higher education) may show
-#' values above 0.50.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Most informative for within-subsector comparisons.
-#'   - High values indicate illiquidity risk: if the majority of assets are
-#'     fixed property, the organization has limited ability to quickly convert assets
-#'     to cash in a financial emergency.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_LAND_BLDG_DEPREC`: 
@@ -118,7 +121,8 @@
 get_land_assets_gross_ratio <- function( df,
                      land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
                      total_assets   = "F9_10_ASSET_TOT_EOY",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -138,13 +142,14 @@ get_land_assets_gross_ratio <- function( df,
   l <- resolve_col( dt, land_buildings )
   a <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( a == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  a[ a == 0 ] <- NA
+  nan.count <- sum( a == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  a[ a == 0 ] <- NaN
 
   lar <- l / a
 
-  v <- winsorize_var( lar, winsorize )
+  v <- apply_transformations( lar, winsorize, range )
   LAND_ASSETS_GROSS <- data.frame( land_assets_gross   = v$raw,
                      land_assets_gross_w = v$winsorized,
                      land_assets_gross_z = v$z,

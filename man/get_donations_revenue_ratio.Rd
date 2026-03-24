@@ -8,7 +8,8 @@ get_donations_revenue_ratio( df,
   contributions        = "F9_08_REV_CONTR_TOT",
   fundraising_revenue  = "F9_08_REV_OTH_FUNDR_NET_TOT",
   total_revenue        = "F9_08_REV_TOT_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -29,6 +30,12 @@ combined with \code{total_revenue}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -60,7 +67,19 @@ Measures reliance on contributions and fundraising as a share of total revenue.
 donation_revenue = contributions + fundraising_revenue
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Values near 1.0 characterize traditional charitable organizations
+with minimal earned income; values near 0 characterize fee-based service providers.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values above 0.70-0.80 warrant monitoring of donor concentration and retention.
+\item Organizations above 0.90 have almost no earned income buffer if philanthropic
+support declines.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -90,21 +109,6 @@ government grants, combine this ratio with \code{\link[=get_grants_govt_ratio]{g
 \emph{VOLUNTAS}, 5(3), 273-290.
 \item Froelich, K.A. (1999). Diversification of revenue strategies. \emph{Nonprofit
 and Voluntary Sector Quarterly}, 28(3), 246-268.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Values near 1.0 characterize traditional charitable organizations
-with minimal earned income; values near 0 characterize fee-based service providers.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No universal threshold. Revenue diversification theory suggests values
-above 0.70-0.80 warrant monitoring of donor concentration and retention.
-\item Organizations above 0.90 have almost no earned or contractual income buffer
-if philanthropic support declines.
 }
 }
 

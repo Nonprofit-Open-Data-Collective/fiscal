@@ -12,6 +12,12 @@
 #' revenue_fedcampaign = federated_campaigns / total_revenue
 #' ```
 #'
+#'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Zero means none of this revenue type was received;
+#' one means this channel accounted for all total revenue.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -19,6 +25,11 @@
 #'
 #' @param total_revenue Total revenue.
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Revenue Fedcampaign Ratio - Revenue composition measure
 #'
@@ -51,7 +62,8 @@
 #' get_revenue_fedcampaign_ratio( df,
 #'   federated_campaigns = "F9_08_REV_CONTR_FED_CAMP",
 #'   total_revenue       = "F9_08_REV_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -82,7 +94,8 @@
 get_revenue_fedcampaign_ratio <- function( df,
                      federated_campaigns = "F9_08_REV_CONTR_FED_CAMP",
                      total_revenue       = "F9_08_REV_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -98,13 +111,14 @@ get_revenue_fedcampaign_ratio <- function( df,
   fc <- resolve_col( dt, federated_campaigns )
   r  <- resolve_col( dt, total_revenue )
 
-  message( paste0( "Total revenue equal to zero: ", sum( r == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  r[ r == 0 ] <- NA
+  nan.count <- sum( r == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  r[ r == 0 ] <- NaN
 
   revenue_fedcampaign <- fc / r
 
-  v <- winsorize_var( revenue_fedcampaign, winsorize )
+  v <- apply_transformations( revenue_fedcampaign, winsorize, range )
   REVENUE_FEDCAMPAIGN <- data.frame(
     revenue_fedcampaign   = v$raw,
     revenue_fedcampaign_w = v$winsorized,

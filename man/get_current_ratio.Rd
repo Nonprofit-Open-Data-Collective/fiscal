@@ -13,7 +13,8 @@ get_current_ratio( df,
   prepaid_expenses    = "F9_10_ASSET_EXP_PREPAID_EOY",
   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -45,6 +46,12 @@ with those arguments.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -78,7 +85,21 @@ current_assets      = cash + savings + pledges_receivable + accounts_receivable
 current_liabilities = accounts_payable + grants_payable
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+The current ratio is bounded below at zero and unbounded above. Values below 1.0
+mean current liabilities exceed current assets. The empirical range for nonprofits
+is approximately [0, 15], with most organizations clustered between 0.5 and 5.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{1.0}: Conventional adequacy threshold -- liabilities exactly covered.
+\item \strong{Below 0.5}: Indicates acute short-term risk (Tuckman & Chang 1991).
+\item \strong{Above 3.0-4.0}: May indicate excess cash or slow receivables collection.
+\item Sector medians generally fall in the [1.0, 2.5] range (Zietlow et al. 2007).
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -133,26 +154,6 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 199-210.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
-}
-}
-
-\subsection{Definitional range}{
-
-The current ratio is bounded below at zero and unbounded above. Values below 1.0
-mean current liabilities exceed current assets. The empirical range for nonprofits
-is approximately [0, 15], with most organizations clustered between 0.5 and 5.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item A ratio of 1.0 is the conventional adequacy threshold: liabilities are
-exactly covered by current assets.
-\item Tuckman & Chang (1991) use a ratio below 1.0 as a financial vulnerability
-indicator. Values below 0.5 indicate acute short-term risk.
-\item Values above 3.0-4.0 may indicate excess cash or slow collection of
-receivables rather than strong financial health.
-\item Zietlow et al. (2007) report nonprofit sector medians generally in the
-[1.0, 2.5] range, with substantial subsector variation.
 }
 }
 

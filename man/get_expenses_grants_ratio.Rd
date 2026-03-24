@@ -9,7 +9,8 @@ get_expenses_grants_ratio( df,
   us_indiv_grants  = "F9_09_EXP_GRANT_US_INDIV_TOT",
   foreign_grants   = "F9_09_EXP_GRANT_FRGN_TOT",
   total_expenses   = "F9_09_EXP_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -25,6 +26,12 @@ get_expenses_grants_ratio( df,
 \item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}).}
 
@@ -44,6 +51,19 @@ entities as a share of total functional expenses.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{expenses_grants = ( us_org_grants + us_indiv_grants + foreign_grants )
                   / total_expenses
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. Near zero for direct-service organizations; near 1.0 for
+pure pass-through grant-makers.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Subsector comparisons are essential: a 0.80 ratio is expected for a community
+foundation; the same value would be anomalous for a hospital.
+\item Rising ratios over time may indicate a strategic shift toward a more
+redistributive model.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -67,19 +87,6 @@ Note: US organization grants (line 1) are PZ scope; other components are PC scop
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Near zero for direct-service organizations; near 1.0 for
-pure pass-through grant-makers.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Subsector comparisons are essential: a 0.80 ratio is expected for a
-community foundation; anomalous for a hospital.
 }
 }
 

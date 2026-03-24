@@ -18,6 +18,16 @@
 #'                           / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Most nonprofits show values in the \[0.01, 0.20\] range.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No universal benchmark; most meaningful within subsector or over time.
+#'   - Unusually high investment management fees relative to total expenses may
+#'     indicate poor endowment management or excessive fee structures.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -30,6 +40,11 @@
 #' @param other_fees Other fees for services (total).
 #' @param total_expenses Total functional expenses.
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -47,18 +62,6 @@
 #'
 #'   - Frumkin, P. & Keating, E.K. (2001). The price of doing good. *Policy
 #'     and Society*, 20(4), 94-112.
-#'
-#'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Most nonprofits show values in the \[0.01, 0.20\] range.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No universal benchmark; most meaningful within-subsector or over time.
-#'   - High investment management fees relative to total expenses may indicate
-#'     poor endowment management or excessive fee structures.
 #'
 #'
 #' ## Variables used:
@@ -90,7 +93,8 @@
 #'   investment_mgmt_fees = "F9_09_EXP_FEE_SVC_INVEST_TOT",
 #'   other_fees           = "F9_09_EXP_FEE_SVC_OTH_TOT",
 #'   total_expenses       = "F9_09_EXP_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -120,7 +124,8 @@ get_expenses_feesforservice_ratio <- function( df,
                      investment_mgmt_fees  = "F9_09_EXP_FEE_SVC_INVEST_TOT",
                      other_fees            = "F9_09_EXP_FEE_SVC_OTH_TOT",
                      total_expenses        = "F9_09_EXP_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -146,13 +151,14 @@ get_expenses_feesforservice_ratio <- function( df,
   f7 <- resolve_col( dt, other_fees )
   te <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( te == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  te[ te == 0 ] <- NA
+  nan.count <- sum( te == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  te[ te == 0 ] <- NaN
 
   expenses_feesforservice <- ( f1 + f2 + f3 + f4 + f5 + f6 + f7 ) / te
 
-  v <- winsorize_var( expenses_feesforservice, winsorize )
+  v <- apply_transformations( expenses_feesforservice, winsorize, range )
   EXPENSES_FEESFORSERVICE <- data.frame(
     expenses_feesforservice   = v$raw,
     expenses_feesforservice_w = v$winsorized,

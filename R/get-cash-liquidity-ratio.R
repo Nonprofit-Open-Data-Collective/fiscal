@@ -15,7 +15,22 @@
 #' current_liabilities = accounts_payable + grants_payable
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
+#' current payables. The empirical range for nonprofits is approximately \[0, 20\],
+#' with most values between 0.1 and 5.0. Very high values are common for grant-making
+#' foundations and endowed organizations that carry minimal accounts payable.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Below 0.5**: Organization cannot cover half of near-term payables from
+#'     cash alone; reliant on receivables collection or borrowing.
+#'   - **1.0 or above**: Full cash coverage of current liabilities.
+#'   - Because this is a highly conservative measure, values somewhat below 1.0
+#'     are normal if receivables are healthy.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -24,6 +39,11 @@
 #' @param grants_payable Grants and similar amounts payable, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_cash_liquidity_ratio( df,
@@ -31,7 +51,8 @@
 #'   savings          = "F9_10_ASSET_SAVING_EOY",
 #'   accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
 #'   grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -84,24 +105,6 @@
 #'     for Nonprofit Organizations*. Wiley.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
-#' current payables. The empirical range for nonprofits is approximately \[0, 20\],
-#' with most values between 0.1 and 5.0. Very high values are common for grant-making
-#' foundations and endowed organizations that carry minimal accounts payable.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values below 0.5 suggest the organization cannot cover even half of its
-#'     near-term payables from cash alone and is reliant on receivables collection
-#'     or short-term borrowing to meet obligations.
-#'   - Values of 1.0 or above indicate full cash coverage of current liabilities.
-#'   - Because this is a highly conservative measure, values somewhat below 1.0
-#'     are normal and not necessarily problematic if receivables are healthy.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
@@ -139,7 +142,8 @@ get_cash_liquidity_ratio <- function( df,
                       savings          = "F9_10_ASSET_SAVING_EOY",
                       accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
                       grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -166,13 +170,14 @@ get_cash_liquidity_ratio <- function( df,
 
   den <- ap + gp
 
-  message( paste0( "Current liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Current liabilities equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   casr <- ( c_val + s_val ) / den
 
-  v <- winsorize_var( casr, winsorize )
+  v <- apply_transformations( casr, winsorize, range )
   CASH_LIQ <- data.frame( cash_liq   = v$raw,
                       cash_liq_w = v$winsorized,
                       cash_liq_z = v$z,

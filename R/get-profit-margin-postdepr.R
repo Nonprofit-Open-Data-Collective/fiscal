@@ -13,6 +13,20 @@
 #' podpm = ( total_revenue - total_expenses ) / total_revenue
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded above at 1.0; unbounded below. The typical range for nonprofits is
+#' approximately \[-0.30, 0.30\]. Extreme negative values may reflect major
+#' write-downs or one-time capital expenses.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Near zero**: Normal for nonprofits operating close to break-even.
+#'   - **0.02-0.07** (2-7%): Healthy.
+#'   - **Below -0.05** for two or more consecutive years: Common vulnerability threshold.
+#'   - A persistent gap between post- and pre-depreciation margins signals capital
+#'     consumption requiring future capital expenditure.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -20,12 +34,18 @@
 #' @param revenue Total revenue.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_profit_margin_postdepr( df,
 #'   expenses  = "F9_09_EXP_TOT_TOT",
 #'   revenue   = "F9_08_REV_TOT_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -68,23 +88,6 @@
 #'     Working Paper 04-016*.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded above at 1.0; unbounded below. The typical range for nonprofits is
-#' approximately \[-0.30, 0.30\]. Extreme negative values may reflect major
-#' write-downs or one-time capital expenses.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Near-zero is normal for nonprofits operating close to break-even.
-#'   - Values between 0.02 and 0.07 (2-7\%) are healthy.
-#'   - Two or more consecutive years below -0.05 is a common vulnerability threshold.
-#'   - A persistent gap between PODPM and the pre-depreciation margin
-#'     ([get_profit_margin_predepr()]) indicates significant capital asset
-#'     consumption that may require future capital expenditure.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`expenses`)
@@ -116,7 +119,8 @@
 get_profit_margin_postdepr <- function( df,
                        expenses  = "F9_09_EXP_TOT_TOT",
                        revenue   = "F9_08_REV_TOT_TOT",
-                       winsorize = 0.98 ,
+                       winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -136,13 +140,14 @@ get_profit_margin_postdepr <- function( df,
   e <- resolve_col( dt, expenses )
   r <- resolve_col( dt, revenue )
 
-  message( paste0( "Revenue equal to zero: ", sum( r == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  r[ r == 0 ] <- NA
+  nan.count <- sum( r == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  r[ r == 0 ] <- NaN
 
   podpm <- ( r - e ) / r
 
-  v <- winsorize_var( podpm, winsorize )
+  v <- apply_transformations( podpm, winsorize, range )
   PROFIT_POSTDEPR <- data.frame( profit_postdepr   = v$raw,
                        profit_postdepr_w = v$winsorized,
                        profit_postdepr_z = v$z,

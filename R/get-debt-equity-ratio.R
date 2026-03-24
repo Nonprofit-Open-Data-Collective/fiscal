@@ -13,7 +13,25 @@
 #' der = total_liabilities / unrestricted_net_assets
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded below at zero when liabilities are non-negative and unrestricted net assets
+#' are positive. Unbounded above when unrestricted net assets are very small. Values
+#' below zero occur when unrestricted net assets are negative (accumulated deficits
+#' exceed unrestricted equity), an acute financial distress signal. The ratio is
+#' undefined (NA) when unrestricted net assets equal zero.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values below 1.0 mean total liabilities are less than the unrestricted
+#'     equity base -- generally considered strong.
+#'   - Values between 1.0 and 3.0 indicate moderate leverage.
+#'   - Values above 5.0 indicate very high leverage relative to the equity base
+#'     and are a common vulnerability threshold.
+#'   - Negative values indicate negative unrestricted net assets, which almost
+#'     always signals significant financial stress.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param debt Total liabilities, EOY. Accepts one or two column names; if two are provided
@@ -23,12 +41,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_debt_equity_ratio( df,
 #'   debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"    ),
 #'   equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY"  ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -79,26 +103,6 @@
 #'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero when liabilities are non-negative and unrestricted net assets
-#' are positive. Unbounded above when unrestricted net assets are very small. Values
-#' below zero occur when unrestricted net assets are negative (accumulated deficits
-#' exceed unrestricted equity), an acute financial distress signal. The ratio is
-#' undefined (NA) when unrestricted net assets equal zero.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values below 1.0 mean total liabilities are less than the unrestricted
-#'     equity base - generally considered strong.
-#'   - Values between 1.0 and 3.0 indicate moderate leverage.
-#'   - Values above 5.0 indicate very high leverage relative to the equity base
-#'     and are a common vulnerability threshold.
-#'   - Negative values indicate negative unrestricted net assets, which almost
-#'     always signals significant financial stress.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`)
@@ -131,7 +135,8 @@
 get_debt_equity_ratio <- function( df,
                      debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"   ),
                      equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY" ),
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -151,13 +156,14 @@ get_debt_equity_ratio <- function( df,
   d <- resolve_col( dt, debt )
   e <- resolve_col( dt, equity )
 
-  message( paste0( "Equity equal to zero: ", sum( e == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  e[ e == 0 ] <- NA
+  nan.count <- sum( e == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Equity equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  e[ e == 0 ] <- NaN
 
   der <- d / e
 
-  v <- winsorize_var( der, winsorize )
+  v <- apply_transformations( der, winsorize, range )
   DEBT_EQUITY <- data.frame( debt_equity   = v$raw,
                      debt_equity_w = v$winsorized,
                      debt_equity_z = v$z,

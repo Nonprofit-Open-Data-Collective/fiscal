@@ -8,7 +8,8 @@ get_operating_reserve_ratio( df,
   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   total_expenses          = "F9_09_EXP_TOT_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -23,6 +24,12 @@ get_operating_reserve_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -55,7 +62,24 @@ as a multiple of total annual expenses.
 operating_reserves = unrestricted_net_assets - net_fixed_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Unbounded in both directions when expressed in months. Negative values occur when
+unrestricted net assets are negative or when net fixed assets exceed unrestricted net
+assets. Values above 24 months are uncommon for operating organizations and may
+indicate accumulation beyond what is needed for operating risk management.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Less than 1 month}: Acute vulnerability.
+\item \strong{1-3 months}: Below the commonly recommended minimum.
+\item \strong{3-6 months}: Generally adequate for most operating nonprofits.
+\item \strong{6-12 months}: Strong; appropriate for volatile-revenue or
+capital-intensive organizations.
+\item The Nonprofit Finance Fund recommends a minimum of 3 months.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -94,26 +118,6 @@ for Nonprofit Organizations}. Wiley.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
 Leadership}, 23(3), 281-302. - Empirical analysis of operating reserve levels
 across the U.S. nonprofit sector.
-}
-}
-
-\subsection{Definitional range}{
-
-Unbounded in both directions when expressed in months. Negative values occur when
-unrestricted net assets are negative or when net fixed assets exceed unrestricted net
-assets. Values above 24 months are uncommon for operating organizations and may
-indicate accumulation beyond what is needed for operating risk management.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{Less than 1 month}: Acute vulnerability.
-\item \strong{1-3 months}: Below the commonly recommended minimum.
-\item \strong{3-6 months}: Generally adequate for most operating nonprofits.
-\item \strong{6-12 months}: Strong; appropriate for organizations with volatile
-revenue, major capital needs, or large fixed cost bases.
-\item The Nonprofit Finance Fund recommends a minimum of 3 months as a policy
-target for most organizations.
 }
 }
 

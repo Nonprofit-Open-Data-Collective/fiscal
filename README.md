@@ -195,7 +195,92 @@ df <- get_surplus_margin_ratio( df )           # Surplus Margin
 <hr>
 <br>
 
-# Metrics Reference
+## Panel Data Workflow
+
+The package includes three functions for building and preparing multi-year panel datasets from the IRS 990 efile data.
+
+### get_panel()
+
+Downloads multiple years of IRS 990 efile data and stacks them into a single long-format panel. Each year is retrieved independently via `retrieve_efile_data()`, stamped with `TAX_YEAR`, and combined with `dplyr::bind_rows()` — columns that appear in some years but not others are filled with `NA`.
+
+```r
+# Retrieve a 4-year panel with default tables (P00, P01, P08, P09, P10)
+panel <- get_panel( years = 2019:2022 )
+
+dim( panel )
+table( panel$TAX_YEAR )
+
+# Retrieve without BMF metadata (faster; attach manually later)
+panel <- get_panel( years = 2019:2022, include_bmf = FALSE )
+```
+
+### deduplicate()
+
+IRS 990 efile data can contain multiple filings per organization per year (amended returns, partial-year returns, group returns). `deduplicate()` reduces the panel to at most one record per `EIN2` × `TAX_YEAR` using three ordered heuristics:
+
+1. **Drop group returns** — `RETURN_GROUP_X == "X"`
+2. **Drop partial-year returns** — `RETURN_PARTIAL_X == "X"`
+3. **Keep most recent** — retain the filing with the latest `RETURN_TIME_STAMP`
+
+If applying a drop rule would eliminate *all* records for an organization-year, those records are rescued and passed to the next step. The function prints a report showing records dropped at each step, by year, and a frequency table of how many filings existed per organization-year before deduplication.
+
+```r
+panel_clean <- deduplicate( panel )
+
+# Suppress the report
+panel_clean <- deduplicate( panel, verbose = FALSE )
+```
+
+### panel_smooth()
+
+Applies a centered rolling window average within each organization's time series to reduce year-to-year noise in financial variables. Returns a data frame with identical dimensions and column names — only the selected numeric columns are replaced with smoothed values.
+
+The `vars` argument selects which columns to smooth:
+
+| Value | Columns smoothed |
+|-------|-----------------|
+| `"PZ"` | PZ-scope fields (990 + 990EZ), via `get_pz_fields()` |
+| `"PC"` | PC-scope fields (990 only), via `get_pc_fields()` |
+| `"ALL"` | Union of PZ and PC fields |
+| character vector | Custom list of column names |
+
+Three weighting schemes are available:
+
+| Scheme | Behavior |
+|--------|----------|
+| `"equal"` | Simple moving average — all window observations weighted equally |
+| `"half"` | Center observation gets 1/2 weight; neighbors share the remaining 1/2 |
+| `"decay"` | Exponential half-life decay from center (distance 1 → weight 1/2, distance 2 → 1/4, ...) |
+
+```r
+# Full panel workflow
+panel       <- get_panel( years = 2019:2022 )
+panel_clean <- deduplicate( panel )
+
+# Smooth PZ-scope financial fields with a 3-year window
+panel_smooth_pz <- panel_smooth( panel_clean, vars = "PZ", window = 3 )
+
+# Smooth specific columns with decay weighting and a 5-year window
+panel_smooth_custom <- panel_smooth(
+  panel_clean,
+  vars    = c( "F9_01_REV_TOT_CY", "F9_01_EXP_TOT_CY", "F9_10_ASSET_TOT_EOY" ),
+  window  = 5,
+  weights = "decay"
+)
+
+# Compute all fiscal health ratios on the cleaned, smoothed panel
+panel_ratios <- compute_all( panel_smooth_pz )
+```
+
+---
+
+<br>
+<hr>
+<br>
+
+# Metrics 
+
+The following accounting ratios are included in the package: 
 
 ---
 
@@ -1255,3 +1340,8 @@ surplus_margin = revenues_less_expenses / total_revenue
 **Scope:** 990 + 990EZ filers
 
 ---
+
+<br>
+<hr>
+<br>
+

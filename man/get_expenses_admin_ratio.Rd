@@ -7,7 +7,8 @@
 get_expenses_admin_ratio( df,
   mgmt_expenses  = "F9_09_EXP_TOT_MGMT",
   total_expenses = "F9_09_EXP_TOT_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_expenses_admin_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -48,6 +55,19 @@ Share of total expenses devoted to management and general administration.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{aer = management_expenses / total_expenses
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. In combination with program and fundraising ratios, all three
+sum to 1.0 by construction. The empirical range for most nonprofits is approximately
+[0.05, 0.35].
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Charity Navigator targets management and general expenses at or below 15\%
+of total expenses for a favorable score.
+\item Values below 5\% may indicate underinvestment in governance systems.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -82,23 +102,6 @@ breakdown (program, management, fundraising) is the standard basis.
 \item Nunnenkamp, P. & Ohler, H. (2012). Throwing foreign aid at HIV/AIDS in
 developing countries: Missing the target? \emph{World Development}, 40(10),
 1978-1994. - Uses administrative ratios in cross-organizational comparisons.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. In combination with program and fundraising ratios, all three
-sum to 1.0 by construction. The empirical range for most nonprofits is approximately
-[0.05, 0.35].
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Charity Navigator targets management and general expenses at or below 15\\%
-of total expenses for a favorable score.
-\item Values below 5\\% may indicate underinvestment in governance systems.
-\item Very large or complex organizations may legitimately show higher ratios
-due to the fixed cost nature of executive leadership and compliance functions.
 }
 }
 

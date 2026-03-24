@@ -16,7 +16,21 @@
 #' monthly_expenses = ( total_expenses - depreciation ) / 12
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded below at zero; unbounded above. The typical operating range for nonprofits
+#' is approximately \[0, 24\] months, with values above 12 months uncommon for
+#' operating organizations (more typical for foundations).
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Less than 1 month**: Acute liquidity risk.
+#'   - **1-3 months**: Below adequate; common guidance is at least 3 months.
+#'   - **3-6 months**: Generally considered healthy for most operating nonprofits.
+#'   - **6+ months**: Strong reserve position.
+#'   - The Nonprofit Finance Fund recommends 3-6 months as a target.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -33,6 +47,11 @@
 #'   combined with `total_expenses` or `depreciation`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_months_cash_operations( df,
@@ -42,7 +61,8 @@
 #'   accounts_receivable  = "F9_10_ASSET_ACC_NET_EOY",
 #'   total_expenses       = "F9_09_EXP_TOT_TOT",
 #'   depreciation         = "F9_09_EXP_DEPREC_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -80,25 +100,6 @@
 #'     for Nonprofit Organizations*. Wiley.
 #'   - GuideStar/Candid. *Nonprofit Finance Indicators*. - Months of cash is
 #'     one of the core metrics in the GuideStar financial health profile.
-#'
-#'
-#' ## Definitional range
-#'
-#' Bounded below at zero; unbounded above. The typical operating range for nonprofits
-#' is approximately \[0, 24\] months, with values above 12 months uncommon for
-#' operating organizations (more typical for foundations).
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **Less than 1 month**: Acute liquidity risk.
-#'   - **1-3 months**: Below adequate; common recommendation is at least
-#'     3 months.
-#'   - **3-6 months**: Generally considered healthy for most nonprofits.
-#'   - **6+ months**: Strong reserve position; may be appropriate for
-#'     organizations with volatile revenue or major capital needs on the horizon.
-#'   - The Nonprofit Finance Fund recommends 3-6 months as a target for most
-#'     operating nonprofits.
 #'
 #'
 #' ## Variables used:
@@ -143,7 +144,8 @@ get_months_cash_operations <- function( df,
                       depreciation        = "F9_09_EXP_DEPREC_TOT",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -189,13 +191,14 @@ get_months_cash_operations <- function( df,
     den <- ( dt[[ total_expenses ]] - dt[[ depreciation ]] ) / 12
   }
 
-  message( paste0( "Monthly operating expenses equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Monthly operating expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   moch <- num / den
 
-  v <- winsorize_var( moch, winsorize )
+  v <- apply_transformations( moch, winsorize, range )
   MONTHS_CASH_OPS <- data.frame( months_cash_ops   = v$raw,
                       months_cash_ops_w = v$winsorized,
                       months_cash_ops_z = v$z,

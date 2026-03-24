@@ -15,6 +15,19 @@
 #'                           + payroll_taxes ) / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Most service-delivery nonprofits fall in the \[0.50, 0.85\] range.
+#' Grant-making organizations may show ratios below 0.20.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No universal benchmark -- labor intensity varies fundamentally by mission type.
+#'   - Human services, health, and education nonprofits typically show ratios above 0.60;
+#'     grant-making organizations may show ratios below 0.30.
+#'   - A sharp year-over-year increase may indicate revenue contraction rather than
+#'     compensation growth.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -33,6 +46,11 @@
 #' @param total_expenses Total functional expenses.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -55,20 +73,6 @@
 #'     and Society*, 20(4), 94-112.
 #'   - Leete, L. (2001). Whither the nonprofit wage differential? *Journal of
 #'     Labor Economics*, 19(1), 136-170.
-#'
-#'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Most service-delivery nonprofits fall in the \[0.50, 0.85\] range.
-#' Grant-making organizations may show ratios below 0.20.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No universal benchmark - labor intensity varies fundamentally by mission type.
-#'   - Human services, health, and education nonprofits typically show ratios above 0.60.
-#'   - A sharp year-over-year increase may indicate revenue contraction rather than
-#'     compensation growth.
 #'
 #'
 #' ## Variables used:
@@ -98,7 +102,8 @@
 #'   other_employee_benefits = "F9_09_EXP_OTH_EMPL_BEN_TOT",
 #'   payroll_taxes          = "F9_09_EXP_PAYROLL_TAX_TOT",
 #'   total_expenses         = "F9_09_EXP_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -143,7 +148,8 @@ get_expenses_compensation_ratio <- function( df,
                      other_employee_benefits = "F9_09_EXP_OTH_EMPL_BEN_TOT",
                      payroll_taxes           = "F9_09_EXP_PAYROLL_TAX_TOT",
                      total_expenses          = "F9_09_EXP_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -168,13 +174,14 @@ get_expenses_compensation_ratio <- function( df,
   c6 <- resolve_col( dt, payroll_taxes )
   te <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( te == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  te[ te == 0 ] <- NA
+  nan.count <- sum( te == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  te[ te == 0 ] <- NaN
 
   expenses_compensation <- ( c1 + c2 + c3 + c4 + c5 + c6 ) / te
 
-  v <- winsorize_var( expenses_compensation, winsorize )
+  v <- apply_transformations( expenses_compensation, winsorize, range )
   EXPENSES_COMPENSATION <- data.frame(
     expenses_compensation   = v$raw,
     expenses_compensation_w = v$winsorized,

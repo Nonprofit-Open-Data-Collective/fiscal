@@ -13,6 +13,20 @@
 #' sm = revenues_less_expenses / total_revenue
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
+#' but in practice the empirical range for nonprofits is approximately \[-0.30, 0.30\]
+#' in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
+#' events (large gifts, major write-downs, asset sales).
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Near zero**: Normal and expected for nonprofits operating close to break-even.
+#'   - **0.02-0.07** (2-7%): Commonly considered a healthy surplus range.
+#'   - **Below -0.05** for two or more consecutive years: Common vulnerability
+#'     threshold (Greenlee & Trussel 2000).
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -24,12 +38,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_surplus_margin_ratio( df,
 #'   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
 #'   total_revenue          = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -80,26 +100,6 @@
 #'     76-87.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
-#' but in practice the empirical range for nonprofits is approximately \[-0.30, 0.30\]
-#' in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
-#' events (large gifts, major write-downs, asset sales).
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **Near zero** is normal and expected for nonprofits operating close to
-#'     break-even by design.
-#'   - **0.02 to 0.07** (2-7\%) is commonly considered a healthy surplus
-#'     range - building modest reserves without appearing to hoard resources.
-#'   - **Below -0.05** for two or more consecutive years is a common
-#'     vulnerability threshold (Greenlee & Trussel 2000).
-#'   - Tuckman & Chang (1991) use a margin below zero as a vulnerability indicator;
-#'     the magnitude matters for assessing severity.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_01_EXP_REV_LESS_EXP_CY`: 
@@ -134,7 +134,8 @@ get_surplus_margin_ratio <- function( df,
                     revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
                     total_revenue          = c( "F9_08_REV_TOT_TOT",
                                                 "F9_01_REV_TOT_CY" ),
-                    winsorize = 0.98 ,
+                    winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -158,13 +159,14 @@ get_surplus_margin_ratio <- function( df,
   s <- resolve_col( dt, revenues_less_expenses )
   r <- resolve_col( dt, total_revenue )
 
-  message( paste0( "Total revenue equal to zero: ", sum( r == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  r[ r == 0 ] <- NA
+  nan.count <- sum( r == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  r[ r == 0 ] <- NaN
 
   sm <- s / r
 
-  v <- winsorize_var( sm, winsorize )
+  v <- apply_transformations( sm, winsorize, range )
   SURPLUS_MARGIN <- data.frame( surplus_margin   = v$raw,
                     surplus_margin_w = v$winsorized,
                     surplus_margin_z = v$z,

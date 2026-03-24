@@ -7,7 +7,8 @@
 get_debt_netassets_ratio( df,
   liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
   net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ provided they are coalesced with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,19 @@ Compares total liabilities to unrestricted net assets.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{dmr = total_liabilities / unrestricted_net_assets
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Same as \code{\link[=get_debt_equity_ratio]{get_debt_equity_ratio()}}: bounded below at zero when both
+numerator and denominator are positive; unbounded above; negative when unrestricted
+net assets are negative.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values above 3.0-5.0 are commonly flagged as high leverage in the
+nonprofit vulnerability literature. See \code{\link[=get_debt_equity_ratio]{get_debt_equity_ratio()}} for
+fuller benchmark guidance.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -81,20 +101,6 @@ field is not available on 990EZ, so 990EZ filers will have NA for this ratio.
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
 }
-}
-
-\subsection{Definitional range}{
-
-Same as \code{\link[=get_debt_equity_ratio]{get_debt_equity_ratio()}}: bounded below at zero when both
-numerator and denominator are positive; unbounded above; negative when unrestricted
-net assets are negative.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-
-See \code{\link[=get_debt_equity_ratio]{get_debt_equity_ratio()}} for benchmarks. As a rule of thumb, values
-above 3.0-5.0 are commonly flagged as high leverage in the nonprofit vulnerability
-literature.
 }
 
 \subsection{Variables used:}{

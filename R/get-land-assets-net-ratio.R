@@ -13,7 +13,20 @@
 #' land_assets_net = land_bldg_equip_net / total_assets
 #' ```
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\] in normal conditions. Heavily skewed toward zero because many
+#' nonprofits own no real property.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values below 0.10 are typical for lean service organizations.
+#'   - Values above 0.50 indicate that more than half of assets are fixed property,
+#'     limiting financial flexibility.
+#'   - Declining values over time may reflect depreciation outpacing new capital
+#'     investment rather than strategic deleveraging.
+#'
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param land_bldg_equip_net Net land, buildings, and equipment EOY (after accumulated depreciation).
@@ -21,6 +34,11 @@
 #' @param total_assets Total assets, EOY.
 #')
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -47,19 +65,6 @@
 #'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\] in normal conditions. Heavily skewed toward zero because many
-#' nonprofits own no real property.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values below 0.10 are typical for lean service organizations.
-#'   - Values above 0.50 indicate more than half of assets are fixed property,
-#'     limiting financial flexibility.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_LAND_BLDG_NET_EOY`: 
@@ -76,7 +81,8 @@
 #' get_land_assets_net_ratio( df,
 #'   land_bldg_equip_net       = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   total_assets              = "F9_10_ASSET_TOT_EOY",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -97,7 +103,8 @@
 get_land_assets_net_ratio <- function( df,
                      land_bldg_equip_net       = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                      total_assets              = "F9_10_ASSET_TOT_EOY",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -113,13 +120,14 @@ get_land_assets_net_ratio <- function( df,
   num <- resolve_col( dt, land_bldg_equip_net )
   den <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   land_assets_net <- num / den
 
-  v <- winsorize_var( land_assets_net, winsorize )
+  v <- apply_transformations( land_assets_net, winsorize, range )
   LAND_ASSETS_NET <- data.frame(
     land_assets_net   = v$raw,
     land_assets_net_w = v$winsorized,

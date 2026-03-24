@@ -1,6 +1,6 @@
 Package: fiscal
 Title: Nonprofit Fiscal Health Metrics
-Version: 0.0.1.0000
+Version: 0.0.2.0000
 Authors@R: 
   c( person(given = "Jesse",
             family = "Lecy",
@@ -15,8 +15,9 @@ Description: Calculate standard fiscal health accounting metrics for nonprofits 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: 
-    R (>= 3.5)
-Imports: data.table, dplyr, magrittr, stringr
+Depends: R (>= 4.1.0)
+Imports: data.table, dplyr, magrittr, scales, stringr
+Suggests: testthat (>= 3.0.0), knitr
+Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

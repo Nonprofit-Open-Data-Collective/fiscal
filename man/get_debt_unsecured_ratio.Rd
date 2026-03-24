@@ -7,7 +7,8 @@
 get_debt_unsecured_ratio( df,
   unsecured_notes_loans     = "F9_10_LIAB_NOTE_UNSEC_EOY",
   total_liabilities         = "F9_10_LIAB_TOT_EOY",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -19,6 +20,12 @@ get_debt_unsecured_ratio( df,
 \item{total_liabilities}{Total liabilities, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -39,7 +46,20 @@ Unsecured notes and loans payable as a share of total liabilities.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{debt_unsecured = unsecured_notes_loans / total_liabilities
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Most nonprofits carry no unsecured notes, so the distribution
+is highly concentrated at zero with a long right tail.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No established benchmark. Presence of unsecured debt is not inherently
+negative -- many healthy nonprofits use lines of credit for cash flow
+management -- but a large and growing ratio warrants scrutiny.
+\item Trend analysis is more informative than a single year's value.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -60,23 +80,6 @@ A direct read from two 990 balance sheet fields.
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Most nonprofits carry no unsecured notes, so the distribution
-is highly concentrated at zero with a long right tail.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No established benchmark. Presence of unsecured debt is not inherently
-negative - many healthy nonprofits use lines of credit for cash flow management
-\itemize{
-\item but a large and growing ratio warrants scrutiny.
-}
-\item Trend analysis is more informative than a single year's value.
 }
 }
 

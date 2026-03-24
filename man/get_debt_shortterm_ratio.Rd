@@ -8,7 +8,8 @@ get_debt_shortterm_ratio( df,
   accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
   grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
   net_assets       = "F9_10_NAFB_TOT_EOY",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -29,6 +30,12 @@ combined with \code{net_assets}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -60,7 +67,22 @@ Measures short-term obligations as a share of total net assets.
 short_term_liabilities = accounts_payable + grants_payable
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero when net assets are positive. Negative values occur when net
+assets are negative (accumulated deficit), which makes the ratio uninterpretable as
+a burden measure. Unbounded above when net assets approach zero. Typical values for
+financially stable nonprofits are in the [0, 0.30] range.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values below 0.10 indicate modest short-term payables relative to the
+equity base -- a comfortable position.
+\item Values above 0.30 suggest near-term obligations are placing meaningful
+pressure on net assets.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -91,25 +113,6 @@ broader applicability.
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero when net assets are positive. Negative values occur when net
-assets are negative (accumulated deficit), which makes the ratio uninterpretable as
-a burden measure. Unbounded above when net assets approach zero. Typical values for
-financially stable nonprofits are in the [0, 0.30] range.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values below 0.10 indicate that short-term payables are modest relative to
-the equity base - a comfortable position.
-\item Values above 0.30 suggest that near-term obligations are placing meaningful
-pressure on net assets.
-\item Organizations with very low net assets may show very high or unstable ratios
-even with normal payables levels.
 }
 }
 

@@ -13,6 +13,19 @@
 #' er = total_net_assets / total_assets
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Theoretically bounded \[0, 1\] when net assets are positive. Values above 1.0
+#' are not possible. Values below zero occur when net assets are negative (accumulated
+#' deficit), which is a distress indicator. The empirical range for most nonprofits
+#' is approximately \[0.10, 0.95\].
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Above 0.50**: Equity finances more than half of assets -- generally healthy.
+#'   - **Below 0.30**: High leverage; common in capital-intensive subsectors.
+#'   - Most useful as a trend measure: declining values warrant investigation.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -20,12 +33,18 @@
 #' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_equity_ratio( df,
 #'   net_assets   = "F9_10_NAFB_TOT_EOY",
 #'   total_assets = "F9_10_ASSET_TOT_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -70,24 +89,6 @@
 #'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
 #'
 #'
-#' ## Definitional range
-#'
-#' Theoretically bounded \[0, 1\] when net assets are positive. Values above 1.0
-#' are not possible. Values below zero occur when net assets are negative (accumulated
-#' deficit), which is a distress indicator. The empirical range for most nonprofits
-#' is approximately \[0.10, 0.95\].
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values above 0.50 (equity finances more than half of assets) are generally
-#'     considered healthy.
-#'   - Values below 0.30 indicate high leverage - the organization is largely
-#'     debt-financed, which is common in capital-intensive subsectors.
-#'   - The equity ratio is most useful as a trend measure: declining values over
-#'     consecutive years warrant investigation.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`net_assets`)
@@ -119,7 +120,8 @@
 get_equity_ratio <- function( df,
                     net_assets   = "F9_10_NAFB_TOT_EOY",
                     total_assets = "F9_10_ASSET_TOT_EOY",
-                    winsorize = 0.98 ,
+                    winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -139,13 +141,14 @@ get_equity_ratio <- function( df,
   n <- resolve_col( dt, net_assets )
   a <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( a == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  a[ a == 0 ] <- NA
+  nan.count <- sum( a == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  a[ a == 0 ] <- NaN
 
   er <- n / a
 
-  v <- winsorize_var( er, winsorize )
+  v <- apply_transformations( er, winsorize, range )
   EQUITY <- data.frame( equity   = v$raw,
                     equity_w = v$winsorized,
                     equity_z = v$z,

@@ -9,7 +9,8 @@ get_cash_liquidity_ratio( df,
   savings          = "F9_10_ASSET_SAVING_EOY",
   accounts_payable = "F9_10_LIAB_ACC_PAYABLE_EOY",
   grants_payable   = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -26,6 +27,12 @@ get_cash_liquidity_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -57,7 +64,23 @@ Measures immediate liquidity using only cash and cash equivalents against curren
 current_liabilities = accounts_payable + grants_payable
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
+current payables. The empirical range for nonprofits is approximately [0, 20],
+with most values between 0.1 and 5.0. Very high values are common for grant-making
+foundations and endowed organizations that carry minimal accounts payable.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Below 0.5}: Organization cannot cover half of near-term payables from
+cash alone; reliant on receivables collection or borrowing.
+\item \strong{1.0 or above}: Full cash coverage of current liabilities.
+\item Because this is a highly conservative measure, values somewhat below 1.0
+are normal if receivables are healthy.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -99,25 +122,6 @@ vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Volunta
 Sector Quarterly}, 20(4), 445-460.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
-current payables. The empirical range for nonprofits is approximately [0, 20],
-with most values between 0.1 and 5.0. Very high values are common for grant-making
-foundations and endowed organizations that carry minimal accounts payable.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values below 0.5 suggest the organization cannot cover even half of its
-near-term payables from cash alone and is reliant on receivables collection
-or short-term borrowing to meet obligations.
-\item Values of 1.0 or above indicate full cash coverage of current liabilities.
-\item Because this is a highly conservative measure, values somewhat below 1.0
-are normal and not necessarily problematic if receivables are healthy.
 }
 }
 

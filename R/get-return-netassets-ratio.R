@@ -13,6 +13,20 @@
 #' rona = revenues_less_expenses / net_assets_boy
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Unbounded in both directions. A value of 0 means break-even. The typical range for
+#' nonprofits is approximately \[-0.30, 0.30\]. The ratio is undefined (NA) when
+#' beginning net assets equal zero. Extreme values occur when BOY net assets are near
+#' zero (small denominator) rather than when the surplus itself is large.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Small positive values (0.02-0.10) are considered healthy.
+#'   - Sustained negative RONA over multiple years is a financial vulnerability
+#'     indicator (Greenlee & Trussel 2000).
+#'   - Most useful in trend analysis and within-subsector comparisons.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -24,12 +38,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_return_netassets_ratio( df,
 #'   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
 #'   net_assets_boy         = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -79,23 +99,6 @@
 #'   - Nonprofit Finance Fund. *State of the Nonprofit Sector Survey* (annual).
 #'
 #'
-#' ## Definitional range
-#'
-#' Unbounded in both directions. A value of 0 means break-even. The typical range for
-#' nonprofits is approximately \[-0.30, 0.30\]. The ratio is undefined (NA) when
-#' beginning net assets equal zero. Extreme values occur when BOY net assets are near
-#' zero (small denominator) rather than when the surplus itself is large.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Small positive values (0.02 to 0.10) are considered healthy.
-#'   - Sustained negative RONA over multiple years is a financial vulnerability
-#'     indicator (Greenlee & Trussel 2000).
-#'   - Like all ratio measures, RONA is most useful in trend analysis and
-#'     within-subsector comparisons rather than as an absolute benchmark.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_01_EXP_REV_LESS_EXP_CY`: 
@@ -130,7 +133,8 @@ get_return_netassets_ratio <- function( df,
                       revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
                       net_assets_boy         = c( "F9_10_NAFB_TOT_BOY",
                                                    "F9_01_NAFB_TOT_BOY" ),
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -154,13 +158,14 @@ get_return_netassets_ratio <- function( df,
   s <- resolve_col( dt, revenues_less_expenses )
   n <- resolve_col( dt, net_assets_boy )
 
-  message( paste0( "Beginning net assets equal to zero: ", sum( n == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  n[ n == 0 ] <- NA
+  nan.count <- sum( n == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Beginning net assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  n[ n == 0 ] <- NaN
 
   rona <- s / n
 
-  v <- winsorize_var( rona, winsorize )
+  v <- apply_transformations( rona, winsorize, range )
   RETURN_NETASSETS <- data.frame( return_netassets   = v$raw,
                       return_netassets_w = v$winsorized,
                       return_netassets_z = v$z,

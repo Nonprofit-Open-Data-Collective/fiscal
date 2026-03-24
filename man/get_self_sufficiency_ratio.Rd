@@ -7,7 +7,8 @@
 get_self_sufficiency_ratio( df,
   program_service_rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY" ),
   total_expenses      = c( "F9_09_EXP_TOT_TOT",      "F9_01_EXP_TOT_CY"      ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ if two are provided they are coalesced with the 990 value taking priority over 9
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,25 @@ Measures whether program service revenue is sufficient to cover total expenses.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{ssr = program_service_revenue / total_expenses
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded below at zero; values above 1.0 are possible (and indicate program revenue
+exceeds total expenses - a surplus from earned income alone). The typical range for
+nonprofits is approximately [0, 1.5], with most values below 1.0 since most
+nonprofits depend on some contributed income.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{SSR > 1.0}: Fully self-sufficient from program revenue; characteristic
+of mature social enterprises and fee-based service providers.
+\item \strong{SSR 0.50-1.0}: Majority of costs covered by program revenue; moderate
+philanthropy dependence.
+\item \strong{SSR < 0.25}: Heavily dependent on contributed income; common for advocacy
+organizations, arts nonprofits, and grant-funded research entities.
+\item High SSR is not universally better -- organizations serving low-income
+populations often require philanthropic subsidy by design.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -88,27 +114,6 @@ the tension between earned income and mission.
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero; values above 1.0 are possible (and indicate program revenue
-exceeds total expenses - a surplus from earned income alone). The typical range for
-nonprofits is approximately [0, 1.5], with most values below 1.0 since most
-nonprofits depend on some contributed income.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{SSR > 1.0}: Fully self-sufficient from program revenue; uncommon
-but characteristic of mature social enterprises and fee-based service providers.
-\item \strong{SSR 0.50-1.0}: Majority of costs covered by program revenue;
-moderate philanthropy dependence.
-\item \strong{SSR < 0.25}: Heavily dependent on contributed income; common for
-advocacy organizations, arts nonprofits, and grant-funded research entities.
-\item High SSR is not universally better - organizations serving low-income
-populations often cannot charge market-rate fees and require subsidy by design.
 }
 }
 

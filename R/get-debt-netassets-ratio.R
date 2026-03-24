@@ -13,6 +13,18 @@
 #' dmr = total_liabilities / unrestricted_net_assets
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Same as [get_debt_equity_ratio()]: bounded below at zero when both
+#' numerator and denominator are positive; unbounded above; negative when unrestricted
+#' net assets are negative.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values above 3.0-5.0 are commonly flagged as high leverage in the
+#'     nonprofit vulnerability literature. See [get_debt_equity_ratio()] for
+#'     fuller benchmark guidance.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -22,12 +34,18 @@
 #' @param net_assets Unrestricted net assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_debt_netassets_ratio( df,
 #'   liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
 #'   net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -69,18 +87,6 @@
 #'     Sector Quarterly*, 20(4), 445-460.
 #'
 #'
-#' ## Definitional range
-#'
-#' Same as [get_debt_equity_ratio()]: bounded below at zero when both
-#' numerator and denominator are positive; unbounded above; negative when unrestricted
-#' net assets are negative.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#' See [get_debt_equity_ratio()] for benchmarks. As a rule of thumb, values
-#' above 3.0-5.0 are commonly flagged as high leverage in the nonprofit vulnerability
-#' literature.
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`liabilities`, 990)
@@ -114,7 +120,8 @@
 get_debt_netassets_ratio <- function( df,
                      liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
                      net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -134,13 +141,14 @@ get_debt_netassets_ratio <- function( df,
   l <- resolve_col( dt, liabilities )
   n <- resolve_col( dt, net_assets )
 
-  message( paste0( "Net assets equal to zero: ", sum( n == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  n[ n == 0 ] <- NA
+  nan.count <- sum( n == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Net assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  n[ n == 0 ] <- NaN
 
   dmr <- l / n
 
-  v <- winsorize_var( dmr, winsorize )
+  v <- apply_transformations( dmr, winsorize, range )
   DEBT_NETASSETS <- data.frame( debt_netassets   = v$raw,
                      debt_netassets_w = v$winsorized,
                      debt_netassets_z = v$z,

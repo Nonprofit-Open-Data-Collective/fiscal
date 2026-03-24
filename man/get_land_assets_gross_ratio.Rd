@@ -7,7 +7,8 @@
 get_land_assets_gross_ratio( df,
   land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
   total_assets   = "F9_10_ASSET_TOT_EOY",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_land_assets_gross_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -48,6 +55,20 @@ Share of total assets invested in land, buildings, and equipment.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{lar = land_buildings_equipment / total_assets
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1] in normal conditions. The distribution is highly right-skewed:
+most nonprofits with no owned real estate show values near zero, while
+capital-intensive organizations (healthcare, housing, higher education) may show
+values above 0.50.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Most informative for within-subsector comparisons.
+\item High values indicate illiquidity risk: if the majority of assets are fixed
+property, the organization has limited ability to quickly convert assets to cash.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -81,23 +102,6 @@ uses the net value directly.
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112. - Asset composition analysis for nonprofits.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1] in normal conditions. The distribution is highly right-skewed:
-most nonprofits with no owned real estate show values near zero, while
-capital-intensive organizations (healthcare, housing, higher education) may show
-values above 0.50.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Most informative for within-subsector comparisons.
-\item High values indicate illiquidity risk: if the majority of assets are
-fixed property, the organization has limited ability to quickly convert assets
-to cash in a financial emergency.
 }
 }
 

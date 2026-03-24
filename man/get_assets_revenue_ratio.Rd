@@ -7,7 +7,8 @@
 get_assets_revenue_ratio( df,
   total_assets  = "F9_10_ASSET_TOT_EOY",
   total_revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ they are coalesced with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,21 @@ Measures the size of an organization's asset base relative to its annual revenue
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{arr = total_assets / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
+Typical operating nonprofits show values in the [0.5, 5.0] range. Endowed
+organizations and capital-intensive nonprofits may show values of 10 or higher.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universal benchmark; most meaningful for within-subsector comparisons.
+\item \strong{Below 1.0}: Annual revenue exceeds total assets -- common for lean service
+organizations with minimal physical assets.
+\item \strong{Above 10}: Typically indicates a capital-heavy asset base or a small
+revenue base relative to accumulated assets.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -84,25 +106,6 @@ here for consistency and data availability.
 compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
 \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
-Typical operating nonprofits show values in the [0.5, 5.0] range. Endowed
-organizations and capital-intensive nonprofits may show values of 10 or higher.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item There is no universal benchmark. The ratio is most meaningful for
-within-subsector comparisons.
-\item A ratio below 1.0 means annual revenue exceeds total assets - common for
-lean service organizations with minimal physical assets.
-\item Very high ratios (above 10) typically indicate either a capital-heavy asset
-base (real estate, equipment) or a small revenue base relative to accumulated
-assets (endowed organizations).
 }
 }
 

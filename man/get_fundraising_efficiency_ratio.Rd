@@ -7,7 +7,8 @@
 get_fundraising_efficiency_ratio( df,
   fundraising_expenses = "F9_09_EXP_TOT_FUNDR",
   total_contributions  = "F9_08_REV_CONTR_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_fundraising_efficiency_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,21 @@ expenses generate donated revenue.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{fer = fundraising_expenses / total_contributions
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
+dollar) are possible, particularly for young organizations building donor bases or
+those in difficult fundraising environments. The typical range is approximately
+[0, 0.50] for most operating nonprofits.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{<= 10 cents per dollar (ratio <= 0.10)}: Charity Navigator threshold
+for a full fundraising efficiency score.
+\item \strong{<= 35 cents per dollar}: BBB Wise Giving Alliance standard.
+\item \strong{Above 50 cents}: Commonly flagged as inefficient.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -90,26 +112,6 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 }
 \item Hager, M.A. (2001). Financial vulnerability among arts organizations.
 \emph{Nonprofit and Voluntary Sector Quarterly}, 30(2), 376-392.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
-dollar) are possible, particularly for young organizations building donor bases or
-those in difficult fundraising environments. The typical range is approximately
-[0, 0.50] for most operating nonprofits.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{10 cents per dollar or less (ratio <= 0.10)}: Charity Navigator threshold
-for a full fundraising efficiency score.
-\item \strong{35 cents per dollar or less}: BBB Wise Giving Alliance standard.
-\item \strong{Above 50 cents}: Commonly flagged as inefficient; may indicate
-declining donor base or heavy reliance on expensive acquisition channels.
-\item \strong{Zero}: Organizations with no fundraising expenses but positive
-contributions (common for government-funded nonprofits) show a ratio of zero.
 }
 }
 

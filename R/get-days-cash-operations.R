@@ -16,7 +16,22 @@
 #' daily_expenses = ( total_expenses - depreciation ) / 365
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded below at zero and unbounded above, expressed in days. The typical range for
+#' nonprofits is approximately \[0, 365\]. Values above 365 (more than one year of
+#' cash) indicate very large liquid reserves relative to expenses, which is uncommon
+#' for operating nonprofits but typical for foundations.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Below 30 days**: Generally considered a distress indicator.
+#'   - **60-90 days**: Commonly cited minimum threshold (Nonprofit Finance Fund).
+#'   - **90-180 days**: Considered healthy for most operating nonprofits.
+#'   - Healthcare nonprofits are typically benchmarked at 150+ days due to longer
+#'     receivables cycles.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -32,6 +47,11 @@
 #'   `total_expenses` or `depreciation`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_days_cash_operations( df,
@@ -41,7 +61,8 @@
 #'   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
 #'   total_expenses      = "F9_09_EXP_TOT_TOT",
 #'   depreciation        = "F9_09_EXP_DEPREC_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -101,27 +122,6 @@
 #'     Sector Quarterly*, 20(4), 445-460.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero and unbounded above, expressed in days. The typical range for
-#' nonprofits is approximately \[0, 365\]. Values above 365 (more than one year of
-#' cash) indicate very large liquid reserves relative to expenses, which is uncommon
-#' for operating nonprofits but typical for foundations.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **60-90 days** is a commonly cited minimum threshold in nonprofit
-#'     financial management guidance (Nonprofit Finance Fund).
-#'   - **Below 30 days** is generally considered a distress indicator.
-#'   - **90-180 days** is considered healthy for most operating nonprofits.
-#'   - Healthcare nonprofits are typically benchmarked at higher levels (150+ days)
-#'     due to longer receivables cycles from insurance reimbursements.
-#'   - Organizations with highly predictable revenue (e.g., stable government
-#'     contracts) can responsibly operate with lower cash reserves than those with
-#'     volatile or grant-dependent income.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand (`cash`)
@@ -164,7 +164,8 @@ get_days_cash_operations <- function( df,
                       depreciation        = "F9_09_EXP_DEPREC_TOT",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -210,13 +211,14 @@ get_days_cash_operations <- function( df,
     den <- ( dt[[ total_expenses ]] - dt[[ depreciation ]] ) / 365
   }
 
-  message( paste0( "Daily operating expenses equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Daily operating expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   doch <- num / den
 
-  v <- winsorize_var( doch, winsorize )
+  v <- apply_transformations( doch, winsorize, range )
   DAYS_CASH_OPS <- data.frame( days_cash_ops   = v$raw,
                       days_cash_ops_w = v$winsorized,
                       days_cash_ops_z = v$z,

@@ -11,7 +11,8 @@ get_days_cash_investments( df,
   mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
   total_expenses    = "F9_09_EXP_TOT_TOT",
   depreciation      = "F9_09_EXP_DEPREC_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -39,6 +40,12 @@ combined with the individual component arguments.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -73,7 +80,20 @@ investable_assets = unrestricted_net_assets + investments
 daily_expenses    = ( total_expenses - depreciation ) / 365
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Unbounded in both directions. Negative values occur when unrestricted net assets are
+negative (accumulated deficits exceed equity) or when fixed assets net of debt
+exceed liquid resources. Values above 365 indicate more than one year of coverage.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{180-365 days}: Considered a solid reserve position for endowed organizations.
+\item A large gap between this metric and \code{\link[=get_days_cash_operations]{get_days_cash_operations()}} indicates
+liquidity concentrated in investments rather than accessible cash.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -119,26 +139,6 @@ for Nonprofit Organizations}. Wiley.
 \item Calabrese, T.D. (2013). Running on empty: The operating reserves of U.S.
 nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
 281-302.
-}
-}
-
-\subsection{Definitional range}{
-
-Unbounded in both directions. Negative values occur when unrestricted net assets are
-negative (accumulated deficits exceed equity) or when fixed assets net of debt
-exceed liquid resources. Values above 365 indicate more than one year of coverage.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Because this measure is broader than days of cash alone, benchmarks are
-higher: 180-365 days is considered a solid reserve position for endowed
-organizations.
-\item For operating nonprofits without significant investment portfolios, results
-should be interpreted alongside \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}.
-\item A large gap between this metric and \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}
-indicates that much of the organization's liquidity is tied up in investments
-rather than immediately accessible cash.
 }
 }
 

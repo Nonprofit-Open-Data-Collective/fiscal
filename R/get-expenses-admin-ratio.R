@@ -13,6 +13,18 @@
 #' aer = management_expenses / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. In combination with program and fundraising ratios, all three
+#' sum to 1.0 by construction. The empirical range for most nonprofits is approximately
+#' \[0.05, 0.35\].
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Charity Navigator targets management and general expenses at or below 15%
+#'     of total expenses for a favorable score.
+#'   - Values below 5% may indicate underinvestment in governance systems.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -20,12 +32,18 @@
 #' @param total_expenses Total functional expenses.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_expenses_admin_ratio( df,
 #'   mgmt_expenses  = "F9_09_EXP_TOT_MGMT",
 #'   total_expenses = "F9_09_EXP_TOT_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -70,22 +88,6 @@
 #'     1978-1994. - Uses administrative ratios in cross-organizational comparisons.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. In combination with program and fundraising ratios, all three
-#' sum to 1.0 by construction. The empirical range for most nonprofits is approximately
-#' \[0.05, 0.35\].
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Charity Navigator targets management and general expenses at or below 15\%
-#'     of total expenses for a favorable score.
-#'   - Values below 5\% may indicate underinvestment in governance systems.
-#'   - Very large or complex organizations may legitimately show higher ratios
-#'     due to the fixed cost nature of executive leadership and compliance functions.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_TOT_MGMT`: Management and general expenses (`mgmt_expenses`)
@@ -117,7 +119,8 @@
 get_expenses_admin_ratio <- function( df,
                      mgmt_expenses  = "F9_09_EXP_TOT_MGMT",
                      total_expenses = "F9_09_EXP_TOT_TOT",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -137,13 +140,14 @@ get_expenses_admin_ratio <- function( df,
   d <- resolve_col( dt, mgmt_expenses )
   e <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( e == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  e[ e == 0 ] <- NA
+  nan.count <- sum( e == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  e[ e == 0 ] <- NaN
 
   aer <- d / e
 
-  v <- winsorize_var( aer, winsorize )
+  v <- apply_transformations( aer, winsorize, range )
   EXPENSES_ADMIN <- data.frame( expenses_admin   = v$raw,
                      expenses_admin_w = v$winsorized,
                      expenses_admin_z = v$z,

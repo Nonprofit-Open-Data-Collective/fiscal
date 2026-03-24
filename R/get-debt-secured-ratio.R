@@ -13,7 +13,19 @@
 #' debt_secured = secured_mortgages_notes / total_liabilities
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
+#' organizations (housing, healthcare, higher education) can show values above 0.70.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No standard benchmark. Most informative when tracked over time or compared
+#'     within subsectors with similar capital structures.
+#'   - For organizations with high secured debt ratios, lenders will scrutinize
+#'     the collateral value and debt service coverage ratio.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param secured_mortgages_notes Secured mortgages and notes payable, EOY.
@@ -21,6 +33,11 @@
 #' @param total_liabilities Total liabilities, EOY.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -47,20 +64,6 @@
 #'     compensation in nonprofit organizations. *Policy and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
-#' organizations (housing, healthcare, higher education) can show values above 0.70.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No standard benchmark. Most informative when tracked over time or compared
-#'     within subsectors with similar capital structures.
-#'   - For organizations with high secured debt ratios, lenders will scrutinize
-#'     the collateral value and debt service coverage.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_MTG_NOTE_EOY`: Secured mortgages and notes payable, EOY (`secured_mortgages_notes`)
@@ -76,7 +79,8 @@
 #' get_debt_secured_ratio( df,
 #'   secured_mortgages_notes   = "F9_10_LIAB_MTG_NOTE_EOY",
 #'   total_liabilities         = "F9_10_LIAB_TOT_EOY",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -97,7 +101,8 @@
 get_debt_secured_ratio <- function( df,
                      secured_mortgages_notes   = "F9_10_LIAB_MTG_NOTE_EOY",
                      total_liabilities         = "F9_10_LIAB_TOT_EOY",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -113,13 +118,14 @@ get_debt_secured_ratio <- function( df,
   num <- resolve_col( dt, secured_mortgages_notes )
   den <- resolve_col( dt, total_liabilities )
 
-  message( paste0( "Total liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total liabilities equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   debt_secured <- num / den
 
-  v <- winsorize_var( debt_secured, winsorize )
+  v <- apply_transformations( debt_secured, winsorize, range )
   DEBT_SECURED <- data.frame(
     debt_secured   = v$raw,
     debt_secured_w = v$winsorized,

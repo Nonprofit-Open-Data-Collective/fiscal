@@ -7,7 +7,8 @@
 get_debt_secured_ratio( df,
   secured_mortgages_notes   = "F9_10_LIAB_MTG_NOTE_EOY",
   total_liabilities         = "F9_10_LIAB_TOT_EOY",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -19,6 +20,12 @@ get_debt_secured_ratio( df,
 \item{total_liabilities}{Total liabilities, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -39,7 +46,20 @@ Secured mortgages and notes payable as a share of total liabilities.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{debt_secured = secured_mortgages_notes / total_liabilities
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Most nonprofits have zero secured debt; capital-intensive
+organizations (housing, healthcare, higher education) can show values above 0.70.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No standard benchmark. Most informative when tracked over time or compared
+within subsectors with similar capital structures.
+\item For organizations with high secured debt ratios, lenders will scrutinize
+the collateral value and debt service coverage ratio.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -66,21 +86,6 @@ line 26B), though the two do not sum to 1.0 because there are other liability ca
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
 compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Most nonprofits have zero secured debt; capital-intensive
-organizations (housing, healthcare, higher education) can show values above 0.70.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No standard benchmark. Most informative when tracked over time or compared
-within subsectors with similar capital structures.
-\item For organizations with high secured debt ratios, lenders will scrutinize
-the collateral value and debt service coverage.
 }
 }
 

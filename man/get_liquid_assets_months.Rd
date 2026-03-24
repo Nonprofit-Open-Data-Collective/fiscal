@@ -9,7 +9,8 @@ get_liquid_assets_months( df,
   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
   total_expenses          = "F9_09_EXP_TOT_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -26,6 +27,12 @@ get_liquid_assets_months( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -59,7 +66,21 @@ liquid_unrestricted_net_assets = unrestricted_net_assets
 monthly_expenses = total_expenses / 12
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Unbounded in both directions, expressed in months. Negative values indicate that
+fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
+range for operating nonprofits is approximately [-12, 36] months.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Same general benchmarks as \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}}: 3-6 months
+is considered adequate for most operating nonprofits.
+\item Negative LUNA values are particularly informative: they indicate
+unrestricted equity is entirely absorbed by illiquid fixed assets.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -92,25 +113,6 @@ mortgages_payable to the numerator.
 for Nonprofit Organizations}. Wiley. - Primary source for the LUNA definition.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
 Leadership}, 23(3), 281-302. - Empirical application and validation.
-}
-}
-
-\subsection{Definitional range}{
-
-Unbounded in both directions, expressed in months. Negative values indicate that
-fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
-range for operating nonprofits is approximately [-12, 36] months.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Same general benchmarks as \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}}: 3-6
-months is considered adequate for most operating nonprofits.
-\item Values below 1 month warrant concern; values above 12 months suggest
-strong reserve accumulation.
-\item Negative LUNA values are particularly informative: they indicate that the
-organization's unrestricted equity is entirely absorbed by illiquid fixed assets,
-leaving no liquid buffer.
 }
 }
 

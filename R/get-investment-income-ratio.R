@@ -15,6 +15,19 @@
 #' investment_income = invest_income + bond_proceeds + rent_income + asset_sale_income
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
+#' large asset sale gains. Values below zero can result from asset sale losses or
+#' negative investment returns.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values above 0.30 indicate significant financial asset dependency and warrant
+#'     monitoring of portfolio performance.
+#'   - Large year-over-year swings often reflect one-time asset transactions rather
+#'     than structural revenue changes.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -29,6 +42,11 @@
 #'   combined with `total_revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_investment_income_ratio( df,
@@ -37,7 +55,8 @@
 #'   rent_income      = "F9_08_REV_OTH_RENT_GRO_PERS",
 #'   asset_sale_income= "F9_08_REV_OTH_SALE_ASSET_OTH",
 #'   total_revenue    = "F9_08_REV_TOT_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -80,21 +99,6 @@
 #'   - Carroll, D.A. & Stater, K.J. (2009). Revenue diversification in nonprofit
 #'     organizations. *Journal of Public Administration Research and Theory*,
 #'     19(4), 947-966.
-#'
-#'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
-#' large asset sale gains. Values below zero can result from asset sale losses or
-#' negative investment returns.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Values above 0.30 indicate significant financial asset dependency and
-#'     warrant monitoring of portfolio performance.
-#'   - Large year-over-year swings in this ratio often reflect one-time asset
-#'     transactions rather than structural revenue changes.
 #'
 #'
 #' ## Variables used:
@@ -140,7 +144,8 @@ get_investment_income_ratio <- function( df,
                       total_revenue     = "F9_08_REV_TOT_TOT",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -186,13 +191,14 @@ get_investment_income_ratio <- function( df,
     den <- dt[[ total_revenue ]]
   }
 
-  message( paste0( "Total revenue equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   iidr <- num / den
 
-  v <- winsorize_var( iidr, winsorize )
+  v <- apply_transformations( iidr, winsorize, range )
   INVEST_INCOME <- data.frame( invest_income   = v$raw,
                       invest_income_w = v$winsorized,
                       invest_income_z = v$z,

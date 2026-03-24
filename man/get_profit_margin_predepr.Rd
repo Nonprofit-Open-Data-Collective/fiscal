@@ -8,7 +8,8 @@ get_profit_margin_predepr( df,
   revenue      = "F9_08_REV_TOT_TOT",
   expenses     = "F9_09_EXP_TOT_TOT",
   depreciation = "F9_09_EXP_DEPREC_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -30,6 +31,12 @@ combined with \code{revenue}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -58,6 +65,21 @@ Operating surplus or deficit as a share of total revenue, before depreciation.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded above at 1.0; unbounded below. Always equal to or greater than the
+post-depreciation margin (\code{\link[=get_profit_margin_postdepr]{get_profit_margin_postdepr()}}) since adding
+back depreciation can only increase the margin. The typical range is approximately
+[-0.20, 0.40].
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item A pre-depreciation margin above zero with a post-depreciation margin below
+zero is common and generally manageable for capital-intensive nonprofits.
+\item If both margins are negative, the organization is generating a true cash
+flow deficit, not just an accounting loss.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -94,25 +116,6 @@ financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded above at 1.0; unbounded below. Always equal to or greater than the
-post-depreciation margin (\code{\link[=get_profit_margin_postdepr]{get_profit_margin_postdepr()}}) since adding
-back depreciation can only increase the margin. The typical range is approximately
-[-0.20, 0.40].
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item A pre-depreciation margin above zero with a post-depreciation margin below
-zero is a common and generally manageable pattern for capital-intensive nonprofits.
-\item If both margins are negative, the organization is generating a cash flow
-deficit, not just an accounting loss.
-\item The spread between the two margins approximates depreciation / revenue,
-which indicates the rate of capital consumption relative to revenue.
 }
 }
 

@@ -12,7 +12,8 @@ get_expenses_compensation_ratio( df,
   other_employee_benefits = "F9_09_EXP_OTH_EMPL_BEN_TOT",
   payroll_taxes          = "F9_09_EXP_PAYROLL_TAX_TOT",
   total_expenses         = "F9_09_EXP_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -34,6 +35,12 @@ get_expenses_compensation_ratio( df,
 \item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}).}
 
@@ -57,6 +64,20 @@ Total compensation and employee-related expenses as a share of total functional 
                           + pension_contributions + other_employee_benefits
                           + payroll_taxes ) / total_expenses
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. Most service-delivery nonprofits fall in the [0.50, 0.85] range.
+Grant-making organizations may show ratios below 0.20.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universal benchmark -- labor intensity varies fundamentally by mission type.
+\item Human services, health, and education nonprofits typically show ratios above 0.60;
+grant-making organizations may show ratios below 0.30.
+\item A sharp year-over-year increase may indicate revenue contraction rather than
+compensation growth.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -83,21 +104,6 @@ pension contributions, other employee benefits, and payroll taxes.
 and Society}, 20(4), 94-112.
 \item Leete, L. (2001). Whither the nonprofit wage differential? \emph{Journal of
 Labor Economics}, 19(1), 136-170.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Most service-delivery nonprofits fall in the [0.50, 0.85] range.
-Grant-making organizations may show ratios below 0.20.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No universal benchmark - labor intensity varies fundamentally by mission type.
-\item Human services, health, and education nonprofits typically show ratios above 0.60.
-\item A sharp year-over-year increase may indicate revenue contraction rather than
-compensation growth.
 }
 }
 

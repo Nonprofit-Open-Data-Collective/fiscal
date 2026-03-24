@@ -13,6 +13,20 @@
 #' predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded above at 1.0; unbounded below. Always equal to or greater than the
+#' post-depreciation margin ([get_profit_margin_postdepr()]) since adding
+#' back depreciation can only increase the margin. The typical range is approximately
+#' \[-0.20, 0.40\].
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - A pre-depreciation margin above zero with a post-depreciation margin below
+#'     zero is common and generally manageable for capital-intensive nonprofits.
+#'   - If both margins are negative, the organization is generating a true cash
+#'     flow deficit, not just an accounting loss.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -26,13 +40,19 @@
 #'   combined with `revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_profit_margin_predepr( df,
 #'   revenue      = "F9_08_REV_TOT_TOT",
 #'   expenses     = "F9_09_EXP_TOT_TOT",
 #'   depreciation = "F9_09_EXP_DEPREC_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -79,24 +99,6 @@
 #'     for Nonprofit Organizations*. Wiley.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded above at 1.0; unbounded below. Always equal to or greater than the
-#' post-depreciation margin ([get_profit_margin_postdepr()]) since adding
-#' back depreciation can only increase the margin. The typical range is approximately
-#' \[-0.20, 0.40\].
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - A pre-depreciation margin above zero with a post-depreciation margin below
-#'     zero is a common and generally manageable pattern for capital-intensive nonprofits.
-#'   - If both margins are negative, the organization is generating a cash flow
-#'     deficit, not just an accounting loss.
-#'   - The spread between the two margins approximates depreciation / revenue,
-#'     which indicates the rate of capital consumption relative to revenue.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_08_REV_TOT_TOT`: Total revenue (`revenue`)
@@ -132,7 +134,8 @@ get_profit_margin_predepr <- function( df,
                         depreciation = "F9_09_EXP_DEPREC_TOT",
                         numerator    = NULL,
                         denominator  = NULL,
-                        winsorize = 0.98 ,
+                        winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -166,13 +169,14 @@ get_profit_margin_predepr <- function( df,
     den <- dt[[ revenue ]]
   }
 
-  message( paste0( "Revenue equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   predpm <- num / den
 
-  v <- winsorize_var( predpm, winsorize )
+  v <- apply_transformations( predpm, winsorize, range )
   PROFIT_PREDEPR <- data.frame( profit_predepr   = v$raw,
                         profit_predepr_w = v$winsorized,
                         profit_predepr_z = v$z,

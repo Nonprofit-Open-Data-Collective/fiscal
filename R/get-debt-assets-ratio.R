@@ -13,6 +13,23 @@
 #' dar = total_liabilities / total_assets
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
+#' one means liabilities equal total assets (zero net assets). Values above 1.0 occur
+#' when total liabilities exceed total assets, i.e., the organization has negative net
+#' assets (accumulated deficits exceed equity). This is a distress indicator but not
+#' uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
+#' long-term debt.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Below 0.50**: Generally considered financially stable.
+#'   - **0.50-0.70**: Moderate leverage; manageable but warrants monitoring.
+#'   - **Above 0.70**: High leverage; common vulnerability threshold (Tuckman
+#'     & Chang 1991).
+#'   - **Above 1.0**: Negative net assets; acute financial risk.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -23,12 +40,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_debt_assets_ratio( df,
 #'   debt   = c( "F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"  ),
 #'   assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -89,28 +112,6 @@
 #'     Working Paper 04-016*.
 #'
 #'
-#' ## Definitional range
-#'
-#' Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
-#' one means liabilities equal total assets (zero net assets). Values above 1.0 occur
-#' when total liabilities exceed total assets, i.e., the organization has negative net
-#' assets (accumulated deficits exceed equity). This is a distress indicator but not
-#' uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
-#' long-term debt.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **Below 0.50**: Generally considered financially stable; assets
-#'     are more than twice liabilities.
-#'   - **0.50-0.70**: Moderate leverage; manageable but warrants monitoring.
-#'   - **Above 0.70**: High leverage; common vulnerability threshold used
-#'     in Tuckman & Chang (1991).
-#'   - **Above 1.0**: Negative net assets; acute financial risk.
-#'   - Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
-#'     indicator in their logistic regression models.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`, 990)
@@ -144,7 +145,8 @@
 get_debt_assets_ratio <- function( df,
                      debt   = c( "F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"  ),
                      assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -164,13 +166,14 @@ get_debt_assets_ratio <- function( df,
   d <- resolve_col( dt, debt )
   a <- resolve_col( dt, assets )
 
-  message( paste0( "Assets equal to zero: ", sum( a == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  a[ a == 0 ] <- NA
+  nan.count <- sum( a == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  a[ a == 0 ] <- NaN
 
   dar <- d / a
 
-  v <- winsorize_var( dar, winsorize )
+  v <- apply_transformations( dar, winsorize, range )
   DEBT_ASSETS <- data.frame( debt_assets   = v$raw,
                      debt_assets_w = v$winsorized,
                      debt_assets_z = v$z,

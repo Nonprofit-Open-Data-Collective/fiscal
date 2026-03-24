@@ -13,7 +13,19 @@
 #' investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 #' ```
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Most operating nonprofits show values near zero; foundations
+#' and endowed institutions may show values above 0.80.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No universal benchmark. Operating nonprofits with values above 0.30 are
+#'     typically holding significant endowment or reserve portfolios.
+#'   - A high investment ratio combined with a high debt ratio may indicate
+#'     borrowing to fund operations while holding investments -- worth scrutinizing.
+#'
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param pub_traded_securities Investments in publicly traded securities, EOY.
@@ -23,6 +35,11 @@
 #' @param other_securities Investments in other securities, EOY.
 #')
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -47,20 +64,6 @@
 #'     Leadership*, 23(3), 281-302.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Most operating nonprofits show values near zero; foundations
-#' and endowed institutions may show values above 0.80.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No universal benchmark. Operating nonprofits with values above 0.30 are
-#'     typically holding significant endowment or reserve portfolios.
-#'   - A high investment ratio combined with a high debt ratio may indicate
-#'     borrowing to fund operations while holding investments - worth scrutinizing.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_INVEST_SEC_EOY`: 
@@ -80,7 +83,8 @@
 #'   pub_traded_securities     = "F9_10_ASSET_INVEST_SEC_EOY",
 #'   total_assets              = "F9_10_ASSET_TOT_EOY",
 #'   other_securities          = "F9_10_ASSET_INVEST_SEC_OTH_EOY",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -105,7 +109,8 @@ get_investments_assets_ratio <- function( df,
                      pub_traded_securities     = "F9_10_ASSET_INVEST_SEC_EOY",
                      total_assets              = "F9_10_ASSET_TOT_EOY",
                      other_securities          = "F9_10_ASSET_INVEST_SEC_OTH_EOY",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -121,13 +126,14 @@ get_investments_assets_ratio <- function( df,
   num <- resolve_col( dt, pub_traded_securities )
   den <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   investments_assets <- num / den
 
-  v <- winsorize_var( investments_assets, winsorize )
+  v <- apply_transformations( investments_assets, winsorize, range )
   INVESTMENTS_ASSETS <- data.frame(
     investments_assets   = v$raw,
     investments_assets_w = v$winsorized,

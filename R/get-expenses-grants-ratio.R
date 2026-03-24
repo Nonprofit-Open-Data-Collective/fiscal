@@ -15,6 +15,18 @@
 #'                   / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Near zero for direct-service organizations; near 1.0 for
+#' pure pass-through grant-makers.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Subsector comparisons are essential: a 0.80 ratio is expected for a community
+#'     foundation; the same value would be anomalous for a hospital.
+#'   - Rising ratios over time may indicate a strategic shift toward a more
+#'     redistributive model.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -27,6 +39,11 @@
 #' @param total_expenses Total functional expenses.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -48,18 +65,6 @@
 #'     and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Near zero for direct-service organizations; near 1.0 for
-#' pure pass-through grant-makers.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Subsector comparisons are essential: a 0.80 ratio is expected for a
-#'     community foundation; anomalous for a hospital.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_GRANT_US_ORG_TOT`: 
@@ -79,7 +84,8 @@
 #'   us_indiv_grants  = "F9_09_EXP_GRANT_US_INDIV_TOT",
 #'   foreign_grants   = "F9_09_EXP_GRANT_FRGN_TOT",
 #'   total_expenses   = "F9_09_EXP_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -113,7 +119,8 @@ get_expenses_grants_ratio <- function( df,
                      us_indiv_grants = "F9_09_EXP_GRANT_US_INDIV_TOT",
                      foreign_grants  = "F9_09_EXP_GRANT_FRGN_TOT",
                      total_expenses  = "F9_09_EXP_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -133,13 +140,14 @@ get_expenses_grants_ratio <- function( df,
   g3 <- resolve_col( dt, foreign_grants )
   te <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( te == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  te[ te == 0 ] <- NA
+  nan.count <- sum( te == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  te[ te == 0 ] <- NaN
 
   expenses_grants <- ( g1 + g2 + g3 ) / te
 
-  v <- winsorize_var( expenses_grants, winsorize )
+  v <- apply_transformations( expenses_grants, winsorize, range )
   EXPENSES_GRANTS <- data.frame(
     expenses_grants   = v$raw,
     expenses_grants_w = v$winsorized,

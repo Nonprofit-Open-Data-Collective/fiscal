@@ -8,7 +8,8 @@ get_cash_assets_ratio( df,
   cash                      = "F9_10_ASSET_CASH_EOY",
   total_assets              = "F9_10_ASSET_TOT_EOY",
   savings                   = "F9_10_ASSET_SAVING_EOY",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zp",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -22,6 +23,12 @@ get_cash_assets_ratio( df,
 \item{savings}{Savings and temporary cash investments, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -42,7 +49,23 @@ Cash and savings as a share of total assets; measures the liquid composition of 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{cash_assets = ( cash + savings ) / total_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1]: zero means no liquid assets; one means the entire asset base is
+cash and savings. In practice most nonprofits fall in the [0.05, 0.50] range.
+Values above 0.60 are uncommon for operating nonprofits and may indicate excess
+cash hoarding.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universally accepted benchmark. Values below 0.05 suggest minimal
+liquid cushion; values above 0.60 may indicate under-deployment of assets
+toward mission.
+\item Foundations and endowed institutions naturally show higher ratios than
+operating nonprofits.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -82,24 +105,6 @@ of total resources is in immediately spendable form?
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good: Executive
 compensation in nonprofit organizations. \emph{Policy and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]: zero means no liquid assets; one means the entire asset base is
-cash and savings. In practice most nonprofits fall in the [0.05, 0.50] range.
-Values above 0.60 are uncommon for operating nonprofits and may indicate excess
-cash hoarding.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item There is no universally accepted benchmark. Values below 0.05 suggest minimal
-liquid cushion; values above 0.60 may indicate under-deployment of assets toward
-mission.
-\item Grant-making foundations and endowed institutions naturally show higher ratios
-than operating nonprofits, which invest more in program assets and fixed equipment.
 }
 }
 

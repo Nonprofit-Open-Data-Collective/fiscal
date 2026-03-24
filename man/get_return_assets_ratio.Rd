@@ -7,7 +7,8 @@
 get_return_assets_ratio( df,
   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
   total_assets           = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -22,6 +23,12 @@ with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -50,6 +57,32 @@ Net surplus or deficit as a share of total assets.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{roa = revenues_less_expenses / total_assets
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
+revenues. Positive values indicate surplus years; negative values indicate deficit
+years. For nonprofits, where perpetual surpluses raise concerns about mission
+prioritization and perpetual deficits signal sustainability risk, the meaningful
+range is approximately [-0.20, 0.20] for most organizations in most years.
+Values outside this range are not impossible but typically reflect unusual
+circumstances (large asset disposals, one-time gifts, major capital campaigns, or
+accounting restatements) rather than stable operating performance.
+
+Values can be distorted by very small total asset bases (newly formed organizations)
+or by organizations whose assets consist almost entirely of illiquid fixed property,
+making the denominator a poor proxy for the operational resource base.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Near zero}: Normal for nonprofits operating close to break-even by design.
+\item \strong{0.02-0.07} (2-7\%): Generally considered healthy -- building modest reserves
+without appearing to hoard resources.
+\item \strong{Sustained below -0.05}: Common threshold for classifying an organization as
+at risk (Greenlee & Trussel 2000, Keating et al. 2005).
+\item Asset structure matters: capital-intensive organizations will mechanically
+produce low ROA even when financially healthy.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -119,45 +152,6 @@ financial vulnerability: A financial health analysis of German nonprofit sport
 clubs. \emph{VOLUNTAS: International Journal of Voluntary and Nonprofit
 Organizations}, 24(4), 991-1013. - Applies ROA in a cross-national nonprofit
 context; demonstrates subsector variation.
-}
-}
-
-\subsection{Definitional range}{
-
-ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
-revenues. Positive values indicate surplus years; negative values indicate deficit
-years. For nonprofits, where perpetual surpluses raise concerns about mission
-prioritization and perpetual deficits signal sustainability risk, the meaningful
-range is approximately [-0.20, 0.20] for most organizations in most years.
-Values outside this range are not impossible but typically reflect unusual
-circumstances (large asset disposals, one-time gifts, major capital campaigns, or
-accounting restatements) rather than stable operating performance.
-
-Values can be distorted by very small total asset bases (newly formed organizations)
-or by organizations whose assets consist almost entirely of illiquid fixed property,
-making the denominator a poor proxy for the operational resource base.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{Near-zero is normal}: Unlike commercial firms where consistent positive
-ROA is expected, nonprofits typically operate close to break-even by design.
-An ROA consistently near zero is a sign of disciplined budget management, not
-poor performance.
-\item \strong{Moderate positive surplus}: Values in the range of 0.02 to 0.07
-(2-7\\%) are generally considered healthy - the organization is building modest
-reserves without appearing to hoard resources at the expense of mission delivery.
-\item \strong{Sustained negative ROA}: Two or more consecutive years with ROA
-below -0.05 is a common threshold used in financial vulnerability studies to
-classify an organization as at risk (Greenlee & Trussel 2000, Keating et al.
-2005).
-\item \strong{Subsector variation}: Arts and culture organizations tend to have
-more variable ROA than human services organizations with stable government
-contracts. Health care nonprofits tend toward thin positive margins.
-\item \strong{Asset structure matters}: Capital-intensive organizations
-(hospitals, universities, housing providers) have large denominators and will
-mechanically produce low ROA even when financially healthy. Comparisons across
-capital structures require caution.
 }
 }
 

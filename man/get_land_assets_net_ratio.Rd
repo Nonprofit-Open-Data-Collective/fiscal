@@ -7,7 +7,8 @@
 get_land_assets_net_ratio( df,
   land_bldg_equip_net       = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   total_assets              = "F9_10_ASSET_TOT_EOY",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -21,6 +22,12 @@ get_land_assets_net_ratio( df,
 )}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -41,7 +48,21 @@ Net land, buildings, and equipment as a share of total assets.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{land_assets_net = land_bldg_equip_net / total_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Definitional Range}
+
+Bounded [0, 1] in normal conditions. Heavily skewed toward zero because many
+nonprofits own no real property.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values below 0.10 are typical for lean service organizations.
+\item Values above 0.50 indicate that more than half of assets are fixed property,
+limiting financial flexibility.
+\item Declining values over time may reflect depreciation outpacing new capital
+investment rather than strategic deleveraging.
+}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -68,20 +89,6 @@ depreciation instead of net book value.
 and Society}, 20(4), 94-112.
 \item Bowman, W. (2011). Financial capacity and sustainability of ordinary
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1] in normal conditions. Heavily skewed toward zero because many
-nonprofits own no real property.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values below 0.10 are typical for lean service organizations.
-\item Values above 0.50 indicate more than half of assets are fixed property,
-limiting financial flexibility.
 }
 }
 

@@ -7,7 +7,8 @@
 get_expenses_membbenefits_ratio( df,
   member_benefits           = "F9_09_EXP_BEN_PAID_MEMB_TOT",
   total_expenses            = "F9_09_EXP_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -20,6 +21,12 @@ get_expenses_membbenefits_ratio( df,
 \item{total_expenses}{Total functional expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -44,7 +51,19 @@ Benefits paid to or for members as a share of total expenses.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{expenses_membbenefits = member_benefits / total_expenses
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Near zero for most public benefit charities; potentially high
+(above 0.50) for mutual benefit organizations.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Interpret in the context of the organization's exempt purpose and subsection code.
+\item Non-zero values for 501(c)(3) organizations should be reviewed for compliance
+with private benefit restrictions.
+}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -65,20 +84,6 @@ PZ scope - available to both 990 and 990EZ filers.
 \itemize{
 \item Frumkin, P. & Keating, E.K. (2001). The price of doing good. \emph{Policy
 and Society}, 20(4), 94-112.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Near zero for most public benefit charities; potentially high
-(above 0.50) for mutual benefit organizations.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Interpret in the context of the organization's exempt purpose and subsection code.
-\item Non-zero values for 501(c)(3) organizations should be reviewed for compliance
-with private benefit restrictions.
 }
 }
 

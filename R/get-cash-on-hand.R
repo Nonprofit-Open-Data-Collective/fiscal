@@ -13,19 +13,41 @@
 #' coh = cash + savings
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Cash on hand is bounded below at zero (cannot be negative on a properly prepared
+#' balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
+#' so comparison across organizations of different sizes requires normalization. Use
+#' [get_months_cash_operations()] or [get_days_cash_operations()]
+#' for size-adjusted comparisons.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - As an absolute measure, benchmarks depend on the organization's expense
+#'     base. A common practitioner rule is at least 60-90 days of operating
+#'     expenses in liquid cash.
+#'   - The Nonprofit Finance Fund recommends a minimum of three months of
+#'     operating expenses in accessible reserves.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
 #' @param savings Short-term investments (savings), EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_cash_on_hand( df,
 #'   cash    = "F9_10_ASSET_CASH_EOY",
 #'   savings = "F9_10_ASSET_SAVING_EOY",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -79,26 +101,6 @@
 #'     sustainability.
 #'
 #'
-#' ## Definitional range
-#'
-#' Cash on hand is bounded below at zero (cannot be negative on a properly prepared
-#' balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
-#' so comparison across organizations of different sizes requires normalization. Use
-#' [get_months_cash_operations()] or [get_days_cash_operations()]
-#' for size-adjusted comparisons.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - As an absolute measure, benchmarks depend entirely on the organization's
-#'     expense base. A common practitioner rule is to maintain at least 60-90 days
-#'     of operating expenses in liquid cash.
-#'   - The Nonprofit Finance Fund recommends a minimum of three months of operating
-#'     expenses in accessible reserves, of which cash and savings should form the core.
-#'   - Very large cash balances relative to annual expenses may attract scrutiny
-#'     from donors and regulators about whether resources are being deployed toward mission.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
@@ -130,7 +132,8 @@
 get_cash_on_hand <- function( df,
                      cash    = "F9_10_ASSET_CASH_EOY",
                      savings = "F9_10_ASSET_SAVING_EOY",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -152,7 +155,7 @@ get_cash_on_hand <- function( df,
 
   coh <- c_val + s_val
 
-  v <- winsorize_var( coh, winsorize )
+  v <- apply_transformations( coh, winsorize, range )
   CASH_ON_HAND <- data.frame( cash_on_hand   = v$raw,
                      cash_on_hand_w = v$winsorized,
                      cash_on_hand_z = v$z,

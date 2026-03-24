@@ -7,7 +7,8 @@
 get_debt_assets_ratio( df,
   debt   = c( "F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"  ),
   assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ they are coalesced with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,24 @@ Proportion of total assets financed through liabilities.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{dar = total_liabilities / total_assets
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Theoretically bounded [0, 1] when net assets are positive: zero means no debt;
+one means liabilities equal total assets (zero net assets). Values above 1.0 occur
+when total liabilities exceed total assets, i.e., the organization has negative net
+assets (accumulated deficits exceed equity). This is a distress indicator but not
+uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
+long-term debt.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Below 0.50}: Generally considered financially stable.
+\item \strong{0.50-0.70}: Moderate leverage; manageable but warrants monitoring.
+\item \strong{Above 0.70}: High leverage; common vulnerability threshold (Tuckman
+& Chang 1991).
+\item \strong{Above 1.0}: Negative net assets; acute financial risk.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -100,29 +125,6 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 \item Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005). Assessing
 financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
-}
-}
-
-\subsection{Definitional range}{
-
-Theoretically bounded [0, 1] when net assets are positive: zero means no debt;
-one means liabilities equal total assets (zero net assets). Values above 1.0 occur
-when total liabilities exceed total assets, i.e., the organization has negative net
-assets (accumulated deficits exceed equity). This is a distress indicator but not
-uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
-long-term debt.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{Below 0.50}: Generally considered financially stable; assets
-are more than twice liabilities.
-\item \strong{0.50-0.70}: Moderate leverage; manageable but warrants monitoring.
-\item \strong{Above 0.70}: High leverage; common vulnerability threshold used
-in Tuckman & Chang (1991).
-\item \strong{Above 1.0}: Negative net assets; acute financial risk.
-\item Greenlee & Trussel (2000) use a ratio above 0.65 as a vulnerability
-indicator in their logistic regression models.
 }
 }
 

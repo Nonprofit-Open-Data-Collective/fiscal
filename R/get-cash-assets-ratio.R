@@ -13,7 +13,22 @@
 #' cash_assets = ( cash + savings ) / total_assets
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]: zero means no liquid assets; one means the entire asset base is
+#' cash and savings. In practice most nonprofits fall in the \[0.05, 0.50\] range.
+#' Values above 0.60 are uncommon for operating nonprofits and may indicate excess
+#' cash hoarding.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No universally accepted benchmark. Values below 0.05 suggest minimal
+#'     liquid cushion; values above 0.60 may indicate under-deployment of assets
+#'     toward mission.
+#'   - Foundations and endowed institutions naturally show higher ratios than
+#'     operating nonprofits.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -23,6 +38,11 @@
 #' @param savings Savings and temporary cash investments, EOY.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -61,23 +81,6 @@
 #'     compensation in nonprofit organizations. *Policy and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]: zero means no liquid assets; one means the entire asset base is
-#' cash and savings. In practice most nonprofits fall in the \[0.05, 0.50\] range.
-#' Values above 0.60 are uncommon for operating nonprofits and may indicate excess
-#' cash hoarding.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - There is no universally accepted benchmark. Values below 0.05 suggest minimal
-#'     liquid cushion; values above 0.60 may indicate under-deployment of assets toward
-#'     mission.
-#'   - Grant-making foundations and endowed institutions naturally show higher ratios
-#'     than operating nonprofits, which invest more in program assets and fixed equipment.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_CASH_EOY`: Cash on hand, EOY (`cash`)
@@ -95,7 +98,8 @@
 #'   cash                      = "F9_10_ASSET_CASH_EOY",
 #'   total_assets              = "F9_10_ASSET_TOT_EOY",
 #'   savings                   = "F9_10_ASSET_SAVING_EOY",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zp",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -117,7 +121,8 @@ get_cash_assets_ratio <- function( df,
                      cash                      = "F9_10_ASSET_CASH_EOY",
                      total_assets              = "F9_10_ASSET_TOT_EOY",
                      savings                   = "F9_10_ASSET_SAVING_EOY",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zp" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -133,13 +138,14 @@ get_cash_assets_ratio <- function( df,
   num <- resolve_col( dt, cash )
   den <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   cash_assets <- num / den
 
-  v <- winsorize_var( cash_assets, winsorize )
+  v <- apply_transformations( cash_assets, winsorize, range )
   CASH_ASSETS <- data.frame(
     cash_assets   = v$raw,
     cash_assets_w = v$winsorized,

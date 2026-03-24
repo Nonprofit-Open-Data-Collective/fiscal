@@ -13,7 +13,19 @@
 #' debt_unsecured = unsecured_notes_loans / total_liabilities
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Most nonprofits carry no unsecured notes, so the distribution
+#' is highly concentrated at zero with a long right tail.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No established benchmark. Presence of unsecured debt is not inherently
+#'     negative -- many healthy nonprofits use lines of credit for cash flow
+#'     management -- but a large and growing ratio warrants scrutiny.
+#'   - Trend analysis is more informative than a single year's value.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unsecured_notes_loans Unsecured notes and loans payable, EOY.
@@ -21,6 +33,11 @@
 #' @param total_liabilities Total liabilities, EOY.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -41,20 +58,6 @@
 #'     and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Most nonprofits carry no unsecured notes, so the distribution
-#' is highly concentrated at zero with a long right tail.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No established benchmark. Presence of unsecured debt is not inherently
-#'     negative - many healthy nonprofits use lines of credit for cash flow management
-#'     - but a large and growing ratio warrants scrutiny.
-#'   - Trend analysis is more informative than a single year's value.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_NOTE_UNSEC_EOY`: 
@@ -71,7 +74,8 @@
 #' get_debt_unsecured_ratio( df,
 #'   unsecured_notes_loans     = "F9_10_LIAB_NOTE_UNSEC_EOY",
 #'   total_liabilities         = "F9_10_LIAB_TOT_EOY",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -92,7 +96,8 @@
 get_debt_unsecured_ratio <- function( df,
                      unsecured_notes_loans     = "F9_10_LIAB_NOTE_UNSEC_EOY",
                      total_liabilities         = "F9_10_LIAB_TOT_EOY",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -108,13 +113,14 @@ get_debt_unsecured_ratio <- function( df,
   num <- resolve_col( dt, unsecured_notes_loans )
   den <- resolve_col( dt, total_liabilities )
 
-  message( paste0( "Total liabilities equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total liabilities equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   debt_unsecured <- num / den
 
-  v <- winsorize_var( debt_unsecured, winsorize )
+  v <- apply_transformations( debt_unsecured, winsorize, range )
   DEBT_UNSECURED <- data.frame(
     debt_unsecured   = v$raw,
     debt_unsecured_w = v$winsorized,

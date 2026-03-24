@@ -7,7 +7,8 @@
 get_return_netassets_ratio( df,
   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
   net_assets_boy         = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -22,6 +23,12 @@ with the 990 value taking priority over 990EZ.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -50,6 +57,21 @@ Net surplus or deficit as a share of beginning-of-year net assets.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{rona = revenues_less_expenses / net_assets_boy
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Unbounded in both directions. A value of 0 means break-even. The typical range for
+nonprofits is approximately [-0.30, 0.30]. The ratio is undefined (NA) when
+beginning net assets equal zero. Extreme values occur when BOY net assets are near
+zero (small denominator) rather than when the surplus itself is large.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Small positive values (0.02-0.10) are considered healthy.
+\item Sustained negative RONA over multiple years is a financial vulnerability
+indicator (Greenlee & Trussel 2000).
+\item Most useful in trend analysis and within-subsector comparisons.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -89,24 +111,6 @@ of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 financial vulnerability in the nonprofit sector. \emph{Harvard Business School
 Working Paper 04-016}.
 \item Nonprofit Finance Fund. \emph{State of the Nonprofit Sector Survey} (annual).
-}
-}
-
-\subsection{Definitional range}{
-
-Unbounded in both directions. A value of 0 means break-even. The typical range for
-nonprofits is approximately [-0.30, 0.30]. The ratio is undefined (NA) when
-beginning net assets equal zero. Extreme values occur when BOY net assets are near
-zero (small denominator) rather than when the surplus itself is large.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Small positive values (0.02 to 0.10) are considered healthy.
-\item Sustained negative RONA over multiple years is a financial vulnerability
-indicator (Greenlee & Trussel 2000).
-\item Like all ratio measures, RONA is most useful in trend analysis and
-within-subsector comparisons rather than as an absolute benchmark.
 }
 }
 

@@ -13,6 +13,20 @@
 #' arr = total_assets / total_revenue
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
+#' Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
+#' organizations and capital-intensive nonprofits may show values of 10 or higher.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - No universal benchmark; most meaningful for within-subsector comparisons.
+#'   - **Below 1.0**: Annual revenue exceeds total assets -- common for lean service
+#'     organizations with minimal physical assets.
+#'   - **Above 10**: Typically indicates a capital-heavy asset base or a small
+#'     revenue base relative to accumulated assets.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -22,12 +36,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_assets_revenue_ratio( df,
 #'   total_assets  = "F9_10_ASSET_TOT_EOY",
 #'   total_revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -73,24 +93,6 @@
 #'     nonprofits. *Nonprofit Management and Leadership*, 22(1), 37-51.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
-#' Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
-#' organizations and capital-intensive nonprofits may show values of 10 or higher.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - There is no universal benchmark. The ratio is most meaningful for
-#'     within-subsector comparisons.
-#'   - A ratio below 1.0 means annual revenue exceeds total assets - common for
-#'     lean service organizations with minimal physical assets.
-#'   - Very high ratios (above 10) typically indicate either a capital-heavy asset
-#'     base (real estate, equipment) or a small revenue base relative to accumulated
-#'     assets (endowed organizations).
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_ASSET_TOT_EOY`: Total assets, end of year (`total_assets`, 990)
@@ -123,7 +125,8 @@
 get_assets_revenue_ratio <- function( df,
                      total_assets  = "F9_10_ASSET_TOT_EOY",
                      total_revenue = c( "F9_08_REV_TOT_TOT", "F9_01_REV_TOT_CY" ),
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -143,13 +146,14 @@ get_assets_revenue_ratio <- function( df,
   a <- resolve_col( dt, total_assets )
   r <- resolve_col( dt, total_revenue )
 
-  message( paste0( "Total revenue equal to zero: ", sum( r == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  r[ r == 0 ] <- NA
+  nan.count <- sum( r == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  r[ r == 0 ] <- NaN
 
   arr <- a / r
 
-  v <- winsorize_var( arr, winsorize )
+  v <- apply_transformations( arr, winsorize, range )
   ASSETS_REV <- data.frame( assets_rev   = v$raw,
                      assets_rev_w = v$winsorized,
                      assets_rev_z = v$z,

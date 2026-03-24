@@ -16,7 +16,23 @@
 #' operating_reserves = unrestricted_net_assets - net_fixed_assets
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Unbounded in both directions when expressed in months. Negative values occur when
+#' unrestricted net assets are negative or when net fixed assets exceed unrestricted net
+#' assets. Values above 24 months are uncommon for operating organizations and may
+#' indicate accumulation beyond what is needed for operating risk management.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Less than 1 month**: Acute vulnerability.
+#'   - **1-3 months**: Below the commonly recommended minimum.
+#'   - **3-6 months**: Generally adequate for most operating nonprofits.
+#'   - **6-12 months**: Strong; appropriate for volatile-revenue or
+#'     capital-intensive organizations.
+#'   - The Nonprofit Finance Fund recommends a minimum of 3 months.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
@@ -24,13 +40,19 @@
 #' @param total_expenses Total functional expenses.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_operating_reserve_ratio( df,
 #'   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
 #'   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   total_expenses          = "F9_09_EXP_TOT_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -79,25 +101,6 @@
 #'     across the U.S. nonprofit sector.
 #'
 #'
-#' ## Definitional range
-#'
-#' Unbounded in both directions when expressed in months. Negative values occur when
-#' unrestricted net assets are negative or when net fixed assets exceed unrestricted net
-#' assets. Values above 24 months are uncommon for operating organizations and may
-#' indicate accumulation beyond what is needed for operating risk management.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **Less than 1 month**: Acute vulnerability.
-#'   - **1-3 months**: Below the commonly recommended minimum.
-#'   - **3-6 months**: Generally adequate for most operating nonprofits.
-#'   - **6-12 months**: Strong; appropriate for organizations with volatile
-#'     revenue, major capital needs, or large fixed cost bases.
-#'   - The Nonprofit Finance Fund recommends a minimum of 3 months as a policy
-#'     target for most organizations.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
@@ -133,7 +136,8 @@ get_operating_reserve_ratio <- function( df,
                      unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
                      net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                      total_expenses          = "F9_09_EXP_TOT_TOT",
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -166,13 +170,14 @@ get_operating_reserve_ratio <- function( df,
   nfa <- resolve_col( dt, net_fixed_assets )
   exp <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( exp == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  exp[ exp == 0 ] <- NA
+  nan.count <- sum( exp == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  exp[ exp == 0 ] <- NaN
 
   orr <- ( una - nfa ) / exp
 
-  v <- winsorize_var( orr, winsorize )
+  v <- apply_transformations( orr, winsorize, range )
   OP_RESERVE <- data.frame( op_reserve   = v$raw,
                      op_reserve_w = v$winsorized,
                      op_reserve_z = v$z,

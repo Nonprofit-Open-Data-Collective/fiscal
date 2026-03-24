@@ -13,7 +13,18 @@
 #' expenses_membbenefits = member_benefits / total_expenses
 #' ```
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
+#' (above 0.50) for mutual benefit organizations.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Interpret in the context of the organization's exempt purpose and subsection code.
+#'   - Non-zero values for 501(c)(3) organizations should be reviewed for compliance
+#'     with private benefit restrictions.
+#'
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param member_benefits Benefits paid to or for members (total).
@@ -21,6 +32,11 @@
 #' @param total_expenses Total functional expenses.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Primary uses and key insights
 #'
@@ -41,19 +57,6 @@
 #'     and Society*, 20(4), 94-112.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
-#' (above 0.50) for mutual benefit organizations.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Interpret in the context of the organization's exempt purpose and subsection code.
-#'   - Non-zero values for 501(c)(3) organizations should be reviewed for compliance
-#'     with private benefit restrictions.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_09_EXP_BEN_PAID_MEMB_TOT`: 
@@ -70,7 +73,8 @@
 #' get_expenses_membbenefits_ratio( df,
 #'   member_benefits           = "F9_09_EXP_BEN_PAID_MEMB_TOT",
 #'   total_expenses            = "F9_09_EXP_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -94,7 +98,8 @@
 get_expenses_membbenefits_ratio <- function( df,
                      member_benefits           = "F9_09_EXP_BEN_PAID_MEMB_TOT",
                      total_expenses            = "F9_09_EXP_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -110,13 +115,14 @@ get_expenses_membbenefits_ratio <- function( df,
   num <- resolve_col( dt, member_benefits )
   den <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   expenses_membbenefits <- num / den
 
-  v <- winsorize_var( expenses_membbenefits, winsorize )
+  v <- apply_transformations( expenses_membbenefits, winsorize, range )
   EXPENSES_MEMBBENEFITS <- data.frame(
     expenses_membbenefits   = v$raw,
     expenses_membbenefits_w = v$winsorized,

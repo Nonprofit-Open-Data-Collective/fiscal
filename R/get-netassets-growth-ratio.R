@@ -13,6 +13,21 @@
 #' or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Unbounded in both directions. A value of 0 means net assets were unchanged.
+#' Values below -1.0 (a drop of more than 100\%) indicate that the organization
+#' lost more than its entire starting equity base, resulting in negative net assets.
+#' The ratio is undefined (NA) when BOY net assets equal zero.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Small positive values (0.01-0.10) are typical and healthy for operating nonprofits.
+#'   - **Below -0.10** in a single year is a warning sign; sustained negative growth
+#'     indicates a structural financial problem.
+#'   - Very high positive values (above 0.50) often reflect one-time large gifts or
+#'     asset revaluations rather than sustained operational performance.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -23,12 +38,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_netassets_growth_ratio( df,
 #'   net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
 #'   net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -78,25 +99,6 @@
 #'     199-210.
 #'
 #'
-#' ## Definitional range
-#'
-#' Unbounded in both directions. A value of 0 means net assets were unchanged.
-#' Values below -1.0 (a drop of more than 100\%) indicate that the organization
-#' lost more than its entire starting equity base, resulting in negative net assets.
-#' The ratio is undefined (NA) when BOY net assets equal zero.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Small positive values (0.01 to 0.10) are typical and healthy for operating
-#'     nonprofits - enough growth to build modest reserves without appearing to
-#'     prioritize accumulation over mission.
-#'   - Values below -0.10 in a single year are a warning sign; sustained negative
-#'     growth over multiple years indicates a structural financial problem.
-#'   - Very high positive values (above 0.50) often reflect one-time large gifts
-#'     or asset revaluations rather than sustained operational performance.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`net_assets_eoy`, 990)
@@ -130,7 +132,8 @@
 get_netassets_growth_ratio <- function( df,
                     net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
                     net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
-                    winsorize = 0.98 ,
+                    winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -150,13 +153,14 @@ get_netassets_growth_ratio <- function( df,
   eoy <- resolve_col( dt, net_assets_eoy )
   boy <- resolve_col( dt, net_assets_boy )
 
-  message( paste0( "Beginning net assets equal to zero: ", sum( boy == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  boy[ boy == 0 ] <- NA
+  nan.count <- sum( boy == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Beginning net assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  boy[ boy == 0 ] <- NaN
 
   or <- ( eoy - boy ) / boy
 
-  v <- winsorize_var( or, winsorize )
+  v <- apply_transformations( or, winsorize, range )
   NETASSETS_GROWTH <- data.frame( netassets_growth   = v$raw,
                     netassets_growth_w = v$winsorized,
                     netassets_growth_z = v$z,

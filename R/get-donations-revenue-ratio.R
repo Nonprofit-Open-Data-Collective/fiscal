@@ -15,7 +15,18 @@
 #' donation_revenue = contributions + fundraising_revenue
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
+#' with minimal earned income; values near 0 characterize fee-based service providers.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Values above 0.70-0.80 warrant monitoring of donor concentration and retention.
+#'   - Organizations above 0.90 have almost no earned income buffer if philanthropic
+#'     support declines.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param contributions Total contributions, EOY.
@@ -27,13 +38,19 @@
 #'   combined with `total_revenue`.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_donations_revenue_ratio( df,
 #'   contributions        = "F9_08_REV_CONTR_TOT",
 #'   fundraising_revenue  = "F9_08_REV_OTH_FUNDR_NET_TOT",
 #'   total_revenue        = "F9_08_REV_TOT_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98,
+#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   range     = "zo",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -75,20 +92,6 @@
 #'     and Voluntary Sector Quarterly*, 28(3), 246-268.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
-#' with minimal earned income; values near 0 characterize fee-based service providers.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - No universal threshold. Revenue diversification theory suggests values
-#'     above 0.70-0.80 warrant monitoring of donor concentration and retention.
-#'   - Organizations above 0.90 have almost no earned or contractual income buffer
-#'     if philanthropic support declines.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_08_REV_CONTR_TOT`: Total contributions (`contributions`)
@@ -125,7 +128,8 @@ get_donations_revenue_ratio <- function( df,
                       total_revenue       = "F9_08_REV_TOT_TOT",
                       numerator   = NULL,
                       denominator = NULL,
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "zo" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -168,13 +172,14 @@ get_donations_revenue_ratio <- function( df,
     den <- dt[[ total_revenue ]]
   }
 
-  message( paste0( "Total revenue equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   dgdr <- num / den
 
-  v <- winsorize_var( dgdr, winsorize )
+  v <- apply_transformations( dgdr, winsorize, range )
   DONATIONS_REV <- data.frame( donations_rev   = v$raw,
                       donations_rev_w = v$winsorized,
                       donations_rev_z = v$z,

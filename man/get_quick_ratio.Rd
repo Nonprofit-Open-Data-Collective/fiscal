@@ -11,7 +11,8 @@ get_quick_ratio( df,
   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -38,6 +39,12 @@ combined with \code{accounts_payable} or \code{grants_payable}.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -70,7 +77,34 @@ quick_assets        = cash + savings + pledges_receivable + accounts_receivable
 current_liabilities = accounts_payable + grants_payable
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+The quick ratio is bounded below at zero (no asset values are negative on a
+properly prepared balance sheet) and is unbounded above. In practice the empirical
+range for nonprofits is approximately [0, 10], with extreme values above 5 typically
+indicating cash hoarding, an unusually large receivables balance, or an organization
+with minimal current liabilities (e.g., a grant-making foundation with no accounts
+payable).
+
+Values below zero can occur when net receivables are negative (allowances for
+uncollectible pledges exceed gross pledges) or when the denominator carries
+accounting adjustments. Very large values can result when current liabilities are
+near zero, producing ratios that are mathematically valid but practically
+uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
+extremes.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Above 1.0}: Conventionally adequate; liquid assets cover current liabilities.
+\item \strong{0.5-1.0}: Potential short-term stress.
+\item \strong{Below 0.5}: Common vulnerability threshold (Tuckman & Chang 1991).
+\item Very high values (above 3-5) may signal excess cash hoarding rather than
+financial health.
+\item A declining trend over consecutive years is a stronger warning signal than
+any single year's value.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -150,46 +184,6 @@ liquidity numerators in an arts sector context.
 \item Zietlow, J., Hankin, J.A. & Seidner, A. (2007). \emph{Financial Management
 for Nonprofit Organizations}. Wiley. - Practitioner text with the most detailed
 discussion of quick ratio benchmarks specific to nonprofits.
-}
-}
-
-\subsection{Definitional range}{
-
-The quick ratio is bounded below at zero (no asset values are negative on a
-properly prepared balance sheet) and is unbounded above. In practice the empirical
-range for nonprofits is approximately [0, 10], with extreme values above 5 typically
-indicating cash hoarding, an unusually large receivables balance, or an organization
-with minimal current liabilities (e.g., a grant-making foundation with no accounts
-payable).
-
-Values below zero can occur when net receivables are negative (allowances for
-uncollectible pledges exceed gross pledges) or when the denominator carries
-accounting adjustments. Very large values can result when current liabilities are
-near zero, producing ratios that are mathematically valid but practically
-uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
-extremes.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-
-For commercial firms the standard benchmark is 1.0 or above, meaning liquid assets
-are sufficient to cover current liabilities without selling inventory. Nonprofit
-benchmarks are less settled and vary substantially by subsector:
-\itemize{
-\item \strong{General guidance}: A ratio above 1.0 is conventionally adequate.
-Ratios between 0.5 and 1.0 indicate potential short-term stress. Ratios below
-0.5 are the most common criterion for classifying an organization as financially
-vulnerable (Tuckman & Chang 1991).
-\item \strong{Subsector variation}: Health care and social service organizations
-carry higher accounts receivable (insurance reimbursements, government contracts)
-and typically show lower quick ratios than arts or membership organizations.
-Zietlow et al. (2007) report median quick ratios in the 0.7-1.5 range across
-nonprofit subsectors.
-\item \strong{Higher is not always better}: Very high quick ratios (above 3-5) may
-signal excessive cash hoarding rather than financial health. Some funders and
-rating agencies flag very high reserve ratios alongside very low ones.
-\item \strong{Trend matters more than level}: A declining quick ratio over
-consecutive years is a stronger warning signal than any single year's value.
 }
 }
 

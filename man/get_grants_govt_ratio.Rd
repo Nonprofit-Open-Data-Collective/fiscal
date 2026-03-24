@@ -7,7 +7,8 @@
 get_grants_govt_ratio( df,
   government_grants = "F9_08_REV_CONTR_GOVT_GRANT",
   total_revenue     = "F9_08_REV_TOT_TOT",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_grants_govt_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -48,6 +55,21 @@ Share of total revenue originating from government grants.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{ggr = government_grants / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. Zero means no government funding; one means all revenue comes
+from government sources. The empirical distribution varies widely by subsector:
+social service organizations often show ratios above 0.50; arts organizations
+typically below 0.20.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Values above 0.50 indicate majority government-funded organizations, which
+face heightened vulnerability to government budget changes.
+\item Revenue diversification theory suggests maintaining no single source above
+0.33-0.50 for optimal stability (Chang & Tuckman 1994).
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -84,24 +106,6 @@ Administration Research and Theory}, 19(4), 947-966.
 \item Froelich, K.A. (1999). Diversification of revenue strategies: Evolving
 resource dependence in nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 28(3), 246-268.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Zero means no government funding; one means all revenue comes
-from government sources. The empirical distribution varies widely by subsector:
-social service organizations often show ratios above 0.50; arts organizations
-typically below 0.20.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values above 0.50 indicate majority government-funded organizations, which
-face heightened vulnerability to government budget changes.
-\item Revenue diversification theory (Chang & Tuckman 1994) suggests maintaining
-no single source above 0.33-0.50 for optimal stability, though this depends on
-the predictability of each revenue source.
 }
 }
 

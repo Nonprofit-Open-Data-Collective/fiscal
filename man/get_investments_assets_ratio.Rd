@@ -8,7 +8,8 @@ get_investments_assets_ratio( df,
   pub_traded_securities     = "F9_10_ASSET_INVEST_SEC_EOY",
   total_assets              = "F9_10_ASSET_TOT_EOY",
   other_securities          = "F9_10_ASSET_INVEST_SEC_OTH_EOY",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -25,6 +26,12 @@ get_investments_assets_ratio( df,
 )}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -49,7 +56,20 @@ Investment securities as a share of total assets.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Definitional Range}
+
+Bounded [0, 1]. Most operating nonprofits show values near zero; foundations
+and endowed institutions may show values above 0.80.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item No universal benchmark. Operating nonprofits with values above 0.30 are
+typically holding significant endowment or reserve portfolios.
+\item A high investment ratio combined with a high debt ratio may indicate
+borrowing to fund operations while holding investments -- worth scrutinizing.
+}
+
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -74,21 +94,6 @@ would include program-related investments (line 13B).
 nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
 Leadership}, 23(3), 281-302.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Most operating nonprofits show values near zero; foundations
-and endowed institutions may show values above 0.80.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item No universal benchmark. Operating nonprofits with values above 0.30 are
-typically holding significant endowment or reserve portfolios.
-\item A high investment ratio combined with a high debt ratio may indicate
-borrowing to fund operations while holding investments - worth scrutinizing.
 }
 }
 

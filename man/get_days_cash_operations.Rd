@@ -11,7 +11,8 @@ get_days_cash_operations( df,
   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
   total_expenses      = "F9_09_EXP_TOT_TOT",
   depreciation        = "F9_09_EXP_DEPREC_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98,
+  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -39,6 +40,12 @@ expenses (the function divides this by 365 internally). Cannot be combined with
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -71,7 +78,23 @@ liquid_assets = cash + savings + pledges_receivable + accounts_receivable
 daily_expenses = ( total_expenses - depreciation ) / 365
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded below at zero and unbounded above, expressed in days. The typical range for
+nonprofits is approximately [0, 365]. Values above 365 (more than one year of
+cash) indicate very large liquid reserves relative to expenses, which is uncommon
+for operating nonprofits but typical for foundations.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Below 30 days}: Generally considered a distress indicator.
+\item \strong{60-90 days}: Commonly cited minimum threshold (Nonprofit Finance Fund).
+\item \strong{90-180 days}: Considered healthy for most operating nonprofits.
+\item Healthcare nonprofits are typically benchmarked at 150+ days due to longer
+receivables cycles.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -120,28 +143,6 @@ for Nonprofit Organizations}. Wiley. - Adopts the HFMA approach for nonprofits.
 \item Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the financial
 vulnerability of charitable nonprofit organizations. \emph{Nonprofit and Voluntary
 Sector Quarterly}, 20(4), 445-460.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded below at zero and unbounded above, expressed in days. The typical range for
-nonprofits is approximately [0, 365]. Values above 365 (more than one year of
-cash) indicate very large liquid reserves relative to expenses, which is uncommon
-for operating nonprofits but typical for foundations.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{60-90 days} is a commonly cited minimum threshold in nonprofit
-financial management guidance (Nonprofit Finance Fund).
-\item \strong{Below 30 days} is generally considered a distress indicator.
-\item \strong{90-180 days} is considered healthy for most operating nonprofits.
-\item Healthcare nonprofits are typically benchmarked at higher levels (150+ days)
-due to longer receivables cycles from insurance reimbursements.
-\item Organizations with highly predictable revenue (e.g., stable government
-contracts) can responsibly operate with lower cash reserves than those with
-volatile or grant-dependent income.
 }
 }
 

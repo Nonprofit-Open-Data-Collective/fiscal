@@ -17,7 +17,20 @@
 #' monthly_expenses = total_expenses / 12
 #' ```
 #'
-#' **Calculated For:** 990 filers only.
+#' **Definitional Range**
+#'
+#' Unbounded in both directions, expressed in months. Negative values indicate that
+#' fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
+#' range for operating nonprofits is approximately \[-12, 36\] months.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - Same general benchmarks as [get_operating_reserve_ratio()]: 3-6 months
+#'     is considered adequate for most operating nonprofits.
+#'   - Negative LUNA values are particularly informative: they indicate
+#'     unrestricted equity is entirely absorbed by illiquid fixed assets.
+#'
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
@@ -26,6 +39,11 @@
 #' @param total_expenses Total functional expenses.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_liquid_assets_months( df,
@@ -33,7 +51,8 @@
 #'   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
 #'   total_expenses          = "F9_09_EXP_TOT_TOT",
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -78,24 +97,6 @@
 #'     Leadership*, 23(3), 281-302. - Empirical application and validation.
 #'
 #'
-#' ## Definitional range
-#'
-#' Unbounded in both directions, expressed in months. Negative values indicate that
-#' fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
-#' range for operating nonprofits is approximately \[-12, 36\] months.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - Same general benchmarks as [get_operating_reserve_ratio()]: 3-6
-#'     months is considered adequate for most operating nonprofits.
-#'   - Values below 1 month warrant concern; values above 12 months suggest
-#'     strong reserve accumulation.
-#'   - Negative LUNA values are particularly informative: they indicate that the
-#'     organization's unrestricted equity is entirely absorbed by illiquid fixed assets,
-#'     leaving no liquid buffer.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
@@ -133,7 +134,8 @@ get_liquid_assets_months <- function( df,
                       net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                       mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
                       total_expenses          = "F9_09_EXP_TOT_TOT",
-                      winsorize = 0.98 ,
+                      winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -172,13 +174,14 @@ get_liquid_assets_months <- function( df,
   mnp <- resolve_col( dt, mortgages_payable )
   exp <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( exp == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  exp[ exp == 0 ] <- NA
+  nan.count <- sum( exp == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  exp[ exp == 0 ] <- NaN
 
   luna_val <- ( una - ( nfa - mnp ) ) / ( exp / 12 )
 
-  v <- winsorize_var( luna_val, winsorize )
+  v <- apply_transformations( luna_val, winsorize, range )
   LIQUID_ASSETS_MONTHS <- data.frame( liquid_assets_months   = v$raw,
                       liquid_assets_months_w = v$winsorized,
                       liquid_assets_months_z = v$z,

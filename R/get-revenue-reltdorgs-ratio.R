@@ -13,6 +13,12 @@
 #' revenue_reltdorgs = related_org_revenue / total_revenue
 #' ```
 #'
+#'
+#' **Definitional Range**
+#'
+#' Bounded \[0, 1\]. Zero means none of this revenue type was received;
+#' one means this channel accounted for all total revenue.
+#'
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -21,6 +27,11 @@
 #' @param total_revenue Total revenue.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #' @details
 #' ## Revenue Reltdorgs Ratio - Revenue composition measure
 #'
@@ -53,7 +64,8 @@
 #' get_revenue_reltdorgs_ratio( df,
 #'   related_org_revenue       = "F9_08_REV_CONTR_RLTD_ORG",
 #'   total_revenue             = "F9_08_REV_TOT_TOT",
-#'   winsorize  = 0.98,
+#'   winsorize  = 0.98 ,
+#'   range     = "zo",
 #'   sanitize   = TRUE,
 #'   summarize  = FALSE )
 #'
@@ -77,7 +89,8 @@
 get_revenue_reltdorgs_ratio <- function( df,
                      related_org_revenue       = "F9_08_REV_CONTR_RLTD_ORG",
                      total_revenue             = "F9_08_REV_TOT_TOT",
-                     winsorize  = 0.98,
+                     winsorize  = 0.98 ,
+                     range     = "zo" ,
                      sanitize   = TRUE,
                      summarize  = FALSE )
 {
@@ -93,13 +106,14 @@ get_revenue_reltdorgs_ratio <- function( df,
   num <- resolve_col( dt, related_org_revenue )
   den <- resolve_col( dt, total_revenue )
 
-  message( paste0( "Total revenue equal to zero: ", sum( den == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  den[ den == 0 ] <- NA
+  nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total revenue equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  den[ den == 0 ] <- NaN
 
   revenue_reltdorgs <- num / den
 
-  v <- winsorize_var( revenue_reltdorgs, winsorize )
+  v <- apply_transformations( revenue_reltdorgs, winsorize, range )
   REVENUE_RELTDORGS <- data.frame(
     revenue_reltdorgs   = v$raw,
     revenue_reltdorgs_w = v$winsorized,

@@ -13,6 +13,24 @@
 #' ssr = program_service_revenue / total_expenses
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' Bounded below at zero; values above 1.0 are possible (and indicate program revenue
+#' exceeds total expenses - a surplus from earned income alone). The typical range for
+#' nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
+#' nonprofits depend on some contributed income.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **SSR > 1.0**: Fully self-sufficient from program revenue; characteristic
+#'     of mature social enterprises and fee-based service providers.
+#'   - **SSR 0.50-1.0**: Majority of costs covered by program revenue; moderate
+#'     philanthropy dependence.
+#'   - **SSR < 0.25**: Heavily dependent on contributed income; common for advocacy
+#'     organizations, arts nonprofits, and grant-funded research entities.
+#'   - High SSR is not universally better -- organizations serving low-income
+#'     populations often require philanthropic subsidy by design.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -23,12 +41,18 @@
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"zp"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_self_sufficiency_ratio( df,
 #'   program_service_rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY" ),
 #'   total_expenses      = c( "F9_09_EXP_TOT_TOT",      "F9_01_EXP_TOT_CY"      ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -78,26 +102,6 @@
 #'     Sector Quarterly*, 20(4), 445-460.
 #'
 #'
-#' ## Definitional range
-#'
-#' Bounded below at zero; values above 1.0 are possible (and indicate program revenue
-#' exceeds total expenses - a surplus from earned income alone). The typical range for
-#' nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
-#' nonprofits depend on some contributed income.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **SSR > 1.0**: Fully self-sufficient from program revenue; uncommon
-#'     but characteristic of mature social enterprises and fee-based service providers.
-#'   - **SSR 0.50-1.0**: Majority of costs covered by program revenue;
-#'     moderate philanthropy dependence.
-#'   - **SSR < 0.25**: Heavily dependent on contributed income; common for
-#'     advocacy organizations, arts nonprofits, and grant-funded research entities.
-#'   - High SSR is not universally better - organizations serving low-income
-#'     populations often cannot charge market-rate fees and require subsidy by design.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_08_REV_PROG_TOT_TOT`: Program service revenue (`program_service_rev`, 990)
@@ -131,7 +135,8 @@
 get_self_sufficiency_ratio <- function( df,
                      program_service_rev = c( "F9_08_REV_PROG_TOT_TOT", "F9_01_REV_PROG_TOT_CY" ),
                      total_expenses      = c( "F9_09_EXP_TOT_TOT",      "F9_01_EXP_TOT_CY"      ),
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -152,13 +157,14 @@ get_self_sufficiency_ratio <- function( df,
   p <- resolve_col( dt, program_service_rev )
   e <- resolve_col( dt, total_expenses )
 
-  message( paste0( "Total expenses equal to zero: ", sum( e == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  e[ e == 0 ] <- NA
+  nan.count <- sum( e == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total expenses equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  e[ e == 0 ] <- NaN
 
   ssr <- p / e
 
-  v <- winsorize_var( ssr, winsorize )
+  v <- apply_transformations( ssr, winsorize, range )
   SELF_SUFF <- data.frame( self_suff   = v$raw,
                      self_suff_w = v$winsorized,
                      self_suff_z = v$z,

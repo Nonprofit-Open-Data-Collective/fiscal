@@ -8,7 +8,8 @@ get_overhead_ratio( df,
   mgmt_expenses             = "F9_09_EXP_TOT_MGMT",
   total_expenses            = "F9_09_EXP_TOT_TOT",
   fundraising_expenses      = "F9_09_EXP_TOT_FUNDR",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -22,6 +23,12 @@ get_overhead_ratio( df,
 \item{fundraising_expenses}{Fundraising expenses.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -41,6 +48,18 @@ Combined management and fundraising expenses as a share of total expenses.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{overhead = ( mgmt_expenses + fundraising_expenses ) / total_expenses
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. Empirical range approximately [0.05, 0.50] for most operating nonprofits.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{25\% or less}: Charity Navigator threshold for a full efficiency score.
+\item \strong{35\% or less}: BBB Wise Giving Alliance standard.
+\item Low overhead can indicate underinvestment in organizational capacity
+(the "starvation cycle") rather than genuine efficiency.
+}
 
 \strong{Calculated For:} 990 filers only.
 }
@@ -71,20 +90,6 @@ excludes fundraising.
 \emph{Nonprofit and Voluntary Sector Quarterly}, 44(3), 539-563.
 \item Hager, M.A. & Flack, T. (2004). The pros and cons of financial efficiency
 standards. \emph{Nonprofit Overhead Cost Project Brief 5}. Urban Institute.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1]. Empirical range approximately [0.05, 0.50] for most operating nonprofits.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item \strong{25\% or less}: Charity Navigator threshold for a full efficiency score.
-\item \strong{35\% or less}: BBB Wise Giving Alliance standard.
-\item Low overhead can indicate underinvestment in organizational capacity
-(the starvation cycle) rather than genuine efficiency.
 }
 }
 

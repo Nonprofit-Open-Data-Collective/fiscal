@@ -7,7 +7,8 @@
 get_revenue_reltdorgs_ratio( df,
   related_org_revenue       = "F9_08_REV_CONTR_RLTD_ORG",
   total_revenue             = "F9_08_REV_TOT_TOT",
-  winsorize  = 0.98,
+  winsorize  = 0.98 ,
+  range     = "zo",
   sanitize   = TRUE,
   summarize  = FALSE )
 }
@@ -19,6 +20,12 @@ get_revenue_reltdorgs_ratio( df,
 \item{total_revenue}{Total revenue.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, imputes zero for NA
 financial fields before computing, respecting form scope.}
@@ -42,6 +49,11 @@ Revenue from related organizations as a share of total revenue.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{revenue_reltdorgs = related_org_revenue / total_revenue
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Bounded [0, 1]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
 
 \strong{Calculated For:} 990 filers only.
 }

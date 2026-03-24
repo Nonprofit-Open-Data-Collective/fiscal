@@ -164,6 +164,13 @@ get_ntmaj12 <- function( nteev2 ) {
 #'   Defaults to `300` (5 minutes). R's built-in default of 60 seconds
 #'   is too short for the BMF (~200 MB) on slow connections. The original
 #'   timeout value is restored after the function exits.
+#' @param retry_max Integer. Maximum number of attempts for each individual
+#'   table download. Default `3`. On each failed attempt a short random
+#'   back-off (`1`–`5` seconds) is observed before retrying, which is usually
+#'   sufficient to recover from transient SSL or connection-reset errors. If
+#'   all `retry_max` attempts fail the table is skipped and a warning is
+#'   issued; the year's data is still returned from whichever tables
+#'   succeeded.
 #' @param verbose Logical. If `TRUE` (default), prints progress messages
 #'   including row/column counts after each download.
 #'
@@ -189,6 +196,14 @@ get_ntmaj12 <- function( nteev2 ) {
 #' so organizations that filed only one of the component forms (e.g., 990EZ
 #' filers who have P00 and P01 data but no P08/P09/P10) are retained with
 #' `NA` in the columns from tables they did not file.
+#'
+#' ## Table-level retry logic:
+#' Each table download is attempted up to `retry_max` times. Failures are
+#' caught individually so a single flaky table (e.g. a transient SSL error
+#' on P09) does not abort the other four. Failed tables are retried with a
+#' random 1–5 second back-off between attempts. If a table still fails after
+#' all attempts it is skipped entirely: the returned data frame will be
+#' missing its columns but will contain full data from all successful tables.
 #'
 #' ## BMF processing:
 #' The BMF is deduplicated to one row per EIN (most recent `ORG_RULING_DATE`
@@ -223,6 +238,7 @@ retrieve_efile_data <- function(
     efile_root  = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
     bmf_url     = "https://nccsdata.s3.us-east-1.amazonaws.com/bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv",
     timeout     = 300,
+    retry_max   = 3L,
     verbose     = TRUE
 ) {
 
@@ -230,6 +246,10 @@ retrieve_efile_data <- function(
   if ( !is.numeric(year) || length(year) != 1 )
     stop( "`year` must be a single integer, e.g. 2021." )
   year <- as.integer(year)
+
+  if ( !is.numeric(retry_max) || length(retry_max) != 1 || retry_max < 1 )
+    stop( "`retry_max` must be a positive integer." )
+  retry_max <- as.integer(retry_max)
 
   table_map <- c(
     "P00" = "F9-P00-T00-HEADER",
@@ -251,36 +271,89 @@ retrieve_efile_data <- function(
   on.exit( options(timeout = old_timeout), add = TRUE )
   options(timeout = timeout)
 
-  # ---- Helper: stream one efile table from URL ----
+  # ---- Helper: stream one efile table from URL, with retry ----
   .read_efile_table <- function( code ) {
     fname <- paste0( table_map[[code]], "-", year, ".CSV" )
     url   <- paste0( efile_root, fname )
-    if (verbose) message( "  Downloading ", fname, " ..." )
-    dt <- data.table::fread( url, showProgress = FALSE )
-    dt <- unique(dt)
-    if (verbose) message( "    ", nrow(dt), " rows, ", ncol(dt), " columns." )
-    dt
+
+    last_err <- NULL
+    for ( attempt in seq_len(retry_max) ) {
+
+      if (verbose) {
+        if ( attempt == 1L ) {
+          message( "  Downloading ", fname, " ..." )
+        } else {
+          message( "  Retrying ", fname, " (attempt ", attempt, " of ", retry_max, ") ..." )
+        }
+      }
+
+      result <- tryCatch({
+        dt <- data.table::fread( url, showProgress = FALSE )
+        dt <- unique(dt)
+        if (verbose) message( "    ", nrow(dt), " rows, ", ncol(dt), " columns." )
+        dt
+      }, error = function(e) e )
+
+      if ( !inherits(result, "error") ) return( result )  # success
+
+      last_err <- result
+      if ( attempt < retry_max ) {
+        wait <- sample( 1:5, 1 )
+        if (verbose) message(
+          "    Download failed (", conditionMessage(last_err), ").",
+          " Waiting ", wait, "s before retry ..."
+        )
+        Sys.sleep( wait )
+      }
+    }
+
+    # All attempts exhausted
+    warning(
+      "Table ", code, " (", fname, ") failed after ", retry_max, " attempt(s): ",
+      conditionMessage(last_err), " — skipping table.",
+      call. = FALSE
+    )
+    NULL
   }
 
   # ---- Download all requested tables ----
   if (verbose) message( "Retrieving efile tables for year ", year, " ..." )
-  df <- .read_efile_table( tables[1] )
+
+  # Download tables in order; NULLs mean that table failed all retry attempts.
+  table_data <- lapply( tables, .read_efile_table )
+  names(table_data) <- tables
+
+  # The first successfully-downloaded table becomes the left-hand base.
+  succeeded  <- Filter( Negate(is.null), table_data )
+  failed_codes <- names( table_data )[ vapply(table_data, is.null, logical(1)) ]
+
+  if ( length(succeeded) == 0 )
+    stop( "All tables failed to download for year ", year, "." )
+
+  df <- succeeded[[1]]
   data.table::setDT(df)
 
-  # Merge remaining tables sequentially, keying on shared columns each time,
+  # Merge remaining successful tables sequentially, keying on shared columns,
   # then remove the right-hand table immediately to free RAM.
-  for ( code in tables[-1] ) {
-    right <- .read_efile_table(code)
-    data.table::setDT(right)
+  if ( length(succeeded) > 1 ) {
+    for ( right in succeeded[-1] ) {
+      data.table::setDT(right)
+      shared <- intersect( colnames(df), colnames(right) )
+      data.table::setkeyv( df,    shared )
+      data.table::setkeyv( right, shared )
+      if (verbose) message( "  Merging on: ", paste(shared, collapse = ", ") )
+      df <- merge( df, right, all = TRUE )
+      rm(right)
+    }
+  }
 
-    # Key both tables on their shared columns before merging
-    shared <- intersect( colnames(df), colnames(right) )
-    data.table::setkeyv( df,    shared )
-    data.table::setkeyv( right, shared )
-
-    if (verbose) message( "  Merging ", code, " on: ", paste(shared, collapse = ", ") )
-    df <- merge( df, right, all = TRUE )
-    rm(right)
+  if ( length(failed_codes) > 0 ) {
+    warning(
+      "Year ", year, ": ", length(failed_codes), " table(s) permanently skipped: ",
+      paste(failed_codes, collapse = ", "),
+      ". Their columns will be absent from the result.",
+      call. = FALSE
+    )
   }
 
   # ---- Optionally attach BMF ----

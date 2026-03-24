@@ -7,7 +7,8 @@
 get_netassets_growth_ratio( df,
   net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
   net_assets_boy = c( "F9_10_NAFB_TOT_BOY", "F9_01_NAFB_TOT_BOY" ),
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -21,6 +22,12 @@ if two are provided they are coalesced with the 990 value taking priority over 9
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"np"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,6 +56,22 @@ Year-over-year change in total net assets, expressed as a proportion of beginnin
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 }\if{html}{\out{</div>}}
+
+\strong{Definitional Range}
+
+Unbounded in both directions. A value of 0 means net assets were unchanged.
+Values below -1.0 (a drop of more than 100\\%) indicate that the organization
+lost more than its entire starting equity base, resulting in negative net assets.
+The ratio is undefined (NA) when BOY net assets equal zero.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item Small positive values (0.01-0.10) are typical and healthy for operating nonprofits.
+\item \strong{Below -0.10} in a single year is a warning sign; sustained negative growth
+indicates a structural financial problem.
+\item Very high positive values (above 0.50) often reflect one-time large gifts or
+asset revaluations rather than sustained operational performance.
+}
 
 \strong{Calculated For:} 990 + 990EZ filers.
 }
@@ -88,26 +111,6 @@ financial vulnerability framework.
 \item Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial vulnerability
 of charitable organizations. \emph{Nonprofit Management and Leadership}, 11(2),
 199-210.
-}
-}
-
-\subsection{Definitional range}{
-
-Unbounded in both directions. A value of 0 means net assets were unchanged.
-Values below -1.0 (a drop of more than 100\\%) indicate that the organization
-lost more than its entire starting equity base, resulting in negative net assets.
-The ratio is undefined (NA) when BOY net assets equal zero.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Small positive values (0.01 to 0.10) are typical and healthy for operating
-nonprofits - enough growth to build modest reserves without appearing to
-prioritize accumulation over mission.
-\item Values below -0.10 in a single year are a warning sign; sustained negative
-growth over multiple years indicates a structural financial problem.
-\item Very high positive values (above 0.50) often reflect one-time large gifts
-or asset revaluations rather than sustained operational performance.
 }
 }
 

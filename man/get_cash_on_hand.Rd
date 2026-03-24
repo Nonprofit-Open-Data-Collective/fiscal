@@ -7,7 +7,8 @@
 get_cash_on_hand( df,
   cash    = "F9_10_ASSET_CASH_EOY",
   savings = "F9_10_ASSET_SAVING_EOY",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_cash_on_hand( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zp"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,7 +56,24 @@ Absolute dollar amount of cash and liquid savings held at end of year.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{coh = cash + savings
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Cash on hand is bounded below at zero (cannot be negative on a properly prepared
+balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
+so comparison across organizations of different sizes requires normalization. Use
+\code{\link[=get_months_cash_operations]{get_months_cash_operations()}} or \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}
+for size-adjusted comparisons.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item As an absolute measure, benchmarks depend on the organization's expense
+base. A common practitioner rule is at least 60-90 days of operating
+expenses in liquid cash.
+\item The Nonprofit Finance Fund recommends a minimum of three months of
+operating expenses in accessible reserves.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -92,27 +116,6 @@ cash management in nonprofits.
 nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
 281-302. - Examines operating cash and reserves as components of financial
 sustainability.
-}
-}
-
-\subsection{Definitional range}{
-
-Cash on hand is bounded below at zero (cannot be negative on a properly prepared
-balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
-so comparison across organizations of different sizes requires normalization. Use
-\code{\link[=get_months_cash_operations]{get_months_cash_operations()}} or \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}
-for size-adjusted comparisons.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item As an absolute measure, benchmarks depend entirely on the organization's
-expense base. A common practitioner rule is to maintain at least 60-90 days
-of operating expenses in liquid cash.
-\item The Nonprofit Finance Fund recommends a minimum of three months of operating
-expenses in accessible reserves, of which cash and savings should form the core.
-\item Very large cash balances relative to annual expenses may attract scrutiny
-from donors and regulators about whether resources are being deployed toward mission.
 }
 }
 

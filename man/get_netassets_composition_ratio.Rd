@@ -7,7 +7,8 @@
 get_netassets_composition_ratio( df,
   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
   total_net_assets        = "F9_10_NAFB_TOT_EOY",
-  winsorize = 0.98,
+  winsorize = 0.98 ,
+  range     = "zo",
   sanitize  = TRUE,
   summarize = FALSE )
 }
@@ -20,6 +21,12 @@ get_netassets_composition_ratio( df,
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
+
+\item{range}{Character string specifying the theoretical range of the ratio,
+used to set winsorization bounds. Default \code{"zo"}. Options:
+\code{"np"} (negative to positive), \code{"zp"} (zero to positive),
+\code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
+\code{"lo;hi"} pair (e.g. \code{"0;10"}).}
 
 \item{sanitize}{Logical (default \code{TRUE}). If \code{TRUE}, NA values in
 the financial input columns are imputed to zero before the ratio is computed,
@@ -49,7 +56,21 @@ Share of total net assets that are unrestricted and available for general use.
 \if{html}{\out{<div class="sourceCode">}}\preformatted{nacr = unrestricted_net_assets / total_net_assets
 }\if{html}{\out{</div>}}
 
-\strong{Calculated For:} 990 filers only.
+\strong{Definitional Range}
+
+Bounded [0, 1] when both numerator and denominator are positive: zero means all
+net assets are restricted; one means all net assets are unrestricted. Values outside
+this range occur when either unrestricted or total net assets are negative.
+
+\strong{Benchmarks and rules of thumb}
+\itemize{
+\item \strong{Above 0.50}: At least half of net assets are unrestricted -- generally healthy.
+\item \strong{Below 0.20}: Heavy donor-restricted balance sheet; limited flexibility.
+\item Organizations with large permanent endowments may show low ratios without
+financial weakness.
+}
+
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -83,24 +104,6 @@ denominator version is more common in the academic literature.
 flexibility.
 \item Calabrese, T.D. (2013). Running on empty. \emph{Nonprofit Management and
 Leadership}, 23(3), 281-302. - Examines unrestricted reserve composition.
-}
-}
-
-\subsection{Definitional range}{
-
-Bounded [0, 1] when both numerator and denominator are positive: zero means all
-net assets are restricted; one means all net assets are unrestricted. Values outside
-this range occur when either unrestricted or total net assets are negative.
-}
-
-\subsection{Benchmarks and rules of thumb}{
-\itemize{
-\item Values above 0.50 indicate that at least half of net assets are
-unrestricted - generally considered healthy.
-\item Values below 0.20 suggest heavy donor-restricted balance sheets and
-limited financial flexibility.
-\item Organizations with large endowments will show low ratios if the endowment
-is permanently restricted, which may not indicate financial weakness.
 }
 }
 

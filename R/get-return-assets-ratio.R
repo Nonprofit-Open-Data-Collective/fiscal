@@ -13,6 +13,31 @@
 #' roa = revenues_less_expenses / total_assets
 #' ```
 #'
+#' **Definitional Range**
+#'
+#' ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
+#' revenues. Positive values indicate surplus years; negative values indicate deficit
+#' years. For nonprofits, where perpetual surpluses raise concerns about mission
+#' prioritization and perpetual deficits signal sustainability risk, the meaningful
+#' range is approximately \[-0.20, 0.20\] for most organizations in most years.
+#' Values outside this range are not impossible but typically reflect unusual
+#' circumstances (large asset disposals, one-time gifts, major capital campaigns, or
+#' accounting restatements) rather than stable operating performance.
+#'
+#' Values can be distorted by very small total asset bases (newly formed organizations)
+#' or by organizations whose assets consist almost entirely of illiquid fixed property,
+#' making the denominator a poor proxy for the operational resource base.
+#'
+#' **Benchmarks and rules of thumb**
+#'
+#'   - **Near zero**: Normal for nonprofits operating close to break-even by design.
+#'   - **0.02-0.07** (2-7%): Generally considered healthy -- building modest reserves
+#'     without appearing to hoard resources.
+#'   - **Sustained below -0.05**: Common threshold for classifying an organization as
+#'     at risk (Greenlee & Trussel 2000, Keating et al. 2005).
+#'   - Asset structure matters: capital-intensive organizations will mechanically
+#'     produce low ROA even when financially healthy.
+#'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
@@ -23,12 +48,18 @@
 #' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
+#' @param range Character string specifying the theoretical range of the ratio,
+#'   used to set winsorization bounds. Default `"np"`. Options:
+#'   `"np"` (negative to positive), `"zp"` (zero to positive),
+#'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
+#'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_return_assets_ratio( df,
 #'   revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
 #'   total_assets           = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
-#'   winsorize = 0.98,
+#'   winsorize = 0.98 ,
+#'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -107,44 +138,6 @@
 #'     context; demonstrates subsector variation.
 #'
 #'
-#' ## Definitional range
-#'
-#' ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
-#' revenues. Positive values indicate surplus years; negative values indicate deficit
-#' years. For nonprofits, where perpetual surpluses raise concerns about mission
-#' prioritization and perpetual deficits signal sustainability risk, the meaningful
-#' range is approximately \[-0.20, 0.20\] for most organizations in most years.
-#' Values outside this range are not impossible but typically reflect unusual
-#' circumstances (large asset disposals, one-time gifts, major capital campaigns, or
-#' accounting restatements) rather than stable operating performance.
-#'
-#' Values can be distorted by very small total asset bases (newly formed organizations)
-#' or by organizations whose assets consist almost entirely of illiquid fixed property,
-#' making the denominator a poor proxy for the operational resource base.
-#'
-#' ## Benchmarks and rules of thumb
-#'
-#'
-#'   - **Near-zero is normal**: Unlike commercial firms where consistent positive
-#'     ROA is expected, nonprofits typically operate close to break-even by design.
-#'     An ROA consistently near zero is a sign of disciplined budget management, not
-#'     poor performance.
-#'   - **Moderate positive surplus**: Values in the range of 0.02 to 0.07
-#'     (2-7\%) are generally considered healthy - the organization is building modest
-#'     reserves without appearing to hoard resources at the expense of mission delivery.
-#'   - **Sustained negative ROA**: Two or more consecutive years with ROA
-#'     below -0.05 is a common threshold used in financial vulnerability studies to
-#'     classify an organization as at risk (Greenlee & Trussel 2000, Keating et al.
-#'     2005).
-#'   - **Subsector variation**: Arts and culture organizations tend to have
-#'     more variable ROA than human services organizations with stable government
-#'     contracts. Health care nonprofits tend toward thin positive margins.
-#'   - **Asset structure matters**: Capital-intensive organizations
-#'     (hospitals, universities, housing providers) have large denominators and will
-#'     mechanically produce low ROA even when financially healthy. Comparisons across
-#'     capital structures require caution.
-#'
-#'
 #' ## Variables used:
 #'
 #'   - `F9_01_EXP_REV_LESS_EXP_CY`: 
@@ -179,7 +172,8 @@ get_return_assets_ratio <- function( df,
                      revenues_less_expenses = "F9_01_EXP_REV_LESS_EXP_CY",
                      total_assets           = c( "F9_10_ASSET_TOT_EOY",
                                                  "F9_01_NAFB_ASSET_TOT_EOY" ),
-                     winsorize = 0.98 ,
+                     winsorize = 0.98  ,
+                     range     = "np" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {
@@ -203,13 +197,14 @@ get_return_assets_ratio <- function( df,
   s <- resolve_col( dt, revenues_less_expenses )
   a <- resolve_col( dt, total_assets )
 
-  message( paste0( "Total assets equal to zero: ", sum( a == 0, na.rm = TRUE ),
-                   " case(s) replaced with NA." ) )
-  a[ a == 0 ] <- NA
+  nan.count <- sum( a == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Total assets equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  a[ a == 0 ] <- NaN
 
   roa <- s / a
 
-  v <- winsorize_var( roa, winsorize )
+  v <- apply_transformations( roa, winsorize, range )
   RETURN_ASSETS <- data.frame( return_assets   = v$raw,
                      return_assets_w = v$winsorized,
                      return_assets_z = v$z,
