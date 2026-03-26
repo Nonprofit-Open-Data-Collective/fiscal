@@ -641,3 +641,19 @@ sanitize_financials <- function( df,
 
   return( dat )
 }
+
+
+# Parse RETURN_TIME_STAMP cleanly: 
+.parse_stamp <- function( x ) {
+  x_chr <- as.character( x )
+  x_chr[ is.na( x_chr ) | trimws( x_chr ) == "" ] <- NA_character_
+  x_chr <- sub( " UTC$", "", x_chr )
+
+  suppressWarnings(
+    as.POSIXct(
+      x_chr,
+      format = "%Y-%m-%d %H:%M:%S",
+      tz = "UTC"
+    )
+  )
+}
