@@ -4,7 +4,13 @@
 \alias{panel_composition}
 \title{Summarize panel composition over time}
 \usage{
-panel_composition(df, time = "TAX_YEAR", id = "EIN2")
+panel_composition(
+  df,
+  time = "TAX_YEAR",
+  id = "EIN2",
+  return_classification = FALSE,
+  print_table = TRUE
+)
 }
 \arguments{
 \item{df}{A data frame containing panel data.}
@@ -12,6 +18,12 @@ panel_composition(df, time = "TAX_YEAR", id = "EIN2")
 \item{time}{Name of the time variable. Default is \code{"TAX_YEAR"}.}
 
 \item{id}{Name of the organization identifier variable. Default is \code{"EIN2"}.}
+
+\item{return_classification}{Logical. If \code{TRUE}, attach the ID-level
+classification table as the \code{"classification"} attribute. Default is \code{TRUE}.}
+
+\item{print_table}{Logical. If \code{TRUE}, print the summary table with
+comma-formatted counts. Default is \code{TRUE}.}
 }
 \value{
 A data frame with one row per year and columns:
@@ -23,11 +35,9 @@ A data frame with one row per year and columns:
 \item{interlopers}{Count of interloper organizations observed in each year.}
 }
 
-The returned object also includes an attribute:
-
-\describe{
-\item{classification}{A data frame with one row per ID and columns for ID, group, first year, and last year.}
-}
+If \code{return_classification = TRUE}, the returned object also includes an
+attribute named \code{"classification"} with one row per ID and columns for
+ID, first year, last year, number of years observed, contiguity, and group.
 }
 \description{
 Classifies organizations in a panel into four groups:
@@ -50,29 +60,4 @@ The returned table has one row per year and four count columns:
 \item \code{exits}: counted only in the year of last appearance
 \item \code{interlopers}: counted in each year they are observed
 }
-
-A detailed ID-level classification table is attached as the
-\code{"classification"} attribute of the returned data frame.
-}
-\examples{
-df <- data.frame(
-  EIN2 = c(
-    "A","A","A","A",
-    "B","B","B",
-    "C","C","C",
-    "D","D","D"
-  ),
-  TAX_YEAR = c(
-    2021,2022,2023,2024,
-    2022,2023,2024,
-    2021,2022,2023,
-    2021,2023,2024
-  )
-)
-
-out <- panel_composition( df )
-out
-
-attr( out, "classification" )
-
 }

@@ -35,6 +35,34 @@
 get_idvars <- function() .IDVARS
 
 
+.BMF_VARS <- c(
+  "EIN2",
+  "NTEE_NCCS", "NTEEV2", "NTMAJ12", "NTEE_ORG_TYPE",
+  "CENSUS_CBSA_FIPS", "CENSUS_CBSA_NAME",
+  "CENSUS_BLOCK_FIPS", "CENSUS_URBAN_AREA",
+  "CENSUS_STATE_ABBR", "CENSUS_COUNTY_NAME",
+  "BMF_SUBSECTION_CODE", "BMF_FOUNDATION_CODE",
+  "ORG_RULING_YEAR",
+  "F990_TOTAL_REVENUE_RECENT", "F990_TOTAL_INCOME_RECENT",
+  "F990_TOTAL_ASSETS_RECENT", "F990_TOTAL_EXPENSES_RECENT"
+)
+
+#' Return the list of default BMF variables
+#'
+#' Returns the character vector of BMF-derived and BMF-retained variables
+#' appended by default when `retrieve_efile_data()` is called with
+#' `include_bmf = TRUE`.
+#'
+#' These include normalized NTEE classifications, selected Census geography
+#' fields, selected BMF administrative fields, and recent Form 990 summary
+#' measures when present in the BMF source.
+#'
+#' @return A character vector of column names.
+#' @examples
+#' get_bmf_vars()
+#' @export
+get_bmf_vars <- function() .BMF_VARS
+
 # ---- Field scope maps ----
 # These vectors define which financial fields belong to which form scope.
 # PC_FIELDS: only present on the full 990 (Part X balance sheet, Part VIII/IX detail).

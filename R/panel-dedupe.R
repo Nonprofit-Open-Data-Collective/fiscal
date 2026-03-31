@@ -121,6 +121,13 @@ inspect_duplicates <- function(
 
   if ( nrow( dt_dup ) == 0L ) {
 
+    if ( isTRUE( getOption( "inspect_duplicates.verbose", TRUE ) ) ) {
+      message(
+        "\nNo duplicate filings detected.\n",
+        "Each ", by_id, " x ", by_year, " combination appears exactly once.\n"
+      )
+    }
+
     out <- list(
       summary_types = data.frame(
         filing_type  = character( 0 ),
@@ -141,6 +148,8 @@ inspect_duplicates <- function(
       ),
       examples = data.frame()
     )
+
+    attr( out, "has_duplicates" ) <- FALSE
 
     if ( isTRUE( return_candidates ) ) {
       out$candidates <- data.frame()

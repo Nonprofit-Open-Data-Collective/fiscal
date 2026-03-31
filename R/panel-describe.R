@@ -17,12 +17,13 @@
 #' - `exits`: counted only in the year of last appearance
 #' - `interlopers`: counted in each year they are observed
 #'
-#' A detailed ID-level classification table is attached as the
-#' `"classification"` attribute of the returned data frame.
-#'
 #' @param df A data frame containing panel data.
 #' @param time Name of the time variable. Default is `"TAX_YEAR"`.
 #' @param id Name of the organization identifier variable. Default is `"EIN2"`.
+#' @param return_classification Logical. If `TRUE`, attach the ID-level
+#'   classification table as the `"classification"` attribute. Default is `TRUE`.
+#' @param print_table Logical. If `TRUE`, print the summary table with
+#'   comma-formatted counts. Default is `TRUE`.
 #'
 #' @return A data frame with one row per year and columns:
 #' \describe{
@@ -33,38 +34,17 @@
 #'   \item{interlopers}{Count of interloper organizations observed in each year.}
 #' }
 #'
-#' The returned object also includes an attribute:
-#'
-#' \describe{
-#'   \item{classification}{A data frame with one row per ID and columns for ID, group, first year, and last year.}
-#' }
-#'
-#' @examples
-#' df <- data.frame(
-#'   EIN2 = c(
-#'     "A","A","A","A",
-#'     "B","B","B",
-#'     "C","C","C",
-#'     "D","D","D"
-#'   ),
-#'   TAX_YEAR = c(
-#'     2021,2022,2023,2024,
-#'     2022,2023,2024,
-#'     2021,2022,2023,
-#'     2021,2023,2024
-#'   )
-#' )
-#'
-#' out <- panel_composition( df )
-#' out
-#'
-#' attr( out, "classification" )
+#' If `return_classification = TRUE`, the returned object also includes an
+#' attribute named `"classification"` with one row per ID and columns for
+#' ID, first year, last year, number of years observed, contiguity, and group.
 #'
 #' @export
 panel_composition <- function(
     df,
     time = "TAX_YEAR",
-    id   = "EIN2"
+    id   = "EIN2",
+    return_classification = FALSE,
+    print_table = TRUE
 ) {
 
   if ( !is.data.frame( df ) ) {
@@ -79,43 +59,78 @@ panel_composition <- function(
     stop( paste0( "`id` column not found in `df`: ", id ) )
   }
 
-  dat <- unique( df[ , c( id, time ), drop = FALSE ] )
-  dat <- dat[ !is.na( dat[[ id ]] ) & !is.na( dat[[ time ]] ), , drop = FALSE ]
+  dt <- data.table::as.data.table( df )
 
-  panel_years <- sort( unique( dat[[ time ]] ) )
+  dt <- dt[
+    !is.na( get( id ) ) & !is.na( get( time ) ),
+    .SD,
+    .SDcols = c( id, time )
+  ]
 
-  if ( length( panel_years ) == 0L ) {
-    stop( "No non-missing panel years found." )
+  if ( nrow( dt ) == 0L ) {
+    stop( "No non-missing ID/time observations found." )
   }
 
-  ids <- unique( dat[[ id ]] )
+  # one row per id-year
+  dt <- unique( dt )
 
-  class_list <- lapply(
-    ids,
-    function( this_id ) {
+  panel_years <- sort( unique( dt[[ time ]] ) )
 
-      obs_years <- dat[ dat[[ id ]] == this_id, time ]
-      obs_years <- sort( unique( obs_years ) )
+  if ( length( panel_years ) == 0L ) {
+    stop( "No panel years found." )
+  }
 
-      group <- .classify_panel_pattern(
-        obs_years    = obs_years,
-        panel_years  = panel_years
-      )
+  first_panel   <- min( panel_years )
+  last_panel    <- max( panel_years )
+  n_panel_years <- length( panel_years )
 
-      data.frame(
-        org_id     = this_id,
-        group      = group,
-        first_year = min( obs_years ),
-        last_year  = max( obs_years ),
-        stringsAsFactors = FALSE
-      )
-    }
+  # map each observed year to its position in the full panel
+  year_lookup <- data.table::data.table(
+    year_value = panel_years,
+    year_pos   = seq_along( panel_years )
   )
 
-  class_df <- do.call( rbind, class_list )
-  names( class_df )[ names( class_df ) == "org_id" ] <- id
+  dt_pos <- data.table::copy( dt )
+  data.table::setnames( year_lookup, "year_value", time )
 
-  out <- data.frame(
+  dt_pos <- year_lookup[
+    dt_pos,
+    on = time
+  ]
+
+  # summarize to org level using panel-year positions
+  class_dt <- dt_pos[ ,
+    .(
+      first_year = min( get( time ) ),
+      last_year  = max( get( time ) ),
+      n_years    = data.table::uniqueN( get( time ) ),
+      first_pos  = min( year_pos ),
+      last_pos   = max( year_pos )
+    ),
+    by = id
+  ]
+
+  # robust contiguity check based on observed positions in the panel-year sequence
+  class_dt[ ,
+    is_contiguous := ( last_pos - first_pos + 1L ) == n_years
+  ]
+
+  class_dt[ ,
+    group := data.table::fcase(
+      n_years == n_panel_years,
+        "balanced",
+
+      is_contiguous & first_year > first_panel & last_year == last_panel,
+        "entrant",
+
+      is_contiguous & first_year == first_panel & last_year < last_panel,
+        "exit",
+
+      default = "interloper"
+    )
+  ]
+
+  out <- data.table::data.table(
     year        = panel_years,
     balanced    = 0L,
     entrants    = 0L,
@@ -123,49 +138,85 @@ panel_composition <- function(
     interlopers = 0L
   )
 
-  # balanced: same count repeated in each year
-  n_balanced <- sum( class_df$group == "balanced" )
-  out$balanced <- as.integer( n_balanced )
+  n_balanced <- class_dt[ group == "balanced", .N ]
+  out[ , balanced := as.integer( n_balanced ) ]
 
-  # entrants: count only in year of first appearance
-  entrant_df <- class_df[ class_df$group == "entrant", , drop = FALSE ]
-  if ( nrow( entrant_df ) > 0L ) {
-    entrant_tab <- table( entrant_df$first_year )
-    out$entrants <- as.integer(
-      entrant_tab[ match( out$year, names( entrant_tab ) ) ]
-    )
-    out$entrants[ is.na( out$entrants ) ] <- 0L
+  entrant_counts <- class_dt[
+    group == "entrant",
+    .( entrants = .N ),
+    by = .( year = first_year )
+  ]
+
+  if ( nrow( entrant_counts ) > 0L ) {
+    out[ entrant_counts, entrants := i.entrants, on = "year" ]
   }
 
-  # exits: count only in year of last appearance
-  exit_df <- class_df[ class_df$group == "exit", , drop = FALSE ]
-  if ( nrow( exit_df ) > 0L ) {
-    exit_tab <- table( exit_df$last_year )
-    out$exits <- as.integer(
-      exit_tab[ match( out$year, names( exit_tab ) ) ]
-    )
-    out$exits[ is.na( out$exits ) ] <- 0L
+  exit_counts <- class_dt[
+    group == "exit",
+    .( exits = .N ),
+    by = .( year = last_year )
+  ]
+
+  if ( nrow( exit_counts ) > 0L ) {
+    out[ exit_counts, exits := i.exits, on = "year" ]
   }
 
-  # interlopers: count in each year observed
-  inter_df <- class_df[ class_df$group == "interloper", , drop = FALSE ]
-  if ( nrow( inter_df ) > 0L ) {
+  class_key <- class_dt[ , c( id, "group" ), with = FALSE ]
 
-    inter_ids <- inter_df[[ id ]]
+  inter_counts <- dt[
+    class_key,
+    on = id,
+    nomatch = 0L
+  ][
+    group == "interloper",
+    .( interlopers = .N ),
+    by = .( year = get( time ) )
+  ]
 
-    inter_obs <- dat[ dat[[ id ]] %in% inter_ids, c( id, time ), drop = FALSE ]
-    inter_tab <- table( inter_obs[[ time ]] )
-
-    out$interlopers <- as.integer(
-      inter_tab[ match( out$year, names( inter_tab ) ) ]
-    )
-    out$interlopers[ is.na( out$interlopers ) ] <- 0L
+  if ( nrow( inter_counts ) > 0L ) {
+    out[ inter_counts, interlopers := i.interlopers, on = "year" ]
   }
 
-  attr( out, "classification" ) <- class_df
+  out[ is.na( entrants ), entrants := 0L ]
+  out[ is.na( exits ), exits := 0L ]
+  out[ is.na( interlopers ), interlopers := 0L ]
+
+  out_df <- as.data.frame( out )
+
+  if ( isTRUE( return_classification ) ) {
+    class_df <- as.data.frame( class_dt )
+    class_df$first_pos <- NULL
+    class_df$last_pos  <- NULL
+    attr( out_df, "classification" ) <- class_df
+  }
+
+  if ( isTRUE( print_table ) ) {
+    print( .format_panel_composition_table( out_df ), row.names = FALSE )
+  }
+
+  out_df
+}
+
+
+#' Format panel composition table for printing
+#'
+#' @keywords internal
+.format_panel_composition_table <- function( x ) {
+
+  out <- x
+
+  count_cols <- c( "balanced", "entrants", "exits", "interlopers" )
+  count_cols <- intersect( count_cols, names( out ) )
+
+  for ( v in count_cols ) {
+    out[[ v ]] <- format( out[[ v ]], big.mark = ",", trim = TRUE, scientific = FALSE )
+  }
 
   out
 }
+
+
+
 
 #' Classify one panel membership pattern
 #'

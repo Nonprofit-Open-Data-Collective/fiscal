@@ -8,11 +8,14 @@ retrieve_efile_data(
   year,
   tables = c("P00", "P01", "P08", "P09", "P10"),
   include_bmf = TRUE,
+  bmf_vars = .BMF_VARS,
   efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
   bmf_url =
     "https://nccsdata.s3.us-east-1.amazonaws.com/bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv",
   timeout = 300,
   retry_max = 3L,
+  path = "efdata",
+  keep_files = TRUE,
   verbose = TRUE
 )
 }
@@ -32,6 +35,10 @@ retrieve_efile_data(
 \item{include_bmf}{Logical. If \code{TRUE} (default), downloads the NCCS
 Unified BMF and left-joins organizational metadata (NTEE codes, census
 fields, recent financial summaries) onto the efile data by \code{EIN2}.}
+
+\item{bmf_vars}{Character vector of BMF variables to retain when
+\code{include_bmf = TRUE}. Defaults to the internal package constant returned by
+\code{get_bmf_vars()}. Use \code{NULL} to retain all available BMF fields.}
 
 \item{efile_root}{Character. Base URL for the NCCS efile S3 bucket. Defaults
 to \code{"https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/"}.

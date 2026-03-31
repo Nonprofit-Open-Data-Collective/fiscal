@@ -2,14 +2,15 @@
 % Please edit documentation in R/panel-impute.R
 \name{panel_impute_interlopers}
 \alias{panel_impute_interlopers}
-\title{Impute missing interior years for interlopers}
+\title{Impute missing panel waves for interlopers}
 \usage{
 panel_impute_interlopers(
   df,
   panel_types,
   vars = NULL,
   time = "TAX_YEAR",
-  id = "EIN2"
+  id = "EIN2",
+  as_integers = FALSE
 )
 }
 \arguments{
@@ -24,23 +25,25 @@ selects all numeric columns except \code{id} and \code{time}.}
 \item{time}{Name of the time variable. Default is \code{"TAX_YEAR"}.}
 
 \item{id}{Name of the ID variable. Default is \code{"EIN2"}.}
+
+\item{as_integers}{Logical. If \code{TRUE}, imputed values are rounded and cast
+back to integer-like storage where practical. If \code{FALSE} (default),
+imputed values are kept as numeric doubles.}
 }
 \value{
-A data frame with missing interior years inserted for interlopers.
-Added rows are flagged with \code{imputed_row = TRUE}.
+A data frame with missing interior panel waves inserted for
+interlopers. Added rows are flagged with \code{imputed_row = TRUE}.
 }
 \description{
-Completes missing interior years for organizations classified as
-\code{"interloper"} and imputes selected variables using the average of the
-nearest prior and subsequent observed values.
-}
-\details{
-Missing years are filled only between each organization's \code{first_year} and
-\code{last_year}, as defined in the classification table. Leading and trailing
-years outside an organization's observed span are not created.
+Completes missing interior panel waves for organizations classified as
+\code{"interloper"} and imputes selected numeric variables using the average of
+the nearest prior and subsequent observed values.
 
-For runs of multiple consecutive missing years, each missing year is imputed
-as the average of the nearest observed value before the gap and the nearest
-observed value after the gap. This means all missing years in the same gap
-receive the same imputed value.
+Missing rows are inserted only for years that actually exist in the observed
+panel, so the function is robust to non-contiguous panel years.
+
+For runs of multiple consecutive missing panel waves, each missing wave is
+imputed as the average of the nearest observed value before the gap and the
+nearest observed value after the gap. This means all missing waves inside
+the same gap receive the same imputed value.
 }
