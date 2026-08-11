@@ -19,11 +19,11 @@ winsorize_x(x, range, winsorize = 0.98, offset = 0.001)
 \value{
 A named list with elements:
 \itemize{
-\item \code{x_w} — winsorized vector
-\item \code{top}, \code{bottom} — the computed bounds
-\item \code{is_top_sentinel}, \code{is_bottom_sentinel}, \code{is_sentinel} — logical vectors
-\item \code{support} — parsed range specification list
-\item \code{winsorize}, \code{offset} — echoed inputs
+\item \code{x_w} --- winsorized vector
+\item \code{top}, \code{bottom} --- the computed bounds
+\item \code{is_top_sentinel}, \code{is_bottom_sentinel}, \code{is_sentinel} --- logical vectors
+\item \code{support} --- parsed range specification list
+\item \code{winsorize}, \code{offset} --- echoed inputs
 }
 }
 \description{

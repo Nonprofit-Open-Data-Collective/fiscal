@@ -15,6 +15,16 @@ df <- make_test_df()
 
 check_ratio_structure <- function( fn, df, col_prefix, ... ) {
 
+  registry <- fiscal_metrics()
+  matched <- vapply(
+    registry$function_name,
+    function(function_name) identical(fn, get(function_name, mode = "function")),
+    logical(1L)
+  )
+  if (sum(matched) != 1L)
+    stop("Ratio function is missing or duplicated in fiscal_metrics().")
+  col_prefix <- registry$metric[matched]
+
   result <- suppressMessages( fn( df, ..., sanitize = TRUE ) )
 
   # Returns a data.frame

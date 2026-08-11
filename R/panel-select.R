@@ -1,49 +1,29 @@
-#' Filter a panel by composition type
+#' Filter a panel by composition type and spell balance
 #'
-#' Filters a panel data frame using the ID-level classifications produced by
-#' `panel_composition()`.
-#'
-#' Accepted group labels may be singular or plural:
-#'
-#' - `"balanced"`
-#' - `"entrant"` / `"entrants"`
-#' - `"exit"` / `"exits"`
-#' - `"interloper"` / `"interlopers"`
+#' Compatibility wrapper around `panel990::panel_filter()`.
 #'
 #' @param df A panel data frame.
-#' @param panel_types Output from `panel_composition()`, or a classification
-#' data frame with columns for `id` and `group`.
-#' @param keep Character vector of groups to retain.
-#' Default is `c( "balanced", "entrants", "exits", "interlopers" )`.
-#' @param id Name of the ID variable. Default is `"EIN2"`.
-#'
-#' @return A filtered data frame containing only rows for IDs in the selected
-#' panel composition groups.
-#'
+#' @param panel_types A per-ID classification, classification summary, or data
+#'   with appended `panel_*` columns.
+#' @param keep Panel types to retain: `"persistent"`, `"entrant"`, `"exit"`,
+#'   `"transient"`, or `"empty"`.
+#' @param spell_balance Spell values to retain: `"seamless"` and/or
+#'   `"segmented"`.
+#' @param id Name of the ID variable.
+#' @return Filtered input rows.
 #' @export
 panel_filter_types <- function(
     df,
     panel_types,
-    keep = c( "balanced", "entrants", "exits", "interlopers" ),
-    id   = "EIN2"
+    keep = .PANEL_TYPES,
+    spell_balance = .PANEL_SPELL_BALANCE,
+    id = "EIN2"
 ) {
-
-  if ( !is.data.frame( df ) ) {
-    stop( "`df` must be a data.frame." )
-  }
-
-  if ( !id %in% names( df ) ) {
-    stop( paste0( "`id` column not found in `df`: ", id ) )
-  }
-
-  class_df <- .get_panel_classification(
-    x  = panel_types,
+  panel990::panel_filter(
+    df,
+    panel_type = keep,
+    spell = spell_balance,
+    classification = panel_types,
     id = id
   )
-
-  keep <- .normalize_panel_groups( keep )
-
-  keep_ids <- class_df[ class_df$group %in% keep, id ]
-
-  df[ df[[ id ]] %in% keep_ids, , drop = FALSE ]
 }

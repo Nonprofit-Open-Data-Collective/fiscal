@@ -12,7 +12,9 @@
 \item{panel_years}{Sorted unique years in the full panel.}
 }
 \value{
-One of: \code{"balanced"}, \code{"entrant"}, \code{"exit"}, or \code{"interloper"}.
+A list containing \code{panel_type} (\code{"full"}, \code{"entry"}, \code{"exit"},
+\code{"interior"}, or \code{"empty"}), \code{spell_balance} (\code{"contiguous"} or
+\code{"fragmented"}), and gap counts.
 }
 \description{
 Internal helper used by \code{panel_composition()}.

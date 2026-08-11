@@ -250,11 +250,11 @@ get_bottom_n <- function( x, range, winsorize = 0.98, offset = 0.001 ) {
 #'
 #' @inheritParams get_top_n
 #' @return A named list with elements:
-#'   - `x_w` — winsorized vector
-#'   - `top`, `bottom` — the computed bounds
-#'   - `is_top_sentinel`, `is_bottom_sentinel`, `is_sentinel` — logical vectors
-#'   - `support` — parsed range specification list
-#'   - `winsorize`, `offset` — echoed inputs
+#'   - `x_w` --- winsorized vector
+#'   - `top`, `bottom` --- the computed bounds
+#'   - `is_top_sentinel`, `is_bottom_sentinel`, `is_sentinel` --- logical vectors
+#'   - `support` --- parsed range specification list
+#'   - `winsorize`, `offset` --- echoed inputs
 #' @examples
 #' x <- c( NA, rnorm(200), 100, -100 )
 #'
@@ -432,7 +432,7 @@ guess_normalize_type <- function(
 #' @param verbose Logical. If `TRUE`, print a diagnostic summary. Default
 #'   `TRUE`.
 #'
-#' @return An object of class `normalize_x_fit` — a named list containing
+#' @return An object of class `normalize_x_fit` --- a named list containing
 #'   transformation type, parameters, centering/scaling constants, and
 #'   diagnostics. Pass this object to [apply_normalization()].
 #'
@@ -469,6 +469,15 @@ find_best_normalization <- function(
 
   # stable fitting vector: drop NAs and sentinel-coded winsor values
   x.clean <- x.w[!is.na( x.w ) & !w$is_sentinel]
+
+  # Small samples can lose both tails to sentinel exclusion. In that case,
+  # fit on all available winsorized observations rather than failing even
+  # though enough usable values exist.
+  if( length( x.clean ) < 3 ) {
+    x.available <- x.w[!is.na( x.w )]
+    if (length(x.available) >= 3L)
+      x.clean <- x.available
+  }
 
   if( length( x.clean ) < 3 ) {
     stop(
@@ -694,7 +703,7 @@ find_best_normalization <- function(
 apply_normalization <- function( x, fit, verbose = FALSE ) {
 
   if( !inherits( fit, "normalize_x_fit" ) ) {
-    stop( "`fit` must be an object returned by find_best_normalization().",
+    stop( "`fit` must inherit class `normalize_x_fit` and be returned by find_best_normalization().",
           call. = FALSE )
   }
 

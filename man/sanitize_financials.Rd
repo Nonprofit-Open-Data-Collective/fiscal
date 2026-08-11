@@ -4,7 +4,7 @@
 \alias{sanitize_financials}
 \title{Sanitize Financial Variables in an IRS 990 Dataset}
 \usage{
-sanitize_financials(df, pz_vars = .PZ_FIELDS, pc_vars = .PC_FIELDS)
+sanitize_financials(df, pz_vars = NULL, pc_vars = NULL)
 }
 \arguments{
 \item{df}{A \code{data.frame} containing IRS 990 efile financial fields. Should
@@ -12,14 +12,14 @@ contain a \code{RETURN_TYPE} column (values \code{"990"} or \code{"990EZ"}) for
 accurate filer-type detection. If absent, filer type is inferred from field
 availability.}
 
-\item{pz_vars}{Character vector of column names for fields present on both 990 and
-990EZ forms (scope PZ). NA values in these columns are imputed to zero for all
-rows. Defaults to the full set of PZ financial fields used by this package.}
+\item{pz_vars}{Optional character vector of PZ-scope column names (present on
+both 990 and 990EZ). When supplied, the local scope-aware imputer is used
+with exactly these fields. When \code{NULL} (default), scope is resolved from
+panel990 via \code{\link[panel990:panel_normalize]{panel990::panel_normalize()}}.}
 
-\item{pc_vars}{Character vector of column names for fields present only on the full
-990 form (scope PC). NA values are imputed to zero only for rows identified as
-990 filers; 990EZ filer rows are left as NA. Defaults to the full set of PC
-financial fields used by this package.}
+\item{pc_vars}{Optional character vector of PC-scope column names (full 990
+only). When supplied, imputation is restricted to 990 filers for these
+fields. When \code{NULL} (default), scope is resolved from panel990.}
 }
 \value{
 A \code{data.frame} identical in structure to \code{df}, with NA values
@@ -48,6 +48,12 @@ Filer type is determined from the \code{RETURN_TYPE} column when present
 (\code{"990"} = full filer, \code{"990EZ"} = short-form filer). If \code{RETURN_TYPE}
 is absent, filer type is inferred: rows with Part I data but missing Part VIII data
 are treated as 990EZ filers.
+
+As of the panel990 portage, the default path delegates to
+\code{\link[panel990:panel_normalize]{panel990::panel_normalize()}}, which applies the same form-scoped, non-filer-
+protected zero imputation over the shared concordance-derived field scopes.
+Supplying \code{pz_vars}/\code{pc_vars} explicitly falls back to the local imputer for
+backward compatibility.
 }
 \examples{
 library( fiscal )

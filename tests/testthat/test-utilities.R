@@ -29,10 +29,11 @@ test_that( "get_pz_fields returns a non-empty character vector of F9_ names", {
   expect_true( all( grepl("^F9_", v) ) )
 })
 
-test_that( "PC and PZ fields overlap on shared Part I fields", {
-  # Some fields appear in both (11 shared fields per design)
+test_that( "PC and PZ scopes are disjoint", {
+  # Scope now comes from the panel990 concordance, where each field carries a
+  # single form scope (PC or PZ), so the two sets no longer overlap.
   shared <- intersect( get_pc_fields(), get_pz_fields() )
-  expect_gt( length(shared), 0 )
+  expect_equal( length(shared), 0 )
 })
 
 
@@ -65,6 +66,7 @@ test_that( "sanitize_financials imputes NA to 0 in PC fields for 990 filers", {
 
   # Introduce NA in a PC-scope field
   df$F9_09_EXP_TOT_TOT[1] <- NA
+  df$F9_09_EXP_TOT_TOT[3] <- NA
 
   result <- sanitize_financials( df )
 
@@ -72,9 +74,8 @@ test_that( "sanitize_financials imputes NA to 0 in PC fields for 990 filers", {
   expect_equal( result$F9_09_EXP_TOT_TOT[1], 0 )
 
   # 990EZ filer NA in PC field → stays NA (PC fields not present on 990EZ)
-  expect_true( is.na( result$F9_09_EXP_TOT_TOT[3] ) ||
-               result$F9_09_EXP_TOT_TOT[3] == 0,
-               label = "990EZ filer in PC field: NA or 0" )
+  expect_true( is.na( result$F9_09_EXP_TOT_TOT[3] ),
+               label = "990EZ filer in PC field remains out of scope" )
 })
 
 test_that( "sanitize_financials: original columns preserved", {

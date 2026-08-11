@@ -381,8 +381,8 @@ inspect_duplicates <- function(
 #' If no amended-return column is supplied, the function still prefers the
 #' newest timestamp after accounting for group and partial return status.
 #'
-#' @export
-deduplicate <- function(
+#' @noRd
+.deduplicate_legacy <- function(
     df,
     by_id       = "EIN2",
     by_year     = "TAX_YEAR",
@@ -418,20 +418,6 @@ deduplicate <- function(
     x_chr <- trimws( toupper( as.character( x ) ) )
   
     !is.na( x_chr ) & x_chr %in% c( "X", "TRUE", "T", "1", "Y", "YES" )
-  }
-
-  .parse_stamp <- function( x ) {
-    x_chr <- as.character( x )
-    x_chr[ is.na( x_chr ) | trimws( x_chr ) == "" ] <- NA_character_
-    x_chr <- sub( " UTC$", "", x_chr )
-
-    suppressWarnings(
-      as.POSIXct(
-        x_chr,
-        format = "%Y-%m-%d %H:%M:%S",
-        tz = "UTC"
-      )
-    )
   }
 
   dt <- data.table::as.data.table( df )
