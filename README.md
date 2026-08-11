@@ -8,12 +8,60 @@ An R package for calculating nonprofit fiscal health accounting metrics from IRS
 
 <br>
 
+## Overview
+
+`fiscal` turns IRS 990 financial data into a standard set of nonprofit
+fiscal-health metrics — liquidity, leverage, margins, efficiency, and reserves —
+each computed the same way every time so results are comparable across
+organizations and years. Every `get_*()` metric function appends four columns to
+your data (raw, winsorized, z-score, and percentile rank), and `compute_all()`
+runs the entire battery at once.
+
+It pairs with
+[**panel990**](https://github.com/Nonprofit-Open-Data-Collective/panel990),
+which retrieves and normalizes the underlying 990 e-file panels: assemble and
+clean data with `panel990`, then score it with `fiscal`.
+
+## Key features
+
+- **~50 fiscal-health ratios** — a curated library of liquidity, leverage,
+  profitability, efficiency, and reserve metrics with documented formulas.
+- **Four versions per metric** — raw, winsorized (`_w`), standardized (`_z`),
+  and percentile rank (`_p`), so outliers and scale never distort comparisons.
+- **One-call scoring** — `compute_all()` appends every metric to a data frame.
+- **Sensible 990 defaults, overridable** — each function defaults to the correct
+  e-file field names but accepts your own column names.
+- **Pipe-enabled** and **form-aware** — handles both full 990 and 990-EZ filers;
+  blank financials are interpreted correctly via `sanitize_financials()`.
+- **Panel-ready** — retrieve, deduplicate, and smooth multi-year panels through
+  thin wrappers over `panel990`, then score every organization-year.
+
 ## Install the package
 
+`fiscal` depends on `panel990`; installing from GitHub pulls it in
+automatically via the package's `Remotes:` field.
+
 ```r
+# install.packages("remotes")
+remotes::install_github("nonprofit-open-data-collective/fiscal")
+```
 
-devtools::install_github( 'nonprofit-open-data-collective/fiscal' )
+## Quick start (reproducible)
 
+The package bundles `dat10k`, a 10,000-row sample of 990 financials, so this
+runs offline with no download:
+
+```r
+library(fiscal)
+
+# The entire battery of fiscal-health metrics, appended to your data:
+scored <- compute_all(dat10k)          # dat10k = bundled 990 sample
+head(scored)
+
+# Or a single metric. sanitize_financials() first reads blank 990 line items
+# as zeros and coerces the financial fields to numeric (adds debt_assets +
+# _w / _z / _p):
+df <- get_debt_assets_ratio(sanitize_financials(dat10k))
 ```
 
 <br>
@@ -54,7 +102,7 @@ debt_assets = total_liabilities / total_assets
 * `summarize`: If `TRUE`, prints summary statistics and plots density curves for all four output columns.
 
 ```r
-df <- dat10k   # sample of 10,000 rows from efile financials
+df <- sanitize_financials( dat10k )   # 10,000-row sample; blanks -> 0, coerced numeric
 
 # compute the debt-to-asset ratio
 df <- get_debt_assets_ratio( df )
@@ -107,7 +155,7 @@ For example, `get_debt_assets_ratio()` creates the following columns:
 * `debt_assets_p` — expressed as a percentile rank  
 
 ```r
-df <- get_debt_assets_ratio( df = dat10k, summarize = TRUE )
+df <- get_debt_assets_ratio( df = sanitize_financials( dat10k ), summarize = TRUE )
 
 # [1] "Assets equal to zero: 3 cases have been replaced with NA."
 #
