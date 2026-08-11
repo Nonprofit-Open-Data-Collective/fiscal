@@ -2,40 +2,33 @@
 % Please edit documentation in R/panel-select.R
 \name{panel_filter_types}
 \alias{panel_filter_types}
-\title{Filter a panel by composition type}
+\title{Filter a panel by composition type and spell balance}
 \usage{
 panel_filter_types(
   df,
   panel_types,
-  keep = c("balanced", "entrants", "exits", "interlopers"),
+  keep = .PANEL_TYPES,
+  spell_balance = .PANEL_SPELL_BALANCE,
   id = "EIN2"
 )
 }
 \arguments{
 \item{df}{A panel data frame.}
 
-\item{panel_types}{Output from \code{panel_composition()}, or a classification
-data frame with columns for \code{id} and \code{group}.}
+\item{panel_types}{A per-ID classification, classification summary, or data
+with appended \verb{panel_*} columns.}
 
-\item{keep}{Character vector of groups to retain.
-Default is \code{c( "balanced", "entrants", "exits", "interlopers" )}.}
+\item{keep}{Panel types to retain: \code{"persistent"}, \code{"entrant"}, \code{"exit"},
+\code{"transient"}, or \code{"empty"}.}
 
-\item{id}{Name of the ID variable. Default is \code{"EIN2"}.}
+\item{spell_balance}{Spell values to retain: \code{"seamless"} and/or
+\code{"segmented"}.}
+
+\item{id}{Name of the ID variable.}
 }
 \value{
-A filtered data frame containing only rows for IDs in the selected
-panel composition groups.
+Filtered input rows.
 }
 \description{
-Filters a panel data frame using the ID-level classifications produced by
-\code{panel_composition()}.
-}
-\details{
-Accepted group labels may be singular or plural:
-\itemize{
-\item \code{"balanced"}
-\item \code{"entrant"} / \code{"entrants"}
-\item \code{"exit"} / \code{"exits"}
-\item \code{"interloper"} / \code{"interlopers"}
-}
+Compatibility wrapper around \code{panel990::panel_filter()}.
 }

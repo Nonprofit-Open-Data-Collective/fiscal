@@ -19,7 +19,7 @@ winsorize_var(
 which clips at the 1st and 99th percentiles for \code{"np"} range).}
 
 \item{offset}{Sentinel offset applied to fixed bounds (default \code{0.001}).
-Observations clipped to a fixed bound are stored as \verb{bound ± offset} so
+Observations clipped to a fixed bound are stored as \code{bound -- offset} so
 they remain identifiable in the \verb{_w} column.}
 
 \item{range}{Character string describing the theoretical range of the ratio.

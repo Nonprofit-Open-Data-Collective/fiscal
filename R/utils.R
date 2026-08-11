@@ -8,290 +8,6 @@
 
 `%notin%` <- Negate( `%in%` )
 
-
-# ---- ID variable list ----
-# Columns that identify a filing record across all efile tables.
-# Used by every get_*() function to retain record linkage variables
-# in the working subset (dt) alongside the financial fields (vars).
-
-.IDVARS <- c(
-  "EIN2", "OBJECTID", "ORG_EIN", "ORG_NAME_L1",
-  "ORG_NAME_L2", "RETURN_AMENDED_X", "RETURN_GROUP_X",
-  "RETURN_PARTIAL_X", "RETURN_TAXPER_DAYS", "RETURN_TIME_STAMP",
-  "RETURN_TYPE", "TAX_PERIOD_BEGIN_DATE", "TAX_PERIOD_END_DATE",
-  "TAX_YEAR", "URL", "VERSION"
-)
-
-#' Return the list of efile record identifier variables
-#'
-#' Returns the character vector of column names that identify a filing record
-#' across all efile tables. These are retained alongside financial fields in
-#' the working subset inside every `get_*()` function.
-#'
-#' @return A character vector of column names.
-#' @examples
-#' get_idvars()
-#' @export
-get_idvars <- function() .IDVARS
-
-
-.BMF_VARS <- c(
-  "EIN2",
-  "NTEE_NCCS", "NTEEV2", "NTMAJ12", "NTEE_ORG_TYPE",
-  "CENSUS_CBSA_FIPS", "CENSUS_CBSA_NAME",
-  "CENSUS_BLOCK_FIPS", "CENSUS_URBAN_AREA",
-  "CENSUS_STATE_ABBR", "CENSUS_COUNTY_NAME",
-  "BMF_SUBSECTION_CODE", "BMF_FOUNDATION_CODE",
-  "ORG_RULING_YEAR",
-  "F990_TOTAL_REVENUE_RECENT", "F990_TOTAL_INCOME_RECENT",
-  "F990_TOTAL_ASSETS_RECENT", "F990_TOTAL_EXPENSES_RECENT"
-)
-
-#' Return the list of default BMF variables
-#'
-#' Returns the character vector of BMF-derived and BMF-retained variables
-#' appended by default when `retrieve_efile_data()` is called with
-#' `include_bmf = TRUE`.
-#'
-#' These include normalized NTEE classifications, selected Census geography
-#' fields, selected BMF administrative fields, and recent Form 990 summary
-#' measures when present in the BMF source.
-#'
-#' @return A character vector of column names.
-#' @examples
-#' get_bmf_vars()
-#' @export
-get_bmf_vars <- function() .BMF_VARS
-
-# ---- Field scope maps ----
-# These vectors define which financial fields belong to which form scope.
-# PC_FIELDS: only present on the full 990 (Part X balance sheet, Part VIII/IX detail).
-# PZ_FIELDS: present on both 990 and 990EZ (Part I summary fields).
-# Used by sanitize_financials() and the sanitize= argument in individual functions.
-
-.PC_FIELDS <- c(
-  # Part I - prior-year and UBI fields (990 only)
-  "F9_01_ACT_GVRN_UBIZ_REV_TOT", "F9_01_ACT_GVRN_UBIZ_TAXABLE_NET",
-  "F9_01_EXP_BEN_PAID_MEMB_PY", "F9_01_EXP_FUNDR_TOT_CY",
-  "F9_01_EXP_GRANT_SIMILAR_PY", "F9_01_EXP_OTH_PY",
-  "F9_01_EXP_PROF_FUNDR_TOT_CY", "F9_01_EXP_PROF_FUNDR_TOT_PY",
-  "F9_01_EXP_REV_LESS_EXP_PY", "F9_01_EXP_SAL_ETC_PY",
-  "F9_01_EXP_TOT_PY",
-  "F9_01_REV_CONTR_TOT_PY", "F9_01_REV_INVEST_TOT_PY",
-  "F9_01_REV_OTH_PY", "F9_01_REV_PROG_TOT_PY", "F9_01_REV_TOT_PY",
-  # Part VIII - revenue detail (990 only)
-  "F9_08_REV_CONTR_FED_CAMP", "F9_08_REV_CONTR_FUNDR_EVNT",
-  "F9_08_REV_CONTR_GOVT_GRANT", "F9_08_REV_CONTR_NONCSH",
-  "F9_08_REV_CONTR_OTH", "F9_08_REV_CONTR_RLTD_ORG", "F9_08_REV_CONTR_TOT",
-  "F9_08_REV_MISC_EXCL", "F9_08_REV_MISC_OTH_EXCL",
-  "F9_08_REV_MISC_OTH_RLTD", "F9_08_REV_MISC_OTH_TOT", "F9_08_REV_MISC_OTH_UBIZ",
-  "F9_08_REV_MISC_RLTD", "F9_08_REV_MISC_TOT", "F9_08_REV_MISC_UBIZ",
-  "F9_08_REV_OTH_FUNDR_NET_EXCL", "F9_08_REV_OTH_FUNDR_NET_RLTD",
-  "F9_08_REV_OTH_FUNDR_NET_UBIZ",
-  "F9_08_REV_OTH_GAMING_NET_EXCL", "F9_08_REV_OTH_GAMING_NET_RLTD",
-  "F9_08_REV_OTH_GAMING_NET_UBIZ",
-  "F9_08_REV_OTH_INVEST_BOND_EXCL", "F9_08_REV_OTH_INVEST_BOND_RLTD",
-  "F9_08_REV_OTH_INVEST_BOND_TOT", "F9_08_REV_OTH_INVEST_BOND_UBIZ",
-  "F9_08_REV_OTH_INVEST_INCOME_EXCL", "F9_08_REV_OTH_INVEST_INCOME_RLTD",
-  "F9_08_REV_OTH_INVEST_INCOME_UBIZ",
-  "F9_08_REV_OTH_INV_NET_EXCL", "F9_08_REV_OTH_INV_NET_RLTD",
-  "F9_08_REV_OTH_INV_NET_UBIZ",
-  "F9_08_REV_OTH_RENT_GRO_PERS", "F9_08_REV_OTH_RENT_GRO_REAL",
-  "F9_08_REV_OTH_RENT_INCOME_PERS", "F9_08_REV_OTH_RENT_INCOME_REAL",
-  "F9_08_REV_OTH_RENT_LESS_EXP_PERS", "F9_08_REV_OTH_RENT_LESS_EXP_REAL",
-  "F9_08_REV_OTH_RENT_NET_EXCL", "F9_08_REV_OTH_RENT_NET_RLTD",
-  "F9_08_REV_OTH_RENT_NET_TOT", "F9_08_REV_OTH_RENT_NET_UBIZ",
-  "F9_08_REV_OTH_ROY_EXCL", "F9_08_REV_OTH_ROY_RLTD",
-  "F9_08_REV_OTH_ROY_TOT", "F9_08_REV_OTH_ROY_UBIZ",
-  "F9_08_REV_OTH_SALE_ASSET_OTH", "F9_08_REV_OTH_SALE_ASSET_SEC",
-  "F9_08_REV_OTH_SALE_GAIN_NET_EXCL", "F9_08_REV_OTH_SALE_GAIN_NET_RLTD",
-  "F9_08_REV_OTH_SALE_GAIN_NET_UBIZ",
-  "F9_08_REV_OTH_SALE_GAIN_OTH", "F9_08_REV_OTH_SALE_GAIN_SEC",
-  "F9_08_REV_PROG_OTH_EXCL", "F9_08_REV_PROG_OTH_RLTD",
-  "F9_08_REV_PROG_OTH_TOT", "F9_08_REV_PROG_OTH_UBIZ",
-  "F9_08_REV_PROG_TOT", "F9_08_REV_PROG_TOT_TOT", "F9_08_REV_PROG_UBIZ",
-  "F9_08_REV_TOT_EXCL", "F9_08_REV_TOT_RLTD",
-  "F9_08_REV_TOT_TOT", "F9_08_REV_TOT_UBIZ",
-  # Part IX - expense detail (990 only)
-  "F9_09_EXP_AD_PROMO_FUNDR", "F9_09_EXP_AD_PROMO_MGMT",
-  "F9_09_EXP_AD_PROMO_PROG", "F9_09_EXP_AD_PROMO_TOT",
-  "F9_09_EXP_BEN_PAID_MEMB_PROG", "F9_09_EXP_BEN_PAID_MEMB_TOT",
-  "F9_09_EXP_COMP_DSQ_PERS_FUNDR", "F9_09_EXP_COMP_DSQ_PERS_MGMT",
-  "F9_09_EXP_COMP_DSQ_PERS_PROG", "F9_09_EXP_COMP_DSQ_PERS_TOT",
-  "F9_09_EXP_COMP_DTK_FUNDR", "F9_09_EXP_COMP_DTK_MGMT",
-  "F9_09_EXP_COMP_DTK_PROG", "F9_09_EXP_COMP_DTK_TOT",
-  "F9_09_EXP_CONF_MEETING_FUNDR", "F9_09_EXP_CONF_MEETING_MGMT",
-  "F9_09_EXP_CONF_MEETING_PROG", "F9_09_EXP_CONF_MEETING_TOT",
-  "F9_09_EXP_DEPREC_FUNDR", "F9_09_EXP_DEPREC_MGMT",
-  "F9_09_EXP_DEPREC_PROG", "F9_09_EXP_DEPREC_TOT",
-  "F9_09_EXP_FEE_SVC_ACC_FUNDR", "F9_09_EXP_FEE_SVC_ACC_MGMT",
-  "F9_09_EXP_FEE_SVC_ACC_PROG", "F9_09_EXP_FEE_SVC_ACC_TOT",
-  "F9_09_EXP_FEE_SVC_FUNDR_FUNDR", "F9_09_EXP_FEE_SVC_FUNDR_MGMT",
-  "F9_09_EXP_FEE_SVC_FUNDR_PROG", "F9_09_EXP_FEE_SVC_FUNDR_TOT",
-  "F9_09_EXP_FEE_SVC_INVEST_FUNDR", "F9_09_EXP_FEE_SVC_INVEST_MGMT",
-  "F9_09_EXP_FEE_SVC_INVEST_PROG", "F9_09_EXP_FEE_SVC_INVEST_TOT",
-  "F9_09_EXP_FEE_SVC_LEGAL_FUNDR", "F9_09_EXP_FEE_SVC_LEGAL_MGMT",
-  "F9_09_EXP_FEE_SVC_LEGAL_PROG", "F9_09_EXP_FEE_SVC_LEGAL_TOT",
-  "F9_09_EXP_FEE_SVC_LOB_FUNDR", "F9_09_EXP_FEE_SVC_LOB_MGMT",
-  "F9_09_EXP_FEE_SVC_LOB_PROG", "F9_09_EXP_FEE_SVC_LOB_TOT",
-  "F9_09_EXP_FEE_SVC_MGMT_FUNDR", "F9_09_EXP_FEE_SVC_MGMT_MGMT",
-  "F9_09_EXP_FEE_SVC_MGMT_PROG", "F9_09_EXP_FEE_SVC_MGMT_TOT",
-  "F9_09_EXP_FEE_SVC_OTH_FUNDR", "F9_09_EXP_FEE_SVC_OTH_MGMT",
-  "F9_09_EXP_FEE_SVC_OTH_PROG", "F9_09_EXP_FEE_SVC_OTH_TOT",
-  "F9_09_EXP_GRANT_FRGN_PROG", "F9_09_EXP_GRANT_FRGN_TOT",
-  "F9_09_EXP_GRANT_US_INDIV_PROG", "F9_09_EXP_GRANT_US_INDIV_TOT",
-  "F9_09_EXP_GRANT_US_ORG_PROG", "F9_09_EXP_GRANT_US_ORG_TOT",
-  "F9_09_EXP_INFO_TECH_FUNDR", "F9_09_EXP_INFO_TECH_MGMT",
-  "F9_09_EXP_INFO_TECH_PROG", "F9_09_EXP_INFO_TECH_TOT",
-  "F9_09_EXP_INSURANCE_FUNDR", "F9_09_EXP_INSURANCE_MGMT",
-  "F9_09_EXP_INSURANCE_PROG", "F9_09_EXP_INSURANCE_TOT",
-  "F9_09_EXP_INT_FUNDR", "F9_09_EXP_INT_MGMT",
-  "F9_09_EXP_INT_PROG", "F9_09_EXP_INT_TOT",
-  "F9_09_EXP_JOINT_COST_FUNDR", "F9_09_EXP_JOINT_COST_MGMT",
-  "F9_09_EXP_JOINT_COST_PROG", "F9_09_EXP_JOINT_COST_TOT",
-  "F9_09_EXP_OCCUPANCY_FUNDR", "F9_09_EXP_OCCUPANCY_MGMT",
-  "F9_09_EXP_OCCUPANCY_TOT",
-  "F9_09_EXP_OFFICE_FUNDR", "F9_09_EXP_OFFICE_MGMT",
-  "F9_09_EXP_OFFICE_PROG", "F9_09_EXP_OFFICE_TOT",
-  "F9_09_EXP_OTH_EMPL_BEN_FUNDR", "F9_09_EXP_OTH_EMPL_BEN_MGMT",
-  "F9_09_EXP_OTH_EMPL_BEN_PROG", "F9_09_EXP_OTH_EMPL_BEN_TOT",
-  "F9_09_EXP_OTH_FUNDR", "F9_09_EXP_OTH_MGMT",
-  "F9_09_EXP_OTH_OTH_FUNDR", "F9_09_EXP_OTH_OTH_MGMT",
-  "F9_09_EXP_OTH_OTH_PROG", "F9_09_EXP_OTH_OTH_TOT",
-  "F9_09_EXP_OTH_PROG", "F9_09_EXP_OTH_TOT",
-  "F9_09_EXP_OTH_SAL_WAGE_FUNDR", "F9_09_EXP_OTH_SAL_WAGE_MGMT",
-  "F9_09_EXP_OTH_SAL_WAGE_PROG",
-  "F9_09_EXP_PAYROLL_TAX_FUNDR", "F9_09_EXP_PAYROLL_TAX_MGMT",
-  "F9_09_EXP_PAY_AFFIL_FUNDR", "F9_09_EXP_PAY_AFFIL_MGMT",
-  "F9_09_EXP_PAY_AFFIL_PROG", "F9_09_EXP_PAY_AFFIL_TOT",
-  "F9_09_EXP_PENSION_CONTR_FUNDR", "F9_09_EXP_PENSION_CONTR_MGMT",
-  "F9_09_EXP_PENSION_CONTR_PROG", "F9_09_EXP_PENSION_CONTR_TOT",
-  "F9_09_EXP_ROY_FUNDR", "F9_09_EXP_ROY_MGMT",
-  "F9_09_EXP_ROY_PROG", "F9_09_EXP_ROY_TOT",
-  "F9_09_EXP_TOT_FUNDR", "F9_09_EXP_TOT_MGMT",
-  "F9_09_EXP_TOT_PROG", "F9_09_EXP_TOT_TOT",
-  "F9_09_EXP_TRAVEL_ENTMT_FUNDR", "F9_09_EXP_TRAVEL_ENTMT_MGMT",
-  "F9_09_EXP_TRAVEL_ENTMT_PROG", "F9_09_EXP_TRAVEL_ENTMT_TOT",
-  "F9_09_EXP_TRAVEL_FUNDR", "F9_09_EXP_TRAVEL_MGMT",
-  "F9_09_EXP_TRAVEL_PROG", "F9_09_EXP_TRAVEL_TOT",
-  # Part X - balance sheet (990 only)
-  "F9_10_ASSET_ACC_NET_BOY", "F9_10_ASSET_ACC_NET_EOY",
-  "F9_10_ASSET_CASH_BOY", "F9_10_ASSET_CASH_EOY",
-  "F9_10_ASSET_CASH_SAVING_BOY", "F9_10_ASSET_CASH_SAVING_EOY",
-  "F9_10_ASSET_EXP_PREPAID_BOY", "F9_10_ASSET_EXP_PREPAID_EOY",
-  "F9_10_ASSET_INTANGIBLE_BOY", "F9_10_ASSET_INTANGIBLE_EOY",
-  "F9_10_ASSET_INVEST_PROG_RLTD_BOY", "F9_10_ASSET_INVEST_PROG_RLTD_EOY",
-  "F9_10_ASSET_INV_SALE_BOY", "F9_10_ASSET_INV_SALE_EOY",
-  "F9_10_ASSET_LAND_BLDG", "F9_10_ASSET_LAND_BLDG_BOY",
-  "F9_10_ASSET_LAND_BLDG_DEPREC",
-  "F9_10_ASSET_LAND_BLDG_NET_BOY",
-  "F9_10_ASSET_LOAN_OFF_BOY", "F9_10_ASSET_LOAN_OFF_EOY",
-  "F9_10_ASSET_NOTE_LOAN_NET_BOY",
-  "F9_10_ASSET_OTH_BOY",
-  "F9_10_ASSET_PLEDGE_NET_BOY", "F9_10_ASSET_PLEDGE_NET_EOY",
-  "F9_10_ASSET_SAVING_BOY", "F9_10_ASSET_SAVING_EOY",
-  "F9_10_ASSET_TOT_BOY", "F9_10_ASSET_TOT_EOY",
-  "F9_10_LIAB_ACC_PAYABLE_EOY",
-  "F9_10_LIAB_ESCROW_ACC_EOY",
-  "F9_10_LIAB_GRANT_PAYABLE_BOY", "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  "F9_10_LIAB_MTG_NOTE_EOY",
-  "F9_10_LIAB_NOTE_UNSEC_BOY", "F9_10_LIAB_NOTE_UNSEC_EOY",
-  "F9_10_LIAB_OTH_BOY", "F9_10_LIAB_OTH_EOY",
-  "F9_10_LIAB_REV_DEFERRED_BOY", "F9_10_LIAB_REV_DEFERRED_EOY",
-  "F9_10_LIAB_TAX_EXEMPT_BOND_BOY", "F9_10_LIAB_TAX_EXEMPT_BOND_EOY",
-  "F9_10_LIAB_TOT_BOY", "F9_10_LIAB_TOT_EOY",
-  "F9_10_NAFB_CAP_STCK_BOY", "F9_10_NAFB_CAP_STCK_EOY",
-  "F9_10_NAFB_CAP_SURPLUS_BOY", "F9_10_NAFB_CAP_SURPLUS_EOY",
-  "F9_10_NAFB_EARNING_RETAINED_BOY", "F9_10_NAFB_EARNING_RETAINED_EOY",
-  "F9_10_NAFB_RESTRICT_PERM_BOY", "F9_10_NAFB_RESTRICT_PERM_EOY",
-  "F9_10_NAFB_RESTRICT_TEMP_BOY", "F9_10_NAFB_RESTRICT_TEMP_EOY",
-  "F9_10_NAFB_TOT_BOY", "F9_10_NAFB_TOT_EOY",
-  "F9_10_NAFB_TOT_LIAB_NAFB_BOY", "F9_10_NAFB_TOT_LIAB_NAFB_EOY",
-  "F9_10_NAFB_UNRESTRICT_BOY", "F9_10_NAFB_UNRESTRICT_EOY"
-)
-
-.PZ_FIELDS <- c(
-  # Part I - summary (both 990 and 990EZ)
-  "F9_01_EXP_BEN_PAID_MEMB_CY",
-  "F9_01_EXP_GRANT_SIMILAR_CY",
-  "F9_01_EXP_OTH_CY",
-  "F9_01_EXP_REV_LESS_EXP_CY",
-  "F9_01_EXP_SAL_ETC_CY",
-  "F9_01_EXP_TOT_CY",
-  "F9_01_NAFB_ASSET_TOT_BOY", "F9_01_NAFB_ASSET_TOT_EOY",
-  "F9_01_NAFB_LIAB_TOT_BOY", "F9_01_NAFB_LIAB_TOT_EOY",
-  "F9_01_NAFB_TOT_BOY", "F9_01_NAFB_TOT_EOY",
-  "F9_01_NAFB_UNRESTRICT_EOY",
-  "F9_01_REV_CONTR_TOT_CY",
-  "F9_01_REV_INVEST_TOT_CY",
-  "F9_01_REV_OTH_CY",
-  "F9_01_REV_PROG_TOT_CY",
-  "F9_01_REV_TOT_CY",
-  # Part VIII fields with PZ scope
-  "F9_08_REV_CONTR_MEMBSHIP_DUE",
-  "F9_08_REV_MISC_TOT_TOT",
-  "F9_08_REV_OTH_EVNT_DIRECT_EXP", "F9_08_REV_OTH_EVNT_NET_TOT",
-  "F9_08_REV_OTH_FUNDR_DIRECT_EXP",
-  "F9_08_REV_OTH_FUNDR_EVNT_0", "F9_08_REV_OTH_FUNDR_EVNT_1",
-  "F9_08_REV_OTH_FUNDR_NET_TOT",
-  "F9_08_REV_OTH_GAMING", "F9_08_REV_OTH_GAMING_DIRECT_EXP",
-  "F9_08_REV_OTH_GAMING_NET_TOT",
-  "F9_08_REV_OTH_INVEST_INCOME_TOT",
-  "F9_08_REV_OTH_INV_COST_GOODS", "F9_08_REV_OTH_INV_GRO_SALE",
-  "F9_08_REV_OTH_INV_NET_TOT",
-  "F9_08_REV_OTH_SALE_ASSET", "F9_08_REV_OTH_SALE_ASSET_OTH",
-  "F9_08_REV_OTH_SALE_GAIN_NET_TOT",
-  "F9_08_REV_OTH_SALE_LESS_COST", "F9_08_REV_OTH_SALE_LESS_COST_OTH",
-  "F9_08_REV_OTH_SALE_LESS_COST_SEC",
-  # Part IX fields with PZ scope
-  "F9_09_EXP_OCCUPANCY_PROG",
-  "F9_09_EXP_OTH_SAL_WAGE_TOT",
-  "F9_09_EXP_PAYROLL_TAX_PROG", "F9_09_EXP_PAYROLL_TAX_TOT",
-  # Part X fields with PZ scope
-  "F9_10_ASSET_CASH_SAVING_BOY", "F9_10_ASSET_CASH_SAVING_EOY",
-  "F9_10_ASSET_INVEST_SEC_BOY", "F9_10_ASSET_INVEST_SEC_EOY",
-  "F9_10_ASSET_INVEST_SEC_OTH_BOY", "F9_10_ASSET_INVEST_SEC_OTH_EOY",
-  "F9_10_ASSET_LAND_BLDG_DEPREC",
-  "F9_10_ASSET_LAND_BLDG_EOY",
-  "F9_10_ASSET_LAND_BLDG_NET_BOY", "F9_10_ASSET_LAND_BLDG_NET_EOY",
-  "F9_10_ASSET_LOAN_DSQ_PERS_BOY", "F9_10_ASSET_LOAN_DSQ_PERS_EOY",
-  "F9_10_ASSET_NOTE_LOAN_NET_EOY",
-  "F9_10_ASSET_OTH_EOY",
-  "F9_10_LIAB_ACC_PAYABLE_BOY", "F9_10_LIAB_ACC_PAYABLE_EOY",
-  "F9_10_LIAB_ESCROW_ACC_BOY",
-  "F9_10_LIAB_GRANT_PAYABLE_EOY",
-  "F9_10_LIAB_LOAN_OFF_BOY", "F9_10_LIAB_LOAN_OFF_EOY",
-  "F9_10_LIAB_MTG_NOTE_BOY",
-  "F9_10_NAFB_RESTRICT_BOY",
-  "F9_10_NAFB_TOT_BOY", "F9_10_NAFB_TOT_EOY",
-  "F9_10_NAFB_UNRESTRICT_BOY", "F9_10_NAFB_UNRESTRICT_EOY"
-)
-
-#' Return the vector of 990-only financial field names (PC scope)
-#'
-#' Returns financial fields that appear only on the full Form 990
-#' (Parts VIII, IX, and X). These fields are not present on the 990-EZ.
-#' Used by [sanitize_financials()] to restrict zero-imputation to
-#' full 990 filers.
-#'
-#' @return A character vector of column names.
-#' @examples
-#' get_pc_fields()
-#' @export
-get_pc_fields <- function() .PC_FIELDS
-
-#' Return the vector of 990 + 990-EZ financial field names (PZ scope)
-#'
-#' Returns financial fields that appear on both the full Form 990 and the
-#' 990-EZ (Part I summary fields). Zero-imputation via
-#' [sanitize_financials()] is applied to these fields for all filers.
-#'
-#' @return A character vector of column names.
-#' @examples
-#' get_pz_fields()
-#' @export
-get_pz_fields <- function() .PZ_FIELDS
-
 #' Detect 990-EZ filer rows in an efile dataset
 #'
 #' Returns a logical vector marking rows that belong to 990-EZ filers.
@@ -391,25 +107,38 @@ impute_zero <- function( dat, vars, ez_rows ) {
 coerce_numeric <- function( d, vars ) {
 
   vars_present <- intersect( vars, colnames( d ) )
-  d_sub        <- dplyr::select( d, dplyr::any_of( vars_present ) )
+  if ( length( vars_present ) == 0L ) return( d )
 
-  n_numeric <- sum( sapply( d_sub, is.numeric ) )
+  n_coerced <- 0L
 
-  has_letters <- sum(
-    sapply( d_sub, function(x)
-      sum( stringr::str_detect( x, "^([A-Za-z\\s]*)$" ), na.rm = TRUE )
-    ), na.rm = TRUE
-  )
+  for ( v in vars_present ) {
+    x <- d[[ v ]]
 
-  if ( has_letters != 0 ) {
-    stop( "Non-digit characters detected in at least one column. Ensure all variables contain only numeric values before calling this function." )
+    # bit64 integer64 (how data.table reads large efile integers): convert
+    # through bit64's own character method so the 64-bit payload is not
+    # reinterpreted as a tiny double. 990 line items are whole dollars, so
+    # nothing is lost -- and this is silent, since it is not an error condition.
+    if ( inherits( x, "integer64" ) ) {
+      d[[ v ]] <- as.numeric( bit64::as.character.integer64( x ) )
+      next
+    }
+
+    # Plain numeric (double or integer): already usable.
+    if ( is.numeric( x ) ) next
+
+    # Character / factor: only a genuine letter signals a real problem. Blank and
+    # whitespace-only cells are missing values, not "non-digit characters".
+    chr <- trimws( as.character( x ) )
+    if ( any( grepl( "[A-Za-z]", chr ) ) )
+      stop( "Non-numeric text detected in column '", v,
+            "'. Ensure financial variables contain only numeric values before ",
+            "calling this function." )
+    d[[ v ]] <- suppressWarnings( as.numeric( chr ) )
+    n_coerced <- n_coerced + 1L
   }
 
-  if ( n_numeric < length( vars_present ) ) {
-    n_coerced <- length( vars_present ) - n_numeric
-    warning( paste0( n_coerced, " column(s) were not numeric and have been coerced." ) )
-    d[ , vars_present ] <- lapply( d_sub, function(x) as.numeric( as.character(x) ) )
-  }
+  if ( n_coerced > 0L )
+    warning( paste0( n_coerced, " character column(s) were coerced to numeric." ) )
 
   return( d )
 }
@@ -468,7 +197,7 @@ resolve_col <- function( dat, cols ) {
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`,
 #'   which clips at the 1st and 99th percentiles for `"np"` range).
 #' @param offset Sentinel offset applied to fixed bounds (default `0.001`).
-#'   Observations clipped to a fixed bound are stored as `bound ± offset` so
+#'   Observations clipped to a fixed bound are stored as `bound -- offset` so
 #'   they remain identifiable in the `_w` column.
 #' @param range Character string describing the theoretical range of the ratio.
 #'   Controls how the lower and upper winsorization bounds are determined:
@@ -528,6 +257,32 @@ resolve_col <- function( dat, cols ) {
 apply_transformations <- function( x, winsorize = 0.98, offset = 0.001,
                                    range = "np", normalize_type = NULL ) {
 
+  # There is no distribution to fit when every value is missing. Return the
+  # correctly shaped outputs so ratio functions preserve NA/NaN positions.
+  if (!any(!is.na(x))) {
+    missing_numeric <- rep(NA_real_, length(x))
+    return(list(
+      raw = x,
+      winsorized = missing_numeric,
+      z = missing_numeric,
+      pctile = rep(NA_integer_, length(x))
+    ))
+  }
+
+  # Winsorize once up front. With fewer than three usable observations there
+  # is not enough information to fit a distributional transformation, but raw
+  # ratios and winsorized values should still be returned.
+  w <- winsorize_x(x = x, range = range, winsorize = winsorize, offset = offset)
+  x.w <- w$x_w
+  if (sum(!is.na(x.w)) < 3L) {
+    return(list(
+      raw = x,
+      winsorized = x.w,
+      z = rep(NA_real_, length(x)),
+      pctile = dplyr::ntile(x, 100)
+    ))
+  }
+
   # ---- 1. fit normalization on stable interior ----
   # find_best_normalization() internally calls winsorize_x() to isolate
   # sentinels before fitting; verbose = FALSE suppresses the fit summary.
@@ -541,10 +296,6 @@ apply_transformations <- function( x, winsorize = 0.98, offset = 0.001,
   )
 
   # ---- 2. winsorize (re-use fitted settings for consistency) ----
-  w   <- winsorize_x( x = x, range = range, winsorize = winsorize,
-                      offset = offset )
-  x.w <- w$x_w
-
   # ---- 3. score full vector using fitted parameters ----
   x.z <- apply_normalization( x = x, fit = fit, verbose = FALSE )
 
@@ -615,13 +366,13 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #'   contain a `RETURN_TYPE` column (values `"990"` or `"990EZ"`) for
 #'   accurate filer-type detection. If absent, filer type is inferred from field
 #'   availability.
-#' @param pz_vars Character vector of column names for fields present on both 990 and
-#'   990EZ forms (scope PZ). NA values in these columns are imputed to zero for all
-#'   rows. Defaults to the full set of PZ financial fields used by this package.
-#' @param pc_vars Character vector of column names for fields present only on the full
-#'   990 form (scope PC). NA values are imputed to zero only for rows identified as
-#'   990 filers; 990EZ filer rows are left as NA. Defaults to the full set of PC
-#'   financial fields used by this package.
+#' @param pz_vars Optional character vector of PZ-scope column names (present on
+#'   both 990 and 990EZ). When supplied, the local scope-aware imputer is used
+#'   with exactly these fields. When `NULL` (default), scope is resolved from
+#'   panel990 via [panel990::panel_normalize()].
+#' @param pc_vars Optional character vector of PC-scope column names (full 990
+#'   only). When supplied, imputation is restricted to 990 filers for these
+#'   fields. When `NULL` (default), scope is resolved from panel990.
 #'
 #' @return A `data.frame` identical in structure to `df`, with NA values
 #'   replaced by zero in the applicable financial columns. The original `df` is
@@ -645,6 +396,12 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #' is absent, filer type is inferred: rows with Part I data but missing Part VIII data
 #' are treated as 990EZ filers.
 #'
+#' As of the panel990 portage, the default path delegates to
+#' [panel990::panel_normalize()], which applies the same form-scoped, non-filer-
+#' protected zero imputation over the shared concordance-derived field scopes.
+#' Supplying `pz_vars`/`pc_vars` explicitly falls back to the local imputer for
+#' backward compatibility.
+#'
 #' @examples
 #' library( fiscal )
 #' data( dat10k )
@@ -658,30 +415,45 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #'
 #' @export
 sanitize_financials <- function( df,
-                                  pz_vars = .PZ_FIELDS,
-                                  pc_vars = .PC_FIELDS ) {
+                                  pz_vars = NULL,
+                                  pc_vars = NULL ) {
 
-  dat     <- df
-  ez_rows <- detect_ez_rows( dat )
+  # Default path: delegate to panel990's form-scoped normalizer so fiscal and
+  # panel990 share one imputation engine and one field-scope source of truth.
+  if ( is.null( pz_vars ) && is.null( pc_vars ) ) {
+    return( panel990::panel_normalize( df, fields = "core", verbose = FALSE ) )
+  }
 
+  # Back-compat path: explicit field sets use the local scope-aware imputer.
+  if ( is.null( pz_vars ) ) pz_vars <- .PZ_FIELDS
+  if ( is.null( pc_vars ) ) pc_vars <- .PC_FIELDS
+  ez_rows  <- detect_ez_rows( df )
   all_vars <- union( pz_vars, pc_vars )
-  dat <- impute_zero( dat, vars = all_vars, ez_rows = ez_rows )
-
-  return( dat )
+  impute_zero( df, vars = all_vars, ez_rows = ez_rows )
 }
 
 
 # Parse RETURN_TIME_STAMP cleanly: 
+ #' @keywords internal
+ #' @noRd
 .parse_stamp <- function( x ) {
   x_chr <- as.character( x )
   x_chr[ is.na( x_chr ) | trimws( x_chr ) == "" ] <- NA_character_
-  x_chr <- sub( " UTC$", "", x_chr )
+  x_chr <- trimws(x_chr)
+  x_chr <- sub(" (UTC|GMT)$", "", x_chr, ignore.case = TRUE)
 
-  suppressWarnings(
-    as.POSIXct(
-      x_chr,
-      format = "%Y-%m-%d %H:%M:%S",
-      tz = "UTC"
-    )
+  out <- as.POSIXct(rep(NA_real_, length(x_chr)), origin = "1970-01-01", tz = "UTC")
+  formats <- c(
+    "%Y-%m-%d %H:%M:%OS",
+    "%Y-%m-%dT%H:%M:%OS",
+    "%Y-%m-%d"
   )
+
+  for (fmt in formats) {
+    missing <- is.na(out) & !is.na(x_chr)
+    if (!any(missing)) break
+    out[missing] <- suppressWarnings(as.POSIXct(x_chr[missing], format = fmt, tz = "UTC"))
+  }
+
+  out
 }

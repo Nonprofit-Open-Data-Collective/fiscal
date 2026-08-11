@@ -56,7 +56,7 @@ Default \code{c(1, 100)}.}
 \code{TRUE}.}
 }
 \value{
-An object of class \code{normalize_x_fit} — a named list containing
+An object of class \code{normalize_x_fit} --- a named list containing
 transformation type, parameters, centering/scaling constants, and
 diagnostics. Pass this object to \code{\link[=apply_normalization]{apply_normalization()}}.
 }

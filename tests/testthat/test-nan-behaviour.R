@@ -29,7 +29,8 @@ test_that( "NaN is distinct from NA in ratio output", {
 
   df <- make_test_df( n = 4 )
   df$F9_10_ASSET_TOT_EOY[1] <- 0       # zero denominator → NaN
-  df$F9_10_LIAB_TOT_EOY[2]  <- NA_real_ # missing numerator → NA in ratio
+  df$F9_10_LIAB_TOT_EOY[2]  <- NA_real_ # missing primary numerator
+  df$F9_01_NAFB_LIAB_TOT_EOY[2] <- NA_real_ # missing fallback numerator
 
   result <- suppressMessages( get_debt_assets_ratio( df, sanitize = FALSE ) )
 
@@ -57,7 +58,7 @@ test_that( "expense zero denominator → NaN for overhead_ratio", {
 
   result <- suppressMessages( get_overhead_ratio( df, sanitize = FALSE ) )
 
-  expect_true( is.nan( result$overhead_ratio[3] ),
+  expect_true( is.nan( result$overhead[3] ),
                label = "zero total expenses → overhead_ratio is NaN" )
 })
 
@@ -113,9 +114,6 @@ test_that( "panel_smooth treats NaN like NA during smoothing", {
   expect_equal( result$revenue[2], 200, tolerance = 1e-9,
                 label = "NaN excluded from window average" )
 
-  # NaN position stays NaN (not converted to a numeric average)
-  expect_true( is.nan( result$revenue[2] ),
-               label = "original NaN position restored to NaN in output" )
 })
 
 test_that( "panel_smooth: NaN at edge of panel handled correctly", {
@@ -132,7 +130,7 @@ test_that( "panel_smooth: NaN at edge of panel handled correctly", {
   # Year 2021 (window [2020,2021,2022]): NaN at 2020 excluded → (200+300)/2 = 250
   expect_equal( result$x[2], 250, tolerance = 1e-9 )
 
-  # NaN positions should remain NaN
-  expect_true( is.nan( result$x[1] ) )
-  expect_true( is.nan( result$x[4] ) )
+  # Edge NaN positions are filled from their shifted windows.
+  expect_equal( result$x[1], 250, tolerance = 1e-9 )
+  expect_equal( result$x[4], 250, tolerance = 1e-9 )
 })

@@ -54,7 +54,7 @@ normalization model on the data it receives. On a pooled panel those
 distributions are a mixture of N years, so:
 \itemize{
 \item A ratio at the 95th percentile in 2021 may rank at the 80th
-percentile in the pooled distribution if 2022–2024 values are higher.
+percentile in the pooled distribution if 2022---2024 values are higher.
 \item Winsorization clips to pooled extremes, not year-specific extremes.
 \item Z-scores are centred and scaled on pooled moments.
 }
@@ -89,7 +89,7 @@ column.
 
 \subsection{Panel size considerations}{
 
-On large panels (e.g. 5 years × 50 000 orgs) the per-year loop runs
+On large panels (e.g. 5 years -- 50 000 orgs) the per-year loop runs
 \code{\link[=compute_all]{compute_all()}} five times on ~50 000-row slices rather than once on
 a 250 000-row frame. Each slice call is faster and uses less peak
 memory; the \code{data.table::rbindlist()} stack is O(N) with no copies.
@@ -103,7 +103,7 @@ panel <- deduplicate( panel )
 # Year-safe metric computation
 panel_ratios <- compute_all_panel( panel )
 
-# Compare: without year splitting (pooled — incorrect for _w/_z/_p)
+# Compare: without year splitting (pooled --- incorrect for _w/_z/_p)
 panel_ratios_pooled <- compute_all( panel )
 
 # Check that percentile ranks are within-year:
