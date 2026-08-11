@@ -58,10 +58,8 @@ library(fiscal)
 scored <- compute_all(dat10k)          # dat10k = bundled 990 sample
 head(scored)
 
-# Or a single metric. sanitize_financials() first reads blank 990 line items
-# as zeros and coerces the financial fields to numeric (adds debt_assets +
-# _w / _z / _p):
-df <- get_debt_assets_ratio(sanitize_financials(dat10k))
+# ...or a single metric (adds debt_assets + _w / _z / _p):
+df <- get_debt_assets_ratio(dat10k)
 ```
 
 <br>
@@ -102,7 +100,7 @@ debt_assets = total_liabilities / total_assets
 * `summarize`: If `TRUE`, prints summary statistics and plots density curves for all four output columns.
 
 ```r
-df <- sanitize_financials( dat10k )   # 10,000-row sample; blanks -> 0, coerced numeric
+df <- dat10k   # sample of 10,000 rows from efile financials
 
 # compute the debt-to-asset ratio
 df <- get_debt_assets_ratio( df )
@@ -155,7 +153,7 @@ For example, `get_debt_assets_ratio()` creates the following columns:
 * `debt_assets_p` — expressed as a percentile rank  
 
 ```r
-df <- get_debt_assets_ratio( df = sanitize_financials( dat10k ), summarize = TRUE )
+df <- get_debt_assets_ratio( df = dat10k, summarize = TRUE )
 
 # [1] "Assets equal to zero: 3 cases have been replaced with NA."
 #

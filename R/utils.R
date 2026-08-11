@@ -107,25 +107,38 @@ impute_zero <- function( dat, vars, ez_rows ) {
 coerce_numeric <- function( d, vars ) {
 
   vars_present <- intersect( vars, colnames( d ) )
-  d_sub        <- dplyr::select( d, dplyr::any_of( vars_present ) )
+  if ( length( vars_present ) == 0L ) return( d )
 
-  n_numeric <- sum( sapply( d_sub, is.numeric ) )
+  n_coerced <- 0L
 
-  has_letters <- sum(
-    sapply( d_sub, function(x)
-      sum( stringr::str_detect( x, "^([A-Za-z\\s]*)$" ), na.rm = TRUE )
-    ), na.rm = TRUE
-  )
+  for ( v in vars_present ) {
+    x <- d[[ v ]]
 
-  if ( has_letters != 0 ) {
-    stop( "Non-digit characters detected in at least one column. Ensure all variables contain only numeric values before calling this function." )
+    # bit64 integer64 (how data.table reads large efile integers): convert
+    # through bit64's own character method so the 64-bit payload is not
+    # reinterpreted as a tiny double. 990 line items are whole dollars, so
+    # nothing is lost -- and this is silent, since it is not an error condition.
+    if ( inherits( x, "integer64" ) ) {
+      d[[ v ]] <- as.numeric( bit64::as.character.integer64( x ) )
+      next
+    }
+
+    # Plain numeric (double or integer): already usable.
+    if ( is.numeric( x ) ) next
+
+    # Character / factor: only a genuine letter signals a real problem. Blank and
+    # whitespace-only cells are missing values, not "non-digit characters".
+    chr <- trimws( as.character( x ) )
+    if ( any( grepl( "[A-Za-z]", chr ) ) )
+      stop( "Non-numeric text detected in column '", v,
+            "'. Ensure financial variables contain only numeric values before ",
+            "calling this function." )
+    d[[ v ]] <- suppressWarnings( as.numeric( chr ) )
+    n_coerced <- n_coerced + 1L
   }
 
-  if ( n_numeric < length( vars_present ) ) {
-    n_coerced <- length( vars_present ) - n_numeric
-    warning( paste0( n_coerced, " column(s) were not numeric and have been coerced." ) )
-    d[ , vars_present ] <- lapply( d_sub, function(x) as.numeric( as.character(x) ) )
-  }
+  if ( n_coerced > 0L )
+    warning( paste0( n_coerced, " character column(s) were coerced to numeric." ) )
 
   return( d )
 }
