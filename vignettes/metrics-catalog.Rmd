@@ -69,14 +69,14 @@ current_liabilities = accounts_payable + grants_payable
 
 The current ratio is bounded below at zero and unbounded above. Values below 1.0
 mean current liabilities exceed current assets. The empirical range for nonprofits
-is approximately \[0, 15\], with most organizations clustered between 0.5 and 5.
+is approximately [0, 15], with most organizations clustered between 0.5 and 5.
 
 **Benchmarks and rules of thumb**
 
   - **1.0**: Conventional adequacy threshold -- liabilities exactly covered.
   - **Below 0.5**: Indicates acute short-term risk (Tuckman & Chang 1991).
   - **Above 3.0-4.0**: May indicate excess cash or slow receivables collection.
-  - Sector medians generally fall in the \[1.0, 2.5\] range (Zietlow et al. 2007).
+  - Sector medians generally fall in the [1.0, 2.5] range (Zietlow et al. 2007).
 
 **Calculated For:** 990 + 990EZ filers.
 
@@ -112,7 +112,7 @@ current_liabilities = accounts_payable + grants_payable
 
 The quick ratio is bounded below at zero (no asset values are negative on a
 properly prepared balance sheet) and is unbounded above. In practice the empirical
-range for nonprofits is approximately \[0, 10\], with extreme values above 5 typically
+range for nonprofits is approximately [0, 10], with extreme values above 5 typically
 indicating cash hoarding, an unusually large receivables balance, or an organization
 with minimal current liabilities (e.g., a grant-making foundation with no accounts
 payable).
@@ -164,7 +164,7 @@ current_liabilities = accounts_payable + grants_payable
 **Definitional Range**
 
 Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
-current payables. The empirical range for nonprofits is approximately \[0, 20\],
+current payables. The empirical range for nonprofits is approximately [0, 20],
 with most values between 0.1 and 5.0. Very high values are common for grant-making
 foundations and endowed organizations that carry minimal accounts payable.
 
@@ -202,8 +202,8 @@ cash_assets = ( cash + savings ) / total_assets
 
 **Definitional Range**
 
-Bounded \[0, 1\]: zero means no liquid assets; one means the entire asset base is
-cash and savings. In practice most nonprofits fall in the \[0.05, 0.50\] range.
+Bounded [0, 1]: zero means no liquid assets; one means the entire asset base is
+cash and savings. In practice most nonprofits fall in the [0.05, 0.50] range.
 Values above 0.60 are uncommon for operating nonprofits and may indicate excess
 cash hoarding.
 
@@ -325,7 +325,7 @@ daily_expenses = ( total_expenses - depreciation ) / 365
 **Definitional Range**
 
 Bounded below at zero and unbounded above, expressed in days. The typical range for
-nonprofits is approximately \[0, 365\]. Values above 365 (more than one year of
+nonprofits is approximately [0, 365]. Values above 365 (more than one year of
 cash) indicate very large liquid reserves relative to expenses, which is uncommon
 for operating nonprofits but typical for foundations.
 
@@ -414,7 +414,7 @@ monthly_expenses = ( total_expenses - depreciation ) / 12
 **Definitional Range**
 
 Bounded below at zero; unbounded above. The typical operating range for nonprofits
-is approximately \[0, 24\] months, with values above 12 months uncommon for
+is approximately [0, 24] months, with values above 12 months uncommon for
 operating organizations (more typical for foundations).
 
 **Benchmarks and rules of thumb**
@@ -458,7 +458,7 @@ monthly_expenses = total_expenses / 12
 
 Unbounded in both directions, expressed in months. Negative values indicate that
 fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
-range for operating nonprofits is approximately \[-12, 36\] months.
+range for operating nonprofits is approximately [-12, 36] months.
 
 **Benchmarks and rules of thumb**
 
@@ -496,7 +496,7 @@ dar = total_liabilities / total_assets
 
 **Definitional Range**
 
-Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
+Theoretically bounded [0, 1] when net assets are positive: zero means no debt;
 one means liabilities equal total assets (zero net assets). Values above 1.0 occur
 when total liabilities exceed total assets, i.e., the organization has negative net
 assets (accumulated deficits exceed equity). This is a distress indicator but not
@@ -619,7 +619,7 @@ short_term_liabilities = accounts_payable + grants_payable
 Bounded below at zero when net assets are positive. Negative values occur when net
 assets are negative (accumulated deficit), which makes the ratio uninterpretable as
 a burden measure. Unbounded above when net assets approach zero. Typical values for
-financially stable nonprofits are in the \[0, 0.30\] range.
+financially stable nonprofits are in the [0, 0.30] range.
 
 **Benchmarks and rules of thumb**
 
@@ -653,7 +653,7 @@ debt_secured = secured_mortgages_notes / total_liabilities
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
+Bounded [0, 1]. Most nonprofits have zero secured debt; capital-intensive
 organizations (housing, healthcare, higher education) can show values above 0.70.
 
 **Benchmarks and rules of thumb**
@@ -688,7 +688,7 @@ debt_unsecured = unsecured_notes_loans / total_liabilities
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Most nonprofits carry no unsecured notes, so the distribution
+Bounded [0, 1]. Most nonprofits carry no unsecured notes, so the distribution
 is highly concentrated at zero with a long right tail.
 
 **Benchmarks and rules of thumb**
@@ -723,10 +723,10 @@ er = total_net_assets / total_assets
 
 **Definitional Range**
 
-Theoretically bounded \[0, 1\] when net assets are positive. Values above 1.0
+Theoretically bounded [0, 1] when net assets are positive. Values above 1.0
 are not possible. Values below zero occur when net assets are negative (accumulated
 deficit), which is a distress indicator. The empirical range for most nonprofits
-is approximately \[0.10, 0.95\].
+is approximately [0.10, 0.95].
 
 **Benchmarks and rules of thumb**
 
@@ -763,7 +763,7 @@ sm = revenues_less_expenses / total_revenue
 **Definitional Range**
 
 Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
-but in practice the empirical range for nonprofits is approximately \[-0.30, 0.30\]
+but in practice the empirical range for nonprofits is approximately [-0.30, 0.30]
 in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
 events (large gifts, major write-downs, asset sales).
 
@@ -804,7 +804,7 @@ ROA is unbounded in both directions. A ratio of zero means expenses exactly equa
 revenues. Positive values indicate surplus years; negative values indicate deficit
 years. For nonprofits, where perpetual surpluses raise concerns about mission
 prioritization and perpetual deficits signal sustainability risk, the meaningful
-range is approximately \[-0.20, 0.20\] for most organizations in most years.
+range is approximately [-0.20, 0.20] for most organizations in most years.
 Values outside this range are not impossible but typically reflect unusual
 circumstances (large asset disposals, one-time gifts, major capital campaigns, or
 accounting restatements) rather than stable operating performance.
@@ -850,7 +850,7 @@ rona = revenues_less_expenses / net_assets_boy
 **Definitional Range**
 
 Unbounded in both directions. A value of 0 means break-even. The typical range for
-nonprofits is approximately \[-0.30, 0.30\]. The ratio is undefined (NA) when
+nonprofits is approximately [-0.30, 0.30]. The ratio is undefined (NA) when
 beginning net assets equal zero. Extreme values occur when BOY net assets are near
 zero (small denominator) rather than when the surplus itself is large.
 
@@ -887,7 +887,7 @@ podpm = ( total_revenue - total_expenses ) / total_revenue
 **Definitional Range**
 
 Bounded above at 1.0; unbounded below. The typical range for nonprofits is
-approximately \[-0.30, 0.30\]. Extreme negative values may reflect major
+approximately [-0.30, 0.30]. Extreme negative values may reflect major
 write-downs or one-time capital expenses.
 
 **Benchmarks and rules of thumb**
@@ -927,7 +927,7 @@ predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
 Bounded above at 1.0; unbounded below. Always equal to or greater than the
 post-depreciation margin (`get_profit_margin_postdepr()`) since adding
 back depreciation can only increase the margin. The typical range is approximately
-\[-0.20, 0.40\].
+[-0.20, 0.40].
 
 **Benchmarks and rules of thumb**
 
@@ -965,7 +965,7 @@ ssr = program_service_revenue / total_expenses
 
 Bounded below at zero; values above 1.0 are possible (and indicate program revenue
 exceeds total expenses - a surplus from earned income alone). The typical range for
-nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
+nonprofits is approximately [0, 1.5], with most values below 1.0 since most
 nonprofits depend on some contributed income.
 
 **Benchmarks and rules of thumb**
@@ -1048,7 +1048,7 @@ overhead = ( mgmt_expenses + fundraising_expenses ) / total_expenses
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Empirical range approximately \[0.05, 0.50\] for most operating nonprofits.
+Bounded [0, 1]. Empirical range approximately [0.05, 0.50] for most operating nonprofits.
 
 **Benchmarks and rules of thumb**
 
@@ -1082,9 +1082,9 @@ aer = management_expenses / total_expenses
 
 **Definitional Range**
 
-Bounded \[0, 1\]. In combination with program and fundraising ratios, all three
+Bounded [0, 1]. In combination with program and fundraising ratios, all three
 sum to 1.0 by construction. The empirical range for most nonprofits is approximately
-\[0.05, 0.35\].
+[0.05, 0.35].
 
 **Benchmarks and rules of thumb**
 
@@ -1121,7 +1121,7 @@ fer = fundraising_expenses / total_contributions
 Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
 dollar) are possible, particularly for young organizations building donor bases or
 those in difficult fundraising environments. The typical range is approximately
-\[0, 0.50\] for most operating nonprofits.
+[0, 0.50] for most operating nonprofits.
 
 **Benchmarks and rules of thumb**
 
@@ -1162,7 +1162,7 @@ expenses_compensation = ( officer_comp + disqualified_comp + other_salaries
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Most service-delivery nonprofits fall in the \[0.50, 0.85\] range.
+Bounded [0, 1]. Most service-delivery nonprofits fall in the [0.50, 0.85] range.
 Grant-making organizations may show ratios below 0.20.
 
 **Benchmarks and rules of thumb**
@@ -1202,7 +1202,7 @@ expenses_grants = ( us_org_grants + us_indiv_grants + foreign_grants )
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Near zero for direct-service organizations; near 1.0 for
+Bounded [0, 1]. Near zero for direct-service organizations; near 1.0 for
 pure pass-through grant-makers.
 
 **Benchmarks and rules of thumb**
@@ -1237,7 +1237,7 @@ expenses_membbenefits = member_benefits / total_expenses
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
+Bounded [0, 1]. Near zero for most public benefit charities; potentially high
 (above 0.50) for mutual benefit organizations.
 
 **Benchmarks and rules of thumb**
@@ -1282,7 +1282,7 @@ expenses_feesforservice = ( mgmt_fees + legal_fees + accounting_fees
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Most nonprofits show values in the \[0.01, 0.20\] range.
+Bounded [0, 1]. Most nonprofits show values in the [0.01, 0.20] range.
 
 **Benchmarks and rules of thumb**
 
@@ -1315,7 +1315,7 @@ expenses_affiliates = payments_to_affiliates / total_expenses
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
+Bounded [0, 1]. Near zero for standalone organizations; potentially above 0.50
 for federated intermediaries.
 
 **Benchmarks and rules of thumb**
@@ -1351,7 +1351,7 @@ ggr = government_grants / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means no government funding; one means all revenue comes
+Bounded [0, 1]. Zero means no government funding; one means all revenue comes
 from government sources. The empirical distribution varies widely by subsector:
 social service organizations often show ratios above 0.50; arts organizations
 typically below 0.20.
@@ -1391,7 +1391,7 @@ donation_revenue = contributions + fundraising_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
+Bounded [0, 1]. Values near 1.0 characterize traditional charitable organizations
 with minimal earned income; values near 0 characterize fee-based service providers.
 
 **Benchmarks and rules of thumb**
@@ -1431,7 +1431,7 @@ earned_revenue = program_service_revenue + membership_dues
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Organizations heavily reliant on philanthropy show values near
+Bounded [0, 1]. Organizations heavily reliant on philanthropy show values near
 zero; fee-based service providers may show values above 0.90.
 
 **Benchmarks and rules of thumb**
@@ -1467,7 +1467,7 @@ revenue_programs = program_service_revenue / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means none of this revenue type was received;
+Bounded [0, 1]. Zero means none of this revenue type was received;
 one means this channel accounted for all total revenue.
 
 **Calculated For:** 990 filers only.
@@ -1496,7 +1496,7 @@ revenue_fedcampaign = federated_campaigns / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means none of this revenue type was received;
+Bounded [0, 1]. Zero means none of this revenue type was received;
 one means this channel accounted for all total revenue.
 
 **Calculated For:** 990 filers only.
@@ -1525,7 +1525,7 @@ revenue_membdues = membership_dues / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means none of this revenue type was received;
+Bounded [0, 1]. Zero means none of this revenue type was received;
 one means this channel accounted for all total revenue.
 
 **Calculated For:** 990 filers only.
@@ -1554,7 +1554,7 @@ revenue_fundevents = fundraising_event_revenue / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means none of this revenue type was received;
+Bounded [0, 1]. Zero means none of this revenue type was received;
 one means this channel accounted for all total revenue.
 
 **Calculated For:** 990 filers only.
@@ -1583,7 +1583,7 @@ revenue_reltdorgs = related_org_revenue / total_revenue
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Zero means none of this revenue type was received;
+Bounded [0, 1]. Zero means none of this revenue type was received;
 one means this channel accounted for all total revenue.
 
 **Calculated For:** 990 filers only.
@@ -1616,7 +1616,7 @@ investment_income = invest_income + bond_proceeds + rent_income + asset_sale_inc
 
 **Definitional Range**
 
-Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
+Bounded [0, 1] in most years, but values above 1.0 are possible in years with
 large asset sale gains. Values below zero can result from asset sale losses or
 negative investment returns.
 
@@ -1654,7 +1654,7 @@ nacr = unrestricted_net_assets / total_net_assets
 
 **Definitional Range**
 
-Bounded \[0, 1\] when both numerator and denominator are positive: zero means all
+Bounded [0, 1] when both numerator and denominator are positive: zero means all
 net assets are restricted; one means all net assets are unrestricted. Values outside
 this range occur when either unrestricted or total net assets are negative.
 
@@ -1774,7 +1774,7 @@ investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 
 **Definitional Range**
 
-Bounded \[0, 1\]. Most operating nonprofits show values near zero; foundations
+Bounded [0, 1]. Most operating nonprofits show values near zero; foundations
 and endowed institutions may show values above 0.80.
 
 **Benchmarks and rules of thumb**
@@ -1809,7 +1809,7 @@ land_assets_net = land_bldg_equip_net / total_assets
 
 **Definitional Range**
 
-Bounded \[0, 1\] in normal conditions. Heavily skewed toward zero because many
+Bounded [0, 1] in normal conditions. Heavily skewed toward zero because many
 nonprofits own no real property.
 
 **Benchmarks and rules of thumb**
@@ -1845,7 +1845,7 @@ lar = land_buildings_equipment / total_assets
 
 **Definitional Range**
 
-Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+Bounded [0, 1] in normal conditions. The distribution is highly right-skewed:
 most nonprofits with no owned real estate show values near zero, while
 capital-intensive organizations (healthcare, housing, higher education) may show
 values above 0.50.
@@ -1883,7 +1883,7 @@ arr = total_assets / total_revenue
 **Definitional Range**
 
 Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
-Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
+Typical operating nonprofits show values in the [0.5, 5.0] range. Endowed
 organizations and capital-intensive nonprofits may show values of 10 or higher.
 
 **Benchmarks and rules of thumb**

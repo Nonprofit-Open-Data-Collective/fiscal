@@ -44,6 +44,13 @@ strip_rox <- function( x ) sub( "^#'[ ]?", "", x )
 clean_rd_links <- function( x ) {
   x <- gsub( "\\[([A-Za-z0-9_.]+\\(\\))\\]", "`\\1`", x )                 # [fn()] -> `fn()`
   x <- gsub( "\\[([A-Za-z0-9_.]+)\\](?!\\()", "`\\1`", x, perl = TRUE )   # bare [fn] (not a md link) -> `fn`
+
+  # Unescape roxygen/Rd square-bracket escaping. In the .Rd help these read as
+  # literal brackets, but copied into a plain-markdown vignette pandoc reads
+  # `\[ ... \]` as LaTeX display-math delimiters (centred, brackets stripped).
+  # Restore literal brackets, which render verbatim in markdown.
+  x <- gsub( "\\[", "[", x, fixed = TRUE )   # \[ -> [
+  x <- gsub( "\\]", "]", x, fixed = TRUE )   # \] -> ]
   x
 }
 
