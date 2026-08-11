@@ -1,0 +1,1900 @@
+---
+title: "Fiscal metrics catalog"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Fiscal metrics catalog}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set( collapse = TRUE, comment = "#>" )
+```
+
+<!-- ================================================================= -->
+<!-- GENERATED FILE - do not edit by hand.                             -->
+<!-- Regenerate with: Rscript dev/build-metrics-catalog.R              -->
+<!-- Source: roxygen @description blocks in R/get-*.R + README tables. -->
+<!-- ================================================================= -->
+
+This catalog documents every fiscal-health ratio in the package. Each entry
+mirrors the structure of the function help file: a short **description**, the
+**formula**, the **input variables** (with their default IRS 990 e-file field
+names), the **definitional range**, any **benchmarks and rules of thumb**, and
+the filer scope the metric is **calculated for**.
+
+Every `get_*()` function appends four columns to your data --- the raw ratio
+and its winsorized (`_w`), standardized (`_z`), and percentile-rank (`_p`)
+versions --- or run the whole battery at once with `compute_all()`. See
+`vignette("fiscal")` to get started and `vignette("normalization")` for what
+the transformed versions mean.
+
+```{r, eval = FALSE}
+library( fiscal )
+help( get_program_expenses_ratio )   # the same content, per function
+```
+
+## Liquidity
+
+### Current Ratio
+
+`get_current_ratio()`
+
+Measures short-term liquidity by comparing current assets to current liabilities.
+
+**Formula:**
+```
+cr = current_assets / current_liabilities
+
+current_assets      = cash + savings + pledges_receivable + accounts_receivable
+                      + investment_sales + prepaid_expenses
+current_liabilities = accounts_payable + grants_payable
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
+| `investment_sales` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
+| `prepaid_expenses` | `F9_10_ASSET_EXP_PREPAID_EOY` | Prepaid expenses and deferred charges |
+| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
+| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
+
+
+**Definitional Range**
+
+The current ratio is bounded below at zero and unbounded above. Values below 1.0
+mean current liabilities exceed current assets. The empirical range for nonprofits
+is approximately \[0, 15\], with most organizations clustered between 0.5 and 5.
+
+**Benchmarks and rules of thumb**
+
+  - **1.0**: Conventional adequacy threshold -- liabilities exactly covered.
+  - **Below 0.5**: Indicates acute short-term risk (Tuckman & Chang 1991).
+  - **Above 3.0-4.0**: May indicate excess cash or slow receivables collection.
+  - Sector medians generally fall in the \[1.0, 2.5\] range (Zietlow et al. 2007).
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Quick Ratio
+
+`get_quick_ratio()`
+
+Measures liquidity using only the most liquid assets, excluding inventory and prepaid expenses.
+
+**Formula:**
+```
+qr = quick_assets / current_liabilities
+
+quick_assets        = cash + savings + pledges_receivable + accounts_receivable
+current_liabilities = accounts_payable + grants_payable
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable |
+| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
+| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
+
+
+**Definitional Range**
+
+The quick ratio is bounded below at zero (no asset values are negative on a
+properly prepared balance sheet) and is unbounded above. In practice the empirical
+range for nonprofits is approximately \[0, 10\], with extreme values above 5 typically
+indicating cash hoarding, an unusually large receivables balance, or an organization
+with minimal current liabilities (e.g., a grant-making foundation with no accounts
+payable).
+
+Values below zero can occur when net receivables are negative (allowances for
+uncollectible pledges exceed gross pledges) or when the denominator carries
+accounting adjustments. Very large values can result when current liabilities are
+near zero, producing ratios that are mathematically valid but practically
+uninterpretable. The default winsorization at the 1st/99th percentiles addresses both
+extremes.
+
+**Benchmarks and rules of thumb**
+
+  - **Above 1.0**: Conventionally adequate; liquid assets cover current liabilities.
+  - **0.5-1.0**: Potential short-term stress.
+  - **Below 0.5**: Common vulnerability threshold (Tuckman & Chang 1991).
+  - Very high values (above 3-5) may signal excess cash hoarding rather than
+    financial health.
+  - A declining trend over consecutive years is a stronger warning signal than
+    any single year's value.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Cash Ratio
+
+`get_cash_liquidity_ratio()`
+
+Measures immediate liquidity using only cash and cash equivalents against current liabilities.
+
+**Formula:**
+```
+casr = ( cash + savings ) / current_liabilities
+
+current_liabilities = accounts_payable + grants_payable
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
+| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
+
+
+**Definitional Range**
+
+Bounded below at zero and unbounded above. A ratio of 1.0 means cash exactly covers
+current payables. The empirical range for nonprofits is approximately \[0, 20\],
+with most values between 0.1 and 5.0. Very high values are common for grant-making
+foundations and endowed organizations that carry minimal accounts payable.
+
+**Benchmarks and rules of thumb**
+
+  - **Below 0.5**: Organization cannot cover half of near-term payables from
+    cash alone; reliant on receivables collection or borrowing.
+  - **1.0 or above**: Full cash coverage of current liabilities.
+  - Because this is a highly conservative measure, values somewhat below 1.0
+    are normal if receivables are healthy.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Cash and Savings to Assets Ratio
+
+`get_cash_assets_ratio()`
+
+Cash and savings as a share of total assets; measures the liquid composition of the asset base.
+
+**Formula:**
+```
+cash_assets = ( cash + savings ) / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]: zero means no liquid assets; one means the entire asset base is
+cash and savings. In practice most nonprofits fall in the \[0.05, 0.50\] range.
+Values above 0.60 are uncommon for operating nonprofits and may indicate excess
+cash hoarding.
+
+**Benchmarks and rules of thumb**
+
+  - No universally accepted benchmark. Values below 0.05 suggest minimal
+    liquid cushion; values above 0.60 may indicate under-deployment of assets
+    toward mission.
+  - Foundations and endowed institutions naturally show higher ratios than
+    operating nonprofits.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Cash on Hand
+
+`get_cash_on_hand()`
+
+Absolute dollar amount of cash and liquid savings held at end of year.
+
+**Formula:**
+```
+coh = cash + savings
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+
+
+**Definitional Range**
+
+Cash on hand is bounded below at zero (cannot be negative on a properly prepared
+balance sheet) and unbounded above. Unlike ratio measures, the scale is in dollars,
+so comparison across organizations of different sizes requires normalization. Use
+`get_months_cash_operations()` or `get_days_cash_operations()`
+for size-adjusted comparisons.
+
+**Benchmarks and rules of thumb**
+
+  - As an absolute measure, benchmarks depend on the organization's expense
+    base. A common practitioner rule is at least 60-90 days of operating
+    expenses in liquid cash.
+  - The Nonprofit Finance Fund recommends a minimum of three months of
+    operating expenses in accessible reserves.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Burn Rate
+
+`get_cash_burn_ratio()`
+
+Monthly rate at which an organization draws down its cash reserves.
+
+**Formula:**
+```
+brr = ( cash_boy - cash_eoy ) / months_in_period
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash_eoy` | `F9_10_ASSET_CASH_EOY` | Cash, end of year |
+| `cash_boy` | `F9_10_ASSET_CASH_BOY` | Cash, beginning of year |
+
+
+**Definitional Range**
+
+Bounded below at zero (cash cannot be negative). Values below 1.0 indicate cash
+depletion; values above 1.0 indicate cash accumulation. Ratios near zero indicate
+near-complete cash exhaustion. The ratio is undefined (NA) when beginning-of-year
+cash is zero, which occurs in the first year of operation or after a complete cash
+drawdown.
+
+**Benchmarks and rules of thumb**
+
+  - A ratio consistently below 1.0 over multiple years is a warning sign;
+    a single year below 1.0 may reflect planned reserve spending.
+  - **Below 0.50** in a single year (cash halved) warrants investigation.
+  - A ratio consistently above 1.0 indicates accumulating liquidity reserves.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Days of Operating Cash on Hand
+
+`get_days_cash_operations()`
+
+Measures how many days an organization can operate using available liquid assets.
+
+**Formula:**
+```
+doch = liquid_assets / daily_expenses
+
+liquid_assets = cash + savings + pledges_receivable + accounts_receivable
+daily_expenses = ( total_expenses - depreciation ) / 365
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
+
+
+**Definitional Range**
+
+Bounded below at zero and unbounded above, expressed in days. The typical range for
+nonprofits is approximately \[0, 365\]. Values above 365 (more than one year of
+cash) indicate very large liquid reserves relative to expenses, which is uncommon
+for operating nonprofits but typical for foundations.
+
+**Benchmarks and rules of thumb**
+
+  - **Below 30 days**: Generally considered a distress indicator.
+  - **60-90 days**: Commonly cited minimum threshold (Nonprofit Finance Fund).
+  - **90-180 days**: Considered healthy for most operating nonprofits.
+  - Healthcare nonprofits are typically benchmarked at 150+ days due to longer
+    receivables cycles.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Days of Operating Cash and Investments
+
+`get_days_cash_investments()`
+
+Measures days of operating coverage using liquid and investment assets, net of
+fixed property obligations.
+
+**Formula:**
+```
+doci = investable_assets / daily_expenses
+
+investable_assets = unrestricted_net_assets + investments
+                    - ( land_buildings_equipment + mortgages_payable )
+daily_expenses    = ( total_expenses - depreciation ) / 365
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `investments` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
+| `land_buildings` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
+| `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
+
+
+**Definitional Range**
+
+Unbounded in both directions. Negative values occur when unrestricted net assets are
+negative (accumulated deficits exceed equity) or when fixed assets net of debt
+exceed liquid resources. Values above 365 indicate more than one year of coverage.
+
+**Benchmarks and rules of thumb**
+
+  - **180-365 days**: Considered a solid reserve position for endowed organizations.
+  - A large gap between this metric and `get_days_cash_operations()` indicates
+    liquidity concentrated in investments rather than accessible cash.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Months of Operating Cash on Hand
+
+`get_months_cash_operations()`
+
+Number of months the organization can operate using available liquid assets.
+
+**Formula:**
+```
+moch = liquid_assets / monthly_expenses
+
+liquid_assets    = cash + savings + pledges_receivable + accounts_receivable
+monthly_expenses = ( total_expenses - depreciation ) / 12
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
+
+
+**Definitional Range**
+
+Bounded below at zero; unbounded above. The typical operating range for nonprofits
+is approximately \[0, 24\] months, with values above 12 months uncommon for
+operating organizations (more typical for foundations).
+
+**Benchmarks and rules of thumb**
+
+  - **Less than 1 month**: Acute liquidity risk.
+  - **1-3 months**: Below adequate; common guidance is at least 3 months.
+  - **3-6 months**: Generally considered healthy for most operating nonprofits.
+  - **6+ months**: Strong reserve position.
+  - The Nonprofit Finance Fund recommends 3-6 months as a target.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Months of Liquid Unrestricted Net Assets (LUNA)
+
+`get_liquid_assets_months()`
+
+Number of months an organization can operate using its liquid unrestricted net assets.
+
+**Formula:**
+```
+luna = liquid_unrestricted_net_assets / monthly_expenses
+
+liquid_unrestricted_net_assets = unrestricted_net_assets
+                                 - ( net_fixed_assets - mortgages_payable )
+monthly_expenses = total_expenses / 12
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
+| `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Unbounded in both directions, expressed in months. Negative values indicate that
+fixed property (net of mortgage debt) exceeds unrestricted net assets. The practical
+range for operating nonprofits is approximately \[-12, 36\] months.
+
+**Benchmarks and rules of thumb**
+
+  - Same general benchmarks as `get_operating_reserve_ratio()`: 3-6 months
+    is considered adequate for most operating nonprofits.
+  - Negative LUNA values are particularly informative: they indicate
+    unrestricted equity is entirely absorbed by illiquid fixed assets.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+## Solvency & leverage
+
+### Debt to Asset Ratio
+
+`get_debt_assets_ratio()`
+
+Proportion of total assets financed through liabilities.
+
+**Formula:**
+```
+dar = total_liabilities / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
+| `debt` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
+| `assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY (990) |
+| `assets` | `F9_01_NAFB_ASSET_TOT_EOY` | Total assets from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+Theoretically bounded \[0, 1\] when net assets are positive: zero means no debt;
+one means liabilities equal total assets (zero net assets). Values above 1.0 occur
+when total liabilities exceed total assets, i.e., the organization has negative net
+assets (accumulated deficits exceed equity). This is a distress indicator but not
+uncommon in capital-intensive nonprofits (hospitals, housing) carrying large
+long-term debt.
+
+**Benchmarks and rules of thumb**
+
+  - **Below 0.50**: Generally considered financially stable.
+  - **0.50-0.70**: Moderate leverage; manageable but warrants monitoring.
+  - **Above 0.70**: High leverage; common vulnerability threshold (Tuckman
+    & Chang 1991).
+  - **Above 1.0**: Negative net assets; acute financial risk.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Debt to Equity Ratio
+
+`get_debt_equity_ratio()`
+
+Compares total liabilities to unrestricted net assets.
+
+**Formula:**
+```
+der = total_liabilities / unrestricted_net_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+| `equity` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+
+
+**Definitional Range**
+
+Bounded below at zero when liabilities are non-negative and unrestricted net assets
+are positive. Unbounded above when unrestricted net assets are very small. Values
+below zero occur when unrestricted net assets are negative (accumulated deficits
+exceed unrestricted equity), an acute financial distress signal. The ratio is
+undefined (NA) when unrestricted net assets equal zero.
+
+**Benchmarks and rules of thumb**
+
+  - Values below 1.0 mean total liabilities are less than the unrestricted
+    equity base -- generally considered strong.
+  - Values between 1.0 and 3.0 indicate moderate leverage.
+  - Values above 5.0 indicate very high leverage relative to the equity base
+    and are a common vulnerability threshold.
+  - Negative values indicate negative unrestricted net assets, which almost
+    always signals significant financial stress.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Debt to Net Assets Ratio
+
+`get_debt_netassets_ratio()`
+
+Compares total liabilities to unrestricted net assets.
+
+**Formula:**
+```
+dmr = total_liabilities / unrestricted_net_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
+| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
+| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+
+
+**Definitional Range**
+
+Same as `get_debt_equity_ratio()`: bounded below at zero when both
+numerator and denominator are positive; unbounded above; negative when unrestricted
+net assets are negative.
+
+**Benchmarks and rules of thumb**
+
+  - Values above 3.0-5.0 are commonly flagged as high leverage in the
+    nonprofit vulnerability literature. See `get_debt_equity_ratio()` for
+    fuller benchmark guidance.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Short Term Debt Ratio
+
+`get_debt_shortterm_ratio()`
+
+Measures short-term obligations as a share of total net assets.
+
+**Formula:**
+```
+stdr = short_term_liabilities / net_assets
+
+short_term_liabilities = accounts_payable + grants_payable
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
+| `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
+| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+
+
+**Definitional Range**
+
+Bounded below at zero when net assets are positive. Negative values occur when net
+assets are negative (accumulated deficit), which makes the ratio uninterpretable as
+a burden measure. Unbounded above when net assets approach zero. Typical values for
+financially stable nonprofits are in the \[0, 0.30\] range.
+
+**Benchmarks and rules of thumb**
+
+  - Values below 0.10 indicate modest short-term payables relative to the
+    equity base -- a comfortable position.
+  - Values above 0.30 suggest near-term obligations are placing meaningful
+    pressure on net assets.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Secured Debt Ratio
+
+`get_debt_secured_ratio()`
+
+Secured mortgages and notes payable as a share of total liabilities.
+
+**Formula:**
+```
+debt_secured = secured_mortgages_notes / total_liabilities
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `secured_mortgages_notes` | `F9_10_LIAB_MTG_NOTE_EOY` | Secured mortgages and notes payable, EOY |
+| `total_liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Most nonprofits have zero secured debt; capital-intensive
+organizations (housing, healthcare, higher education) can show values above 0.70.
+
+**Benchmarks and rules of thumb**
+
+  - No standard benchmark. Most informative when tracked over time or compared
+    within subsectors with similar capital structures.
+  - For organizations with high secured debt ratios, lenders will scrutinize
+    the collateral value and debt service coverage ratio.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Unsecured Debt Ratio
+
+`get_debt_unsecured_ratio()`
+
+Unsecured notes and loans payable as a share of total liabilities.
+
+**Formula:**
+```
+debt_unsecured = unsecured_notes_loans / total_liabilities
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `unsecured_notes_loans` | `F9_10_LIAB_NOTE_UNSEC_EOY` | Unsecured notes and loans payable, EOY |
+| `total_liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Most nonprofits carry no unsecured notes, so the distribution
+is highly concentrated at zero with a long right tail.
+
+**Benchmarks and rules of thumb**
+
+  - No established benchmark. Presence of unsecured debt is not inherently
+    negative -- many healthy nonprofits use lines of credit for cash flow
+    management -- but a large and growing ratio warrants scrutiny.
+  - Trend analysis is more informative than a single year's value.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Equity Ratio
+
+`get_equity_ratio()`
+
+Share of total assets financed through net assets (equity).
+
+**Formula:**
+```
+er = total_net_assets / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+
+**Definitional Range**
+
+Theoretically bounded \[0, 1\] when net assets are positive. Values above 1.0
+are not possible. Values below zero occur when net assets are negative (accumulated
+deficit), which is a distress indicator. The empirical range for most nonprofits
+is approximately \[0.10, 0.95\].
+
+**Benchmarks and rules of thumb**
+
+  - **Above 0.50**: Equity finances more than half of assets -- generally healthy.
+  - **Below 0.30**: High leverage; common in capital-intensive subsectors.
+  - Most useful as a trend measure: declining values warrant investigation.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+## Performance & margins
+
+### Surplus Margin
+
+`get_surplus_margin_ratio()`
+
+Net surplus or deficit as a share of total revenue.
+
+**Formula:**
+```
+sm = revenues_less_expenses / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `revenues_less_expenses` | `F9_01_EXP_REV_LESS_EXP_CY` | Revenues less expenses, current year |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue from Part VIII (990) |
+| `total_revenue` | `F9_01_REV_TOT_CY` | Total revenue from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+Bounded above at 1.0 (expenses cannot be negative). Bounded below at negative infinity in theory,
+but in practice the empirical range for nonprofits is approximately \[-0.30, 0.30\]
+in most years. Values below -0.50 or above 0.50 typically reflect unusual one-time
+events (large gifts, major write-downs, asset sales).
+
+**Benchmarks and rules of thumb**
+
+  - **Near zero**: Normal and expected for nonprofits operating close to break-even.
+  - **0.02-0.07** (2-7%): Commonly considered a healthy surplus range.
+  - **Below -0.05** for two or more consecutive years: Common vulnerability
+    threshold (Greenlee & Trussel 2000).
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Return on Assets
+
+`get_return_assets_ratio()`
+
+Net surplus or deficit as a share of total assets.
+
+**Formula:**
+```
+roa = revenues_less_expenses / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `revenues_less_expenses` | `F9_01_EXP_REV_LESS_EXP_CY` | Revenues less expenses, current year |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY (990) |
+| `total_assets` | `F9_01_NAFB_ASSET_TOT_EOY` | Total assets from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+ROA is unbounded in both directions. A ratio of zero means expenses exactly equalled
+revenues. Positive values indicate surplus years; negative values indicate deficit
+years. For nonprofits, where perpetual surpluses raise concerns about mission
+prioritization and perpetual deficits signal sustainability risk, the meaningful
+range is approximately \[-0.20, 0.20\] for most organizations in most years.
+Values outside this range are not impossible but typically reflect unusual
+circumstances (large asset disposals, one-time gifts, major capital campaigns, or
+accounting restatements) rather than stable operating performance.
+
+Values can be distorted by very small total asset bases (newly formed organizations)
+or by organizations whose assets consist almost entirely of illiquid fixed property,
+making the denominator a poor proxy for the operational resource base.
+
+**Benchmarks and rules of thumb**
+
+  - **Near zero**: Normal for nonprofits operating close to break-even by design.
+  - **0.02-0.07** (2-7%): Generally considered healthy -- building modest reserves
+    without appearing to hoard resources.
+  - **Sustained below -0.05**: Common threshold for classifying an organization as
+    at risk (Greenlee & Trussel 2000, Keating et al. 2005).
+  - Asset structure matters: capital-intensive organizations will mechanically
+    produce low ROA even when financially healthy.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Return on Net Assets
+
+`get_return_netassets_ratio()`
+
+Net surplus or deficit as a share of beginning-of-year net assets.
+
+**Formula:**
+```
+rona = revenues_less_expenses / net_assets_boy
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `revenues_less_expenses` | `F9_01_EXP_REV_LESS_EXP_CY` | Revenues less expenses, current year |
+| `net_assets_boy` | `F9_10_NAFB_TOT_BOY` | Total net assets, BOY (990) |
+| `net_assets_boy` | `F9_01_NAFB_TOT_BOY` | Net assets from Part I, BOY (990EZ fallback) |
+
+
+**Definitional Range**
+
+Unbounded in both directions. A value of 0 means break-even. The typical range for
+nonprofits is approximately \[-0.30, 0.30\]. The ratio is undefined (NA) when
+beginning net assets equal zero. Extreme values occur when BOY net assets are near
+zero (small denominator) rather than when the surplus itself is large.
+
+**Benchmarks and rules of thumb**
+
+  - Small positive values (0.02-0.10) are considered healthy.
+  - Sustained negative RONA over multiple years is a financial vulnerability
+    indicator (Greenlee & Trussel 2000).
+  - Most useful in trend analysis and within-subsector comparisons.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Post-Depreciation Profitability Margin
+
+`get_profit_margin_postdepr()`
+
+Operating surplus or deficit as a share of total revenue, after depreciation.
+
+**Formula:**
+```
+podpm = ( total_revenue - total_expenses ) / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+**Definitional Range**
+
+Bounded above at 1.0; unbounded below. The typical range for nonprofits is
+approximately \[-0.30, 0.30\]. Extreme negative values may reflect major
+write-downs or one-time capital expenses.
+
+**Benchmarks and rules of thumb**
+
+  - **Near zero**: Normal for nonprofits operating close to break-even.
+  - **0.02-0.07** (2-7%): Healthy.
+  - **Below -0.05** for two or more consecutive years: Common vulnerability threshold.
+  - A persistent gap between post- and pre-depreciation margins signals capital
+    consumption requiring future capital expenditure.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Pre-Depreciation Profitability Margin
+
+`get_profit_margin_predepr()`
+
+Operating surplus or deficit as a share of total revenue, before depreciation.
+
+**Formula:**
+```
+predpm = ( total_revenue - ( total_expenses - depreciation ) ) / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+| `expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+| `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
+
+
+**Definitional Range**
+
+Bounded above at 1.0; unbounded below. Always equal to or greater than the
+post-depreciation margin (`get_profit_margin_postdepr()`) since adding
+back depreciation can only increase the margin. The typical range is approximately
+\[-0.20, 0.40\].
+
+**Benchmarks and rules of thumb**
+
+  - A pre-depreciation margin above zero with a post-depreciation margin below
+    zero is common and generally manageable for capital-intensive nonprofits.
+  - If both margins are negative, the organization is generating a true cash
+    flow deficit, not just an accounting loss.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Self Sufficiency Ratio
+
+`get_self_sufficiency_ratio()`
+
+Measures whether program service revenue is sufficient to cover total expenses.
+
+**Formula:**
+```
+ssr = program_service_revenue / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_service_rev` | `F9_08_REV_PROG_TOT_TOT` | Program service revenue (990) |
+| `program_service_rev` | `F9_01_REV_PROG_TOT_CY` | Program revenue from Part I (990EZ fallback) |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses (990) |
+| `total_expenses` | `F9_01_EXP_TOT_CY` | Total expenses from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+Bounded below at zero; values above 1.0 are possible (and indicate program revenue
+exceeds total expenses - a surplus from earned income alone). The typical range for
+nonprofits is approximately \[0, 1.5\], with most values below 1.0 since most
+nonprofits depend on some contributed income.
+
+**Benchmarks and rules of thumb**
+
+  - **SSR > 1.0**: Fully self-sufficient from program revenue; characteristic
+    of mature social enterprises and fee-based service providers.
+  - **SSR 0.50-1.0**: Majority of costs covered by program revenue; moderate
+    philanthropy dependence.
+  - **SSR < 0.25**: Heavily dependent on contributed income; common for advocacy
+    organizations, arts nonprofits, and grant-funded research entities.
+  - High SSR is not universally better -- organizations serving low-income
+    populations often require philanthropic subsidy by design.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+## Expense structure
+
+### Program Expense Ratio
+
+`get_program_expenses_ratio()`
+
+Share of total expenses devoted to program services.
+
+**Formula:**
+```
+per = program_expenses / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_expenses` | `F9_09_EXP_TOT_PROG` | Program service expenses (990) |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses (990) |
+| `total_expenses` | `F9_01_EXP_TOT_CY` | Total expenses from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+Bounded zero to one. Zero means no spending on programs (all overhead); one means
+all spending is on programs (no administration or fundraising). In practice, values
+above 0.95 are unusual and may reflect accounting misallocation. The empirical
+range for most operating nonprofits is approximately 0.50 to 0.95.
+
+**Benchmarks and rules of thumb**
+
+  - **>= 75%**: Charity Navigator threshold for a favorable efficiency score.
+  - **>= 65%**: BBB Wise Giving Alliance minimum standard.
+  - **Below 50%**: Commonly flagged as a concern, though legitimate for
+    startup-phase organizations.
+  - Caution: high ratios achieved by underinvesting in administration
+    (the "starvation cycle") can signal long-term organizational weakness
+    (Lecy & Searing 2015).
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Overhead Ratio
+
+`get_overhead_ratio()`
+
+Combined management and fundraising expenses as a share of total expenses.
+
+**Formula:**
+```
+overhead = ( mgmt_expenses + fundraising_expenses ) / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `mgmt_expenses` | `F9_09_EXP_TOT_MGMT` | Management and general expenses |
+| `fundraising_expenses` | `F9_09_EXP_TOT_FUNDR` | Fundraising expenses |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Empirical range approximately \[0.05, 0.50\] for most operating nonprofits.
+
+**Benchmarks and rules of thumb**
+
+  - **25% or less**: Charity Navigator threshold for a full efficiency score.
+  - **35% or less**: BBB Wise Giving Alliance standard.
+  - Low overhead can indicate underinvestment in organizational capacity
+    (the "starvation cycle") rather than genuine efficiency.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Administrative Overhead Ratio
+
+`get_expenses_admin_ratio()`
+
+Share of total expenses devoted to management and general administration.
+
+**Formula:**
+```
+aer = management_expenses / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `mgmt_expenses` | `F9_09_EXP_TOT_MGMT` | Management and general expenses |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. In combination with program and fundraising ratios, all three
+sum to 1.0 by construction. The empirical range for most nonprofits is approximately
+\[0.05, 0.35\].
+
+**Benchmarks and rules of thumb**
+
+  - Charity Navigator targets management and general expenses at or below 15%
+    of total expenses for a favorable score.
+  - Values below 5% may indicate underinvestment in governance systems.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Fundraising Efficiency Ratio
+
+`get_fundraising_efficiency_ratio()`
+
+Cost of raising one dollar of contributions; measures how efficiently fundraising
+expenses generate donated revenue.
+
+**Formula:**
+```
+fer = fundraising_expenses / total_contributions
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `fundraising_expenses` | `F9_09_EXP_TOT_FUNDR` | Total fundraising expenses |
+| `total_contributions` | `F9_08_REV_CONTR_TOT` | Total contributions received |
+
+
+**Definitional Range**
+
+Bounded below at zero; values above 1.0 (spending more than a dollar to raise a
+dollar) are possible, particularly for young organizations building donor bases or
+those in difficult fundraising environments. The typical range is approximately
+\[0, 0.50\] for most operating nonprofits.
+
+**Benchmarks and rules of thumb**
+
+  - **<= 10 cents per dollar (ratio <= 0.10)**: Charity Navigator threshold
+    for a full fundraising efficiency score.
+  - **<= 35 cents per dollar**: BBB Wise Giving Alliance standard.
+  - **Above 50 cents**: Commonly flagged as inefficient.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Compensation Expense Ratio
+
+`get_expenses_compensation_ratio()`
+
+Total compensation and employee-related expenses as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_compensation = ( officer_comp + disqualified_comp + other_salaries
+                          + pension_contributions + other_employee_benefits
+                          + payroll_taxes ) / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `officer_comp` | `F9_09_EXP_COMP_DTK_TOT` | Officer/director compensation, total |
+| `disqualified_comp` | `F9_09_EXP_COMP_DSQ_PERS_TOT` | Disqualified person compensation, total |
+| `other_salaries` | `F9_09_EXP_OTH_SAL_WAGE_TOT` | Other salaries and wages, total |
+| `pension_contributions` | `F9_09_EXP_PENSION_CONTR_TOT` | Pension plan contributions, total |
+| `other_employee_benefits` | `F9_09_EXP_OTH_EMPL_BEN_TOT` | Other employee benefits, total |
+| `payroll_taxes` | `F9_09_EXP_PAYROLL_TAX_TOT` | Payroll taxes, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Most service-delivery nonprofits fall in the \[0.50, 0.85\] range.
+Grant-making organizations may show ratios below 0.20.
+
+**Benchmarks and rules of thumb**
+
+  - No universal benchmark -- labor intensity varies fundamentally by mission type.
+  - Human services, health, and education nonprofits typically show ratios above 0.60;
+    grant-making organizations may show ratios below 0.30.
+  - A sharp year-over-year increase may indicate revenue contraction rather than
+    compensation growth.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Grants-to-Others Expense Ratio
+
+`get_expenses_grants_ratio()`
+
+Total grants paid to domestic organizations, domestic individuals, and foreign
+entities as a share of total functional expenses.
+
+**Formula:**
+```
+expenses_grants = ( us_org_grants + us_indiv_grants + foreign_grants )
+                  / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `us_org_grants` | `F9_09_EXP_GRANT_US_ORG_TOT` | Grants to domestic organizations, total |
+| `us_indiv_grants` | `F9_09_EXP_GRANT_US_INDIV_TOT` | Grants to domestic individuals, total |
+| `foreign_grants` | `F9_09_EXP_GRANT_FRGN_TOT` | Grants to foreign entities, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Near zero for direct-service organizations; near 1.0 for
+pure pass-through grant-makers.
+
+**Benchmarks and rules of thumb**
+
+  - Subsector comparisons are essential: a 0.80 ratio is expected for a community
+    foundation; the same value would be anomalous for a hospital.
+  - Rising ratios over time may indicate a strategic shift toward a more
+    redistributive model.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Member Benefits Expense Ratio
+
+`get_expenses_membbenefits_ratio()`
+
+Benefits paid to or for members as a share of total expenses.
+
+**Formula:**
+```
+expenses_membbenefits = member_benefits / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `member_benefits` | `F9_09_EXP_BEN_PAID_MEMB_TOT` | Benefits paid to members, total (scope: 990 + 990EZ) |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Near zero for most public benefit charities; potentially high
+(above 0.50) for mutual benefit organizations.
+
+**Benchmarks and rules of thumb**
+
+  - Interpret in the context of the organization's exempt purpose and subsection code.
+  - Non-zero values for 501(c)(3) organizations should be reviewed for compliance
+    with private benefit restrictions.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Fees for Services Expense Ratio
+
+`get_expenses_feesforservice_ratio()`
+
+Total fees paid for outside services (management, legal, accounting, lobbying,
+professional fundraising, investment management, and other) as a share of total
+functional expenses.
+
+**Formula:**
+```
+expenses_feesforservice = ( mgmt_fees + legal_fees + accounting_fees
+                            + lobbying_fees + prof_fundraising_fees
+                            + investment_mgmt_fees + other_fees )
+                          / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `mgmt_fees` | `F9_09_EXP_FEE_SVC_MGMT_TOT` | Management fees, total |
+| `legal_fees` | `F9_09_EXP_FEE_SVC_LEGAL_TOT` | Legal fees, total |
+| `accounting_fees` | `F9_09_EXP_FEE_SVC_ACC_TOT` | Accounting fees, total |
+| `lobbying_fees` | `F9_09_EXP_FEE_SVC_LOB_TOT` | Lobbying fees, total |
+| `prof_fundraising_fees` | `F9_09_EXP_FEE_SVC_FUNDR_TOT` | Professional fundraising fees, total |
+| `investment_mgmt_fees` | `F9_09_EXP_FEE_SVC_INVEST_TOT` | Investment management fees, total |
+| `other_fees` | `F9_09_EXP_FEE_SVC_OTH_TOT` | Other fees for services, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Most nonprofits show values in the \[0.01, 0.20\] range.
+
+**Benchmarks and rules of thumb**
+
+  - No universal benchmark; most meaningful within subsector or over time.
+  - Unusually high investment management fees relative to total expenses may
+    indicate poor endowment management or excessive fee structures.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Payments to Affiliates Ratio
+
+`get_expenses_affiliates_ratio()`
+
+Payments to affiliates as a share of total expenses.
+
+**Formula:**
+```
+expenses_affiliates = payments_to_affiliates / total_expenses
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `payments_to_affiliates` | `F9_09_EXP_PAY_AFFIL_TOT` | Payments to affiliates, total |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Near zero for standalone organizations; potentially above 0.50
+for federated intermediaries.
+
+**Benchmarks and rules of thumb**
+
+  - Interpret in the context of organizational structure.
+  - Large payments to affiliates in the absence of a known federated structure
+    warrant review of related-party transaction disclosures.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+## Revenue structure
+
+### Government Grant Ratio
+
+`get_grants_govt_ratio()`
+
+Share of total revenue originating from government grants.
+
+**Formula:**
+```
+ggr = government_grants / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `government_grants` | `F9_08_REV_CONTR_GOVT_GRANT` | Government grants and contributions |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means no government funding; one means all revenue comes
+from government sources. The empirical distribution varies widely by subsector:
+social service organizations often show ratios above 0.50; arts organizations
+typically below 0.20.
+
+**Benchmarks and rules of thumb**
+
+  - Values above 0.50 indicate majority government-funded organizations, which
+    face heightened vulnerability to government budget changes.
+  - Revenue diversification theory suggests maintaining no single source above
+    0.33-0.50 for optimal stability (Chang & Tuckman 1994).
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Donation/Grant Dependence Ratio
+
+`get_donations_revenue_ratio()`
+
+Measures reliance on contributions and fundraising as a share of total revenue.
+
+**Formula:**
+```
+dgdr = donation_revenue / total_revenue
+
+donation_revenue = contributions + fundraising_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `contributions` | `F9_08_REV_CONTR_TOT` | Total contributions |
+| `fundraising_revenue` | `F9_08_REV_OTH_FUNDR_NET_TOT` | Net fundraising event revenue |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Values near 1.0 characterize traditional charitable organizations
+with minimal earned income; values near 0 characterize fee-based service providers.
+
+**Benchmarks and rules of thumb**
+
+  - Values above 0.70-0.80 warrant monitoring of donor concentration and retention.
+  - Organizations above 0.90 have almost no earned income buffer if philanthropic
+    support declines.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Earned Income Dependency Ratio
+
+`get_earned_income_ratio()`
+
+Share of total revenue derived from earned (non-donation) income sources.
+
+**Formula:**
+```
+eidr = earned_revenue / total_revenue
+
+earned_revenue = program_service_revenue + membership_dues
+                 + royalties + other_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_service_rev` | `F9_08_REV_PROG_TOT_TOT` | Program service revenue |
+| `membership_dues` | `F9_08_REV_CONTR_MEMBSHIP_DUE` | Membership dues |
+| `royalties` | `F9_08_REV_OTH_ROY_TOT` | Royalties |
+| `other_revenue` | `F9_08_REV_MISC_OTH_TOT` | Other miscellaneous revenue |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Organizations heavily reliant on philanthropy show values near
+zero; fee-based service providers may show values above 0.90.
+
+**Benchmarks and rules of thumb**
+
+  - No universal threshold -- context matters: an advocacy organization is expected
+    to show a low ratio; a hospital is expected to show a high one.
+  - A low ratio combined with high donation dependence indicates philanthropic
+    concentration risk.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Program Service Revenue Ratio
+
+`get_revenue_programs_ratio()`
+
+Program service revenue as a share of total revenue.
+
+**Formula:**
+```
+revenue_programs = program_service_revenue / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `program_service_revenue` | `F9_08_REV_PROG_TOT_TOT` | Total program service revenue |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### 
+
+`get_revenue_fedcampaign_ratio()`
+
+Federated campaign contributions as a share of total revenue.
+
+**Formula:**
+```
+revenue_fedcampaign = federated_campaigns / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `federated_campaigns` | `F9_08_REV_CONTR_FED_CAMP` | Federated campaign contributions |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Membership Dues Revenue Ratio
+
+`get_revenue_membdues_ratio()`
+
+Membership dues as a share of total revenue.
+
+**Formula:**
+```
+revenue_membdues = membership_dues / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `membership_dues` | `F9_08_REV_CONTR_MEMBSHIP_DUE` | Membership dues received |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Fundraising Events Revenue Ratio
+
+`get_revenue_fundevents_ratio()`
+
+Fundraising event contributions as a share of total revenue.
+
+**Formula:**
+```
+revenue_fundevents = fundraising_event_revenue / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `fundraising_event_revenue` | `F9_08_REV_CONTR_FUNDR_EVNT` | Gross revenue from fundraising events |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Related Organizations Revenue Ratio
+
+`get_revenue_reltdorgs_ratio()`
+
+Revenue from related organizations as a share of total revenue.
+
+**Formula:**
+```
+revenue_reltdorgs = related_org_revenue / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `related_org_revenue` | `F9_08_REV_CONTR_RLTD_ORG` | Contributions from related organizations |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Zero means none of this revenue type was received;
+one means this channel accounted for all total revenue.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Investment Income Dependency Ratio
+
+`get_investment_income_ratio()`
+
+Measures reliance on investment-related revenue as a share of total revenue.
+
+**Formula:**
+```
+iidr = investment_income / total_revenue
+
+investment_income = invest_income + bond_proceeds + rent_income + asset_sale_income
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `invest_income` | `F9_08_REV_OTH_INVEST_INCOME_TOT` | Investment income |
+| `bond_proceeds` | `F9_08_REV_OTH_INVEST_BOND_TOT` | Income from bond proceeds |
+| `rent_income` | `F9_08_REV_OTH_RENT_GRO_PERS` | Gross rental income |
+| `asset_sale_income` | `F9_08_REV_OTH_SALE_ASSET_OTH` | Net gain from asset sales |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\] in most years, but values above 1.0 are possible in years with
+large asset sale gains. Values below zero can result from asset sale losses or
+negative investment returns.
+
+**Benchmarks and rules of thumb**
+
+  - Values above 0.30 indicate significant financial asset dependency and warrant
+    monitoring of portfolio performance.
+  - Large year-over-year swings often reflect one-time asset transactions rather
+    than structural revenue changes.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+## Asset structure
+
+### Net Assets Composition Ratio
+
+`get_netassets_composition_ratio()`
+
+Share of total net assets that are unrestricted and available for general use.
+
+**Formula:**
+```
+nacr = unrestricted_net_assets / total_net_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\] when both numerator and denominator are positive: zero means all
+net assets are restricted; one means all net assets are unrestricted. Values outside
+this range occur when either unrestricted or total net assets are negative.
+
+**Benchmarks and rules of thumb**
+
+  - **Above 0.50**: At least half of net assets are unrestricted -- generally healthy.
+  - **Below 0.20**: Heavy donor-restricted balance sheet; limited flexibility.
+  - Organizations with large permanent endowments may show low ratios without
+    financial weakness.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Operating Ratio
+
+`get_netassets_growth_ratio()`
+
+Year-over-year change in total net assets, expressed as a proportion of beginning net assets.
+
+**Formula:**
+```
+or = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `net_assets_eoy` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY (990) |
+| `net_assets_eoy` | `F9_01_NAFB_TOT_EOY` | Net assets from Part I, EOY (990EZ fallback) |
+| `net_assets_boy` | `F9_10_NAFB_TOT_BOY` | Total net assets, BOY (990) |
+| `net_assets_boy` | `F9_01_NAFB_TOT_BOY` | Net assets from Part I, BOY (990EZ fallback) |
+
+
+**Definitional Range**
+
+Unbounded in both directions. A value of 0 means net assets were unchanged.
+Values below -1.0 (a drop of more than 100\%) indicate that the organization
+lost more than its entire starting equity base, resulting in negative net assets.
+The ratio is undefined (NA) when BOY net assets equal zero.
+
+**Benchmarks and rules of thumb**
+
+  - Small positive values (0.01-0.10) are typical and healthy for operating nonprofits.
+  - **Below -0.10** in a single year is a warning sign; sustained negative growth
+    indicates a structural financial problem.
+  - Very high positive values (above 0.50) often reflect one-time large gifts or
+    asset revaluations rather than sustained operational performance.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Operating Reserves Ratio
+
+`get_operating_reserve_ratio()`
+
+Liquid unrestricted net assets available to cover operating expenses, expressed
+as a multiple of total annual expenses.
+
+**Formula:**
+```
+orr = operating_reserves / total_expenses
+
+operating_reserves = unrestricted_net_assets - net_fixed_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
+| `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
+
+
+**Definitional Range**
+
+Unbounded in both directions when expressed in months. Negative values occur when
+unrestricted net assets are negative or when net fixed assets exceed unrestricted net
+assets. Values above 24 months are uncommon for operating organizations and may
+indicate accumulation beyond what is needed for operating risk management.
+
+**Benchmarks and rules of thumb**
+
+  - **Less than 1 month**: Acute vulnerability.
+  - **1-3 months**: Below the commonly recommended minimum.
+  - **3-6 months**: Generally adequate for most operating nonprofits.
+  - **6-12 months**: Strong; appropriate for volatile-revenue or
+    capital-intensive organizations.
+  - The Nonprofit Finance Fund recommends a minimum of 3 months.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+
+### Investment Assets Ratio
+
+`get_investments_assets_ratio()`
+
+Investment securities as a share of total assets.
+
+**Formula:**
+```
+investments_assets = ( pub_traded_securities + other_securities ) / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `pub_traded_securities` | `F9_10_ASSET_INVEST_SEC_EOY` | Publicly traded securities, EOY (scope: 990 + 990EZ) |
+| `other_securities` | `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Other securities, EOY (scope: 990 + 990EZ) |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\]. Most operating nonprofits show values near zero; foundations
+and endowed institutions may show values above 0.80.
+
+**Benchmarks and rules of thumb**
+
+  - No universal benchmark. Operating nonprofits with values above 0.30 are
+    typically holding significant endowment or reserve portfolios.
+  - A high investment ratio combined with a high debt ratio may indicate
+    borrowing to fund operations while holding investments -- worth scrutinizing.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Land, Buildings, and Equipment to Assets Ratio (Net)
+
+`get_land_assets_net_ratio()`
+
+Net land, buildings, and equipment as a share of total assets.
+
+**Formula:**
+```
+land_assets_net = land_bldg_equip_net / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `land_bldg_equip_net` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment, EOY (scope: 990 + 990EZ) |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\] in normal conditions. Heavily skewed toward zero because many
+nonprofits own no real property.
+
+**Benchmarks and rules of thumb**
+
+  - Values below 0.10 are typical for lean service organizations.
+  - Values above 0.50 indicate that more than half of assets are fixed property,
+    limiting financial flexibility.
+  - Declining values over time may reflect depreciation outpacing new capital
+    investment rather than strategic deleveraging.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Land Asset Ratio
+
+`get_land_assets_gross_ratio()`
+
+Share of total assets invested in land, buildings, and equipment.
+
+**Formula:**
+```
+lar = land_buildings_equipment / total_assets
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `land_buildings` | `F9_10_ASSET_LAND_BLDG_DEPREC` | Accumulated depreciation on land and buildings |
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
+
+
+**Definitional Range**
+
+Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+most nonprofits with no owned real estate show values near zero, while
+capital-intensive organizations (healthcare, housing, higher education) may show
+values above 0.50.
+
+**Benchmarks and rules of thumb**
+
+  - Most informative for within-subsector comparisons.
+  - High values indicate illiquidity risk: if the majority of assets are fixed
+    property, the organization has limited ability to quickly convert assets to cash.
+
+**Calculated For:** 990 filers only.
+
+<hr>
+
+### Asset Revenue Ratio
+
+`get_assets_revenue_ratio()`
+
+Measures the size of an organization's asset base relative to its annual revenue.
+
+**Formula:**
+```
+arr = total_assets / total_revenue
+```
+
+**Input variables**
+
+| Argument | efile Variable | Description |
+|----------|---------------|-------------|
+| `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, end of year (990) |
+| `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue from Part VIII (990) |
+| `total_revenue` | `F9_01_REV_TOT_CY` | Total revenue from Part I (990EZ fallback) |
+
+
+**Definitional Range**
+
+Bounded below at zero; unbounded above. The ratio is undefined when revenue is zero.
+Typical operating nonprofits show values in the \[0.5, 5.0\] range. Endowed
+organizations and capital-intensive nonprofits may show values of 10 or higher.
+
+**Benchmarks and rules of thumb**
+
+  - No universal benchmark; most meaningful for within-subsector comparisons.
+  - **Below 1.0**: Annual revenue exceeds total assets -- common for lean service
+    organizations with minimal physical assets.
+  - **Above 10**: Typically indicates a capital-heavy asset base or a small
+    revenue base relative to accumulated assets.
+
+**Calculated For:** 990 + 990EZ filers.
+
+<hr>
+

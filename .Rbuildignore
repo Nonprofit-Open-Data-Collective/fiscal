@@ -3,3 +3,12 @@
 ^\.git$
 ^LICENSE\.md$
 ^efileR$
+^_pkgdown\.yml$
+^docs$
+^dev$
+^pkgdown$
+^panel_smoothing\.md$
+^fiscal\.pdf$
+^archive$
+^data-raw$
+^\.agents$

@@ -1,0 +1,220 @@
+url: https://nonprofit-open-data-collective.github.io/fiscal/
+
+destination: docs
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#1f6f78"
+
+home:
+  title: fiscal • Nonprofit Fiscal Health Metrics
+  description: >
+    Calculate standard fiscal-health accounting metrics for nonprofits from
+    IRS 990 and 990-EZ data.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: "Getting started"
+      - text: Getting started with fiscal
+        href: articles/fiscal.html
+      - text: Fiscal metrics catalog
+        href: articles/metrics-catalog.html
+      - text: "-------"
+      - text: "Panels"
+      - text: Building a 990 panel
+        href: articles/panel-workflow.html
+      - text: Panel smoothing
+        href: articles/panel-smoothing.html
+      - text: "-------"
+      - text: "Methods"
+      - text: Normalization & transformations
+        href: articles/normalization.html
+      - text: The fiscal health index
+        href: articles/fiscal-health-index.html
+      - text: "990 vs 990-EZ — form scope & sanitization"
+        href: articles/form-scope.html
+
+articles:
+- title: Getting started
+  navbar: ~
+  contents:
+  - fiscal
+  - metrics-catalog
+- title: Panels
+  contents:
+  - panel-workflow
+  - panel-smoothing
+- title: Methods
+  contents:
+  - normalization
+  - fiscal-health-index
+  - form-scope
+
+reference:
+- title: Batch scoring
+  desc: >
+    Run the full battery of fiscal-health metrics in a single call, on a
+    cross-section or a multi-year panel.
+  contents:
+  - compute_all
+  - compute_all_panel
+
+- title: Liquidity metrics
+  desc: Cash, current, and short-term coverage measures.
+  contents:
+  - get_current_ratio
+  - get_quick_ratio
+  - get_cash_liquidity_ratio
+  - get_cash_assets_ratio
+  - get_cash_on_hand
+  - get_cash_burn_ratio
+  - get_days_cash_operations
+  - get_days_cash_investments
+  - get_months_cash_operations
+  - get_liquid_assets_months
+
+- title: Solvency & leverage metrics
+  desc: Debt and equity structure of the balance sheet.
+  contents:
+  - get_debt_assets_ratio
+  - get_debt_equity_ratio
+  - get_debt_netassets_ratio
+  - get_debt_shortterm_ratio
+  - get_debt_secured_ratio
+  - get_debt_unsecured_ratio
+  - get_equity_ratio
+
+- title: Performance & margin metrics
+  desc: Surplus, returns, and profit margins.
+  contents:
+  - get_surplus_margin_ratio
+  - get_return_assets_ratio
+  - get_return_netassets_ratio
+  - get_profit_margin_postdepr
+  - get_profit_margin_predepr
+  - get_self_sufficiency_ratio
+
+- title: Expense-structure metrics
+  desc: How the expense base is allocated across functions.
+  contents:
+  - get_program_expenses_ratio
+  - get_overhead_ratio
+  - get_expenses_admin_ratio
+  - get_fundraising_efficiency_ratio
+  - get_expenses_compensation_ratio
+  - get_expenses_grants_ratio
+  - get_expenses_membbenefits_ratio
+  - get_expenses_feesforservice_ratio
+  - get_expenses_affiliates_ratio
+
+- title: Revenue-structure metrics
+  desc: Composition and concentration of the revenue base.
+  contents:
+  - get_grants_govt_ratio
+  - get_donations_revenue_ratio
+  - get_earned_income_ratio
+  - get_revenue_programs_ratio
+  - get_revenue_fedcampaign_ratio
+  - get_revenue_membdues_ratio
+  - get_revenue_fundevents_ratio
+  - get_revenue_reltdorgs_ratio
+  - get_investment_income_ratio
+
+- title: Asset-structure metrics
+  desc: Composition, reserves, and growth of the asset base.
+  contents:
+  - get_netassets_composition_ratio
+  - get_netassets_growth_ratio
+  - get_operating_reserve_ratio
+  - get_investments_assets_ratio
+  - get_land_assets_net_ratio
+  - get_land_assets_gross_ratio
+  - get_assets_revenue_ratio
+
+- title: Metric registry & field scopes
+  desc: The canonical metric table and the 990 / 990-EZ field-scope helpers.
+  contents:
+  - fiscal_metrics
+  - get_idvars
+  - get_pz_fields
+  - get_pc_fields
+
+- title: Panel construction & cleaning
+  desc: Assemble, deduplicate, describe, filter, impute, and smooth multi-year panels.
+  contents:
+  - get_panel
+  - deduplicate
+  - inspect_duplicates
+  - panel_summary
+  - panel_composition
+  - panel_filter_types
+  - panel_impute
+  - panel_smooth
+
+- title: Data retrieval & metadata
+  desc: Pull e-file tables and attach Business Master File metadata.
+  contents:
+  - retrieve_efile_data
+  - efile_tables
+  - get_bmf_vars
+  - merge_bmf
+
+- title: Organization classification
+  desc: NTEE and industry classification helpers.
+  contents:
+  - get_nteev2
+  - get_ntmaj12
+  - get_industry
+  - get_org_type
+  - get_clean_ntee
+
+- title: Normalization & transformations
+  desc: >
+    Winsorization, standardization, and distribution-aware transformations that
+    produce the winsorized / z-score / percentile versions of every metric.
+  contents:
+  - normalize_x
+  - find_best_normalization
+  - apply_normalization
+  - guess_normalize_type
+  - plot_normalize_x
+  - apply_transformations
+  - winsorize_x
+  - winsorize_var
+  - get_top_n
+  - get_bottom_n
+
+- title: Fiscal-health index
+  desc: >
+    Build a reusable composite fiscal-health measurement model:
+    diagnose, triage, discover dimensions, fit, score, weight, and index.
+  contents:
+  - fiscal_health
+  - fiscal_diagnostics
+  - fiscal_triage
+  - fiscal_dimensions
+  - fiscal_health_fit
+  - fiscal_health_score
+  - fiscal_weights
+  - fiscal_health_index
+
+- title: Data preparation helpers
+  desc: Form-aware sanitization, imputation, coercion, and input validation.
+  contents:
+  - sanitize_financials
+  - detect_ez_rows
+  - impute_zero
+  - coerce_numeric
+  - resolve_col
+  - validate_inputs
+
+- title: Bundled data
+  contents:
+  - dat10k

@@ -167,7 +167,7 @@ df <- get_debt_assets_ratio( df = dat10k, summarize = TRUE )
 #  NA's   :3          NA's   :3         NA's   :3          NA's   :3
 ```
 
-![](assets/dar.png)
+![Density curves for the four versions of the debt-to-asset ratio: raw, winsorized, z-score, and percentile rank.](man/figures/dar.png)
 
 
 <br>

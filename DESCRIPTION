@@ -13,12 +13,15 @@ Authors@R:
             email = "cam17@illinois.edu"))
 Description: Calculate standard fiscal health accounting metrics for nonprofits from IRS 990 or 990-EZ data.
 License: MIT + file LICENSE
+URL: https://nonprofit-open-data-collective.github.io/fiscal/, https://github.com/Nonprofit-Open-Data-Collective/fiscal
+BugReports: https://github.com/Nonprofit-Open-Data-Collective/fiscal/issues
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 4.1.0)
 Imports: bit64, data.table, dplyr, magrittr, panel990, scales, stringr
-Suggests: testthat (>= 3.0.0), knitr, psych
+Suggests: testthat (>= 3.0.0), knitr, rmarkdown, psych
 Remotes: Nonprofit-Open-Data-Collective/panel990
+VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
