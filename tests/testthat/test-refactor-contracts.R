@@ -35,24 +35,24 @@ test_that("efile_tables rejects unknown cardinality labels", {
 test_that("panel pattern taxonomy remains stable", {
   panel_years <- 2019:2023
 
-  full <- fiscal:::.classify_panel_pattern(2019:2023, panel_years)
-  entry <- fiscal:::.classify_panel_pattern(2021:2023, panel_years)
+  persistent <- fiscal:::.classify_panel_pattern(2019:2023, panel_years)
+  entrant <- fiscal:::.classify_panel_pattern(2021:2023, panel_years)
   exit <- fiscal:::.classify_panel_pattern(2019:2021, panel_years)
-  fragmented <- fiscal:::.classify_panel_pattern(c(2019, 2021, 2023), panel_years)
+  segmented <- fiscal:::.classify_panel_pattern(c(2019, 2021, 2023), panel_years)
 
-  expect_equal(full$panel_type, "full")
-  expect_equal(entry$panel_type, "entry")
+  expect_equal(persistent$panel_type, "persistent")
+  expect_equal(entrant$panel_type, "entrant")
   expect_equal(exit$panel_type, "exit")
-  expect_equal(fragmented$panel_type, "full")
+  expect_equal(segmented$panel_type, "persistent")
 
-  expect_equal(full$spell_balance, "contiguous")
-  expect_equal(entry$spell_balance, "contiguous")
-  expect_equal(exit$spell_balance, "contiguous")
-  expect_equal(fragmented$spell_balance, "fragmented")
+  expect_equal(persistent$spell_balance, "seamless")
+  expect_equal(entrant$spell_balance, "seamless")
+  expect_equal(exit$spell_balance, "seamless")
+  expect_equal(segmented$spell_balance, "segmented")
 
-  expect_equal(full$gap_count, 0L)
-  expect_equal(fragmented$gap_count, 2L)
-  expect_equal(fragmented$gap_size_max, 1L)
+  expect_equal(persistent$gap_count, 0L)
+  expect_equal(segmented$gap_count, 2L)
+  expect_equal(segmented$gap_size_max, 1L)
 })
 
 test_that("panel_composition returns a per-ID classification", {

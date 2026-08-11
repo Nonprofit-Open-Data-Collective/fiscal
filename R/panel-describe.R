@@ -11,13 +11,13 @@
 #' panel:
 #'
 #' \describe{
-#'   \item{`full`}{Present in both the first and last panel year. May have
+#'   \item{`persistent`}{Present in both the first and last panel year. May have
 #'     interior gaps.}
-#'   \item{`entry`}{Absent in the first panel year, present in the last.
-#'     Contiguous or fragmented interior.}
+#'   \item{`entrant`}{Absent in the first panel year, present in the last.
+#'     Seamless or segmented interior.}
 #'   \item{`exit`}{Present in the first panel year, absent in the last.
-#'     Contiguous or fragmented interior.}
-#'   \item{`interior`}{Absent from both the first and last panel year.
+#'     Seamless or segmented interior.}
+#'   \item{`transient`}{Absent from both the first and last panel year.
 #'     Observed only within the interior of the panel window.}
 #'   \item{`empty`}{No observations found for this ID within the panel years.
 #'     Only possible when the ID universe is supplied externally (e.g. a
@@ -29,9 +29,9 @@
 #' observed years form a single unbroken run:
 #'
 #' \describe{
-#'   \item{`contiguous`}{All years from first to last observation are present;
+#'   \item{`seamless`}{All years from first to last observation are present;
 #'     no interior gaps.}
-#'   \item{`fragmented`}{One or more interior years are missing between the
+#'   \item{`segmented`}{One or more interior years are missing between the
 #'     first and last observation.}
 #' }
 #'
@@ -50,16 +50,16 @@
 #' Examples (4-year panel, x = observed, o = absent):
 #'
 #' \tabular{lllll}{
-#'   Pattern \tab panel_type \tab panel_spell_balance \tab gap_count \tab gap_size_max \cr
-#'   xxxx \tab full     \tab contiguous \tab 0 \tab 0 \cr
-#'   xoxx \tab full     \tab fragmented \tab 1 \tab 1 \cr
-#'   xoox \tab full     \tab fragmented \tab 1 \tab 2 \cr
-#'   ooxx \tab entry    \tab contiguous \tab 0 \tab 0 \cr
-#'   oxox \tab entry    \tab fragmented \tab 1 \tab 1 \cr
-#'   xxoo \tab exit     \tab contiguous \tab 0 \tab 0 \cr
-#'   xoxo \tab exit     \tab fragmented \tab 1 \tab 1 \cr
-#'   oxoo \tab interior \tab contiguous \tab 0 \tab 0 \cr
-#'   oxxo \tab interior \tab fragmented \tab 0 \tab 0 \cr
+#'   Pattern \tab panel_type \tab panel_spell \tab gap_count \tab gap_size_max \cr
+#'   xxxx \tab persistent \tab seamless  \tab 0 \tab 0 \cr
+#'   xoxx \tab persistent \tab segmented \tab 1 \tab 1 \cr
+#'   xoox \tab persistent \tab segmented \tab 1 \tab 2 \cr
+#'   ooxx \tab entrant    \tab seamless  \tab 0 \tab 0 \cr
+#'   oxox \tab entrant    \tab segmented \tab 1 \tab 1 \cr
+#'   xxoo \tab exit       \tab seamless  \tab 0 \tab 0 \cr
+#'   xoxo \tab exit       \tab segmented \tab 1 \tab 1 \cr
+#'   oxoo \tab transient  \tab seamless  \tab 0 \tab 0 \cr
+#'   oxxo \tab transient  \tab segmented \tab 0 \tab 0 \cr
 #' }
 #'
 #' @section Chaining:
@@ -91,8 +91,8 @@
 #'
 #' @return
 #' **When `append_classification = FALSE` (default):**
-#' A data frame with one row per panel year and columns `year`, `full`,
-#' `entry`, `exit`, `interior`, and `empty`. Each cell is the count of
+#' A data frame with one row per panel year and columns `year`, `persistent`,
+#' `entrant`, `exit`, `transient`, and `empty`. Each cell is the count of
 #' organizations of that type observed in that year. If
 #' `return_classification = TRUE`, the per-ID classification is accessible
 #' via `attr(result, "classification")`.
@@ -104,8 +104,8 @@
 #'   \item{`panel_year_first`}{First panel year the organization was observed.}
 #'   \item{`panel_year_last`}{Last panel year the organization was observed.}
 #'   \item{`panel_year_count`}{Number of panel years the organization was observed.}
-#'   \item{`panel_type`}{One of `full`, `entry`, `exit`, `interior`, `empty`.}
-#'   \item{`panel_spell_balance`}{One of `contiguous` or `fragmented`.}
+#'   \item{`panel_type`}{One of `persistent`, `entrant`, `exit`, `transient`, `empty`.}
+#'   \item{`panel_spell`}{One of `seamless` or `segmented`.}
 #'   \item{`panel_gap_count`}{Number of interior missing-year spells.}
 #'   \item{`panel_gap_size_max`}{Length of the longest interior missing-year run.}
 #' }
@@ -121,10 +121,10 @@
 #' # Pipeline usage: classify and continue
 #' d <- panel_composition(d, append_classification = TRUE)
 #' table(d$panel_type)
-#' table(d$panel_type, d$panel_spell_balance)
+#' table(d$panel_type, d$panel_spell)
 #'
-#' # Inspect fragmented full-span organizations with large gaps
-#' subset(d, panel_type == "full" & panel_spell_balance == "fragmented" &
+#' # Inspect segmented full-span organizations with large gaps
+#' subset(d, panel_type == "persistent" & panel_spell == "segmented" &
 #'            panel_gap_size_max >= 2)
 #'
 #' # Backward-compatible attribute access
@@ -234,7 +234,7 @@
   out[, empty := empty_total]   # same count every year, or handle separately
 
   data.table::setcolorder(out, intersect(
-    c("year", "full", "entry", "exit", "interior", "empty"),
+    c("year", .PANEL_TYPES),
     names(out)
   ))
 
@@ -249,7 +249,7 @@
     year_last     = "panel_year_last",
     year_count    = "panel_year_count",
     panel_type    = "panel_type",
-    spell_balance = "panel_spell_balance",
+    spell_balance = "panel_spell",
     gap_count     = "panel_gap_count",
     gap_size_max  = "panel_gap_size_max"
   )
@@ -327,9 +327,9 @@
 #' @param obs_years Sorted unique years observed for one ID.
 #' @param panel_years Sorted unique years in the full panel.
 #'
-#' @return A list containing `panel_type` (`"full"`, `"entry"`, `"exit"`,
-#'   `"interior"`, or `"empty"`), `spell_balance` (`"contiguous"` or
-#'   `"fragmented"`), and gap counts.
+#' @return A list containing `panel_type` (`"persistent"`, `"entrant"`,
+#'   `"exit"`, `"transient"`, or `"empty"`), `spell_balance` (`"seamless"` or
+#'   `"segmented"`), and gap counts.
 #'
 #' @keywords internal
 .classify_panel_pattern <- function(obs_years, panel_years) {
@@ -340,7 +340,7 @@
   first_panel <- panel_years[1L]
   last_panel  <- panel_years[length(panel_years)]
 
-  # ?? empty ????????????????????????????????????????????????????????????????????
+  # -- empty -------------------------------------------------------------------
   if (length(obs_years) == 0L) {
     return(list(
       panel_type    = "empty",
@@ -359,20 +359,20 @@
   first_obs <- obs_years[1L]
   last_obs  <- obs_years[n_obs]
 
-  # ?? panel_type (boundary membership only) ???????????????????????????????????
+  # -- panel_type (boundary membership only) -----------------------------------
   touches_first <- (first_obs == first_panel)
   touches_last  <- (last_obs  == last_panel)
 
-  panel_type <- if      ( touches_first &&  touches_last) "full"
-                else if (!touches_first &&  touches_last) "entry"
+  panel_type <- if      ( touches_first &&  touches_last) "persistent"
+                else if (!touches_first &&  touches_last) "entrant"
                 else if ( touches_first && !touches_last) "exit"
-                else                                      "interior"
+                else                                      "transient"
 
-  # ?? spell_balance ????????????????????????????????????????????????????????????
+  # -- spell_balance -----------------------------------------------------------
   is_contiguous <- (span == n_obs)
-  spell_balance <- if (is_contiguous) "contiguous" else "fragmented"
+  spell_balance <- if (is_contiguous) "seamless" else "segmented"
 
-  # ?? gap_count and gap_size_max (interior span only, censored tails excluded) ?
+  # -- gap_count and gap_size_max (interior span only, censored tails excluded)-
   if (span <= 1L || is_contiguous) {
     gap_count    <- 0L
     gap_size_max <- 0L
