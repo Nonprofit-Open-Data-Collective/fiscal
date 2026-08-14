@@ -42,8 +42,8 @@ clean data with `panel990`, then score it with `fiscal`.
 automatically via the package's `Remotes:` field.
 
 ```r
-# install.packages("remotes")
-remotes::install_github("nonprofit-open-data-collective/fiscal")
+# install.packages("pak")
+pak::pkg_install("nonprofit-open-data-collective/fiscal")
 ```
 
 ## Quick start (reproducible)
