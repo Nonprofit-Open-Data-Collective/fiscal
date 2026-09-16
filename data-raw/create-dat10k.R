@@ -273,6 +273,8 @@ download.file( paste0( root, fn5 ), destfile=path5 )
 ###  GET BMF FIELDS 
 ###
 
+# NOTE (2026-09): the v1.2 CSV below is no longer available (403). The current
+# geocoded Unified BMF is at panel990::bmf_url(), with different column names.
 nccs_s3  <- "https://nccsdata.s3.us-east-1.amazonaws.com/"
 bmf_url  <- "bmf/unified/v1.2/UNIFIED_BMF_V1.2.csv"
 bmf_path <- "data/UNIFIED_BMF_V1.2.csv"
@@ -357,7 +359,9 @@ set.seed(123)
 
 ds <- 
   df %>%
-  filter( ! ( NTEE_NCCS == "" | is.na(NTEE_NCCS) ) ) %>%
+  # get_clean_ntee() has already turned blank codes into "Z99", so test for a
+  # usable code rather than a blank one (see data-raw/replace-missing-ntee.R).
+  filter( grepl( "^[A-Y][0-9][0-9A-Z]$", NTEE_NCCS ) ) %>%
   filter( F9_01_REV_TOT_CY >= 0 ) %>%
   sample_n( 10000 )
 

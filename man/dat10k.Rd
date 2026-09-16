@@ -6,7 +6,7 @@
 \title{IRS 990 Efile Dataset - 2021 Tax Year (10,000 Organizations)}
 \format{
 A \code{data.table} (and \code{data.frame}) with 10,000 rows and 93 variables:
-6,284 Form 990 filers and 3,716 Form 990-EZ filers, identified by
+6,286 Form 990 filers and 3,714 Form 990-EZ filers, identified by
 \code{RETURN_TYPE}. Dollar amounts are whole dollars stored as plain R numbers
 (double or integer). Form line references are to the 2021 Form 990, with
 the equivalent 990-EZ line where 990-EZ filers report the field.
@@ -14,13 +14,13 @@ Variables are organized into the following groups:
 \subsection{BMF classification, geography, and summary financials}{
 \itemize{
 \item \code{EIN2}: Employer Identification Number, formatted \code{"EIN-XX-XXXXXXX"}
-\item \code{NTEE_NCCS}: Normalized 3-character NTEE code (e.g. \code{"B94"}); the
-NCCS NTEE code, or the IRS NTEE code where NCCS has none, cleaned with
-\code{\link[=get_clean_ntee]{get_clean_ntee()}}
+\item \code{NTEE_NCCS}: Normalized 3-character NTEE code (e.g. \code{"B94"}), cleaned with
+\code{\link[=get_clean_ntee]{get_clean_ntee()}}: the NCCS NTEE code, or the IRS NTEE code where NCCS
+has none. Every row has a usable code (no \code{"Z99"} placeholders)
 \item \code{NTEEV2}: NTEE Version 2 code, \verb{[INDUSTRY]-[NTEE]-[ORGTYPE]}
 (e.g. \code{"EDU-B94-RG"}); see \code{\link[=get_nteev2]{get_nteev2()}}
 \item \code{NTMAJ12}: 3-letter major industry group (\code{ART}, \code{EDU}, \code{UNI}, \code{ENV},
-\code{HEL}, \code{HOS}, \code{IFA}, \code{PSB}, \code{MMB}, \code{UNU}, \code{REL}, \code{HMS}); see
+\code{HEL}, \code{HOS}, \code{IFA}, \code{PSB}, \code{MMB}, \code{REL}, \code{HMS}); see
 \code{\link[=get_industry]{get_industry()}}
 \item \code{NTEE_ORG_TYPE}: Organization type code (\code{RG}, \code{AA}, \code{MT}, \code{PA}, \code{RP},
 \code{MS}, \code{MM}, \code{NS}); see \code{\link[=get_org_type]{get_org_type()}}
@@ -197,10 +197,20 @@ database (version 2.1, 2021 tax year): \code{F9-P00-T00-HEADER},
 \code{F9-P01-T00-SUMMARY}, \code{F9-P08-T00-REVENUE}, \code{F9-P09-T00-EXPENSES}, and
 \code{F9-P10-T00-BALANCE-SHEET}. BMF fields (NTEE codes, geographic identifiers,
 and organizational metadata) were merged on EIN from the NCCS Unified BMF
-(v1.2). The sample was drawn from filings with an NTEE code and non-negative
-total revenue (\code{F9_01_REV_TOT_CY >= 0}). Each row is a filing: four
-organizations appear twice, once with an original and once with an amended
-return.
+(v1.2). The sample was drawn at random from filings with a usable NTEE code and
+non-negative total revenue (\code{F9_01_REV_TOT_CY >= 0}). Each row is a filing:
+four organizations appear twice, once with an original and once with an
+amended return.
+
+The original draw let 157 organizations without a usable NTEE code through
+(blank codes had become \code{"Z99"}, plus a few malformed codes). In September
+2026 those rows were replaced with new random draws from the same 2021
+population (\code{data-raw/replace-missing-ntee.R}). The Unified BMF v1.2 was no
+longer available, so their BMF fields come from the current geocoded Unified
+BMF: NTEE codes (the IRS code), subsection, foundation code, ruling year,
+state, and county are filled, while \code{CENSUS_CBSA_FIPS}, \code{CENSUS_CBSA_NAME},
+\code{CENSUS_BLOCK_FIPS}, \code{CENSUS_URBAN_AREA}, and the four
+\verb{F990_TOTAL_*_RECENT} amounts are \code{NA} for those rows.
 
 Most Part VIII, IX, and X fields exist only on the full Form 990 and are \code{NA}
 for 990-EZ filers. The exceptions are fields that also appear on the 990-EZ

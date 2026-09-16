@@ -46,6 +46,15 @@ test_that( "dat10k financial columns have plausible dollar magnitudes", {
   expect_gt( mean( abs( gap ) <= 1, na.rm = TRUE ), 0.9 )
 })
 
+test_that( "every dat10k row has a usable NTEE code", {
+  # "Z99" is what get_clean_ntee() assigns to a blank code
+  ntee <- dat10k$NTEE_NCCS
+  expect_false( anyNA( ntee ) )
+  expect_equal( ntee[ !grepl( "^[A-Y][0-9][0-9A-Z]$", ntee ) ], character(0) )
+  expect_false( any( dat10k$NTMAJ12 == "UNU" ) )
+  expect_identical( substr( dat10k$NTEEV2, 5, 7 ), ntee )
+})
+
 
 # ---- detection and repair helpers ----------------------------------------
 

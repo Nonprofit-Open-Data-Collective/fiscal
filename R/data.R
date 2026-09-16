@@ -5,7 +5,7 @@
 #' organizational metadata from the IRS Business Master File (BMF).
 #'
 #' @format A `data.table` (and `data.frame`) with 10,000 rows and 93 variables:
-#'   6,284 Form 990 filers and 3,716 Form 990-EZ filers, identified by
+#'   6,286 Form 990 filers and 3,714 Form 990-EZ filers, identified by
 #'   `RETURN_TYPE`. Dollar amounts are whole dollars stored as plain R numbers
 #'   (double or integer). Form line references are to the 2021 Form 990, with
 #'   the equivalent 990-EZ line where 990-EZ filers report the field.
@@ -14,13 +14,13 @@
 #' ## BMF classification, geography, and summary financials
 #'
 #' - `EIN2`: Employer Identification Number, formatted `"EIN-XX-XXXXXXX"`
-#' - `NTEE_NCCS`: Normalized 3-character NTEE code (e.g. `"B94"`); the
-#'   NCCS NTEE code, or the IRS NTEE code where NCCS has none, cleaned with
-#'   [get_clean_ntee()]
+#' - `NTEE_NCCS`: Normalized 3-character NTEE code (e.g. `"B94"`), cleaned with
+#'   [get_clean_ntee()]: the NCCS NTEE code, or the IRS NTEE code where NCCS
+#'   has none. Every row has a usable code (no `"Z99"` placeholders)
 #' - `NTEEV2`: NTEE Version 2 code, `[INDUSTRY]-[NTEE]-[ORGTYPE]`
 #'   (e.g. `"EDU-B94-RG"`); see [get_nteev2()]
 #' - `NTMAJ12`: 3-letter major industry group (`ART`, `EDU`, `UNI`, `ENV`,
-#'   `HEL`, `HOS`, `IFA`, `PSB`, `MMB`, `UNU`, `REL`, `HMS`); see
+#'   `HEL`, `HOS`, `IFA`, `PSB`, `MMB`, `REL`, `HMS`); see
 #'   [get_industry()]
 #' - `NTEE_ORG_TYPE`: Organization type code (`RG`, `AA`, `MT`, `PA`, `RP`,
 #'   `MS`, `MM`, `NS`); see [get_org_type()]
@@ -173,10 +173,20 @@
 #' `F9-P01-T00-SUMMARY`, `F9-P08-T00-REVENUE`, `F9-P09-T00-EXPENSES`, and
 #' `F9-P10-T00-BALANCE-SHEET`. BMF fields (NTEE codes, geographic identifiers,
 #' and organizational metadata) were merged on EIN from the NCCS Unified BMF
-#' (v1.2). The sample was drawn from filings with an NTEE code and non-negative
-#' total revenue (`F9_01_REV_TOT_CY >= 0`). Each row is a filing: four
-#' organizations appear twice, once with an original and once with an amended
-#' return.
+#' (v1.2). The sample was drawn at random from filings with a usable NTEE code and
+#' non-negative total revenue (`F9_01_REV_TOT_CY >= 0`). Each row is a filing:
+#' four organizations appear twice, once with an original and once with an
+#' amended return.
+#'
+#' The original draw let 157 organizations without a usable NTEE code through
+#' (blank codes had become `"Z99"`, plus a few malformed codes). In September
+#' 2026 those rows were replaced with new random draws from the same 2021
+#' population (`data-raw/replace-missing-ntee.R`). The Unified BMF v1.2 was no
+#' longer available, so their BMF fields come from the current geocoded Unified
+#' BMF: NTEE codes (the IRS code), subsection, foundation code, ruling year,
+#' state, and county are filled, while `CENSUS_CBSA_FIPS`, `CENSUS_CBSA_NAME`,
+#' `CENSUS_BLOCK_FIPS`, `CENSUS_URBAN_AREA`, and the four
+#' `F990_TOTAL_*_RECENT` amounts are `NA` for those rows.
 #'
 #' Most Part VIII, IX, and X fields exist only on the full Form 990 and are `NA`
 #' for 990-EZ filers. The exceptions are fields that also appear on the 990-EZ
