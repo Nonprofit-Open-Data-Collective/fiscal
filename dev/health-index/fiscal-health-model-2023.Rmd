@@ -1,0 +1,958 @@
+---
+title: "The Fiscal Health Measurement Model, Tax Year 2023"
+subtitle: "Fitting, scoring, and validating three directional dimensions and one context dimension"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  pkg_dir: "../.."
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, knitr.kable.NA = "")
+```
+
+<!-- Web fonts load at view time; data-external keeps them out of the self-contained file -->
+<link rel="stylesheet" data-external="1" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap">
+
+## Purpose
+
+`dimension-discovery-2023.Rmd` found four stable dimensions in the 2023
+full-990 filers. Three have a clear healthy direction; one describes the
+business model. This document **freezes** that structure into a reusable
+measurement model:
+
+| Dimension | Indicators | Healthy direction |
+|---|---|---|
+| **Leverage** | debt/assets, payables share of short-term capital | lower |
+| **Performance & growth** | surplus margin, return on assets, net-asset, revenue, and asset growth | higher |
+| **Liquidity & reserves** | months of cash, liquid months, assets/revenue, current ratio | higher |
+| **Asset structure** (context) | cash share vs. land & buildings share | none |
+
+The composite fiscal health index averages the three directional dimensions.
+Asset structure and the standalone ratios (self-sufficiency, admin share,
+fundraising share) are scored and reported, but they get no weight.
+
+<div class="concepts">
+
+**Key ideas**
+
+- **A fitted model is a set of stored parameters.** It records percentile
+  bounds, transformation constants, centers and scales, indicator directions,
+  and dimension coefficients. Scoring new data reuses them; nothing is
+  re-estimated.
+- **Orientation:** before averaging, every indicator in a dimension is flipped
+  so that higher means healthier. For the context dimension, higher simply
+  means a more liquid asset base.
+- **Standardized-mean scoring:** a dimension score is the average of its
+  oriented z-scores, rescaled to mean 0 and SD 1. It is transparent, and here
+  it is nearly identical to PCA or factor-weighted scores.
+- **Context vs. health:** a stable dimension without a healthy direction is
+  scored and reported, but it has zero weight in the composite.
+- **Holdout check:** fit the model on half the organizations and score the
+  other half. The scores should match the full-sample fit.
+- **Peer-group percentile:** an organization's rank among similar
+  organizations (same subsector and size band) rather than among all filers. A
+  hospital at its peers' median is typical for a hospital, even if hospitals
+  as a group score low nationally.
+
+</div>
+
+```{r packages}
+library(dplyr)
+library(knitr)
+library(psych)
+if (file.exists(file.path(params$pkg_dir, "DESCRIPTION"))) {
+  pkgload::load_all(params$pkg_dir, quiet = TRUE)
+} else {
+  library(fiscal)
+}
+source("build-ratio-frame.R")
+set.seed(params$seed)
+fmt <- function(x, d = 2) format(round(x, d), nsmall = d, big.mark = ",")
+pct <- function(x, d = 1) paste0(format(round(100 * x, d), nsmall = d), "%")
+```
+
+## 1. Ratio frame
+
+The frame is built exactly as in the dimension-discovery document:
+rule-based reformulations, conditional imputation, and growth measured within
+the 2023 return, with blanks filled from 2022.
+
+```{r build}
+# The BMF-merged extract carries NTEE classifications for peer groups (Section 8).
+cache_file <- file.path(params$data_dir, c("efile-2023-bmf-dedup.rds", "efile-2023.rds"))
+cache_file <- cache_file[file.exists(cache_file)][1]
+if (is.na(cache_file)) stop("No cached 2023 e-file extract; render fiscal-health-index-2023.Rmd first.")
+efile <- readRDS(cache_file)
+if (!"nteev2_subsector" %in% names(efile)) {
+  efile <- panel990::bmf_merge(efile, verbose = FALSE)   # attach NTEE and subsection
+}
+classification <- as.data.frame(efile)[efile$RETURN_TYPE == "990",
+  intersect(c("EIN2", "nteev2_subsector", "ntee_code_major_group", "subsection_code",
+              "ntee_code_clean", "F9_00_EXEMPT_STAT_501C3_X"), names(efile))]
+prior_file <- file.path(params$data_dir, "efile-2022-p01p10-dedup.rds")
+if (!file.exists(prior_file)) stop("Render dimension-discovery-2023.Rmd first to cache the 2022 tables.")
+prior <- as.data.frame(readRDS(prior_file))[, c("EIN2", "F9_01_REV_TOT_CY")]
+
+built <- build_ratio_frame(efile, seed = params$seed, growth = TRUE, prior = prior)
+rm(efile, prior); invisible(gc())
+
+k <- built$components
+frame <- built$frame
+ids <- data.frame(EIN2 = built$ein, stringsAsFactors = FALSE)
+data.frame(organizations = format(nrow(frame), big.mark = ","))
+```
+
+## 2. Model specification
+
+```{r specification}
+dimensions <- list(
+  leverage           = c("debt_assets", "payables_una"),
+  performance_growth = c("surplus_margin", "return_assets", "na_growth", "rev_growth", "asset_growth"),
+  reserves           = c("months_cash", "liquid_months", "assets_rev", "current"),
+  asset_structure    = c("cash_assets", "land_assets"))
+standalone <- c("self_suff", "admin_exp", "fundr_exp")
+
+directions <- c(
+  debt_assets = "lower", payables_una = "lower",
+  surplus_margin = "higher", return_assets = "higher", na_growth = "higher",
+  rev_growth = "higher", asset_growth = "higher",
+  months_cash = "higher", liquid_months = "higher", assets_rev = "higher", current = "higher",
+  cash_assets = "higher", land_assets = "lower",
+  self_suff = "context", admin_exp = "context", fundr_exp = "context")
+
+registry <- fiscal_metrics()
+reg_dir <- setNames(registry$direction, registry$metric)
+kable(data.frame(
+  indicator = names(directions),
+  dimension = c(rep(names(dimensions), lengths(dimensions)), rep("standalone", length(standalone))),
+  direction = unname(directions),
+  package_registry = unname(reg_dir[names(directions)])),
+  row.names = FALSE)
+```
+
+> **Decision 1: Set every direction explicitly.**
+>
+> Several indicators are not in the package registry (`payables_una`, the
+> growth rates, the bounded and symmetric reformulations). Two differ from it
+> on purpose:
+>
+> * **`assets_rev` is *higher*, not *lower*.** The registry reads assets per
+>   dollar of revenue as asset *inefficiency*. Empirically it loads with months
+>   of cash and liquid reserves: organizations with more assets per dollar of
+>   activity have more resources relative to operations. Oriented *lower*, it
+>   would cancel the other reserve indicators.
+> * **The asset-structure dimension is oriented, even though it has no healthy
+>   direction.** Cash share and land share load with opposite signs. Leaving
+>   both unoriented would make them cancel. Orienting cash *higher* and land
+>   *lower* defines the score as "more liquid, less fixed asset base". That
+>   describes the business model and says nothing about health.
+>
+> The three standalone ratios stay `context`, i.e. unoriented. The fit records
+> a warning for them, and that is intended.
+
+### 2.1 Freeze the normalization
+
+```{r normalization}
+vars <- c(unlist(dimensions, use.names = FALSE), standalone)
+norm_spec <- fit_winsor_normalize(frame[vars], p = 0.01)
+X <- apply_winsor_normalize(frame[vars], norm_spec)
+stopifnot(isTRUE(all.equal(X, as.data.frame(lapply(frame[vars], winsor_normalize)),
+                           check.attributes = FALSE)))
+kable(norm_spec, digits = 3, row.names = FALSE,
+      caption = "Stored normalization parameters (1st/99th percentile winsorizing)")
+```
+
+`fit_winsor_normalize()` stores each ratio's winsorizing bounds, whether an
+asinh step is applied (and on which tail), the asinh scale, and the final mean
+and standard deviation. `apply_winsor_normalize()` reproduces the
+discovery-stage frame exactly (the `stopifnot()` check above), and can put
+another year's ratios on the 2023 scale.
+
+## 3. Fit
+
+```{r fit}
+fits <- lapply(c(standardized_mean = "standardized_mean", pca = "pca", factor = "factor"),
+               function(method) fiscal_health_fit(X, dimensions = dimensions,
+                                                  standalone = standalone, scoring = method,
+                                                  indicator_direction = directions,
+                                                  missing = "median"))
+fit <- fits$standardized_mean
+fit
+fit$warnings
+```
+
+### 3.1 Scoring method
+
+```{r scoring-methods}
+score_only <- function(f) fiscal_health_score(X, f, append = FALSE, include_standalone = FALSE,
+                                              include_coverage = FALSE)
+s <- lapply(fits, score_only)
+kable(data.frame(
+  dimension = names(dimensions),
+  r_mean_vs_pca    = sapply(names(dimensions), function(d) cor(s$standardized_mean[[paste0("fh_", d)]], s$pca[[paste0("fh_", d)]])),
+  r_mean_vs_factor = sapply(names(dimensions), function(d) cor(s$standardized_mean[[paste0("fh_", d)]], s$factor[[paste0("fh_", d)]]))),
+  digits = 3, row.names = FALSE)
+
+coef_table <- do.call(rbind, lapply(names(dimensions), function(d) data.frame(
+  dimension = d, indicator = dimensions[[d]],
+  standardized_mean = fits$standardized_mean$dimensions[[d]]$coefficients,
+  pca    = fits$pca$dimensions[[d]]$coefficients,
+  factor = fits$factor$dimensions[[d]]$coefficients)))
+kable(coef_table, digits = 3, row.names = FALSE,
+      caption = "Indicator coefficients by scoring method (PCA and factor coefficients are unit-length)")
+```
+
+> **Decision 2: Score dimensions as standardized means.**
+>
+> *Why:* The standardized mean correlates at least
+> `r fmt(min(sapply(names(dimensions), function(d) cor(s$standardized_mean[[paste0("fh_", d)]], s$factor[[paste0("fh_", d)]]))), 2)`
+> with factor-weighted scores and
+> `r fmt(min(sapply(names(dimensions), function(d) cor(s$standardized_mean[[paste0("fh_", d)]], s$pca[[paste0("fh_", d)]]))), 2)`
+> with PCA-weighted scores.
+>
+> Factor weights would concentrate performance & growth on return on assets
+> and net-asset growth, and reserves on months of cash. That makes the scores
+> depend on a single year's estimates. Equal weights are transparent and don't
+> change between reference years.
+>
+> Equal weighting does give balance-sheet growth (net-asset and asset growth)
+> two of the five performance indicators. The comparison above shows that
+> choice changes scores very little.
+
+### 3.2 Reliability
+
+```{r reliability}
+reliability <- do.call(rbind, lapply(names(dimensions), function(d) {
+  spec <- fit$dimensions[[d]]
+  Z <- sweep(as.matrix(X[spec$indicators]), 2, spec$indicator_multiplier, "*")
+  a <- suppressWarnings(psych::alpha(Z, check.keys = FALSE, warnings = FALSE))
+  data.frame(dimension = d, indicator = spec$indicators,
+             item_rest_r = a$item.stats$r.drop,
+             alpha_if_dropped = a$alpha.drop$raw_alpha,
+             dimension_alpha = a$total$raw_alpha)
+}))
+kable(reliability, digits = 3, row.names = FALSE)
+```
+
+Every indicator correlates positively with the rest of its dimension once
+oriented, so the directions in Section 2 are internally consistent. The
+dimension alphas are acceptable to good for short, formative accounting
+scales. Where dropping an indicator would raise alpha, the gain is small, and
+the indicator was kept because of its loading and its substantive role.
+
+## 4. Score, weight, and index
+
+```{r index}
+weights <- fiscal_weights(fit,
+  weights = c(leverage = 1, performance_growth = 1, reserves = 1, asset_structure = 0),
+  include_standalone = FALSE, min_coverage = 0.5,
+  name = "Equal weights on the three directional dimensions")
+weights
+
+scored  <- fiscal_health_score(X, fit)
+indexed <- fiscal_health_index(scored, weights)
+indexed$fiscal_health_pctile <- dplyr::ntile(indexed$fiscal_health, 100)
+
+score_cols <- c("fh_leverage", "fh_performance_growth", "fh_reserves", "fh_asset_structure", "fiscal_health")
+```
+
+> **Decision 3: Weight the composite 1/3 each on leverage, performance &
+> growth, and reserves; give asset structure zero weight.**
+>
+> *Why:* No outcome in a single cross-section can calibrate weights, so equal
+> weights are the defensible default. Zero weight for asset structure follows
+> from its lack of a healthy direction. Scoring it anyway keeps it available as
+> a stratifier or control.
+>
+> **Note on the sign of leverage:** `fh_leverage` is oriented, so *higher
+> means less leveraged*. All three weighted scores read "higher is healthier".
+
+## 5. Results
+
+### 5.1 Distributions and correlations
+
+```{r distributions}
+kable(t(sapply(indexed[score_cols], function(v)
+  c(mean = mean(v, na.rm = TRUE), sd = sd(v, na.rm = TRUE),
+    quantile(v, c(.05, .25, .5, .75, .95), na.rm = TRUE)))), digits = 2)
+kable(round(cor(indexed[score_cols]), 2), caption = "Score correlations")
+```
+
+The leverage score has a **ceiling**. Its 75th and 95th percentiles are equal
+because organizations with no liabilities and no payables all get the best
+possible value (`r pct(mean(frame$debt_assets == 0 & frame$payables_una == 0))`
+of filers). That tie is real, not a measurement artifact: having no debt is the
+least-leveraged state.
+
+```{r histograms, fig.height = 3}
+op <- par(mfrow = c(1, 5), mar = c(3, 1, 2.5, 1), cex.main = 0.9)
+for (v in score_cols) hist(indexed[[v]], breaks = 60, col = "#6d7681", border = "white",
+                           main = sub("^fh_", "", v), yaxt = "n", xlab = "", ylab = "")
+par(op)
+```
+
+### 5.2 Face validity: raw financial conditions by index quintile
+
+These conditions are computed from the raw 2023 figures. Several of them feed
+the index, so the check is partly circular. What it tests is whether
+orientation, transformation, and weighting behave as intended on recognizable
+distress signals.
+
+```{r face-validity}
+validity <- data.frame(
+  quintile             = dplyr::ntile(indexed$fiscal_health, 5),
+  deficit              = k$R < k$E,
+  negative_net_assets  = k$NA_eoy < 0,
+  negative_liquid      = frame$liquid_months < 0,
+  under_1mo_cash       = frame$months_cash < 1,
+  revenue_drop_20      = frame$rev_growth < -0.2,
+  liabilities_over_half = frame$debt_assets > 0.5,
+  expenses             = k$E)
+kable(validity |>
+  group_by(quintile) |>
+  summarise(n = format(n(), big.mark = ","),
+            `deficit` = pct(mean(deficit)),
+            `negative net assets` = pct(mean(negative_net_assets)),
+            `negative liquid reserves` = pct(mean(negative_liquid)),
+            `< 1 month cash` = pct(mean(under_1mo_cash)),
+            `revenue down > 20%` = pct(mean(revenue_drop_20)),
+            `liabilities > 50% of assets` = pct(mean(liabilities_over_half)),
+            `median expenses ($)` = format(round(median(expenses)), big.mark = ",")),
+  align = "r")
+```
+
+What the table shows:
+
+* **Balance-sheet distress** (negative net assets, negative liquid reserves,
+  high debt) falls steeply from the bottom quintile to the top. It is heavily
+  concentrated in the bottom fifth.
+* **Deficits and thin cash** fall steadily as well.
+* **Revenue drops of more than 20%** fall only modestly. Revenue growth has the
+  lowest weight in practice, being one of five performance indicators with the
+  weakest loading. A single year's revenue decline is also a noisy distress
+  signal on its own.
+* **Size.** Median expenses fall sharply across quintiles. Small organizations
+  more often carry no debt and hold reserves that are large relative to their
+  spending, so they score higher. Treat the index as a measure of condition
+  *relative to scale*, and compare within size groups where size matters (see
+  5.4).
+
+### 5.3 Profiles across the three directional dimensions
+
+```{r profiles}
+above <- function(v) ifelse(v >= median(v), "+", "-")
+profile <- paste0("L", above(indexed$fh_leverage), " P", above(indexed$fh_performance_growth),
+                  " R", above(indexed$fh_reserves))
+kable(data.frame(profile = names(table(profile)),
+                 share = as.numeric(prop.table(table(profile))),
+                 median_index = as.numeric(tapply(indexed$fiscal_health, profile, median))) |>
+        arrange(desc(median_index)),
+      digits = 3, row.names = FALSE,
+      caption = "L = low leverage, P = performance & growth, R = reserves; + above median, - below")
+```
+
+Organizations that are above the median on all three dimensions, or below on
+all three, account for more than chance would put there. That is expected,
+because the dimensions correlate positively. Still, most organizations have a
+*mixed* profile. The dimension scores carry information the composite hides;
+report them alongside it.
+
+### 5.4 The index by size and asset structure
+
+```{r context}
+size_group <- cut(k$E, c(0, 5e5, 5e6, Inf), labels = c("< $500k", "$500k-$5M", ">= $5M"), right = FALSE)
+asset_q <- dplyr::ntile(indexed$fh_asset_structure, 4)
+kable(indexed |>
+        mutate(size = size_group) |>
+        group_by(size) |>
+        summarise(n = format(n(), big.mark = ","),
+                  across(all_of(score_cols), ~ round(median(.x), 2))),
+      caption = "Median scores by organization size (total expenses)")
+kable(indexed |>
+        mutate(`asset structure quartile (1 = most fixed assets)` = asset_q) |>
+        group_by(`asset structure quartile (1 = most fixed assets)`) |>
+        summarise(across(all_of(c("fh_leverage", "fh_performance_growth", "fh_reserves", "fiscal_health")),
+                         ~ round(median(.x), 2))),
+      caption = "Median scores by asset-structure quartile (context dimension)")
+```
+
+These tables show why size and the context dimension are reported rather than
+ignored:
+
+* **Size.** Scores fall with organization size, mostly through leverage and
+  reserves. Performance & growth is nearly flat across size groups.
+* **Asset structure.** The most property-heavy quartile has the lowest leverage
+  scores (buildings are often mortgage-financed) and the lowest reserve scores
+  (equity tied up in fixed assets isn't liquid). The relationship isn't
+  strictly monotone across quartiles, but the most liquid asset bases score
+  best on leverage.
+
+Comparisons of health scores across very different business models should
+condition on asset structure and size, and on subsector once it is attached.
+
+## 6. Reusing the model on new data
+
+A fitted model should score organizations it never saw on the same scale as
+the reference sample. We fit the normalizer and the model on a random half of
+2023 filers, score the other half, and compare against the full-sample model.
+
+```{r holdout}
+half_a <- sample(nrow(frame), nrow(frame) / 2)
+half_b <- setdiff(seq_len(nrow(frame)), half_a)
+spec_a <- fit_winsor_normalize(frame[half_a, vars])
+fit_a  <- fiscal_health_fit(apply_winsor_normalize(frame[half_a, vars], spec_a),
+                            dimensions = dimensions, standalone = standalone,
+                            indicator_direction = directions, missing = "median")
+weights_a <- fiscal_weights(fit_a, weights = c(leverage = 1, performance_growth = 1, reserves = 1,
+                                               asset_structure = 0),
+                            include_standalone = FALSE, min_coverage = 0.5)
+scored_b <- fiscal_health_index(
+  fiscal_health_score(apply_winsor_normalize(frame[half_b, vars], spec_a), fit_a), weights_a)
+
+kable(data.frame(
+  score = score_cols,
+  r_with_full_sample_model = sapply(score_cols, function(v) cor(scored_b[[v]], indexed[[v]][half_b])),
+  holdout_mean = sapply(score_cols, function(v) mean(scored_b[[v]])),
+  holdout_sd   = sapply(score_cols, function(v) sd(scored_b[[v]]))),
+  digits = 4, row.names = FALSE)
+```
+
+Scores from the half-sample model are essentially identical to full-sample
+scores for the organizations it did not see. Their means and standard
+deviations match the reference scale. The stored parameters, not the scoring
+sample, define the scale.
+
+To score another tax year:
+
+1. Build its ratio frame with `build_ratio_frame()`.
+2. Apply `norm_spec` with `apply_winsor_normalize()`.
+3. Score with `fit`, then index with `weights`.
+
+> **One caveat.** Conditional imputation is re-estimated within each year's
+> frame. Only the normalization and model parameters are frozen.
+
+## 7. Comparison with the two-dimension index
+
+```{r compare-old, results = "asis"}
+old_file <- file.path(params$data_dir, "fiscal-health-index-2023.rds")
+has_old <- file.exists(old_file)
+if (has_old) {
+  old <- readRDS(old_file)$data
+  m <- match(ids$EIN2, old$EIN2)
+  both <- !is.na(m)
+  print(kable(data.frame(
+    comparison = c("Composite: 3-dimension vs. 2-dimension index",
+                   "Reserves (new) vs. Reserves & Solvency (old)",
+                   "Leverage (new, higher = less debt) vs. Reserves & Solvency (old)",
+                   "Performance & growth (new) vs. Operating Performance (old)",
+                   "Organizations in both"),
+    value = c(fmt(c(cor(indexed$fiscal_health[both], old$fiscal_health[m[both]], use = "pair"),
+                    cor(indexed$fh_reserves[both], old$fh_reserves_solvency[m[both]], use = "pair"),
+                    cor(indexed$fh_leverage[both], old$fh_reserves_solvency[m[both]], use = "pair"),
+                    cor(indexed$fh_performance_growth[both], old$fh_operating_performance[m[both]], use = "pair")), 3),
+              format(sum(both), big.mark = ","))),
+    row.names = FALSE, align = "lr"))
+  q_new <- dplyr::ntile(indexed$fiscal_health[both], 5)
+  q_old <- dplyr::ntile(old$fiscal_health[m[both]], 5)
+  quintile_agreement <- table(new = q_new, old = q_old)
+  same_quintile <- mean(q_new == q_old)
+  moved_two_plus <- mean(abs(q_new - q_old) >= 2)
+  print(kable(round(100 * prop.table(quintile_agreement, 1), 1),
+              caption = "Old-index quintile (columns) by new-index quintile (rows), row percent"))
+
+  # Among organizations that move two or more quintiles, which new dimension
+  # differs most from its old counterpart?
+  movers <- abs(q_new - q_old) >= 2
+  gap <- abs(indexed$fh_leverage - indexed$fh_reserves)[both]
+  gap_movers <- median(gap[movers]); gap_all <- median(gap)
+  res_movers <- median(indexed$fh_reserves[both][movers]); res_all <- median(indexed$fh_reserves[both])
+  print(kable(data.frame(
+    group = c("Moved 2+ quintiles", "All matched organizations"),
+    median_leverage = c(median(indexed$fh_leverage[both][movers]), median(indexed$fh_leverage[both])),
+    median_performance_growth = c(median(indexed$fh_performance_growth[both][movers]),
+                                  median(indexed$fh_performance_growth[both])),
+    median_reserves = c(median(indexed$fh_reserves[both][movers]), median(indexed$fh_reserves[both])),
+    median_abs_leverage_minus_reserves = c(
+      median(abs(indexed$fh_leverage - indexed$fh_reserves)[both][movers]),
+      median(abs(indexed$fh_leverage - indexed$fh_reserves)[both]))),
+    digits = 2, row.names = FALSE))
+} else {
+  cat("Output of fiscal-health-index-2023.Rmd not found in data_dir; comparison skipped.\n")
+}
+```
+
+`r if (has_old) paste0("The two indexes broadly agree on who is healthy: ", pct(same_quintile, 0), " of organizations fall in the same quintile, and ", pct(moved_two_plus, 0), " move two or more quintiles. ") else ""`The new model differs in three ways:
+
+* **Leverage is its own dimension.** The old index folded debt into reserves.
+* **Growth is part of performance.** Revenue, asset, and net-asset growth now
+  count alongside margins.
+* **Coverage.** Organizations with zero revenue or zero assets, previously
+  dropped, are now scored through the rules and imputation.
+
+`r if (has_old) paste0("The last table tests the obvious explanation for organizations that move two or more quintiles: a gap between leverage and reserve scores that the old reserves & solvency dimension averaged away. **The data don't support it.** The median gap is ", fmt(gap_movers, 2), " for movers and ", fmt(gap_all, 2), " for all organizations. Movers do have higher reserve scores (median ", fmt(res_movers, 2), " vs. ", fmt(res_all, 2), "). Rank changes reflect all the model changes together (new reserve and leverage definitions, growth in performance, and asinh rather than rank-normal scaling), not the leverage split alone.") else ""`
+
+## 8. Peer groups: subsector and size
+
+National scores answer "how does this organization compare with all full-990
+filers?" Section 5.4 showed that scores differ systematically by size and
+business model. A hospital, a food bank, and a business league run different
+balance sheets by design. **Peer-group percentiles** answer "how does this
+organization compare with organizations like it?"
+
+### 8.1 Defining peers
+
+```{r peer-sector}
+cls <- classification[match(ids$EIN2, classification$EIN2), ]
+subsector_labels <- c(
+  ART = "Arts & culture", EDU = "Education", UNI = "Higher education",
+  ENV = "Environment & animals", HEL = "Health", HOS = "Hospitals",
+  IFA = "International", PSB = "Public & societal benefit",
+  MMB = "Mutual & membership benefit", REL = "Religion", HMS = "Human services")
+subsection_labels <- c(
+  `3` = "Unclassified 501(c)(3)", `4` = "Social welfare 501(c)(4)",
+  `5` = "Labor & agricultural 501(c)(5)", `6` = "Business leagues 501(c)(6)",
+  `7` = "Social clubs 501(c)(7)", `8` = "Fraternal 501(c)(8), (c)(10)",
+  `10` = "Fraternal 501(c)(8), (c)(10)", `19` = "Veterans 501(c)(19)")
+
+sub  <- as.character(cls$nteev2_subsector)
+code <- as.character(cls$subsection_code)
+c3   <- cls$F9_00_EXEMPT_STAT_501C3_X %in% "X"
+peer_sector <- ifelse(sub %in% names(subsector_labels), subsector_labels[sub],
+               ifelse(code %in% names(subsection_labels), subsection_labels[code],
+               ifelse(c3 | code %in% "3", "Unclassified 501(c)(3)", "Unclassified, other exempt")))
+
+# Subsectors that span several NTEE major groups are split into those groups
+# (first letter of the NTEE code). Education, arts, religion, international, and
+# membership benefit are each a single major group; hospitals and higher
+# education are already their own subsectors.
+split_subsectors <- c("HMS", "PSB", "HEL", "ENV")
+major_group_labels <- c(
+  C = "environment", D = "animal-related",
+  E = "health care", F = "mental health & crisis intervention",
+  G = "diseases & medical disciplines", H = "medical research",
+  I = "crime & legal", J = "employment", K = "food, agriculture & nutrition",
+  L = "housing & shelter", M = "public safety & relief", N = "recreation & sports",
+  O = "youth development", P = "multipurpose & other",
+  R = "civil rights & advocacy", S = "community improvement",
+  T = "philanthropy & grantmaking", U = "science & technology",
+  V = "social science", W = "public & societal benefit, other")
+# Major groups that belong to each split subsector. A code outside its
+# subsector's range (rare BMF inconsistencies) goes to the subsector's
+# catch-all group instead of forming a one-organization sector.
+expected_letters <- list(HMS = LETTERS[9:16], PSB = LETTERS[18:23], HEL = LETTERS[5:8], ENV = c("C", "D"))
+catch_all <- c(HMS = "P", PSB = "W", HEL = "E", ENV = "C")
+peer_sector_pooled <- peer_sector          # subsector-level sector, before splitting
+is_split <- sub %in% split_subsectors
+major_letter <- substr(as.character(cls$ntee_code_clean), 1, 1)
+in_range <- mapply(function(l, s) l %in% expected_letters[[s]],
+                   major_letter[is_split], sub[is_split])
+peer_sector[is_split] <- paste0(
+  subsector_labels[sub[is_split]], ": ",
+  major_group_labels[ifelse(in_range, major_letter[is_split], catch_all[sub[is_split]])])
+
+peer_source <- ifelse(is_split, "NTEE v2 subsector, split by NTEE major group",
+               ifelse(sub %in% names(subsector_labels), "NTEE v2 subsector",
+               ifelse(is.na(sub), "no BMF match: subsection / 501(c)(3) flag",
+                      "NTEE unclassified: IRS subsection")))
+size_band <- cut(k$E, c(0, 5e5, 5e6, Inf), right = FALSE,
+                 labels = c("< $500k", "$500k-$5M", ">= $5M"))
+
+kable(as.data.frame(table(`peer sector source` = peer_source)) |>
+        mutate(share = round(Freq / sum(Freq), 3)), row.names = FALSE)
+```
+
+> **Decision 4: Build peer sectors from NTEE v2 subsectors, with IRS
+> subsection as the fallback for organizations the NTEE doesn't classify.**
+>
+> *Why:*
+>
+> * **NTEE v2 subsectors** follow the NTEE major groups but split out hospitals
+>   and higher education. Their balance sheets differ from other health and
+>   education organizations enough to distort comparisons.
+> * **Unclassified organizations are too many to ignore.** About
+>   `r pct(mean(!grepl("^NTEE v2 subsector", peer_source)), 0)` of full-990 filers have
+>   no usable NTEE code. More than half are not 501(c)(3)s, and for those the IRS
+>   subsection *is* the most meaningful classification: business leagues,
+>   social clubs, labor unions, and veterans' posts each have a distinct
+>   financial model.
+> * **Unclassified 501(c)(3)s** form their own peer sector rather than being
+>   pooled with classified charities.
+> * **Subsectors that span several NTEE major groups are split into them.**
+>   These are human services (I–P), public & societal benefit (R–W), health
+>   (E–H), and environment & animals (C–D): together
+>   `r format(sum(is_split), big.mark = ",")` filers. Within them, business
+>   models differ sharply:
+>   * housing providers carry mortgaged property, while recreation leagues run
+>     small, cash-based operations;
+>   * grantmaking foundations hold investment portfolios, while community
+>     development groups hold loans and real estate;
+>   * clinics and medical-research organizations fund themselves very
+>     differently.
+>
+>   Section 8.3 checks whether each split changes anything.
+> * **Single-major-group subsectors stay whole.** Education, arts, religion,
+>   international, and membership benefit each correspond to one NTEE major
+>   group, so there is nothing to split at this level.
+
+```{r peer-groups}
+min_peer_n <- 250
+cell <- paste(peer_sector, size_band, sep = " | ")
+n_cell   <- ave(seq_along(cell), cell, FUN = length)
+n_sector <- ave(seq_along(cell), peer_sector, FUN = length)
+n_pooled <- ave(seq_along(cell), peer_sector_pooled, FUN = length)
+# Fallback chain: sector x size -> sector (major group) -> whole subsector -> national.
+peer_group <- ifelse(n_cell >= min_peer_n, cell,
+              ifelse(n_sector >= min_peer_n, peer_sector,
+              ifelse(n_pooled >= min_peer_n, peer_sector_pooled, "All full-990 filers")))
+peer_level <- ifelse(n_cell >= min_peer_n, "sector x size",
+              ifelse(n_sector >= min_peer_n, "sector only",
+              ifelse(n_pooled >= min_peer_n, "whole subsector", "national")))
+
+peer_table <- data.frame(peer_sector, size_band, peer_group) |>
+  count(peer_sector, size_band, name = "n") |>
+  tidyr::pivot_wider(names_from = size_band, values_from = n, values_fill = 0) |>
+  mutate(total = rowSums(across(where(is.numeric)))) |>
+  arrange(desc(total))
+kable(peer_table, format.args = list(big.mark = ","),
+      caption = "Organizations by peer sector and size band")
+kable(as.data.frame(table(peer_level)) |> mutate(share = round(Freq / sum(Freq), 4)),
+      row.names = FALSE, caption = paste("Peer-group level used (minimum", min_peer_n, "per group)"))
+c(peer_groups = length(unique(peer_group)))
+
+# Percentile of each organization within its peer group's *reference set*. For
+# a sector x size cell, the reference set is the cell. For a fallback group
+# (small cell), it is every organization in the whole sector or subsector, not
+# just the members of the small cell. Ties get the average rank.
+reference_percentile <- function(x, group, reference_rows) {
+  out <- numeric(length(x))
+  for (g in unique(group)) {
+    target <- which(group == g)
+    v <- sort(x[reference_rows(g)])
+    below    <- findInterval(x[target], v, left.open = TRUE)   # count < x
+    at_below <- findInterval(x[target], v)                     # count <= x
+    out[target] <- pmax(1, ceiling(100 * ((below + at_below + 1) / 2) / length(v)))
+  }
+  out
+}
+peer_reference <- function(g) {
+  if (g == "All full-990 filers") return(seq_along(peer_group))
+  which(cell == g | peer_sector == g | peer_sector_pooled == g)
+}
+```
+
+> **Decision 5: Peer group = sector × size band, with at least
+> `r min_peer_n` organizations.**
+>
+> Size is part of the peer definition because Section 5.4 showed scores fall
+> steadily with size, through leverage and reserves. Three bands match the size
+> groups used throughout: under $500k, $500k–$5M, and $5M+ in total expenses.
+> Cells below `r min_peer_n` fall back to the whole sector. A major group below
+> `r min_peer_n` falls back further, to its whole subsector. Percentiles are
+> never computed from tiny groups.
+
+### 8.2 How much do sector and size matter?
+
+```{r peer-variance}
+r2 <- function(y, ...) summary(lm(y ~ ., data = data.frame(...)))$r.squared
+kable(data.frame(
+  score = score_cols,
+  size_band = sapply(score_cols, function(v) r2(indexed[[v]], size_band)),
+  peer_sector = sapply(score_cols, function(v) r2(indexed[[v]], peer_sector)),
+  sector_plus_size = sapply(score_cols, function(v) r2(indexed[[v]], peer_sector, size_band)),
+  peer_group = sapply(score_cols, function(v) r2(indexed[[v]], peer_group))),
+  digits = 3, row.names = FALSE,
+  caption = "Share of variance (R-squared) explained by peer definitions")
+
+sector_medians <- data.frame(peer_sector, indexed[score_cols],
+                             national_pctile = indexed$fiscal_health_pctile) |>
+  group_by(peer_sector) |>
+  summarise(n = n(), across(all_of(c(score_cols, "national_pctile")), median)) |>
+  arrange(desc(fiscal_health))
+kable(sector_medians, digits = 2, format.args = list(big.mark = ","),
+      caption = "Median scores and national percentile by peer sector")
+```
+
+```{r peer-variance-numbers, include = FALSE}
+r2_comp_group <- r2(indexed$fiscal_health, peer_group)
+r2_lev_group  <- r2(indexed$fh_leverage, peer_group)
+top_sector    <- sector_medians$peer_sector[1]
+bottom_sector <- sector_medians$peer_sector[nrow(sector_medians)]
+```
+
+Peer groups explain `r pct(r2_comp_group, 0)` of the variance in the composite
+and `r pct(r2_lev_group, 0)` in leverage. Most of the variation in fiscal
+health is *within* peer groups, so the national scores remain meaningful.
+
+Of the between-group differences, size band accounts for more than sector
+(`r pct(r2(indexed$fiscal_health, size_band), 0)` vs.
+`r pct(r2(indexed$fiscal_health, peer_sector), 0)` of composite variance).
+Performance & growth is almost untouched by either. Peer adjustment mainly
+re-bases the balance-sheet dimensions, leverage and reserves.
+
+The between-group differences are still systematic. Median national percentiles
+range from `r round(min(sector_medians$national_pctile))` (lowest peer sector)
+to `r round(max(sector_medians$national_pctile))` (highest). An organization in
+a low-scoring sector can look distressed nationally while being typical among
+its peers.
+
+### 8.3 Splitting multi-major-group subsectors
+
+Does splitting a subsector into its NTEE major groups produce better peers? If
+the major groups differ systematically, their members are being benchmarked
+against organizations with different financial models, and their percentiles
+will move when the split is made. Otherwise the split only adds groups.
+
+```{r major-split}
+peer_cols <- c("fh_leverage", "fh_performance_growth", "fh_reserves", "fiscal_health")
+split_idx <- which(is_split)
+short <- function(x) sub("^[^:]+: ", "", x)
+cap1  <- function(x) paste0(toupper(substr(x, 1, 1)), substring(x, 2))
+
+# Peer percentiles with every subsector pooled (no major-group split) vs. split.
+cell_pooled <- paste(peer_sector_pooled, size_band, sep = " | ")
+n_cell_pooled <- ave(seq_along(cell_pooled), cell_pooled, FUN = length)
+peer_group_pooled <- ifelse(n_cell_pooled >= min_peer_n, cell_pooled, peer_sector_pooled)
+pooled_reference <- function(g) which(cell_pooled == g | peer_sector_pooled == g)
+pooled_pct  <- reference_percentile(indexed$fiscal_health, peer_group_pooled, pooled_reference)
+split_pct   <- reference_percentile(indexed$fiscal_health, peer_group, peer_reference)
+split_shift <- split_pct - pooled_pct
+
+by_subsector <- do.call(rbind, lapply(split_subsectors, function(s) {
+  i <- which(sub %in% s)
+  g <- factor(peer_sector[i])
+  data.frame(
+    subsector = subsector_labels[[s]], n = format(length(i), big.mark = ","),
+    major_groups = sum(table(g) >= min_peer_n),
+    r2_major_composite = r2(indexed$fiscal_health[i], g),
+    r2_size_composite  = r2(indexed$fiscal_health[i], size_band[i]),
+    r2_major_leverage  = r2(indexed$fh_leverage[i], g),
+    r2_major_reserves  = r2(indexed$fh_reserves[i], g),
+    rho_pooled_vs_split = cor(pooled_pct[i], split_pct[i], method = "spearman"),
+    shift_10_plus = mean(abs(split_shift[i]) >= 10))
+}))
+kable(by_subsector, digits = 3, row.names = FALSE,
+      caption = "By subsector: variance explained by major group (vs. size), and effect of the split on composite peer percentiles")
+
+major_table <- data.frame(subsector = subsector_labels[sub[split_idx]],
+                          major_group = short(peer_sector[split_idx]),
+                          indexed[split_idx, peer_cols],
+                          national_pctile = indexed$fiscal_health_pctile[split_idx],
+                          shift = split_shift[split_idx]) |>
+  group_by(subsector, major_group) |>
+  summarise(n = n(),
+            across(all_of(c(peer_cols, "national_pctile")), median),
+            median_shift = median(shift),
+            share_up_10 = mean(shift >= 10), share_down_10 = mean(shift <= -10),
+            .groups = "drop") |>
+  filter(n >= min_peer_n) |>
+  arrange(subsector, desc(fiscal_health))
+kable(major_table, digits = 2, format.args = list(big.mark = ","),
+      caption = paste0("Major groups (n >= ", min_peer_n, "): median scores and composite peer-percentile shift (split minus pooled)"))
+```
+
+```{r major-split-numbers, include = FALSE}
+mt <- major_table
+gain <- mt[which.max(mt$median_shift), ]
+lose <- mt[which.min(mt$median_shift), ]
+most_r2  <- by_subsector[which.max(by_subsector$r2_major_composite), ]
+least_r2 <- by_subsector[which.min(by_subsector$r2_major_composite), ]
+split_fallback <- table(cell[split_idx][peer_level[split_idx] != "sector x size"])
+split_fallback_level <- tapply(peer_level[split_idx][peer_level[split_idx] != "sector x size"],
+                               cell[split_idx][peer_level[split_idx] != "sector x size"], `[`, 1)
+fallback_text <- if (length(split_fallback)) {
+  paste0(names(split_fallback), " (", as.integer(split_fallback), ", ",
+         split_fallback_level[names(split_fallback)], ")", collapse = "; ")
+} else "none"
+```
+
+What the splits do:
+
+* **Overall shift.** Across the `r format(length(split_idx), big.mark = ",")`
+  organizations in split subsectors,
+  `r pct(mean(abs(split_shift[split_idx]) >= 10))` move 10 or more percentile
+  points and `r pct(mean(abs(split_shift[split_idx]) >= 20))` move 20 or more.
+* **Where the split matters most.** Major group matters most within
+  `r tolower(most_r2$subsector)`, explaining
+  `r pct(most_r2$r2_major_composite, 0)` of composite variance there, and least
+  within `r tolower(least_r2$subsector)`
+  (`r pct(least_r2$r2_major_composite, 0)`). In
+  `r if (all(by_subsector$r2_major_leverage > by_subsector$r2_major_composite)) "every" else "most"`
+  split subsector, major group explains more of leverage than of the composite.
+  The biggest differences between business models are in how they finance
+  assets.
+* **Splits that change little.**
+  `r nochange <- by_subsector$subsector[by_subsector$shift_10_plus < 0.01]; if (length(nochange)) paste0(paste(nochange, collapse = " and "), ": fewer than 1% of organizations move 10+ points. Their major groups have nearly identical financial profiles, so the split is harmless but adds little.") else "Every split moves at least 1% of its organizations by 10+ points."`
+* **Biggest movers.** `r cap1(gain$major_group)` (`r tolower(gain$subsector)`)
+  organizations gain the most once compared only with each other (median
+  `r sprintf("%+d", as.integer(round(gain$median_shift)))` points).
+  `r cap1(lose$major_group)` (`r tolower(lose$subsector)`) organizations lose the
+  most (median `r sprintf("%+d", as.integer(round(lose$median_shift)))`). Under
+  the pooled definitions, these groups looked weak or strong largely because of
+  *which kind* of organization they are within their subsector.
+
+> **Decision 6: Use NTEE major groups as peer sectors wherever a subsector spans
+> more than one: human services, public & societal benefit, health, and
+> environment & animals.**
+>
+> The splits move percentiles in consistent directions for whole major groups,
+> not at random. Cells below `r min_peer_n` fall back first to the major group,
+> then to the whole subsector: `r fallback_text`.
+
+### 8.4 Peer-group percentiles
+
+```{r peer-percentiles}
+peer_cols <- c("fh_leverage", "fh_performance_growth", "fh_reserves", "fiscal_health")
+peer_pct <- as.data.frame(lapply(indexed[peer_cols], reference_percentile,
+                                 group = peer_group, reference_rows = peer_reference))
+names(peer_pct) <- paste0(sub("^fh_", "", peer_cols), "_peer_pctile")
+national_pct <- as.data.frame(lapply(indexed[peer_cols], reference_percentile,
+                                     group = rep("all", nrow(indexed)),
+                                     reference_rows = function(g) seq_len(nrow(indexed))))
+names(national_pct) <- paste0(sub("^fh_", "", peer_cols), "_national_pctile")
+
+shift <- peer_pct$fiscal_health_peer_pctile - national_pct$fiscal_health_national_pctile
+kable(data.frame(
+  check = c("Spearman rho, peer vs. national composite percentile",
+            "Organizations shifting 20+ percentile points",
+            "Organizations shifting 40+ percentile points",
+            "Median absolute shift (points)"),
+  value = c(fmt(cor(peer_pct$fiscal_health_peer_pctile, national_pct$fiscal_health_national_pctile,
+                    method = "spearman"), 3),
+            pct(mean(abs(shift) >= 20)), pct(mean(abs(shift) >= 40)),
+            fmt(median(abs(shift)), 0))),
+  row.names = FALSE, align = "lr")
+
+kable(data.frame(peer_sector, size_band, shift,
+                 national = national_pct$fiscal_health_national_pctile) |>
+        group_by(peer_sector) |>
+        summarise(n = n(), median_national_pctile = median(national),
+                  median_shift_to_peer = median(shift),
+                  share_up_20 = mean(shift >= 20), share_down_20 = mean(shift <= -20)) |>
+        arrange(median_shift_to_peer),
+      digits = 2, format.args = list(big.mark = ","),
+      caption = "Composite: shift from national to peer percentile, by sector")
+```
+
+```{r peer-examples}
+example_sectors <- c("Hospitals", "Human services: housing & shelter", "Human services: recreation & sports",
+                     "Business leagues 501(c)(6)")
+ex <- data.frame(peer_group, national = national_pct$fiscal_health_national_pctile,
+                 peer = peer_pct$fiscal_health_peer_pctile, sector = peer_sector) |>
+  filter(sector %in% example_sectors, peer == 50) |>
+  group_by(peer_group) |>
+  summarise(`national percentile of a peer-median organization` = round(median(national)))
+kable(ex, caption = "Where a typical (50th peer percentile) organization sits nationally")
+```
+
+How to read peer percentiles:
+
+* **Peer percentile 50** means typical *for that peer group*. The last table
+  shows how different "typical" is across groups in national terms.
+* **Use national scores** to measure sector-wide conditions or to compare
+  groups. **Use peer percentiles** to judge one organization, set benchmarks,
+  or flag outliers within a field.
+* **Use both for screening.** A low peer percentile flags organizations that are
+  weak *even by their sector's norms*. A low national percentile with a typical
+  peer percentile says the weakness comes from the sector's financial model.
+  Report both.
+
+### 8.5 Storing peer norms for new data
+
+Percentiles for a later year, or for a single organization, should be read off
+the 2023 reference distributions rather than re-ranked within the new data.
+We store the 1st–99th percentile cut points of each score in each peer group.
+
+```{r peer-norms}
+peer_norms <- do.call(rbind, lapply(unique(peer_group), function(g) {
+  rows <- peer_reference(g)   # full reference set, including for fallback groups
+  do.call(rbind, lapply(peer_cols, function(v) data.frame(
+    peer_group = g, score = v, n = length(rows), percentile = 1:99,
+    cut = quantile(indexed[[v]][rows], (1:99) / 100, names = FALSE))))
+}))
+
+lookup_peer_percentile <- function(score_value, score_name, group, norms) {
+  vapply(seq_along(score_value), function(i) {
+    cuts <- norms$cut[norms$peer_group == group[i] & norms$score == score_name]
+    as.numeric(findInterval(score_value[i], cuts) + 1)
+  }, numeric(1))
+}
+check_rows <- sample(nrow(indexed), 2000)
+looked_up <- lookup_peer_percentile(indexed$fiscal_health[check_rows], "fiscal_health",
+                                    peer_group[check_rows], peer_norms)
+c(norm_rows = nrow(peer_norms),
+  r_lookup_vs_ranked = round(cor(looked_up, peer_pct$fiscal_health_peer_pctile[check_rows]), 4),
+  max_abs_difference = max(abs(looked_up - peer_pct$fiscal_health_peer_pctile[check_rows])))
+```
+
+The stored cut points reproduce the ranked peer percentiles to within one
+point. The difference comes from how ties and percentile boundaries are
+handled. Scoring a new
+organization then takes three steps: score it with the fitted model, assign it
+a peer group, and look up its percentile.
+
+## 9. Saved model
+
+```{r save}
+model <- list(
+  normalization = norm_spec,
+  dimensions = dimensions,
+  standalone = standalone,
+  directions = directions,
+  fit = fit,
+  weights = weights,
+  peers = list(definition = "NTEE v2 subsector (split by NTEE major group where a subsector spans several; IRS subsection fallback) x expense band",
+               subsector_labels = subsector_labels, subsection_labels = subsection_labels,
+               split_subsectors = split_subsectors, major_group_labels = major_group_labels,
+               size_breaks = c(0, 5e5, 5e6, Inf), min_n = min_peer_n, norms = peer_norms),
+  scores = cbind(ids, peer_sector = peer_sector, size_band = size_band,
+                 peer_group = peer_group, peer_level = peer_level,
+                 indexed[, c(score_cols, paste0("fh_", standalone), "fiscal_health_coverage")],
+                 national_pct, peer_pct),
+  reference = list(tax_year = 2023, n = nrow(frame), built = Sys.time()))
+model_file <- file.path(params$data_dir, "fiscal-health-model-2023.rds")
+saveRDS(model, model_file)
+data.frame(saved = normalizePath(model_file, winslash = "/"),
+           size_mb = round(file.size(model_file) / 1e6, 1))
+```
+
+## 10. Limitations and next steps
+
+* **Validity beyond face validity.** The quintile checks use conditions that
+  partly feed the index. The decisive test is predictive: do low 2023 scores
+  precede deficits, declining net assets, or stopping filing in 2024–2025?
+  That needs later tax years.
+* **Weights.** Equal weights are a default, not an estimate. Once outcomes are
+  available, weights can be calibrated (for example, to predict insolvency)
+  and passed to `fiscal_weights()`.
+* **Finer peers.** Every subsector that spans several NTEE major groups is now
+  split. The remaining large peer sectors can't be split at the major-group
+  level:
+  * **Education** (one major group, B) could be split by NTEE division, e.g.
+    elementary & secondary schools (B20s) vs. student and educational services
+    (B80s–B90s).
+  * **Unclassified 501(c)(3)s** have no NTEE code at all. The IRS
+    public-charity (foundation) code would separate schools, churches,
+    hospitals, and supporting organizations hidden in that group.
+  * **Arts and religion** are single major groups, and more homogeneous.
+* **NTEE coverage.** Close to a third of full-990 filers are unclassified in the
+  BMF. Classifying them from mission text or program descriptions would move
+  unclassified 501(c)(3)s into real subsectors.
+* **Package port.** `build-ratio-frame.R` (rules, imputation, growth) and
+  `fit_winsor_normalize()` / `apply_winsor_normalize()` belong in the package,
+  so the model can be refit and applied without the dev scripts.
+
+```{r session}
+sessionInfo()
+```
