@@ -284,13 +284,17 @@ download.file( paste0( nccs_s3, bmf_url ), destfile="data/UNIFIED_BMF_V1.2.csv" 
 ###  LOAD DATA 
 ###
 
-d1 <- data.table::fread( path1 ) |> unique()
-d2 <- data.table::fread( path2 ) |> unique()
-d3 <- data.table::fread( path3 ) |> unique()
-d4 <- data.table::fread( path4 ) |> unique()
-d5 <- data.table::fread( path5 ) |> unique()
+# integer64 = "double": data.table would otherwise read large efile amounts as
+# bit64::integer64. Those columns turn into tiny doubles (|x| < 1e-300; negatives
+# become NaN) wherever the class attribute is dropped, e.g. for users without
+# bit64 loaded. Doubles are exact for whole-dollar amounts below 2^53.
+d1 <- data.table::fread( path1, integer64 = "double" ) |> unique()
+d2 <- data.table::fread( path2, integer64 = "double" ) |> unique()
+d3 <- data.table::fread( path3, integer64 = "double" ) |> unique()
+d4 <- data.table::fread( path4, integer64 = "double" ) |> unique()
+d5 <- data.table::fread( path5, integer64 = "double" ) |> unique()
 
-bmf <- data.table::fread( bmf_path ) |> unique()
+bmf <- data.table::fread( bmf_path, integer64 = "double" ) |> unique()
 
 bmf2 <- 
   bmf %>%
@@ -430,6 +434,15 @@ v3 <- c(
 keep2 <- unique( c(v1,v2,v3) )
 
 dat10k <- select( ds, all_of(keep2) )
+
+# Guard: no integer64 columns, classed or class-stripped, may reach the package.
+# (fiscal:::repair_integer64_columns() converts any that slip through.)
+dat10k <- fiscal:::repair_integer64_columns( dat10k )
+stopifnot(
+  !any( vapply( dat10k, inherits, logical(1), "integer64" ) ),
+  !any( vapply( dat10k, fiscal:::is_unclassed_integer64, logical(1) ) ),
+  median( dat10k$F9_10_ASSET_TOT_EOY, na.rm = TRUE ) > 1000
+)
 
 usethis::use_data( dat10k, overwrite = TRUE, compress = "xz" )
 

@@ -94,11 +94,76 @@ impute_zero <- function( dat, vars, ez_rows ) {
 }
 
 
+#' Detect integer64 storage that has lost its class attribute
+#'
+#' A bit64 `integer64` vector is a double vector whose 8 bytes hold a 64-bit
+#' integer. If the `"integer64"` class is dropped (e.g. `unclass()`, base `[`
+#' or `c()` without bit64's methods, `as.matrix()`), R reads those bytes as
+#' doubles: positive whole-dollar amounts become subnormals (|x| < 1e-300),
+#' negative amounts become `NaN`, and `NA_integer64_` becomes `-0`.
+#' A double vector whose nonzero, non-missing values are *all* that tiny is
+#' therefore almost certainly corrupted integer64 storage.
+#'
+#' @param x A vector.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+is_unclassed_integer64 <- function( x ) {
+  if ( !is.double( x ) || is.object( x ) ) return( FALSE )
+  nz <- x[ !is.na( x ) & x != 0 ]
+  length( nz ) > 0L && all( abs( nz ) < 1e-300 )
+}
+
+#' Convert integer64 (classed or class-stripped) to a plain double vector
+#'
+#' Restores the `"integer64"` class when it has been stripped (see
+#' [is_unclassed_integer64()]) and converts with bit64's own method, so
+#' negatives and `NA` are recovered. Values beyond 2^53 lose precision, which
+#' no 990 dollar amount approaches. Other vectors are returned unchanged.
+#'
+#' @param x A vector.
+#' @return A double vector, or `x` unchanged.
+#' @noRd
+repair_integer64 <- function( x ) {
+  if ( !inherits( x, "integer64" ) && !is_unclassed_integer64( x ) ) return( x )
+  class( x ) <- "integer64"
+  bit64::as.double.integer64( x )
+}
+
+#' Convert every integer64 column in a data frame to double
+#'
+#' Classed `integer64` columns are converted silently. Class-stripped
+#' integer64 columns are repaired too, with a warning, since they signal an
+#' upstream bug that may already have corrupted other outputs.
+#'
+#' @param d A `data.frame`.
+#' @param vars Columns to check; defaults to all columns.
+#' @return `d` with the affected columns replaced by doubles.
+#' @noRd
+repair_integer64_columns <- function( d, vars = colnames( d ) ) {
+  vars     <- intersect( vars, colnames( d ) )
+  stripped <- vars[ vapply( vars, function( v ) is_unclassed_integer64( d[[ v ]] ), logical( 1 ) ) ]
+  classed  <- vars[ vapply( vars, function( v ) inherits( d[[ v ]], "integer64" ), logical( 1 ) ) ]
+
+  for ( v in c( classed, stripped ) ) d[[ v ]] <- repair_integer64( d[[ v ]] )
+
+  if ( length( stripped ) > 0L )
+    warning( length( stripped ), " column(s) held bit64 integer64 values with the ",
+             "class attribute dropped (all nonzero values < 1e-300) and were repaired: ",
+             paste( stripped, collapse = ", " ), call. = FALSE )
+  d
+}
+
+
 #' Coerce selected columns to numeric
 #'
 #' Converts specified columns in a data frame to numeric, with a guard
 #' against non-digit content. Stops if letters are detected in any column;
 #' warns if silent coercion was needed.
+#'
+#' bit64 `integer64` columns are converted to double. Columns that hold
+#' integer64 bytes with the class attribute dropped (every nonzero value is
+#' smaller than 1e-300 in absolute value) are detected and repaired, with a
+#' warning.
 #'
 #' @param d A `data.frame`.
 #' @param vars Character vector of column names to coerce.
@@ -109,19 +174,16 @@ coerce_numeric <- function( d, vars ) {
   vars_present <- intersect( vars, colnames( d ) )
   if ( length( vars_present ) == 0L ) return( d )
 
+  # bit64 integer64 (how data.table reads large efile integers), classed or
+  # with the class stripped: convert with bit64's own method so the 64-bit
+  # payload is not reinterpreted as a tiny double. 990 line items are whole
+  # dollars, so nothing is lost.
+  d <- repair_integer64_columns( d, vars_present )
+
   n_coerced <- 0L
 
   for ( v in vars_present ) {
     x <- d[[ v ]]
-
-    # bit64 integer64 (how data.table reads large efile integers): convert
-    # through bit64's own character method so the 64-bit payload is not
-    # reinterpreted as a tiny double. 990 line items are whole dollars, so
-    # nothing is lost -- and this is silent, since it is not an error condition.
-    if ( inherits( x, "integer64" ) ) {
-      d[[ v ]] <- as.numeric( bit64::as.character.integer64( x ) )
-      next
-    }
 
     # Plain numeric (double or integer): already usable.
     if ( is.numeric( x ) ) next
@@ -402,6 +464,11 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #' Supplying `pz_vars`/`pc_vars` explicitly falls back to the local imputer for
 #' backward compatibility.
 #'
+#' Before imputing, bit64 `integer64` columns are converted to double. Columns
+#' holding integer64 bytes with the class attribute dropped (every nonzero value
+#' smaller than 1e-300 in absolute value) are repaired with a warning; imputing
+#' them first would zero out negative amounts, which such columns read as `NaN`.
+#'
 #' @examples
 #' library( fiscal )
 #' data( dat10k )
@@ -417,6 +484,10 @@ validate_inputs <- function( winsorize, num_args, den_args,
 sanitize_financials <- function( df,
                                   pz_vars = NULL,
                                   pc_vars = NULL ) {
+
+  # Convert integer64 columns first. A class-stripped integer64 column reads
+  # negatives as NaN, so zero-imputing it before repair would destroy them.
+  df <- repair_integer64_columns( df )
 
   # Default path: delegate to panel990's form-scoped normalizer so fiscal and
   # panel990 share one imputation engine and one field-scope source of truth.
