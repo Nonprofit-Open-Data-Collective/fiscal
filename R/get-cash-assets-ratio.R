@@ -28,7 +28,7 @@
 #'   - Foundations and endowed institutions naturally show higher ratios than
 #'     operating nonprofits.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -128,6 +128,7 @@ get_cash_assets_ratio <- function( df,
 {
   validate_inputs( winsorize, cash, total_assets,
                    "cash", "total_assets" )
+  if ( is.null( savings ) ) stop( "`savings` cannot be NULL." )
 
   vars <- c( cash, total_assets, savings )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
@@ -135,7 +136,7 @@ get_cash_assets_ratio <- function( df,
   dt   <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
   if ( sanitize ) { dt <- sanitize_financials( dt ) }
 
-  num <- resolve_col( dt, cash )
+  num <- resolve_col( dt, cash ) + resolve_col( dt, savings )
   den <- resolve_col( dt, total_assets )
 
   nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )

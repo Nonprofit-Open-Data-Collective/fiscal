@@ -36,7 +36,8 @@ from \code{\link[=compute_all]{compute_all()}}.}
 A \code{data.frame} with the same row order as \code{df} and the same
 metric columns that \code{\link[=compute_all]{compute_all()}} would produce, but with
 \verb{_w} / \verb{_z} / \verb{_p} values computed within each year's
-cross-sectional distribution.
+cross-sectional distribution. Rows whose \code{year} is \code{NA} are kept, with
+\code{NA} metric columns.
 }
 \description{
 A panel-safe wrapper around \code{\link[=compute_all]{compute_all()}} that splits the data by
@@ -72,18 +73,15 @@ Internally the function:
 \item Validates that \code{year} is present and that the panel contains more
 than one year (a single-year panel works but a warning is issued
 since \code{\link[=compute_all]{compute_all()}} would give identical results).
-\item Tags each row with its original position so output rows can be
-restored to the input order after splitting and stacking.
-\item Splits \code{df} into a list of single-year slices using
-\code{data.table::split()}.
-\item Calls \code{\link[=compute_all]{compute_all()}} on each slice with \code{verbose} passed through
-so per-year messages are visible (or suppressed) as requested.
-\item Stacks the per-year results with \code{data.table::rbindlist()}, which
-handles any columns that are present in some years but absent in
-others (e.g. if a 990EZ-only year lacks Part VIII columns) by
-filling with \code{NA}.
-\item Restores the original row order and drops the internal row-tag
-column.
+\item Splits the row indices of \code{df} by year with base \code{split()}. Rows
+with a missing year are set aside with a warning.
+\item Calls \code{\link[=compute_all]{compute_all()}} on each year's slice with \code{verbose} passed
+through so per-year messages are visible (or suppressed) as requested.
+If a year fails, its rows are kept with \code{NA} metric columns.
+\item Tags each result with the original row positions, stacks the
+per-year results (and any rows without a year) with
+\code{data.table::rbindlist()}, which fills columns missing from some
+years with \code{NA}, and restores the input row order.
 }
 }
 

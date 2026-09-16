@@ -3,7 +3,7 @@
 ###---------------------------------------------------
 
 #' @title
-#' Operating Ratio
+#' Net Assets Growth Ratio
 #'
 #' @description
 #' Year-over-year change in total net assets, expressed as a proportion of beginning net assets.
@@ -56,7 +56,7 @@
 #' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
 #'
-#'     - `netassets_growth`   - operating ratio (raw)
+#'     - `netassets_growth`   - net assets growth ratio (raw)
 #'     - `netassets_growth_w` - winsorized version
 #'     - `netassets_growth_z` - standardized z-score (based on winsorized values)
 #'     - `netassets_growth_p` - percentile rank (1-100)

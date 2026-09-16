@@ -29,11 +29,11 @@
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param pub_traded_securities Investments in publicly traded securities, EOY.
-#')
+#'
 #' @param total_assets Total assets, EOY.
-#')
+#'
 #' @param other_securities Investments in other securities, EOY.
-#')
+#'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @param range Character string specifying the theoretical range of the ratio,
 #'   used to set winsorization bounds. Default `"zo"`. Options:
@@ -116,6 +116,7 @@ get_investments_assets_ratio <- function( df,
 {
   validate_inputs( winsorize, pub_traded_securities, total_assets,
                    "pub_traded_securities", "total_assets" )
+  if ( is.null( other_securities ) ) stop( "`other_securities` cannot be NULL." )
 
   vars <- c( pub_traded_securities, total_assets, other_securities )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
@@ -123,7 +124,7 @@ get_investments_assets_ratio <- function( df,
   dt   <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
   if ( sanitize ) { dt <- sanitize_financials( dt ) }
 
-  num <- resolve_col( dt, pub_traded_securities )
+  num <- resolve_col( dt, pub_traded_securities ) + resolve_col( dt, other_securities )
   den <- resolve_col( dt, total_assets )
 
   nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )

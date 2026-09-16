@@ -8,6 +8,8 @@ get_operating_reserve_ratio( df,
   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   total_expenses          = "F9_09_EXP_TOT_TOT",
+  restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+  total_net_assets        = "F9_10_NAFB_TOT_EOY",
   winsorize = 0.98 ,
   range     = "np",
   sanitize  = TRUE,
@@ -21,6 +23,14 @@ get_operating_reserve_ratio( df,
 \item{net_fixed_assets}{Net land, buildings, and equipment, EOY.}
 
 \item{total_expenses}{Total functional expenses.}
+
+\item{restricted_net_assets}{Restricted net assets, EOY. Used with
+\code{total_net_assets} to detect filers that do not follow SFAS 117; see
+\code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}.}
+
+\item{total_net_assets}{Total net assets, EOY. Substituted for unrestricted
+net assets when unrestricted and restricted net assets are both zero.
+Set to \code{NULL} to disable the fallback.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -64,29 +74,30 @@ operating_reserves = unrestricted_net_assets - net_fixed_assets
 
 \strong{Definitional Range}
 
-Unbounded in both directions when expressed in months. Negative values occur when
+Unbounded in both directions, expressed as a multiple of annual expenses (multiply
+by 12 to convert to months). Negative values occur when
 unrestricted net assets are negative or when net fixed assets exceed unrestricted net
-assets. Values above 24 months are uncommon for operating organizations and may
+assets. Values above 2.0 (24 months) are uncommon for operating organizations and may
 indicate accumulation beyond what is needed for operating risk management.
 
 \strong{Benchmarks and rules of thumb}
 \itemize{
-\item \strong{Less than 1 month}: Acute vulnerability.
-\item \strong{1-3 months}: Below the commonly recommended minimum.
-\item \strong{3-6 months}: Generally adequate for most operating nonprofits.
-\item \strong{6-12 months}: Strong; appropriate for volatile-revenue or
+\item \strong{Less than 0.083 (1 month)}: Acute vulnerability.
+\item \strong{0.083-0.25 (1-3 months)}: Below the commonly recommended minimum.
+\item \strong{0.25-0.50 (3-6 months)}: Generally adequate for most operating nonprofits.
+\item \strong{0.50-1.0 (6-12 months)}: Strong; appropriate for volatile-revenue or
 capital-intensive organizations.
-\item The Nonprofit Finance Fund recommends a minimum of 3 months.
+\item The Nonprofit Finance Fund recommends a minimum of 3 months (0.25).
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
 
-The operating reserve ratio answers a key sustainability question: how many months
-of operations can the organization fund from its unrestricted liquid assets, excluding
-illiquid fixed property? It is the recommended primary reserve adequacy metric of the
+The operating reserve ratio answers a key sustainability question: what share of a
+year of operations can the organization fund from its unrestricted liquid assets,
+excluding illiquid fixed property? It is the recommended primary reserve adequacy metric of the
 Nonprofit Finance Fund and is widely used in financial health assessments, lender due
 diligence, and board reporting.
 
@@ -99,9 +110,11 @@ operations.
 
 \subsection{Formula variations and their sources}{
 
-(Unrestricted net assets - net fixed assets) / (total expenses / 12). This
+(Unrestricted net assets - net fixed assets) / total expenses. This
 implementation follows the Nonprofit Finance Fund and Zietlow et al. (2007)
-definition. An alternative adds back mortgage debt to fixed assets
+definition but expresses the result as a multiple of annual expenses rather
+than in months (multiply by 12 for months). An alternative adds back mortgage
+debt to fixed assets and divides by monthly expenses
 (\code{\link[=get_liquid_assets_months]{get_liquid_assets_months()}}) to more precisely isolate the unencumbered
 value of fixed property. Some formulations use unrestricted net assets alone
 (without subtracting fixed assets), which produces higher values.
@@ -128,7 +141,17 @@ Unrestricted net assets, EOY (\code{unrestricted_net_assets})
 \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}:
 Net land, buildings, and equipment (\code{net_fixed_assets})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+\item \code{F9_10_NAFB_RESTRICT_EOY}: Restricted net assets, EOY (\code{restricted_net_assets})
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{total_net_assets})
 }
+}
+
+\subsection{Filers that do not follow SFAS 117}{
+
+Organizations that do not follow SFAS 117 report equity on Part X lines
+30-32 and leave lines 27-28 blank, so their unrestricted net assets read as
+zero. When unrestricted and restricted net assets are both zero, total net
+assets are used instead (see \code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}).
 }
 }
 \examples{

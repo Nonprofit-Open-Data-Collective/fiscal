@@ -34,10 +34,13 @@
 #' @param expenses Total functional expenses.
 #' @param depreciation Depreciation, depletion, and amortization.
 #' @param numerator Optional. A pre-calculated column for the numerator
-#'   (revenue minus non-depreciation expenses). Cannot be combined with
-#'   `revenue`, `expenses`, or `depreciation`.
-#' @param denominator Optional. A pre-calculated column for the denominator. Cannot be
-#'   combined with `revenue`.
+#'   (revenue minus non-depreciation expenses). When supplied, `expenses` and
+#'   `depreciation` are ignored, and `revenue` is used only for the denominator; it
+#'   is an error to also set `expenses` or `depreciation` explicitly.
+#' @param denominator Optional. A pre-calculated column for the denominator. When
+#'   supplied, `revenue` is used only for the numerator. If both `numerator` and
+#'   `denominator` are supplied, `revenue` is ignored and it is an error to set it
+#'   explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -141,14 +144,21 @@ get_profit_margin_predepr <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  if ( !is.null( numerator ) & ( !is.null( revenue ) | !is.null( expenses ) | !is.null( depreciation ) ) ) {
-    stop( "Supply either `numerator` OR the individual component arguments (revenue, expenses, depreciation), not both." )
+  # `revenue` feeds both the numerator and the denominator, so it is only
+  # dropped when both overrides are supplied.
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( expenses = expenses, depreciation = depreciation ), supplied ), environment() )
+  if ( !is.null( numerator ) && !is.null( denominator ) ) {
+    revenue <- resolve_components( numerator, "numerator",
+      list( revenue = revenue ), supplied )$revenue
   }
-  if ( !is.null( denominator ) & !is.null( revenue ) ) {
-    stop( "Supply either `denominator` OR `revenue`, not both." )
-  }
+  if ( is.null( numerator ) && is.null( revenue ) )
+    stop( "No numerator specified. Supply `numerator` or `revenue`, `expenses`, and `depreciation`.",
+          call. = FALSE )
+  if ( is.null( denominator ) && is.null( revenue ) )
+    stop( "No denominator specified. Supply `denominator` or `revenue`.", call. = FALSE )
 
-  all_cols <- c( revenue, expenses, depreciation, numerator, denominator )
   vars <- c( revenue, expenses, depreciation, numerator, denominator )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )

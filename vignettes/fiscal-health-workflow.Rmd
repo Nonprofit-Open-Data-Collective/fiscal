@@ -1,0 +1,238 @@
+---
+title: "The fiscal health workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{The fiscal health workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  message  = FALSE,
+  warning  = FALSE
+)
+library(fiscal)
+```
+
+The `get_*()` metrics answer "how does this organization look on *this* ratio?"
+The **fiscal-health index** answers a harder question: "how does this
+organization look *overall*?" It combines many standardized indicators into a
+small number of empirical dimensions and, optionally, a single composite score.
+
+Rather than hard-code a formula, `fiscal` builds a **reusable measurement model**
+in explicit stages. Each stage is a separate function that returns an
+inspectable object, so the pipeline is auditable and the fitted model can be
+re-applied to later panel years without re-estimating anything.
+
+```
+fiscal_diagnostics()  ->  fiscal_triage()  ->  fiscal_dimensions()
+        (screen indicators)     (decide keep/drop)   (discover structure)
+                                                            |
+fiscal_health_index() <- fiscal_weights() <- fiscal_health_score() <- fiscal_health_fit()
+   (composite score)       (combine)          (apply model)            (freeze the model)
+```
+
+Two stages deliberately require human judgment --- `fiscal_triage()` recommends
+but lets you override, and `fiscal_dimensions()` discovers but does not *name*
+dimensions. The wrapper `fiscal_health()` chains the mechanical stages once you
+have reviewed the structure.
+
+> This subsystem uses the `psych` package for factor-analytic diagnostics; make
+> sure it is installed. For the measurement reasoning behind each stage (what
+> counts as an indicator, how many dimensions to keep, how to validate the
+> result), see `vignette("fiscal-health-index")`.
+
+## Prepare indicators
+
+Indicators should be the normalized (`_z`) versions of the metrics, so they share
+a common scale. Most inputs exist only on the full Form 990, so start from full
+990 filers with positive revenue, expenses, and assets, then compute the metrics
+with `compute_all()`:
+
+```{r}
+full990 <- dat10k[dat10k$RETURN_TYPE == "990" &
+                  dat10k$F9_08_REV_TOT_TOT   > 0 & !is.na(dat10k$F9_08_REV_TOT_TOT) &
+                  dat10k$F9_09_EXP_TOT_TOT   > 0 & !is.na(dat10k$F9_09_EXP_TOT_TOT) &
+                  dat10k$F9_10_ASSET_TOT_EOY > 0 & !is.na(dat10k$F9_10_ASSET_TOT_EOY), ]
+
+scored <- compute_all(full990, metrics = "z", verbose = FALSE)
+```
+
+Select candidate indicators that are directional in `fiscal_metrics()` and
+defined for nearly every filer. The list deliberately includes a few problems
+for the pipeline to catch: `equity_z` is an algebraic mirror of `debt_assets_z`,
+and the program- and administrative-expense shares describe spending patterns
+rather than financial condition.
+
+```{r}
+indicators <- scored[, c(
+  "days_cash_ops_z", "op_reserve_z", "liquid_assets_months_z",   # reserves
+  "debt_assets_z", "equity_z",                                   # solvency
+  "surplus_margin_z", "profit_predepr_z", "return_assets_z",     # performance
+  "prog_exp_z", "expenses_admin_z", "self_suff_z"                # business model
+)]
+
+dim(indicators)
+```
+
+## Stage 1 — diagnose
+
+`fiscal_diagnostics()` computes variable-level diagnostics that distinguish
+indicators participating in a shared multivariate structure from those that are
+redundant, standalone, or noisy (correlation summaries, KMO/MSA, communalities,
+and so on).
+
+```{r}
+diagnostics <- fiscal_diagnostics(indicators)
+diagnostics
+
+diagnostics$redundancy_pairs
+```
+
+The diagnostics find the three near-duplicate pairs: `equity_z` mirrors
+`debt_assets_z`, and the two reserve measures and the two margin measures differ
+only in small adjustments. The expense and self-sufficiency shares share almost
+no variance with the rest of the set.
+
+## Stage 2 — triage
+
+`fiscal_triage()` turns those diagnostics into an auditable recommendation:
+which indicators to **retain** for dimension estimation, which to keep as
+**standalone** measures, and which to drop as redundant or noise.
+
+```{r}
+triage <- fiscal_triage(diagnostics)
+triage$decisions[, c("variable", "decision", "reason")]
+```
+
+The triage keeps one indicator from each redundant pair and drops the
+administrative-expense share as noise. It proposes keeping `prog_exp_z` and
+`self_suff_z` as **standalone** measures because they are unrelated to the other
+indicators. A statistical rule cannot tell *why* an indicator stands alone. Here
+it is because these shares describe a spending pattern and a revenue model rather
+than financial condition, so we override the recommendation and exclude them:
+
+```{r}
+triage <- fiscal_triage(
+  diagnostics,
+  overrides = c(prog_exp_z = "noise", self_suff_z = "noise")
+)
+triage$selected_for_dimensions
+triage$retained_standalone
+```
+
+## Stage 3 — discover dimensions
+
+`fiscal_dimensions()` uses PCA (or exploratory factor analysis) to propose
+empirical dimensions from the retained indicators. When `nfactors` is `NULL`,
+parallel analysis chooses the number. It discovers and describes groupings; it
+does not name them --- that is your call.
+
+```{r}
+dimensions <- fiscal_dimensions(
+  indicators,
+  triage = triage,
+  method = "pca",
+  seed   = 42
+)
+dimensions
+dimensions$assignments[, c("variable", "primary_dimension", "primary_loading")]
+```
+
+Reserves and solvency indicators form one dimension; the margin and return
+indicators form the other. Name them after their content:
+
+```{r}
+a <- dimensions$assignments
+perf <- a$primary_dimension[a$variable == "surplus_margin_z"]
+dimension_names <- setNames(
+  ifelse(dimensions$multi_indicator_dimensions == perf, "performance", "resilience"),
+  dimensions$multi_indicator_dimensions
+)
+dimension_names
+```
+
+## Stage 4 — fit a reusable model
+
+`fiscal_health_fit()` freezes the reviewed dimensions into a scoring
+specification. The fitted object stores indicator orientation (inferred from
+`fiscal_metrics()` directions), centers, scales, missing-value treatment, and
+dimension coefficients --- everything needed to score new data identically later.
+
+```{r}
+fit <- fiscal_health_fit(indicators, dimensions = dimensions,
+                         dimension_names = dimension_names)
+fit
+```
+
+## Stage 5 — score
+
+`fiscal_health_score()` applies the fitted model. No parameters are re-estimated;
+it just transforms and combines indicators into dimension scores (prefixed
+`fh_`). Because the model is frozen, the **same `fit`** can score a different
+panel year on the same scale.
+
+```{r}
+scored_dims <- fiscal_health_score(indicators, fit)
+
+grep("^fh_", names(scored_dims), value = TRUE)
+round(cor(scored_dims$fh_resilience, scored_dims$fh_performance, use = "complete.obs"), 2)
+```
+
+## Stage 6 — weight
+
+`fiscal_weights()` defines how dimension scores and standalone indicators combine
+into the composite. The default is equal weighting; `min_coverage` controls how
+much of an observation's weighted inputs must be present before it receives a
+score.
+
+```{r}
+weights <- fiscal_weights(fit, min_coverage = 0.5)
+weights
+```
+
+## Stage 7 — the composite index
+
+`fiscal_health_index()` produces the single composite score (and a coverage
+column recording how much information each score is based on).
+
+```{r}
+indexed <- fiscal_health_index(scored_dims, weights)
+
+summary(indexed$fiscal_health)
+```
+
+## The shortcut: `fiscal_health()`
+
+Once you have reviewed the triage and dimensions, `fiscal_health()` runs the
+mechanical stages --- fit, score, weight, index --- in one call:
+
+```{r}
+result <- fiscal_health(indicators, dimensions = dimensions,
+                        fit_args = list(dimension_names = dimension_names))
+result
+```
+
+It deliberately does **not** automate diagnostics, triage, or dimension discovery,
+because those stages require substantive review.
+
+## Scoring new data with a fitted model
+
+The payoff of separating *fit* from *score* is reuse. Fit the model once on a
+reference sample (say, one panel year), then score every other year on the same
+scale by passing the stored `fit`:
+
+```{r, eval = FALSE}
+fit <- fiscal_health_fit(indicators_2023, dimensions = reviewed_dims,
+                         dimension_names = dimension_names)
+
+scores_2024 <- fiscal_health_score(indicators_2024, fit)
+scores_2025 <- fiscal_health_score(indicators_2025, fit)
+```
+
+This keeps scores comparable across years --- exactly what you need when the index
+feeds a longitudinal analysis of the panel you built in
+`vignette("panel-workflow")`.

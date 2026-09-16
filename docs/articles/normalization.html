@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Normalization &amp; transformations • fiscal</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Normalization &amp; transformations">
 </head>
@@ -44,7 +44,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
-    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">The fiscal health index</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
   </ul>
 </li>
@@ -76,21 +77,39 @@
 
     
     
-<p>Every metric in <code>fiscal</code> returns four columns — the raw ratio plus winsorized (<code>_w</code>), standardized (<code>_z</code>), and percentile-rank (<code>_p</code>) versions. This article explains what those transformations do, the <code>range</code> codes that control them, and the distribution-aware machinery behind <code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code>.</p>
-<p>Why bother? Nonprofit financial ratios are notoriously badly behaved: heavy right tails (a few enormous organizations), structural zeros (a nonprofit with no debt), hard bounds (a program-expense ratio can’t exceed 1), and the occasional data-entry outlier. Feeding raw ratios into a z-score or a composite index lets those pathologies dominate. Normalization tames them so that comparisons and indices reflect <em>position</em>, not scale artifacts.</p>
+<p>Every metric in <code>fiscal</code> returns four columns — the raw
+ratio plus winsorized (<code>_w</code>), standardized (<code>_z</code>),
+and percentile-rank (<code>_p</code>) versions. This article explains
+what those transformations do, the <code>range</code> codes that control
+them, and the distribution-aware machinery behind
+<code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code>.</p>
+<p>Why bother? Nonprofit financial ratios are notoriously badly behaved:
+heavy right tails (a few enormous organizations), structural zeros (a
+nonprofit with no debt), hard bounds (a program-expense ratio can’t
+exceed 1), and the occasional data-entry outlier. Feeding raw ratios
+into a z-score or a composite index lets those pathologies dominate.
+Normalization tames them so that comparisons and indices reflect
+<em>position</em>, not scale artifacts.</p>
 <div class="section level2">
 <h2 id="three-steps-behind-every-metric-column">Three steps behind every metric column<a class="anchor" aria-label="anchor" href="#three-steps-behind-every-metric-column"></a>
 </h2>
 <p>For a raw ratio, the package:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Winsorizes</strong> — clips extreme tails to a percentile bound (<code>_w</code>).</li>
+<strong>Winsorizes</strong> — clips extreme tails to a percentile
+bound (<code>_w</code>).</li>
 <li>
-<strong>Standardizes</strong> — centers and scales the winsorized values into a z-score (<code>_z</code>).</li>
+<strong>Normalizes</strong> — applies a distribution-aware
+transformation (chosen by <code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code>, below)
+and robustly centers and scales the result into a z-score
+(<code>_z</code>).</li>
 <li>
-<strong>Ranks</strong> — expresses each value as a percentile, 1–100 (<code>_p</code>).</li>
+<strong>Ranks</strong> — expresses each raw value as a percentile,
+1–100 (<code>_p</code>).</li>
 </ol>
-<p><code><a href="../reference/apply_transformations.html">apply_transformations()</a></code> is the engine that does all three at once. It is what each <code>get_*()</code> function calls internally:</p>
+<p><code><a href="../reference/apply_transformations.html">apply_transformations()</a></code> is the engine that does all
+three at once. It is what each <code>get_*()</code> function calls
+internally:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">ratio</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Lognormal.html" class="external-link">rlnorm</a></span><span class="op">(</span><span class="fl">500</span>, <span class="fl">0</span>, <span class="fl">0.6</span><span class="op">)</span>, <span class="fl">40</span>, <span class="fl">55</span><span class="op">)</span>   <span class="co"># a right-skewed ratio with two outliers</span></span>
@@ -153,13 +172,25 @@
 <span><span class="co">#&gt;  Mean   : 1.4062   Mean   :1.2124   Mean   : 0.23062   Mean   : 50.3  </span></span>
 <span><span class="co">#&gt;  3rd Qu.: 1.5102   3rd Qu.:1.5102   3rd Qu.: 0.88289   3rd Qu.: 75.0  </span></span>
 <span><span class="co">#&gt;  Max.   :55.0000   Max.   :3.7557   Max.   : 3.02864   Max.   :100.0</span></span></code></pre></div>
-<p>Notice the two outliers (40, 55) are pulled back in the winsorized column, which in turn keeps the z-score and percentile well behaved.</p>
+<p>Notice the two outliers (40, 55) are pulled back in the winsorized
+column, which keeps them from dominating the z-score. The percentile
+rank depends only on ordering, so extreme values cannot distort it
+either way.</p>
 </div>
 <div class="section level2">
 <h2 id="the-range-codes">The <code>range</code> codes<a class="anchor" aria-label="anchor" href="#the-range-codes"></a>
 </h2>
-<p>Winsorization and transformation both need to know a variable’s <strong>theoretical support</strong> — a program-expense ratio lives in <code>[0, 1]</code>; a growth rate can be negative; a dollar amount is non-negative and unbounded above. The <code>range</code> argument encodes this:</p>
+<p>Winsorization and transformation both need to know a variable’s
+<strong>theoretical support</strong> — a program-expense ratio lives in
+<code>[0, 1]</code>; a growth rate can be negative; a dollar amount is
+non-negative and unbounded above. The <code>range</code> argument
+encodes this:</p>
 <table class="table">
+<colgroup>
+<col width="15%">
+<col width="29%">
+<col width="55%">
+</colgroup>
 <thead><tr class="header">
 <th>Code</th>
 <th>Support</th>
@@ -193,7 +224,9 @@
 </tr>
 </tbody>
 </table>
-<p>The support determines <em>where</em> winsorization clips and <em>which</em> transformation is appropriate. <code><a href="../reference/winsorize_x.html">winsorize_x()</a></code> exposes the winsorization step directly:</p>
+<p>The support determines <em>where</em> winsorization clips and
+<em>which</em> transformation is appropriate. <code><a href="../reference/winsorize_x.html">winsorize_x()</a></code>
+exposes the winsorization step directly:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/winsorize_x.html">winsorize_x</a></span><span class="op">(</span><span class="va">ratio</span>, range <span class="op">=</span> <span class="st">"zp"</span>, winsorize <span class="op">=</span> <span class="fl">0.98</span><span class="op">)</span></span>
 <span></span>
@@ -205,41 +238,69 @@
 </div>
 <div class="section level2">
 <h2 id="find_best_normalization-distribution-aware-transformation">
-<code>find_best_normalization()</code>: distribution-aware transformation<a class="anchor" aria-label="anchor" href="#find_best_normalization-distribution-aware-transformation"></a>
+<code>find_best_normalization()</code>: distribution-aware
+transformation<a class="anchor" aria-label="anchor" href="#find_best_normalization-distribution-aware-transformation"></a>
 </h2>
-<p>Standardizing a badly skewed variable produces a badly skewed z-score. For multivariate work — correlations, factor analysis, the fiscal-health index — we want each indicator to be <em>approximately normal</em> first. <code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code> does this by choosing, per variable, one of four transformations based on the shape of its <strong>stable interior</strong> (the non-sentinel, non-missing values left after winsorization).</p>
+<p>Standardizing a badly skewed variable produces a badly skewed
+z-score. For multivariate work — correlations, factor analysis, the
+fiscal-health index — we want each indicator to be <em>approximately
+normal</em> first. <code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code> does this by
+choosing, per variable, one of three transformations (a fourth,
+<code>hurdle</code>, is available on request) based on the shape of its
+<strong>stable interior</strong> (the non-sentinel, non-missing values
+left after winsorization).</p>
 <p>The procedure is always the same:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong>Winsorize</strong> and set aside sentinel (boundary) observations so pile-up at the bounds can’t distort the fit.</li>
+<strong>Winsorize</strong> and set aside sentinel (boundary)
+observations so pile-up at the bounds can’t distort the fit.</li>
 <li>
-<strong>Diagnose</strong> the stable interior — its support, boundary mass, and zero inflation.</li>
+<strong>Diagnose</strong> the stable interior — its support,
+boundary mass, and zero inflation.</li>
 <li>
-<strong>Select</strong> a transformation from those diagnostics (or accept an explicit <code>vtype</code>).</li>
+<strong>Select</strong> a transformation from those diagnostics (or
+accept an explicit <code>vtype</code>).</li>
 <li>
-<strong>Fit</strong> the transformation’s parameters and a robust center/scale (median / MAD).</li>
+<strong>Fit</strong> the transformation’s parameters and a robust
+center/scale (median / MAD, falling back to mean / SD when the MAD is
+zero because more than half of the transformed values are tied).</li>
 <li>
-<strong>Report</strong> before-and-after skewness and kurtosis so you can see whether the transformation actually helped.</li>
+<strong>Report</strong> before-and-after skewness and kurtosis so
+you can see whether the transformation actually helped.</li>
 </ol>
-<p>Separating <em>fit</em> from <em>apply</em> means the same fitted model can score a later panel year on an identical scale — see <code><a href="../reference/apply_normalization.html">apply_normalization()</a></code> at the end.</p>
+<p>Separating <em>fit</em> from <em>apply</em> means the same fitted
+model can score a later panel year on an identical scale — see
+<code><a href="../reference/apply_normalization.html">apply_normalization()</a></code> at the end.</p>
 <div class="section level3">
 <h3 id="how-the-transformation-is-chosen">How the transformation is chosen<a class="anchor" aria-label="anchor" href="#how-the-transformation-is-chosen"></a>
 </h3>
-<p><code><a href="../reference/guess_normalize_type.html">guess_normalize_type()</a></code> implements the decision rule. Writing <code>p0</code> for the share of values at zero, <code>p1</code> for the share at one, and using a <code>boundary_mass_cutoff</code> of <code>0.10</code>:</p>
+<p><code><a href="../reference/guess_normalize_type.html">guess_normalize_type()</a></code> implements the decision rule.
+Writing <code>p0</code> for the share of values at zero, <code>p1</code>
+for the share at one, and using a <code>boundary_mass_cutoff</code> of
+<code>0.10</code>:</p>
 <pre><code>is the variable effectively in [0, 1]?  (range "zo", or &gt;98% of values in [0,1])
 ├── yes
-│    ├── p0 &gt; 0.10  ........................  hurdle       (zero-inflated)
+│    ├── p0 &gt; 0.10  ........................  rank_normal  (zero-inflated)
 │    ├── p1 &gt; 0.10  ........................  rank_normal  (piled up at the top)
 │    └── otherwise  ........................  logit        (well-spread proportion)
 └── no
      ├── non-negative? (range "zp", or min &gt;= 0)  ....  asinh   (heavy right tail)
      └── mixed / irregular support  ................  rank_normal</code></pre>
-<p>The four transformations, and the distribution pathology each one targets:</p>
+<p><code>hurdle</code> never comes out of this rule; it is used only
+when you ask for it with <code>vtype = "hurdle"</code>.</p>
+<p>The four transformations, and the distribution pathology each one
+targets:</p>
 </div>
 <div class="section level3">
 <h3 id="asinh-heavy-tailed-magnitudes">asinh — heavy-tailed magnitudes<a class="anchor" aria-label="anchor" href="#asinh-heavy-tailed-magnitudes"></a>
 </h3>
-<p><strong>Pathology.</strong> Non-negative amounts with a long right tail: a handful of huge organizations stretch the scale (dollar figures, days of cash). <strong>Transform.</strong> The inverse hyperbolic sine <code>asinh(x / s)</code>, scaled by <code>s</code>, the median absolute non-zero value of the stable interior. It behaves like the identity near zero and like a log in the tails, is defined <em>at</em> zero, and accommodates negatives.</p>
+<p><strong>Pathology.</strong> Non-negative amounts with a long right
+tail: a handful of huge organizations stretch the scale (dollar figures,
+days of cash). <strong>Transform.</strong> The inverse hyperbolic sine
+<code>asinh(x / s)</code>, scaled by <code>s</code>, the median absolute
+non-zero value of the stable interior. It behaves like the identity near
+zero and like a log in the tails, is defined <em>at</em> zero, and
+accommodates negatives.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">x_asinh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Lognormal.html" class="external-link">rlnorm</a></span><span class="op">(</span><span class="fl">2000</span>, meanlog <span class="op">=</span> <span class="fl">10</span>, sdlog <span class="op">=</span> <span class="fl">1.3</span><span class="op">)</span>   <span class="co"># e.g. total-asset dollars</span></span>
@@ -252,13 +313,25 @@
 <span><span class="co">#&gt;  "asinh"   "2.56"   "0.81"   "7.44"  "-0.19"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_normalize_x.html">plot_normalize_x</a></span><span class="op">(</span><span class="va">x_asinh</span>, range <span class="op">=</span> <span class="st">"zp"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="normalization_files/figure-html/unnamed-chunk-5-1.png" alt="" width="672"></p>
-<p>A raw skewness above 2 collapses toward zero, and the extreme kurtosis is tamed.</p>
+<p><img src="normalization_files/figure-html/unnamed-chunk-5-1.png" class="r-plt" alt="" width="672"></p>
+<p>A raw skewness above 2 drops sharply, and the extreme kurtosis is
+tamed.</p>
 </div>
 <div class="section level3">
 <h3 id="logit-well-behaved-proportions">logit — well-behaved proportions<a class="anchor" aria-label="anchor" href="#logit-well-behaved-proportions"></a>
 </h3>
-<p><strong>Pathology.</strong> A ratio bounded in <code>[0, 1]</code> with mass spread through the middle and little pile-up at the ends (many expense- and revenue-share ratios). <strong>Transform.</strong> Rescale to <code>[0, 1]</code> relative to the theoretical support, then apply <code><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">qlogis()</a></code> (the log-odds), which stretches the bounded scale onto the whole real line.</p>
+<p><strong>Pathology.</strong> A ratio bounded in <code>[0, 1]</code>
+with mass spread through the middle and little pile-up at the ends (many
+expense- and revenue-share ratios). <strong>Transform.</strong> Rescale
+to <code>[0, 1]</code> relative to the theoretical support, then apply
+<code><a href="https://rdrr.io/r/stats/Logistic.html" class="external-link">qlogis()</a></code> (the log-odds), which stretches the bounded scale
+onto the whole real line. Before the log-odds, values are clamped to the
+<code>(1 - winsorize) / 2</code> and
+<code>1 - (1 - winsorize) / 2</code> quantiles of the strictly interior
+values (those not exactly 0 or 1). An exact 0 or 1 is therefore scored
+at the edge of the interior distribution instead of at an extreme
+log-odds that would dominate the center, the scale, and any
+correlation.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span>
 <span><span class="va">x_logit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="fl">2000</span>, <span class="fl">2</span>, <span class="fl">8</span><span class="op">)</span>   <span class="co"># a right-skewed share ratio</span></span>
@@ -267,34 +340,68 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>type <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">transform_type</span>,</span>
 <span>  raw_skew <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">raw_skewness</span>, <span class="fl">2</span><span class="op">)</span>, fit_skew <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">fit_skewness</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     type raw_skew fit_skew </span></span>
-<span><span class="co">#&gt;  "logit"   "0.81"  "-0.53"</span></span>
+<span><span class="co">#&gt;  "logit"   "0.81"  "-0.39"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_normalize_x.html">plot_normalize_x</a></span><span class="op">(</span><span class="va">x_logit</span>, range <span class="op">=</span> <span class="st">"zo"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="normalization_files/figure-html/unnamed-chunk-6-1.png" alt="" width="672"></p>
+<p><img src="normalization_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="" width="672"></p>
 </div>
 <div class="section level3">
-<h3 id="hurdle-structural-zeros">hurdle — structural zeros<a class="anchor" aria-label="anchor" href="#hurdle-structural-zeros"></a>
+<h3 id="hurdle-structural-zeros-on-request">hurdle — structural zeros (on request)<a class="anchor" aria-label="anchor" href="#hurdle-structural-zeros-on-request"></a>
 </h3>
-<p><strong>Pathology.</strong> A <code>[0, 1]</code> variable with a spike of <em>exact</em> zeros — organizations that simply don’t do the thing (no fundraising, no grants, no debt) — mixed with a continuous positive part. Treating the zeros as ordinary small numbers is wrong; they are qualitatively different. <strong>Transform.</strong> Zeros are retained as <code>0</code>; the positive part is transformed separately (rank or logit) and rescaled to a positive interval. The trigger is <code>p0 &gt; boundary_mass_cutoff</code>.</p>
+<p><strong>Pathology.</strong> A <code>[0, 1]</code> variable with a
+spike of <em>exact</em> zeros — organizations that simply don’t do the
+thing (no fundraising, no grants, no debt) — mixed with a continuous
+positive part. You may want the zeros treated as a qualitatively
+different group rather than as ordinary small numbers.
+<strong>Transform.</strong> Zeros are retained as <code>0</code>; the
+positive part is transformed separately (rank or logit) and rescaled to
+a positive interval (<code>hurdle_range</code>, default
+<code>[1, 100]</code>).</p>
+<p>Hurdle is <strong>not</strong> selected automatically. After
+standardization the zero block becomes a single spike at one end of the
+scale, apart from the positive values, which distorts correlations with
+other indicators. Zero-inflated proportions
+(<code>p0 &gt; boundary_mass_cutoff</code>) are therefore routed to
+<code>rank_normal</code>, which scores the zero block at its mid-rank.
+Request the hurdle transform explicitly with
+<code>vtype = "hurdle"</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">4</span><span class="op">)</span></span>
 <span><span class="va">x_hurdle</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">900</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Beta.html" class="external-link">rbeta</a></span><span class="op">(</span><span class="fl">1100</span>, <span class="fl">2</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span>   <span class="co"># ~45% structural zeros</span></span>
 <span></span>
+<span><span class="co"># auto-detection sends a zero-inflated proportion to rank_normal</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_best_normalization.html">find_best_normalization</a></span><span class="op">(</span><span class="va">x_hurdle</span>, range <span class="op">=</span> <span class="st">"zo"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>type <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">transform_type</span>, p0_reason <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">guess_reason</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                                                                     type </span></span>
-<span><span class="co">#&gt;                                                                 "hurdle" </span></span>
+<span><span class="co">#&gt;                                                            "rank_normal" </span></span>
 <span><span class="co">#&gt;                                                                p0_reason </span></span>
 <span><span class="co">#&gt; "Variable is effectively in [0,1] with substantial zero mass (p0=0.45)."</span></span>
 <span></span>
-<span><span class="fu"><a href="../reference/plot_normalize_x.html">plot_normalize_x</a></span><span class="op">(</span><span class="va">x_hurdle</span>, range <span class="op">=</span> <span class="st">"zo"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="normalization_files/figure-html/unnamed-chunk-7-1.png" alt="" width="672"></p>
-<p>The zero spike is preserved as its own group while the positive component is spread out.</p>
+<span><span class="co"># the hurdle transform must be requested</span></span>
+<span><span class="va">fit_h</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_best_normalization.html">find_best_normalization</a></span><span class="op">(</span><span class="va">x_hurdle</span>, range <span class="op">=</span> <span class="st">"zo"</span>, vtype <span class="op">=</span> <span class="st">"hurdle"</span>,</span>
+<span>                                 verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="va">fit_h</span><span class="op">$</span><span class="va">transform_type</span></span>
+<span><span class="co">#&gt; [1] "hurdle"</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/plot_normalize_x.html">plot_normalize_x</a></span><span class="op">(</span><span class="va">x_hurdle</span>, range <span class="op">=</span> <span class="st">"zo"</span>, vtype <span class="op">=</span> <span class="st">"hurdle"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="normalization_files/figure-html/unnamed-chunk-7-1.png" class="r-plt" alt="" width="672"></p>
+<p>The zero spike is preserved as its own group while the positive
+component is spread out.</p>
 </div>
 <div class="section level3">
 <h3 id="rank_normal-irregular-or-mixed-shapes">rank_normal — irregular or mixed shapes<a class="anchor" aria-label="anchor" href="#rank_normal-irregular-or-mixed-shapes"></a>
 </h3>
-<p><strong>Pathology.</strong> Anything the parametric transforms can’t handle gracefully: bimodal distributions, mixed positive/negative support with no clean model, or a <code>[0, 1]</code> variable piled up at the <em>top</em>. <strong>Transform.</strong> A rank-based inverse normal transform maps the empirical ranks onto a Gaussian. It preserves <em>ordering</em> but not distances, so it is robust to almost any shape — at the cost of discarding the original spacing.</p>
+<p><strong>Pathology.</strong> Anything the parametric transforms can’t
+handle gracefully: bimodal distributions, mixed positive/negative
+support with no clean model, or a <code>[0, 1]</code> variable piled up
+at zero or one. <strong>Transform.</strong> A rank-based inverse normal
+transform maps the empirical mid-ranks onto a Gaussian. Tied values (a
+block of exact zeros, say) share the score at the middle of their block,
+and because the reference distribution keeps the winsorized tail
+observations, clipped values are scored at their actual quantile rather
+than at the most extreme normal score. It preserves <em>ordering</em>
+but not distances, so it is robust to almost any shape — at the cost of
+discarding the original spacing.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span>
 <span><span class="va">x_rank</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="op">-</span><span class="fl">3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="fl">4</span><span class="op">)</span><span class="op">)</span>   <span class="co"># bimodal, mixed support</span></span>
@@ -303,34 +410,51 @@
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>type <span class="op">=</span> <span class="va">fit</span><span class="op">$</span><span class="va">transform_type</span>,</span>
 <span>  raw_kurt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">raw_kurtosis</span>, <span class="fl">2</span><span class="op">)</span>, fit_kurt <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">fit_kurtosis</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt;          type      raw_kurt      fit_kurt </span></span>
-<span><span class="co">#&gt; "rank_normal"       "-1.75"       "-0.02"</span></span>
+<span><span class="co">#&gt; "rank_normal"       "-1.75"       "-0.16"</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/plot_normalize_x.html">plot_normalize_x</a></span><span class="op">(</span><span class="va">x_rank</span>, range <span class="op">=</span> <span class="st">"np"</span><span class="op">)</span></span></code></pre></div>
-<p><img src="normalization_files/figure-html/unnamed-chunk-8-1.png" alt="" width="672"></p>
-<p>The bimodal shape (strongly negative kurtosis) is pulled toward a single normal mode.</p>
+<p><img src="normalization_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="" width="672"></p>
+<p>The bimodal shape (strongly negative kurtosis) is pulled toward a
+single normal mode.</p>
 </div>
 </div>
 <div class="section level2">
 <h2 id="one-step-and-reusable-normalization">One-step and reusable normalization<a class="anchor" aria-label="anchor" href="#one-step-and-reusable-normalization"></a>
 </h2>
-<p><code><a href="../reference/normalize_x.html">normalize_x()</a></code> runs fit-and-apply in a single call — handy for a one-off variable:</p>
+<p><code><a href="../reference/normalize_x.html">normalize_x()</a></code> runs fit-and-apply in a single call —
+handy for a one-off variable:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/normalize_x.html">normalize_x</a></span><span class="op">(</span><span class="va">x_asinh</span>, range <span class="op">=</span> <span class="st">"zp"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span>, sd <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt;  mean    sd </span></span>
 <span><span class="co">#&gt; 0.315 1.062</span></span></code></pre></div>
-<p>When you need the <em>same</em> transformation applied to new data (a different panel year, a holdout sample), fit once and re-apply, so both are scored on an identical scale:</p>
+<p>When you need the <em>same</em> transformation applied to new data (a
+different panel year, a holdout sample), fit once and re-apply, so both
+are scored on an identical scale:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit</span>  <span class="op">&lt;-</span> <span class="fu"><a href="../reference/find_best_normalization.html">find_best_normalization</a></span><span class="op">(</span><span class="va">x_asinh</span>, range <span class="op">=</span> <span class="st">"zp"</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">z_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/apply_normalization.html">apply_normalization</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Lognormal.html" class="external-link">rlnorm</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">10</span>, <span class="fl">1.3</span><span class="op">)</span>, fit <span class="op">=</span> <span class="va">fit</span><span class="op">)</span></span></code></pre></div>
-<p>Force a specific transformation with <code>vtype</code> if you want to override the auto-detection:</p>
+<p>Force a specific transformation with <code>vtype</code> if you want
+to override the auto-detection:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/normalize_x.html">normalize_x</a></span><span class="op">(</span><span class="va">x</span>, range <span class="op">=</span> <span class="st">"np"</span>, vtype <span class="op">=</span> <span class="st">"rank_normal"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="how-this-connects-to-the-metrics">How this connects to the metrics<a class="anchor" aria-label="anchor" href="#how-this-connects-to-the-metrics"></a>
 </h2>
-<p>The <code>_w</code> / <code>_z</code> / <code>_p</code> columns on every metric come from the winsorize → standardize → rank path shown at the top (<code><a href="../reference/apply_transformations.html">apply_transformations()</a></code>). The distribution-aware transforms in this article — asinh, logit, hurdle, rank_normal — are what you reach for when building the <strong>fiscal-health index</strong> (<code><a href="../articles/fiscal-health-index.html">vignette("fiscal-health-index")</a></code>), where each indicator should be approximately normal before it enters a correlation or factor model.</p>
+<p>The <code>_w</code> / <code>_z</code> / <code>_p</code> columns on
+every metric come from the winsorize → normalize → rank path shown at
+the top (<code><a href="../reference/apply_transformations.html">apply_transformations()</a></code>). The <code>_z</code>
+column uses exactly the machinery in this article:
+<code><a href="../reference/apply_transformations.html">apply_transformations()</a></code> fits
+<code><a href="../reference/find_best_normalization.html">find_best_normalization()</a></code> with the metric’s
+<code>range</code> (auto-detecting the transformation, so never
+<code>hurdle</code>) and scores the ratio with
+<code><a href="../reference/apply_normalization.html">apply_normalization()</a></code>. The same transforms matter when
+building the <strong>fiscal-health index</strong>
+(<code><a href="../articles/fiscal-health-index.html">vignette("fiscal-health-index")</a></code>), where each indicator
+should be approximately normal before it enters a correlation or factor
+model.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -343,7 +467,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

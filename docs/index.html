@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>fiscal • Nonprofit Fiscal Health Metrics • fiscal</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="fiscal • Nonprofit Fiscal Health Metrics">
 <meta name="description" content="Calculate standard fiscal-health accounting metrics for nonprofits from IRS 990 and 990-EZ data.
@@ -48,7 +48,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="articles/normalization.html">Normalization &amp; transformations</a></li>
-    <li><a class="dropdown-item" href="articles/fiscal-health-index.html">The fiscal health index</a></li>
+    <li><a class="dropdown-item" href="articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
+    <li><a class="dropdown-item" href="articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
   </ul>
 </li>
@@ -101,8 +102,8 @@
 </h2>
 <p><code>fiscal</code> depends on <code>panel990</code>; installing from GitHub pulls it in automatically via the package’s <code>Remotes:</code> field.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"nonprofit-open-data-collective/fiscal"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
+<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pkg_install.html" class="external-link">pkg_install</a></span><span class="op">(</span><span class="st">"nonprofit-open-data-collective/fiscal"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="quick-start-reproducible">Quick start (reproducible)<a class="anchor" aria-label="anchor" href="#quick-start-reproducible"></a>
@@ -133,6 +134,7 @@
 <span>                         debt   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"F9_10_LIAB_TOT_EOY"</span>, <span class="st">"F9_01_NAFB_LIAB_TOT_EOY"</span> <span class="op">)</span>,</span>
 <span>                         assets <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"F9_10_ASSET_TOT_EOY"</span>, <span class="st">"F9_01_NAFB_ASSET_TOT_EOY"</span> <span class="op">)</span>,</span>
 <span>                         winsorize <span class="op">=</span> <span class="fl">0.98</span>,</span>
+<span>                         range     <span class="op">=</span> <span class="st">"zo"</span>,</span>
 <span>                         sanitize  <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>                         summarize <span class="op">=</span> <span class="cn">FALSE</span> <span class="op">)</span></span></code></pre>
 <p><strong>Arguments</strong></p>
@@ -144,7 +146,9 @@
 <li>
 <code>assets</code>: Column name(s) for total assets, EOY. (On 990: Part X, line 16B; <code>F9_10_ASSET_TOT_EOY</code>. On EZ: Part II, line 25B; <code>F9_01_NAFB_ASSET_TOT_EOY</code>.)</li>
 <li>
-<code>winsorize</code>: The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at the 1st and 99th percentile values.</li>
+<code>winsorize</code>: The winsorization value (between 0 and 1), defaults to 0.98, which winsorizes an unbounded ratio at its 1st and 99th percentile values.</li>
+<li>
+<code>range</code>: The theoretical range of the ratio (<code>"zo"</code> = zero to one), which sets the winsorization bounds and guides the normalization used for the <code>_z</code> column. See <code><a href="articles/normalization.html">vignette("normalization")</a></code>.</li>
 <li>
 <code>sanitize</code>: If <code>TRUE</code> (default), imputes zero for NA values in financial fields before computing the ratio, respecting form scope.</li>
 <li>
@@ -165,31 +169,31 @@
 <span></span>
 <span><span class="co"># the function is pipe-enabled </span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> </span>
-<span>  <span class="va">df</span> <span class="op">%&gt;%</span> </span>
+<span>  <span class="va">df</span> <span class="op">|&gt;</span> </span>
 <span>  <span class="fu"><a href="reference/get_debt_assets_ratio.html">get_debt_assets_ratio</a></span><span class="op">(</span><span class="op">)</span></span>
 <span>  </span>
 <span><span class="co"># compute all ratio metrics at once</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_all.html">compute_all</a></span><span class="op">(</span> <span class="va">df</span>, metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ratio"</span>,<span class="st">"w"</span>,<span class="st">"z"</span>,<span class="st">"p"</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p>The <code>metrics</code> argument controls which versions are returned:</p>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Value</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>"ratio"</code></td>
 <td>Raw financial ratio</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>"w"</code></td>
 <td>Winsorized version</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>"z"</code></td>
 <td>Z-score (standardized) version</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>"p"</code></td>
 <td>Percentile rank (1–100)</td>
 </tr>
@@ -197,17 +201,17 @@
 </table>
 <p>The <code>append_to_df</code> argument controls the output shape:</p>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Value</th>
 <th>Returns</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>
 <code>TRUE</code> (default)</td>
 <td>Original data frame with metric columns appended</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>FALSE</code></td>
 <td>Efile identifier columns + metric columns only</td>
 </tr>
@@ -227,24 +231,20 @@
 <li>
 <code>debt_assets_w</code> — the winsorized version</li>
 <li>
-<code>debt_assets_z</code> — standardized as a z-score</li>
+<code>debt_assets_z</code> — normalized (distribution-aware transformation) and standardized as a z-score</li>
 <li>
 <code>debt_assets_p</code> — expressed as a percentile rank</li>
 </ul>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_debt_assets_ratio.html">get_debt_assets_ratio</a></span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span>, summarize <span class="op">=</span> <span class="cn">TRUE</span> <span class="op">)</span></span>
 <span></span>
-<span><span class="co"># [1] "Assets equal to zero: 3 cases have been replaced with NA."</span></span>
+<span><span class="co">#   :: Assets equal to zero :: &lt;n&gt; case(s) replaced with NaN</span></span>
 <span><span class="co">#</span></span>
-<span><span class="co">#    debt_assets       debt_assets_w     debt_assets_z      debt_assets_p    </span></span>
-<span><span class="co">#  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  </span></span>
-<span><span class="co">#  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  </span></span>
-<span><span class="co">#  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  </span></span>
-<span><span class="co">#  Mean   : 0.51315   Mean   :0.51254   Mean   : 0.00000   Mean   : 50.35  </span></span>
-<span><span class="co">#  3rd Qu.: 0.62853   3rd Qu.:0.62853   3rd Qu.: 0.64995   3rd Qu.: 75.00  </span></span>
-<span><span class="co">#  Max.   : 1.24623   Max.   :1.00150   Max.   : 2.73988   Max.   :100.00  </span></span>
-<span><span class="co">#  NA's   :3          NA's   :3         NA's   :3          NA's   :3</span></span></code></pre></div>
-<p><img src="assets/dar.png"></p>
+<span><span class="co"># summary() of debt_assets, debt_assets_w, debt_assets_z, and debt_assets_p,</span></span>
+<span><span class="co"># followed by density plots of the four columns</span></span></code></pre></div>
+<div class="float">
+<img src="reference/figures/dar.png" alt="Density curves for the four versions of the debt-to-asset ratio: raw, winsorized, z-score, and percentile rank."><div class="figcaption">Density curves for the four versions of the debt-to-asset ratio: raw, winsorized, z-score, and percentile rank.</div>
+</div>
 <br><hr>
 <p><br></p>
 <p><strong>ADD ALL METRICS TO DATASET</strong></p>
@@ -316,9 +316,9 @@
 <div class="section level3">
 <h3 id="get_panel">get_panel()<a class="anchor" aria-label="anchor" href="#get_panel"></a>
 </h3>
-<p>Downloads multiple years of IRS 990 efile data and stacks them into a single long-format panel. Each year is retrieved independently via <code><a href="reference/retrieve_efile_data.html">retrieve_efile_data()</a></code>, stamped with <code>TAX_YEAR</code>, and combined with <code><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">dplyr::bind_rows()</a></code> — columns that appear in some years but not others are filled with <code>NA</code>.</p>
+<p>Downloads multiple years of IRS 990 efile data and stacks them into a single long-format panel, stamped with <code>TAX_YEAR</code>. Retrieval is delegated to <code><a href="https://rdrr.io/pkg/panel990/man/panelize.html" class="external-link">panel990::panelize()</a></code>; Business Master File metadata is attached afterwards unless <code>include_bmf = FALSE</code>.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Retrieve a 4-year panel with default tables (P00, P01, P08, P09, P10)</span></span>
+<code class="sourceCode R"><span><span class="co"># Retrieve a 4-year panel with default tables (P00, P01, P08, P09, P10, P11, P12, A01)</span></span>
 <span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_panel.html">get_panel</a></span><span class="op">(</span> years <span class="op">=</span> <span class="fl">2019</span><span class="op">:</span><span class="fl">2022</span> <span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span> <span class="va">panel</span> <span class="op">)</span></span>
@@ -342,11 +342,11 @@
 <strong>Keep most recent</strong> — retain the filing with the latest <code>RETURN_TIME_STAMP</code>
 </li>
 </ol>
-<p>If applying a drop rule would eliminate <em>all</em> records for an organization-year, those records are rescued and passed to the next step. The function prints a report showing records dropped at each step, by year, and a frequency table of how many filings existed per organization-year before deduplication.</p>
+<p>If applying a drop rule would eliminate <em>all</em> records for an organization-year, those records are rescued and passed to the next step. The function is a wrapper around <code><a href="https://rdrr.io/pkg/panel990/man/panel_deduplicate.html" class="external-link">panel990::panel_deduplicate()</a></code> and prints a short summary of the row counts before and after; use <code><a href="reference/inspect_duplicates.html">inspect_duplicates()</a></code> for a detailed breakdown of duplicate filings by type.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/deduplicate.html">deduplicate</a></span><span class="op">(</span> <span class="va">panel</span> <span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Suppress the report</span></span>
+<span><span class="co"># Suppress the summary</span></span>
 <span><span class="va">panel_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/deduplicate.html">deduplicate</a></span><span class="op">(</span> <span class="va">panel</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span> <span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -355,26 +355,26 @@
 <p>Applies a centered rolling window average within each organization’s time series to reduce year-to-year noise in financial variables. Returns a data frame with identical dimensions and column names — only the selected numeric columns are replaced with smoothed values.</p>
 <p>The <code>vars</code> argument selects which columns to smooth:</p>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Value</th>
 <th>Columns smoothed</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>"PZ"</code></td>
 <td>PZ-scope fields (990 + 990EZ), via <code><a href="reference/get_pz_fields.html">get_pz_fields()</a></code>
 </td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>"PC"</code></td>
 <td>PC-scope fields (990 only), via <code><a href="reference/get_pc_fields.html">get_pc_fields()</a></code>
 </td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>"ALL"</code></td>
 <td>Union of PZ and PC fields</td>
 </tr>
-<tr class="even">
+<tr>
 <td>character vector</td>
 <td>Custom list of column names</td>
 </tr>
@@ -386,20 +386,20 @@
 <col width="44%">
 <col width="55%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Scheme</th>
 <th>Behavior</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>"equal"</code></td>
 <td>Simple moving average — all window observations weighted equally</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>"half"</code></td>
 <td>Center observation gets 1/2 weight; neighbors share the remaining 1/2</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>"decay"</code></td>
 <td>Exponential half-life decay from center (distance 1 → weight 1/2, distance 2 → 1/4, …)</td>
 </tr>
@@ -421,8 +421,9 @@
 <span>  weights <span class="op">=</span> <span class="st">"decay"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Compute all fiscal health ratios on the cleaned, smoothed panel</span></span>
-<span><span class="va">panel_ratios</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_all.html">compute_all</a></span><span class="op">(</span> <span class="va">panel_smooth_pz</span> <span class="op">)</span></span></code></pre></div>
+<span><span class="co"># Compute all fiscal health ratios on the cleaned, smoothed panel,</span></span>
+<span><span class="co"># year by year so winsorization, z-scores, and percentiles are within-year</span></span>
+<span><span class="va">panel_ratios</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_all_panel.html">compute_all_panel</a></span><span class="op">(</span> <span class="va">panel_smooth_pz</span> <span class="op">)</span></span></code></pre></div>
 <hr>
 <br><hr>
 <p><br></p>
@@ -438,27 +439,32 @@
 <h2 id="get_assets_revenue_ratio">get_assets_revenue_ratio()<a class="anchor" aria-label="anchor" href="#get_assets_revenue_ratio"></a>
 </h2>
 <p><strong>Ratio:</strong> Asset Revenue Ratio</p>
-<p><strong>Definition:</strong> Measures revenue generated per dollar of assets.</p>
+<p><strong>Definition:</strong> Total assets held per dollar of annual revenue (asset intensity).</p>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">assets_rev</span> <span class="op">=</span> <span class="va">total_assets_eoy</span> <span class="op">/</span> <span class="va">total_revenue</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, end of year (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue from Part VIII (990)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_01_REV_TOT_CY</code></td>
 <td>Total revenue from Part I (990EZ fallback)</td>
@@ -476,23 +482,28 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">cash_assets</span> <span class="op">=</span> <span class="op">(</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">)</span> <span class="op">/</span> <span class="va">total_assets</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings and temporary cash investments</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY</td>
@@ -506,22 +517,22 @@
 <h2 id="get_cash_burn_ratio">get_cash_burn_ratio()<a class="anchor" aria-label="anchor" href="#get_cash_burn_ratio"></a>
 </h2>
 <p><strong>Ratio:</strong> Burn Rate Ratio</p>
-<p><strong>Definition:</strong> Rate at which the organization depletes its cash reserves relative to a prior period.</p>
+<p><strong>Definition:</strong> End-of-year cash relative to beginning-of-year cash. Values below 1.0 mean cash was drawn down; above 1.0, accumulated.</p>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">cash_burn</span> <span class="op">=</span> <span class="va">cash_eoy</span> <span class="op">/</span> <span class="va">cash_boy</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash_eoy</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash, end of year</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>cash_boy</code></td>
 <td><code>F9_10_ASSET_CASH_BOY</code></td>
 <td>Cash, beginning of year</td>
@@ -544,28 +555,28 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings and temporary cash investments</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>accounts_payable</code></td>
 <td><code>F9_10_LIAB_ACC_PAYABLE_EOY</code></td>
 <td>Accounts payable and accrued expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>grants_payable</code></td>
 <td><code>F9_10_LIAB_GRANT_PAYABLE_EOY</code></td>
 <td>Grants and similar amounts payable</td>
@@ -583,18 +594,23 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">cash_on_hand</span> <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings and temporary cash investments</td>
@@ -613,7 +629,7 @@
 <pre><code><span><span class="va">current</span> <span class="op">=</span> <span class="va">current_assets</span> <span class="op">/</span> <span class="va">current_liabilities</span></span>
 <span></span>
 <span><span class="va">current_assets</span>      <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">+</span> <span class="va">pledges_receivable</span> <span class="op">+</span> <span class="va">accounts_receivable</span></span>
-<span>                      <span class="op">+</span> <span class="va">investment_sales</span> <span class="op">+</span> <span class="va">prepaid_expenses</span></span>
+<span>                      <span class="op">+</span> <span class="va">inventories</span> <span class="op">+</span> <span class="va">prepaid_expenses</span></span>
 <span><span class="va">current_liabilities</span> <span class="op">=</span> <span class="va">accounts_payable</span> <span class="op">+</span> <span class="va">grants_payable</span></span></code></pre>
 <table class="table">
 <colgroup>
@@ -621,48 +637,48 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings and temporary cash investments</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>pledges_receivable</code></td>
 <td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
 <td>Net pledges receivable</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>accounts_receivable</code></td>
 <td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
 <td>Accounts receivable, net</td>
 </tr>
-<tr class="odd">
-<td><code>investment_sales</code></td>
+<tr>
+<td><code>inventories</code></td>
 <td><code>F9_10_ASSET_INV_SALE_EOY</code></td>
-<td>Investments held for sale</td>
+<td>Inventories for sale or use (Part X line 8)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>prepaid_expenses</code></td>
 <td><code>F9_10_ASSET_EXP_PREPAID_EOY</code></td>
 <td>Prepaid expenses and deferred charges</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>accounts_payable</code></td>
 <td><code>F9_10_LIAB_ACC_PAYABLE_EOY</code></td>
 <td>Accounts payable and accrued expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>grants_payable</code></td>
 <td><code>F9_10_LIAB_GRANT_PAYABLE_EOY</code></td>
 <td>Grants and similar amounts payable</td>
@@ -681,7 +697,7 @@
 <pre><code><span><span class="va">days_cash_inv</span> <span class="op">=</span> <span class="va">liquid_and_investment_assets</span> <span class="op">/</span> <span class="va">daily_expenses</span></span>
 <span></span>
 <span><span class="va">liquid_and_investment_assets</span> <span class="op">=</span> <span class="va">unrestricted_net_assets</span> <span class="op">+</span> <span class="va">investments</span></span>
-<span>                               <span class="op">-</span> <span class="op">(</span> <span class="va">land_buildings</span> <span class="op">-</span> <span class="va">mortgages_payable</span> <span class="op">)</span></span>
+<span>                               <span class="op">-</span> <span class="op">(</span> <span class="va">land_buildings</span> <span class="op">+</span> <span class="va">mortgages_payable</span> <span class="op">)</span></span>
 <span><span class="va">daily_expenses</span>               <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
 <table class="table">
 <colgroup>
@@ -689,38 +705,50 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>net_assets</code></td>
 <td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
 <td>Unrestricted net assets, EOY</td>
 </tr>
-<tr class="even">
-<td><code>investments</code></td>
-<td><code>F9_10_ASSET_INV_SALE_EOY</code></td>
-<td>Investments held for sale</td>
+<tr>
+<td><code>restricted_net_assets</code></td>
+<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
+<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
 </tr>
-<tr class="odd">
+<tr>
+<td><code>total_net_assets</code></td>
+<td><code>F9_10_NAFB_TOT_EOY</code></td>
+<td>Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers)</td>
+</tr>
+<tr>
+<td><code>investments</code></td>
+<td>
+<code>F9_10_ASSET_INVEST_SEC_EOY</code> + <code>F9_10_ASSET_INVEST_SEC_OTH_EOY</code>
+</td>
+<td>Investments in publicly traded and other securities (Part X lines 11 + 12)</td>
+</tr>
+<tr>
 <td><code>land_buildings</code></td>
 <td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
 <td>Net land, buildings, and equipment</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>mortgages_payable</code></td>
 <td><code>F9_10_LIAB_MTG_NOTE_EOY</code></td>
 <td>Mortgages and notes payable</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>depreciation</code></td>
 <td><code>F9_09_EXP_DEPREC_TOT</code></td>
 <td>Depreciation and amortization</td>
@@ -741,38 +769,43 @@
 <span><span class="va">liquid_assets</span>  <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">+</span> <span class="va">pledges_receivable</span> <span class="op">+</span> <span class="va">accounts_receivable</span></span>
 <span><span class="va">daily_expenses</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>pledges_receivable</code></td>
 <td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
 <td>Net pledges receivable</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>accounts_receivable</code></td>
 <td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
 <td>Accounts receivable</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>depreciation</code></td>
 <td><code>F9_09_EXP_DEPREC_TOT</code></td>
 <td>Depreciation and amortization</td>
@@ -795,28 +828,28 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>debt</code></td>
 <td><code>F9_10_LIAB_TOT_EOY</code></td>
 <td>Total liabilities, EOY (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>debt</code></td>
 <td><code>F9_01_NAFB_LIAB_TOT_EOY</code></td>
 <td>Total liabilities from Part I (990EZ fallback)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>assets</code></td>
 <td><code>F9_01_NAFB_ASSET_TOT_EOY</code></td>
 <td>Total assets from Part I (990EZ fallback)</td>
@@ -834,21 +867,36 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">debt_equity</span> <span class="op">=</span> <span class="va">total_liabilities</span> <span class="op">/</span> <span class="va">unrestricted_net_assets</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>debt</code></td>
 <td><code>F9_10_LIAB_TOT_EOY</code></td>
 <td>Total liabilities, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>equity</code></td>
 <td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
 <td>Unrestricted net assets, EOY</td>
+</tr>
+<tr>
+<td><code>restricted_net_assets</code></td>
+<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
+<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
+</tr>
+<tr>
+<td><code>total_net_assets</code></td>
+<td><code>F9_10_NAFB_TOT_EOY</code></td>
+<td>Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers)</td>
 </tr>
 </tbody>
 </table>
@@ -859,35 +907,40 @@
 <h2 id="get_debt_netassets_ratio">get_debt_netassets_ratio()<a class="anchor" aria-label="anchor" href="#get_debt_netassets_ratio"></a>
 </h2>
 <p><strong>Ratio:</strong> Debt to Net Assets Ratio</p>
-<p><strong>Definition:</strong> Compares total liabilities to unrestricted net assets.</p>
+<p><strong>Definition:</strong> Compares total liabilities to total net assets (restricted and unrestricted). See <code><a href="reference/get_debt_equity_ratio.html">get_debt_equity_ratio()</a></code> for the unrestricted-only version.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">debt_netassets</span> <span class="op">=</span> <span class="va">total_liabilities</span> <span class="op">/</span> <span class="va">unrestricted_net_assets</span></span></code></pre>
+<pre><code><span><span class="va">debt_netassets</span> <span class="op">=</span> <span class="va">total_liabilities</span> <span class="op">/</span> <span class="va">total_net_assets</span></span></code></pre>
 <table class="table">
 <colgroup>
 <col width="26%">
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>liabilities</code></td>
 <td><code>F9_10_LIAB_TOT_EOY</code></td>
-<td>Total liabilities, EOY (990)</td>
+<td>Total liabilities, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>liabilities</code></td>
 <td><code>F9_01_NAFB_LIAB_TOT_EOY</code></td>
-<td>Total liabilities from Part I (990EZ fallback)</td>
+<td>Total liabilities from Part I (fallback)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>net_assets</code></td>
-<td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
-<td>Unrestricted net assets, EOY</td>
+<td><code>F9_10_NAFB_TOT_EOY</code></td>
+<td>Total net assets, EOY</td>
+</tr>
+<tr>
+<td><code>net_assets</code></td>
+<td><code>F9_01_NAFB_TOT_EOY</code></td>
+<td>Net assets from Part I (fallback)</td>
 </tr>
 </tbody>
 </table>
@@ -907,18 +960,18 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>secured_mortgages_notes</code></td>
 <td><code>F9_10_LIAB_MTG_NOTE_EOY</code></td>
 <td>Secured mortgages and notes payable, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_liabilities</code></td>
 <td><code>F9_10_LIAB_TOT_EOY</code></td>
 <td>Total liabilities, EOY</td>
@@ -943,23 +996,23 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>accounts_payable</code></td>
 <td><code>F9_10_LIAB_ACC_PAYABLE_EOY</code></td>
 <td>Accounts payable and accrued expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>grants_payable</code></td>
 <td><code>F9_10_LIAB_GRANT_PAYABLE_EOY</code></td>
 <td>Grants and similar amounts payable</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>net_assets</code></td>
 <td><code>F9_10_NAFB_TOT_EOY</code></td>
 <td>Total net assets, EOY</td>
@@ -982,18 +1035,18 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>unsecured_notes_loans</code></td>
 <td><code>F9_10_LIAB_NOTE_UNSEC_EOY</code></td>
 <td>Unsecured notes and loans payable, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_liabilities</code></td>
 <td><code>F9_10_LIAB_TOT_EOY</code></td>
 <td>Total liabilities, EOY</td>
@@ -1016,23 +1069,23 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>contributions</code></td>
 <td><code>F9_08_REV_CONTR_TOT</code></td>
 <td>Total contributions</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>fundraising_revenue</code></td>
 <td><code>F9_08_REV_OTH_FUNDR_NET_TOT</code></td>
 <td>Net fundraising event revenue</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -1050,35 +1103,36 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">earned_income</span> <span class="op">=</span> <span class="va">earned_revenue</span> <span class="op">/</span> <span class="va">total_revenue</span></span>
 <span></span>
-<span><span class="va">earned_revenue</span> <span class="op">=</span> <span class="va">program_service_rev</span> <span class="op">+</span> <span class="va">membership_dues</span> <span class="op">+</span> <span class="va">royalties</span> <span class="op">+</span> <span class="va">other_revenue</span></span></code></pre>
+<span><span class="va">earned_revenue</span> <span class="op">=</span> <span class="va">program_service_rev</span> <span class="op">+</span> <span class="va">royalties</span> <span class="op">+</span> <span class="va">other_revenue</span></span></code></pre>
+<p>Membership dues on Part VIII line 1b are excluded: they are already part of total contributions (line 1h), which <code><a href="reference/get_donations_revenue_ratio.html">get_donations_revenue_ratio()</a></code> counts.</p>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>program_service_rev</code></td>
 <td><code>F9_08_REV_PROG_TOT_TOT</code></td>
 <td>Program service revenue</td>
 </tr>
-<tr class="even">
-<td><code>membership_dues</code></td>
-<td><code>F9_08_REV_CONTR_MEMBSHIP_DUE</code></td>
-<td>Membership dues</td>
-</tr>
-<tr class="odd">
+<tr>
 <td><code>royalties</code></td>
 <td><code>F9_08_REV_OTH_ROY_TOT</code></td>
 <td>Royalties</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>other_revenue</code></td>
 <td><code>F9_08_REV_MISC_OTH_TOT</code></td>
 <td>Other miscellaneous revenue</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -1096,18 +1150,18 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">equity</span> <span class="op">=</span> <span class="va">net_assets</span> <span class="op">/</span> <span class="va">total_assets</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>net_assets</code></td>
 <td><code>F9_10_NAFB_TOT_EOY</code></td>
 <td>Total net assets, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY</td>
@@ -1123,20 +1177,25 @@
 <p><strong>Ratio:</strong> Administrative Overhead Ratio</p>
 <p><strong>Definition:</strong> Share of total expenses devoted to management and general administration.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">expenses_admin</span> <span class="op">=</span> <span class="va">administrative_expenses</span> <span class="op">/</span> <span class="va">total_expenses</span></span></code></pre>
+<pre><code><span><span class="va">expenses_admin</span> <span class="op">=</span> <span class="va">mgmt_expenses</span> <span class="op">/</span> <span class="va">total_expenses</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>mgmt_expenses</code></td>
 <td><code>F9_09_EXP_TOT_MGMT</code></td>
 <td>Management and general expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1159,18 +1218,18 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>payments_to_affiliates</code></td>
 <td><code>F9_09_EXP_PAY_AFFIL_TOT</code></td>
 <td>Payments to affiliates, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1195,43 +1254,43 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>officer_comp</code></td>
 <td><code>F9_09_EXP_COMP_DTK_TOT</code></td>
 <td>Officer/director compensation, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>disqualified_comp</code></td>
 <td><code>F9_09_EXP_COMP_DSQ_PERS_TOT</code></td>
 <td>Disqualified person compensation, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>other_salaries</code></td>
 <td><code>F9_09_EXP_OTH_SAL_WAGE_TOT</code></td>
 <td>Other salaries and wages, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>pension_contributions</code></td>
 <td><code>F9_09_EXP_PENSION_CONTR_TOT</code></td>
 <td>Pension plan contributions, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>other_employee_benefits</code></td>
 <td><code>F9_09_EXP_OTH_EMPL_BEN_TOT</code></td>
 <td>Other employee benefits, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>payroll_taxes</code></td>
 <td><code>F9_09_EXP_PAYROLL_TAX_TOT</code></td>
 <td>Payroll taxes, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1256,48 +1315,48 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>mgmt_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_MGMT_TOT</code></td>
 <td>Management fees, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>legal_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_LEGAL_TOT</code></td>
 <td>Legal fees, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>accounting_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_ACC_TOT</code></td>
 <td>Accounting fees, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>lobbying_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_LOB_TOT</code></td>
 <td>Lobbying fees, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>prof_fundraising_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_FUNDR_TOT</code></td>
 <td>Professional fundraising fees, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>investment_mgmt_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_INVEST_TOT</code></td>
 <td>Investment management fees, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>other_fees</code></td>
 <td><code>F9_09_EXP_FEE_SVC_OTH_TOT</code></td>
 <td>Other fees for services, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1321,28 +1380,28 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>us_org_grants</code></td>
 <td><code>F9_09_EXP_GRANT_US_ORG_TOT</code></td>
 <td>Grants to domestic organizations, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>us_indiv_grants</code></td>
 <td><code>F9_09_EXP_GRANT_US_INDIV_TOT</code></td>
 <td>Grants to domestic individuals, total</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>foreign_grants</code></td>
 <td><code>F9_09_EXP_GRANT_FRGN_TOT</code></td>
 <td>Grants to foreign entities, total</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1365,25 +1424,25 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>member_benefits</code></td>
 <td><code>F9_09_EXP_BEN_PAID_MEMB_TOT</code></td>
 <td>Benefits paid to members, total (scope: 990 + 990EZ)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Scope:</strong> 990 + 990EZ filers</p>
+<p><strong>Scope:</strong> 990 filers only</p>
 <hr>
 </div>
 <div class="section level2">
@@ -1394,18 +1453,23 @@
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">fundr_eff</span> <span class="op">=</span> <span class="va">fundraising_expenses</span> <span class="op">/</span> <span class="va">total_contributions</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>fundraising_expenses</code></td>
 <td><code>F9_09_EXP_TOT_FUNDR</code></td>
 <td>Total fundraising expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_contributions</code></td>
 <td><code>F9_08_REV_CONTR_TOT</code></td>
 <td>Total contributions received</td>
@@ -1428,18 +1492,18 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>government_grants</code></td>
 <td><code>F9_08_REV_CONTR_GOVT_GRANT</code></td>
 <td>Government grants and contributions</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -1459,33 +1523,38 @@
 <span></span>
 <span><span class="va">investment_income</span> <span class="op">=</span> <span class="va">invest_income</span> <span class="op">+</span> <span class="va">bond_proceeds</span> <span class="op">+</span> <span class="va">rent_income</span> <span class="op">+</span> <span class="va">asset_sale_income</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>invest_income</code></td>
 <td><code>F9_08_REV_OTH_INVEST_INCOME_TOT</code></td>
 <td>Investment income</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>bond_proceeds</code></td>
 <td><code>F9_08_REV_OTH_INVEST_BOND_TOT</code></td>
-<td>Income from bond proceeds</td>
+<td>Income from investment of tax-exempt bond proceeds</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>rent_income</code></td>
-<td><code>F9_08_REV_OTH_RENT_GRO_PERS</code></td>
-<td>Gross rental income</td>
+<td><code>F9_08_REV_OTH_RENT_NET_TOT</code></td>
+<td>Net rental income or loss (Part VIII line 6d)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>asset_sale_income</code></td>
-<td><code>F9_08_REV_OTH_SALE_ASSET_OTH</code></td>
-<td>Net gain from asset sales</td>
+<td><code>F9_08_REV_OTH_SALE_GAIN_NET_TOT</code></td>
+<td>Net gain or loss from sales of assets other than inventory (Part VIII line 7d)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -1508,30 +1577,30 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>pub_traded_securities</code></td>
 <td><code>F9_10_ASSET_INVEST_SEC_EOY</code></td>
 <td>Publicly traded securities, EOY (scope: 990 + 990EZ)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>other_securities</code></td>
 <td><code>F9_10_ASSET_INVEST_SEC_OTH_EOY</code></td>
 <td>Other securities, EOY (scope: 990 + 990EZ)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Scope:</strong> 990 + 990EZ filers</p>
+<p><strong>Scope:</strong> 990 filers only</p>
 <hr>
 </div>
 <div class="section level2">
@@ -1540,25 +1609,25 @@
 <p><strong>Ratio:</strong> Land, Buildings, and Equipment to Assets Ratio (Gross)</p>
 <p><strong>Definition:</strong> Gross book value of land, buildings, and equipment as a share of total assets, before netting accumulated depreciation.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">land_assets_gross</span> <span class="op">=</span> <span class="va">land_bldg_equip_deprec</span> <span class="op">/</span> <span class="va">total_assets</span></span></code></pre>
+<pre><code><span><span class="va">land_assets_gross</span> <span class="op">=</span> <span class="va">land_buildings</span> <span class="op">/</span> <span class="va">total_assets</span></span></code></pre>
 <table class="table">
 <colgroup>
 <col width="26%">
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>land_buildings</code></td>
-<td><code>F9_10_ASSET_LAND_BLDG_DEPREC</code></td>
-<td>Accumulated depreciation on land and buildings</td>
+<td><code>F9_10_ASSET_LAND_BLDG</code></td>
+<td>Land, buildings, and equipment, cost or other basis (Part X line 10a)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY</td>
@@ -1581,18 +1650,18 @@
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>land_bldg_equip_net</code></td>
 <td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
 <td>Net land, buildings, and equipment, EOY (scope: 990 + 990EZ)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY</td>
@@ -1618,28 +1687,38 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>unrestricted_net_assets</code></td>
 <td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
 <td>Unrestricted net assets, EOY</td>
 </tr>
-<tr class="even">
+<tr>
+<td><code>restricted_net_assets</code></td>
+<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
+<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
+</tr>
+<tr>
+<td><code>total_net_assets</code></td>
+<td><code>F9_10_NAFB_TOT_EOY</code></td>
+<td>Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers)</td>
+</tr>
+<tr>
 <td><code>net_fixed_assets</code></td>
 <td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
 <td>Net land, buildings, and equipment</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>mortgages_payable</code></td>
 <td><code>F9_10_LIAB_MTG_NOTE_EOY</code></td>
 <td>Mortgages and notes payable</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1660,38 +1739,43 @@ monthly_expenses = total_expenses / 12</code></pre>
 <span><span class="va">liquid_assets</span>    <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">+</span> <span class="va">pledges_receivable</span> <span class="op">+</span> <span class="va">accounts_receivable</span></span>
 <span><span class="va">monthly_expenses</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">12</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>pledges_receivable</code></td>
 <td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
 <td>Net pledges receivable</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>accounts_receivable</code></td>
 <td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
 <td>Accounts receivable</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>depreciation</code></td>
 <td><code>F9_09_EXP_DEPREC_TOT</code></td>
 <td>Depreciation and amortization</td>
@@ -1714,21 +1798,26 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>unrestricted_net_assets</code></td>
 <td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
 <td>Unrestricted net assets, EOY</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_net_assets</code></td>
 <td><code>F9_10_NAFB_TOT_EOY</code></td>
 <td>Total net assets, EOY</td>
+</tr>
+<tr>
+<td><code>restricted_net_assets</code></td>
+<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
+<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
 </tr>
 </tbody>
 </table>
@@ -1748,28 +1837,28 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>net_assets_eoy</code></td>
 <td><code>F9_10_NAFB_TOT_EOY</code></td>
 <td>Total net assets, EOY (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>net_assets_eoy</code></td>
 <td><code>F9_01_NAFB_TOT_EOY</code></td>
 <td>Net assets from Part I, EOY (990EZ fallback)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>net_assets_boy</code></td>
 <td><code>F9_10_NAFB_TOT_BOY</code></td>
 <td>Total net assets, BOY (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>net_assets_boy</code></td>
 <td><code>F9_01_NAFB_TOT_BOY</code></td>
 <td>Net assets from Part I, BOY (990EZ fallback)</td>
@@ -1783,34 +1872,42 @@ monthly_expenses = total_expenses / 12</code></pre>
 <h2 id="get_operating_reserve_ratio">get_operating_reserve_ratio()<a class="anchor" aria-label="anchor" href="#get_operating_reserve_ratio"></a>
 </h2>
 <p><strong>Ratio:</strong> Operating Reserve Ratio</p>
-<p><strong>Definition:</strong> Months of operating expenses covered by liquid unrestricted net assets.</p>
+<p><strong>Definition:</strong> Liquid unrestricted net assets (net of fixed assets) as a multiple of total annual expenses.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">op_reserve</span> <span class="op">=</span> <span class="op">(</span> <span class="va">unrestricted_net_assets</span> <span class="op">-</span> <span class="va">net_fixed_assets</span> <span class="op">)</span> <span class="op">/</span> <span class="va">monthly_expenses</span></span>
-<span></span>
-<span><span class="va">monthly_expenses</span> <span class="op">=</span> <span class="va">total_expenses</span> <span class="op">/</span> <span class="fl">12</span></span></code></pre>
+<pre><code><span><span class="va">op_reserve</span> <span class="op">=</span> <span class="op">(</span> <span class="va">unrestricted_net_assets</span> <span class="op">-</span> <span class="va">net_fixed_assets</span> <span class="op">)</span> <span class="op">/</span> <span class="va">total_expenses</span></span></code></pre>
 <table class="table">
 <colgroup>
 <col width="26%">
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>unrestricted_net_assets</code></td>
 <td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
 <td>Unrestricted net assets, EOY</td>
 </tr>
-<tr class="even">
+<tr>
+<td><code>restricted_net_assets</code></td>
+<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
+<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
+</tr>
+<tr>
+<td><code>total_net_assets</code></td>
+<td><code>F9_10_NAFB_TOT_EOY</code></td>
+<td>Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers)</td>
+</tr>
+<tr>
 <td><code>net_fixed_assets</code></td>
 <td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
 <td>Net land, buildings, and equipment</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1828,23 +1925,28 @@ monthly_expenses = total_expenses / 12</code></pre>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">overhead</span> <span class="op">=</span> <span class="op">(</span> <span class="va">mgmt_expenses</span> <span class="op">+</span> <span class="va">fundraising_expenses</span> <span class="op">)</span> <span class="op">/</span> <span class="va">total_expenses</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>mgmt_expenses</code></td>
 <td><code>F9_09_EXP_TOT_MGMT</code></td>
 <td>Management and general expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>fundraising_expenses</code></td>
 <td><code>F9_09_EXP_TOT_FUNDR</code></td>
 <td>Fundraising expenses</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
@@ -1862,18 +1964,18 @@ monthly_expenses = total_expenses / 12</code></pre>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">profit_postdepr</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_revenue</span> <span class="op">-</span> <span class="va">total_expenses</span> <span class="op">)</span> <span class="op">/</span> <span class="va">total_revenue</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -1891,23 +1993,28 @@ monthly_expenses = total_expenses / 12</code></pre>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">profit_predepr</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_revenue</span> <span class="op">-</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">)</span> <span class="op">/</span> <span class="va">total_revenue</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>depreciation</code></td>
 <td><code>F9_09_EXP_DEPREC_TOT</code></td>
 <td>Depreciation and amortization</td>
@@ -1930,30 +2037,30 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>program_expenses</code></td>
 <td><code>F9_09_EXP_TOT_PROG</code></td>
 <td>Program service expenses (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses (990)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_01_EXP_TOT_CY</code></td>
 <td>Total expenses from Part I (990EZ fallback)</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Scope:</strong> 990 + 990EZ filers</p>
+<p><strong>Scope:</strong> 990 filers only</p>
 <hr>
 </div>
 <div class="section level2">
@@ -1972,38 +2079,38 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>cash</code></td>
 <td><code>F9_10_ASSET_CASH_EOY</code></td>
 <td>Cash on hand</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>savings</code></td>
 <td><code>F9_10_ASSET_SAVING_EOY</code></td>
 <td>Savings</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>pledges_receivable</code></td>
 <td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
 <td>Net pledges receivable</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>accounts_receivable</code></td>
 <td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
 <td>Accounts receivable</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>accounts_payable</code></td>
 <td><code>F9_10_LIAB_ACC_PAYABLE_EOY</code></td>
 <td>Accounts payable and accrued expenses</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>grants_payable</code></td>
 <td><code>F9_10_LIAB_GRANT_PAYABLE_EOY</code></td>
 <td>Grants and similar amounts payable</td>
@@ -2026,23 +2133,23 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>revenues_less_expenses</code></td>
 <td><code>F9_01_EXP_REV_LESS_EXP_CY</code></td>
 <td>Revenues less expenses, current year</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_10_ASSET_TOT_EOY</code></td>
 <td>Total assets, EOY (990)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_assets</code></td>
 <td><code>F9_01_NAFB_ASSET_TOT_EOY</code></td>
 <td>Total assets from Part I (990EZ fallback)</td>
@@ -2065,23 +2172,23 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>revenues_less_expenses</code></td>
 <td><code>F9_01_EXP_REV_LESS_EXP_CY</code></td>
 <td>Revenues less expenses, current year</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>net_assets_boy</code></td>
 <td><code>F9_10_NAFB_TOT_BOY</code></td>
 <td>Total net assets, BOY (990)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>net_assets_boy</code></td>
 <td><code>F9_01_NAFB_TOT_BOY</code></td>
 <td>Net assets from Part I, BOY (990EZ fallback)</td>
@@ -2104,18 +2211,18 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>federated_campaigns</code></td>
 <td><code>F9_08_REV_CONTR_FED_CAMP</code></td>
 <td>Federated campaign contributions</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -2138,18 +2245,18 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>fundraising_event_revenue</code></td>
 <td><code>F9_08_REV_CONTR_FUNDR_EVNT</code></td>
 <td>Gross revenue from fundraising events</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -2167,18 +2274,23 @@ monthly_expenses = total_expenses / 12</code></pre>
 <p><strong>Formula:</strong></p>
 <pre><code><span><span class="va">revenue_membdues</span> <span class="op">=</span> <span class="va">membership_dues</span> <span class="op">/</span> <span class="va">total_revenue</span></span></code></pre>
 <table class="table">
-<thead><tr class="header">
+<colgroup>
+<col width="26%">
+<col width="39%">
+<col width="34%">
+</colgroup>
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>membership_dues</code></td>
 <td><code>F9_08_REV_CONTR_MEMBSHIP_DUE</code></td>
 <td>Membership dues received</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -2201,18 +2313,18 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>program_service_revenue</code></td>
 <td><code>F9_08_REV_PROG_TOT_TOT</code></td>
 <td>Total program service revenue</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -2235,18 +2347,18 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>related_org_revenue</code></td>
 <td><code>F9_08_REV_CONTR_RLTD_ORG</code></td>
 <td>Contributions from related organizations</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue</td>
@@ -2269,28 +2381,28 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>program_service_rev</code></td>
 <td><code>F9_08_REV_PROG_TOT_TOT</code></td>
 <td>Program service revenue (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>program_service_rev</code></td>
 <td><code>F9_01_REV_PROG_TOT_CY</code></td>
 <td>Program revenue from Part I (990EZ fallback)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses (990)</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_expenses</code></td>
 <td><code>F9_01_EXP_TOT_CY</code></td>
 <td>Total expenses from Part I (990EZ fallback)</td>
@@ -2313,23 +2425,23 @@ monthly_expenses = total_expenses / 12</code></pre>
 <col width="39%">
 <col width="34%">
 </colgroup>
-<thead><tr class="header">
+<thead><tr>
 <th>Argument</th>
 <th>efile Variable</th>
 <th>Description</th>
 </tr></thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td><code>revenues_less_expenses</code></td>
 <td><code>F9_01_EXP_REV_LESS_EXP_CY</code></td>
 <td>Revenues less expenses, current year</td>
 </tr>
-<tr class="even">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_08_REV_TOT_TOT</code></td>
 <td>Total revenue from Part VIII (990)</td>
 </tr>
-<tr class="odd">
+<tr>
 <td><code>total_revenue</code></td>
 <td><code>F9_01_REV_TOT_CY</code></td>
 <td>Total revenue from Part I (990EZ fallback)</td>
@@ -2386,7 +2498,7 @@ monthly_expenses = total_expenses / 12</code></pre>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

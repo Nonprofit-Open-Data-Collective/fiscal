@@ -31,7 +31,7 @@
 #'   - Healthcare nonprofits are typically benchmarked at 150+ days due to longer
 #'     receivables cycles.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.
@@ -40,11 +40,13 @@
 #' @param accounts_receivable Accounts receivable, net, EOY.
 #' @param total_expenses Total functional expenses.
 #' @param depreciation Depreciation, depletion, and amortization.
-#' @param numerator Optional. A pre-aggregated column name for liquid assets. Cannot be
-#'   combined with the individual asset arguments.
-#' @param denominator Optional. A pre-aggregated column name for annual non-depreciation
-#'   expenses (the function divides this by 365 internally). Cannot be combined with
-#'   `total_expenses` or `depreciation`.
+#' @param numerator Optional. A pre-aggregated column name for liquid assets. When
+#'   supplied, `cash`, `savings`, `pledges_receivable`, `accounts_receivable` are
+#'   ignored; it is an error to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column name for annual
+#'   non-depreciation expenses (the function divides this by 365 internally). When
+#'   supplied, `total_expenses`, `depreciation` are ignored; it is an error to also
+#'   set one of them explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -171,22 +173,11 @@ get_days_cash_operations <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( cash ) | !is.null( savings ) |
-                         !is.null( pledges_receivable ) | !is.null( accounts_receivable )
-  using_component_den <- !is.null( total_expenses ) | !is.null( depreciation )
-
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the individual asset arguments, not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR (total_expenses + depreciation), not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or the individual asset columns." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or (total_expenses + depreciation)." )
-  }
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( cash = cash, savings = savings, pledges_receivable = pledges_receivable, accounts_receivable = accounts_receivable ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( total_expenses = total_expenses, depreciation = depreciation ), supplied ), environment() )
 
   all_cols <- c( cash, savings, pledges_receivable, accounts_receivable,
                  total_expenses, depreciation, numerator, denominator )

@@ -15,11 +15,9 @@ get_land_assets_net_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{land_bldg_equip_net}{Net land, buildings, and equipment EOY (after accumulated depreciation).
-)}
+\item{land_bldg_equip_net}{Net land, buildings, and equipment EOY (after accumulated depreciation).}
 
-\item{total_assets}{Total assets, EOY.
-)}
+\item{total_assets}{Total assets, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 
@@ -62,7 +60,7 @@ limiting financial flexibility.
 investment rather than strategic deleveraging.
 }
 
-\strong{Calculated For:} 990 filers only.
+\strong{Calculated For:} 990 + 990EZ filers.
 }
 \details{
 \subsection{Primary uses and key insights}{

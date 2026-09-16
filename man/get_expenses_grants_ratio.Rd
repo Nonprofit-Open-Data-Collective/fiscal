@@ -100,16 +100,6 @@ Grants to domestic individuals (\code{us_indiv_grants})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 }
 }
-
-\strong{Variables used:}
-\itemize{
-\item \code{F9_09_EXP_GRANT_US_ORG_TOT}:
-Grants to domestic orgs (\code{us_org_grants})
-\item \code{F9_09_EXP_GRANT_US_INDIV_TOT}:
-Grants to domestic individuals (\code{us_indiv_grants})
-\item \code{F9_09_EXP_GRANT_FRGN_TOT}: Grants to foreign entities (\code{foreign_grants})
-\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-}
 }
 \examples{
 library( fiscal )

@@ -29,16 +29,18 @@
 #'   - Values above 0.30 suggest near-term obligations are placing meaningful
 #'     pressure on net assets.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param accounts_payable Accounts payable and accrued expenses, EOY.
 #' @param grants_payable Grants and similar amounts payable, EOY.
 #' @param net_assets Total net assets, EOY.
-#' @param numerator Optional. A pre-aggregated column for short-term liabilities. Cannot be
-#'   combined with `accounts_payable` or `grants_payable`.
-#' @param denominator Optional. A pre-aggregated column for the denominator. Cannot be
-#'   combined with `net_assets`.
+#' @param numerator Optional. A pre-aggregated column for short-term liabilities.
+#'   When supplied, `accounts_payable`, `grants_payable` are ignored; it is an error
+#'   to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column for the denominator. When
+#'   supplied, `net_assets` is ignored; it is an error to also set it
+#'   explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -140,21 +142,11 @@ get_debt_shortterm_ratio <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( accounts_payable ) | !is.null( grants_payable )
-  using_component_den <- !is.null( net_assets )
-
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the payable arguments (accounts_payable, grants_payable), not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR `net_assets`, not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or the payable columns." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or `net_assets`." )
-  }
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( accounts_payable = accounts_payable, grants_payable = grants_payable ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( net_assets = net_assets ), supplied ), environment() )
 
   all_cols <- c( accounts_payable, grants_payable, net_assets, numerator, denominator )
   vars <- c( accounts_payable, grants_payable, net_assets, numerator, denominator )

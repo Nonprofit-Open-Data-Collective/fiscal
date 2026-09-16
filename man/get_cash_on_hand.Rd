@@ -73,7 +73,7 @@ expenses in liquid cash.
 operating expenses in accessible reserves.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

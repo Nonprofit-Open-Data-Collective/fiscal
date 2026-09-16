@@ -25,7 +25,7 @@
 #'   - For organizations with high secured debt ratios, lenders will scrutinize
 #'     the collateral value and debt service coverage ratio.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param secured_mortgages_notes Secured mortgages and notes payable, EOY.

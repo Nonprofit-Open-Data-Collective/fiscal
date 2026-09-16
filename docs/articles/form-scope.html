@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>990 vs 990-EZ: form scope &amp; sanitization • fiscal</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="990 vs 990-EZ: form scope &amp; sanitization">
 </head>
@@ -44,7 +44,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
-    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">The fiscal health index</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
   </ul>
 </li>
@@ -76,32 +77,47 @@
 
     
     
-<p>Nonprofits file one of two forms depending on size: the full <strong>Form 990</strong> or the shorter <strong>Form 990-EZ</strong>. They report <em>different fields</em> — the 990-EZ has no detailed Part VIII revenue, Part IX functional expenses, or Part X balance sheet. A dataset of real filers therefore mixes two field vocabularies, and a metric that blindly divides two 990-only columns would produce nonsense (or silent <code>NA</code>s) for every EZ filer.</p>
+<p>Nonprofits file one of two forms depending on size: the full
+<strong>Form 990</strong> or the shorter <strong>Form 990-EZ</strong>.
+They report <em>different fields</em> — the 990-EZ has only short
+revenue, expense, and balance-sheet sections, so most of the detailed
+Part VIII revenue, Part IX functional-expense, and Part X balance-sheet
+lines have no EZ counterpart. A dataset of real filers therefore mixes
+two field vocabularies, and a metric that blindly divides two 990-only
+columns would produce nonsense (or silent <code>NA</code>s) for every EZ
+filer.</p>
 <p><code>fiscal</code> handles this with three coordinated pieces:</p>
 <ol style="list-style-type: decimal">
 <li>
-<strong><code><a href="../reference/detect_ez_rows.html">detect_ez_rows()</a></code></strong> — which rows are EZ filers.</li>
+<strong><code><a href="../reference/detect_ez_rows.html">detect_ez_rows()</a></code></strong> — which rows are EZ
+filers.</li>
 <li>
-<strong>field scopes</strong> (<code><a href="../reference/get_pz_fields.html">get_pz_fields()</a></code>, <code><a href="../reference/get_pc_fields.html">get_pc_fields()</a></code>) — which fields exist on which form.</li>
+<strong>field scopes</strong> (<code><a href="../reference/get_pz_fields.html">get_pz_fields()</a></code>,
+<code><a href="../reference/get_pc_fields.html">get_pc_fields()</a></code>) — which fields exist on which form.</li>
 <li>
-<strong><code><a href="../reference/sanitize_financials.html">sanitize_financials()</a></code></strong> — form-aware imputation of blank financials, plus a two-column <em>coalescing</em> pattern in the metrics themselves.</li>
+<strong><code><a href="../reference/sanitize_financials.html">sanitize_financials()</a></code></strong> — form-aware
+imputation of blank financials, plus a two-column <em>coalescing</em>
+pattern in the metrics themselves.</li>
 </ol>
 <p>The bundled <code>dat10k</code> mixes both forms:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat10k</span><span class="op">$</span><span class="va">RETURN_TYPE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   990 990EZ </span></span>
-<span><span class="co">#&gt;  6284  3716</span></span></code></pre></div>
+<span><span class="co">#&gt;  6289  3711</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="identifying-ez-filers">Identifying EZ filers<a class="anchor" aria-label="anchor" href="#identifying-ez-filers"></a>
 </h2>
-<p><code><a href="../reference/detect_ez_rows.html">detect_ez_rows()</a></code> returns a logical vector marking the 990-EZ rows. It prefers the <code>RETURN_TYPE</code> column and falls back to a structural test (rows with Part I revenue but no Part VIII total revenue are almost certainly EZ filers):</p>
+<p><code><a href="../reference/detect_ez_rows.html">detect_ez_rows()</a></code> returns a logical vector marking the
+990-EZ rows. It prefers the <code>RETURN_TYPE</code> column and falls
+back to a structural test (rows with Part I revenue but no Part VIII
+total revenue are almost certainly EZ filers):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ez</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_ez_rows.html">detect_ez_rows</a></span><span class="op">(</span><span class="va">dat10k</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">ez</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ez</span></span>
 <span><span class="co">#&gt; FALSE  TRUE </span></span>
-<span><span class="co">#&gt;  6284  3716</span></span></code></pre></div>
+<span><span class="co">#&gt;  6289  3711</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="field-scopes-pz-vs-pc">Field scopes: PZ vs PC<a class="anchor" aria-label="anchor" href="#field-scopes-pz-vs-pc"></a>
@@ -109,29 +125,50 @@
 <p>Fields are grouped by the forms they appear on:</p>
 <ul>
 <li>
-<strong>PZ-scope</strong> — fields available on <strong>both</strong> 990 and 990-EZ (mostly Part I summary lines). Retrieved with <code><a href="../reference/get_pz_fields.html">get_pz_fields()</a></code>.</li>
+<strong>PZ-scope</strong> — fields available on
+<strong>both</strong> 990 and 990-EZ: the Part I summary lines plus the
+revenue, expense, and balance-sheet lines that have an EZ counterpart
+(total assets, total liabilities, total net assets, …). Retrieved with
+<code><a href="../reference/get_pz_fields.html">get_pz_fields()</a></code>.</li>
 <li>
-<strong>PC-scope</strong> — fields available on the <strong>full 990 only</strong> (Parts VIII, IX, X detail). Retrieved with <code><a href="../reference/get_pc_fields.html">get_pc_fields()</a></code>.</li>
+<strong>PC-scope</strong> — fields available on the <strong>full 990
+only</strong> (the rest of the Parts VIII, IX, and X detail). Retrieved
+with <code><a href="../reference/get_pc_fields.html">get_pc_fields()</a></code>.</li>
 </ul>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_pz_fields.html">get_pz_fields</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>   <span class="co"># available to both forms</span></span>
 <span><span class="co">#&gt; [1] 74</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_pc_fields.html">get_pc_fields</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>   <span class="co"># full-990 only</span></span>
 <span><span class="co">#&gt; [1] 253</span></span></code></pre></div>
-<p>This scope split is exactly why each metric’s help entry (and the catalog) states a <strong>Calculated For</strong> scope: a ratio built only from PZ fields works for <em>990 + 990-EZ</em> filers, while one that needs any PC field is <em>990 filers only</em>.</p>
+<p>This scope split is exactly why each metric’s help entry (and the
+catalog) states a <strong>Calculated For</strong> scope: a ratio built
+only from PZ fields works for <em>990 + 990-EZ</em> filers, while one
+that needs any PC field is <em>990 filers only</em>.</p>
 </div>
 <div class="section level2">
 <h2 id="sanitizing-blank-financials">Sanitizing blank financials<a class="anchor" aria-label="anchor" href="#sanitizing-blank-financials"></a>
 </h2>
-<p>On a 990, a blank financial line almost always means “zero”, not “unknown” — an organization with no grants payable simply leaves the line empty. Treating those blanks as <code>NA</code> would drop otherwise-valid organizations from a ratio. <code><a href="../reference/sanitize_financials.html">sanitize_financials()</a></code> imputes zero for blank financial fields, but <strong>respects form scope</strong> so it never invents data a form doesn’t collect.</p>
-<p>By default (no arguments) it delegates to <code><a href="https://rdrr.io/pkg/panel990/man/panel_normalize.html" class="external-link">panel990::panel_normalize()</a></code>, so <code>fiscal</code> and <code>panel990</code> share a single imputation engine and field-scope source of truth:</p>
+<p>On a 990, a blank financial line almost always means “zero”, not
+“unknown” — an organization with no grants payable simply leaves the
+line empty. Treating those blanks as <code>NA</code> would drop
+otherwise-valid organizations from a ratio.
+<code><a href="../reference/sanitize_financials.html">sanitize_financials()</a></code> imputes zero for blank financial
+fields, but <strong>respects form scope</strong> so it never invents
+data a form doesn’t collect.</p>
+<p>By default (no arguments) it delegates to
+<code><a href="https://rdrr.io/pkg/panel990/man/panel_normalize.html" class="external-link">panel990::panel_normalize()</a></code>, so <code>fiscal</code> and
+<code>panel990</code> share a single imputation engine and field-scope
+source of truth:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/sanitize_financials.html">sanitize_financials</a></span><span class="op">(</span><span class="va">dat10k</span><span class="op">)</span>   <span class="co"># form-aware, uses the shared panel990 engine</span></span></code></pre></div>
-<p>Every <code>get_*()</code> function calls this internally (controlled by its <code>sanitize</code> argument, <code>TRUE</code> by default), so you rarely call it yourself.</p>
+<p>Every <code>get_*()</code> function calls this internally (controlled
+by its <code>sanitize</code> argument, <code>TRUE</code> by default), so
+you rarely call it yourself.</p>
 <div class="section level3">
 <h3 id="the-scope-aware-rule-made-concrete">The scope-aware rule, made concrete<a class="anchor" aria-label="anchor" href="#the-scope-aware-rule-made-concrete"></a>
 </h3>
-<p>The imputation follows three rules. Passing explicit field sets uses the transparent local imputer, which makes the behavior easy to see:</p>
+<p>The imputation follows three rules. Passing explicit field sets uses
+the transparent local imputer, which makes the behavior easy to see:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  EIN2                <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"990org"</span>, <span class="st">"EZorg"</span>, <span class="st">"nonfiler"</span><span class="op">)</span>,</span>
@@ -154,26 +191,41 @@
 <p>Reading the result:</p>
 <ul>
 <li>
-<strong><code>990org</code></strong> — its PC fields are imputed to <code>0</code> (a full-990 filer that left Part VIII blank really did report zero).</li>
+<strong><code>990org</code></strong> — its PC fields are imputed to
+<code>0</code> (a full-990 filer that left Part VIII blank really did
+report zero).</li>
 <li>
-<strong><code>EZorg</code></strong> — its PC fields stay <code>NA</code>: the 990-EZ never collects Part VIII, so zero would be a fabrication. PZ fields <em>would</em> be imputed for EZ filers.</li>
+<strong><code>EZorg</code></strong> — its PC fields stay
+<code>NA</code>: the 990-EZ never collects Part VIII, so zero would be a
+fabrication. PZ fields <em>would</em> be imputed for EZ filers.</li>
 <li>
-<strong><code>nonfiler</code></strong> — every financial field is <code>NA</code>, so the row is left completely untouched (a record with no financial data is not silently turned into zeros).</li>
+<strong><code>nonfiler</code></strong> — every financial field is
+<code>NA</code>, so the row is left completely untouched (a record with
+no financial data is not silently turned into zeros).</li>
 </ul>
 </div>
 </div>
 <div class="section level2">
 <h2 id="coalescing-990-990-ez-fields">Coalescing 990 / 990-EZ fields<a class="anchor" aria-label="anchor" href="#coalescing-990-990-ez-fields"></a>
 </h2>
-<p>Some metrics have a genuine equivalent on both forms — total revenue is Part VIII line 12 on the 990 but Part I line 9 on the 990-EZ. Those metrics accept <strong>two</strong> column names and coalesce them, preferring the full-990 value and falling back to the EZ line:</p>
+<p>Some metrics have a genuine equivalent on both forms — total revenue
+is Part VIII line 12 on the 990 but Part I line 9 on the 990-EZ. Those
+metrics accept <strong>two</strong> column names and coalesce them,
+preferring the full-990 value and falling back to the EZ line:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># default arguments show the coalescing pattern (990 first, EZ fallback second)</span></span>
 <span><span class="fu"><a href="../reference/get_debt_assets_ratio.html">get_debt_assets_ratio</a></span><span class="op">(</span></span>
-<span>  <span class="va">df</span>,</span>
+<span>  <span class="va">dat10k</span>,</span>
 <span>  debt   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"F9_10_LIAB_TOT_EOY"</span>,  <span class="st">"F9_01_NAFB_LIAB_TOT_EOY"</span><span class="op">)</span>,</span>
 <span>  assets <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"F9_10_ASSET_TOT_EOY"</span>, <span class="st">"F9_01_NAFB_ASSET_TOT_EOY"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>This is why metrics like the debt-to-asset ratio, equity ratio, and surplus margin are <strong>Calculated For</strong> <em>990 + 990-EZ</em> filers, while purely PC-scope metrics (the current ratio, overhead ratio, days of cash) are <em>990 filers only</em>. The catalog (<code><a href="../articles/metrics-catalog.html">vignette("metrics-catalog")</a></code>) lists the scope for every metric.</p>
+<p>Coalesced fallbacks and PZ-scope inputs are why metrics like the
+debt-to-asset ratio, equity ratio, and surplus margin can be
+<strong>Calculated For</strong> <em>990 + 990-EZ</em> filers, while
+metrics that need a PC-scope field with no EZ equivalent (the overhead
+ratio, for example, which needs Part IX functional expenses) are <em>990
+filers only</em>. The catalog (<code><a href="../articles/metrics-catalog.html">vignette("metrics-catalog")</a></code>)
+lists the scope for every metric.</p>
 </div>
 <div class="section level2">
 <h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
@@ -200,7 +252,8 @@
 </tr>
 <tr class="odd">
 <td><code><a href="../reference/sanitize_financials.html">sanitize_financials()</a></code></td>
-<td>impute blank financials to zero, respecting form scope and never touching all-NA rows</td>
+<td>impute blank financials to zero, respecting form scope and never
+touching all-NA rows</td>
 </tr>
 <tr class="even">
 <td>two-column arguments</td>
@@ -208,7 +261,9 @@
 </tr>
 </tbody>
 </table>
-<p>Together they let a single call to <code><a href="../reference/compute_all.html">compute_all()</a></code> score a mixed panel of 990 and 990-EZ filers correctly — see <code><a href="../articles/fiscal.html">vignette("fiscal")</a></code> to get started.</p>
+<p>Together they let a single call to <code><a href="../reference/compute_all.html">compute_all()</a></code> score a
+mixed panel of 990 and 990-EZ filers correctly — see
+<code><a href="../articles/fiscal.html">vignette("fiscal")</a></code> to get started.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>
@@ -221,7 +276,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

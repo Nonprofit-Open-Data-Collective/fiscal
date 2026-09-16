@@ -20,7 +20,7 @@ values.}
 support before assessment.}
 
 \item{boundary_mass_cutoff}{Proportion of values at or near zero (or one)
-that triggers the \code{"hurdle"} or \code{"rank_normal"} path. Default \code{0.10}.}
+that triggers the \code{"rank_normal"} path. Default \code{0.10}.}
 
 \item{zero_tol}{Tolerance for identifying values near zero. Default \code{1e-8}.}
 
@@ -32,6 +32,8 @@ A named list with elements \code{type} (character) and \code{reason}
 }
 \description{
 Applies heuristics based on the support range, boundary mass, and zero
-inflation to select among \code{"asinh"}, \code{"logit"}, \code{"rank_normal"}, and
-\code{"hurdle"}.
+inflation to select among \code{"asinh"}, \code{"logit"}, and \code{"rank_normal"}.
+Proportions with boundary mass above \code{boundary_mass_cutoff} (at zero or
+one) get \code{"rank_normal"}; \code{"hurdle"} is never auto-selected and must be
+requested through \code{vtype}.
 }

@@ -31,13 +31,14 @@ get_months_cash_operations( df,
 
 \item{depreciation}{Depreciation, depletion, and amortization.}
 
-\item{numerator}{Optional. A pre-aggregated column name for liquid assets, bypassing the
-individual \code{cash}, \code{savings}, \code{pledges_receivable}, and
-\code{accounts_receivable} arguments. Cannot be combined with those arguments.}
+\item{numerator}{Optional. A pre-aggregated column name for liquid assets. When
+supplied, \code{cash}, \code{savings}, \code{pledges_receivable}, \code{accounts_receivable} are
+ignored; it is an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column name for the denominator (annual
-non-depreciation expenses). The function divides this by 12 internally. Cannot be
-combined with \code{total_expenses} or \code{depreciation}.}
+\item{denominator}{Optional. A pre-aggregated column name for the denominator
+(annual non-depreciation expenses). The function divides this by 12 internally.
+When supplied, \code{total_expenses}, \code{depreciation} are ignored; it is an error to
+also set one of them explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -94,7 +95,7 @@ operating organizations (more typical for foundations).
 \item The Nonprofit Finance Fund recommends 3-6 months as a target.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

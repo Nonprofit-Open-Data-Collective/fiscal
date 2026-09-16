@@ -23,11 +23,14 @@ get_profit_margin_predepr( df,
 \item{depreciation}{Depreciation, depletion, and amortization.}
 
 \item{numerator}{Optional. A pre-calculated column for the numerator
-(revenue minus non-depreciation expenses). Cannot be combined with
-\code{revenue}, \code{expenses}, or \code{depreciation}.}
+(revenue minus non-depreciation expenses). When supplied, \code{expenses} and
+\code{depreciation} are ignored, and \code{revenue} is used only for the denominator; it
+is an error to also set \code{expenses} or \code{depreciation} explicitly.}
 
-\item{denominator}{Optional. A pre-calculated column for the denominator. Cannot be
-combined with \code{revenue}.}
+\item{denominator}{Optional. A pre-calculated column for the denominator. When
+supplied, \code{revenue} is used only for the numerator. If both \code{numerator} and
+\code{denominator} are supplied, \code{revenue} is ignored and it is an error to set it
+explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}

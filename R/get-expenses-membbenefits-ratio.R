@@ -28,7 +28,7 @@
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param member_benefits Benefits paid to or for members (total).
-#')
+#'
 #' @param total_expenses Total functional expenses.
 #'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
@@ -47,8 +47,10 @@
 #'
 #' ## Formula
 #'
-#' Benefits paid to or for members (Part IX line 4, Column A) / total expenses.
-#' PZ scope - available to both 990 and 990EZ filers.
+#' Benefits paid to or for members (Part IX line 4, Column A) / total expenses
+#' (line 25A). The numerator field is PZ scope, but the denominator
+#' (`F9_09_EXP_TOT_TOT`) is reported only on the full 990, so the ratio is
+#' calculated for 990 filers only.
 #'
 #' ## Canonical citations
 #'

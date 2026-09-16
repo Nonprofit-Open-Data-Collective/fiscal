@@ -30,20 +30,25 @@
 #'   - A large gap between this metric and [get_days_cash_operations()] indicates
 #'     liquidity concentrated in investments rather than accessible cash.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param net_assets Unrestricted net assets, EOY.
-#' @param investments Investments held for sale or use, EOY.
+#' @param investments Investment securities, EOY. One or more column names whose
+#'   values are **summed** (unlike most column arguments, which coalesce a 990
+#'   and a 990-EZ field). Defaults to publicly traded securities (Part X line 11)
+#'   plus other securities (line 12).
 #' @param land_buildings Net land, buildings, and equipment, EOY.
 #' @param mortgages_payable Mortgages and notes payable, EOY.
 #' @param total_expenses Total functional expenses.
 #' @param depreciation Depreciation, depletion, and amortization.
-#' @param numerator Optional. A pre-aggregated column for investable assets. Cannot be
-#'   combined with the individual component arguments.
-#' @param denominator Optional. A pre-aggregated column for annual non-depreciation expenses
-#'   (the function divides this by 365 internally). Cannot be combined with
-#'   `total_expenses` or `depreciation`.
+#' @param numerator Optional. A pre-aggregated column for investable assets. When
+#'   supplied, `net_assets`, `investments`, `land_buildings`, `mortgages_payable` are
+#'   ignored; it is an error to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column for annual non-depreciation
+#'   expenses (the function divides this by 365 internally). When supplied,
+#'   `total_expenses`, `depreciation` are ignored; it is an error to also set one of
+#'   them explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -55,12 +60,16 @@
 #' @usage
 #' get_days_cash_investments( df,
 #'   net_assets        = "F9_10_NAFB_UNRESTRICT_EOY",
-#'   investments       = "F9_10_ASSET_INV_SALE_EOY",
+#'   investments       = c( "F9_10_ASSET_INVEST_SEC_EOY",
+#'                          "F9_10_ASSET_INVEST_SEC_OTH_EOY" ),
 #'   land_buildings    = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
 #'   total_expenses    = "F9_09_EXP_TOT_TOT",
 #'   depreciation      = "F9_09_EXP_DEPREC_TOT",
-#'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+#'   numerator = NULL, denominator = NULL,
+#'   restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+#'   total_net_assets      = "F9_10_NAFB_TOT_EOY",
+#'   winsorize = 0.98 ,
 #'   range     = "np",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
@@ -90,7 +99,8 @@
 #'
 #' ## Formula variations and their sources
 #'
-#' The numerator is unrestricted net assets plus investments held for sale, minus
+#' The numerator is unrestricted net assets plus investment securities (Part X
+#' lines 11 and 12), minus
 #' net fixed assets (land/buildings/equipment), plus mortgage notes payable. This
 #' construction approximates the liquid, unrestricted resource base by starting from
 #' unrestricted net assets, adding back investment assets, and removing the illiquid
@@ -122,12 +132,22 @@
 #'
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
 #'     Unrestricted net assets, EOY (`net_assets`)
-#'   - `F9_10_ASSET_INV_SALE_EOY`: Investments held for sale, EOY (`investments`)
-#'   - `F9_10_ASSET_LAND_BLDG_NET_EOY`: 
+#'   - `F9_10_ASSET_INVEST_SEC_EOY`: Investments, publicly traded securities,
+#'     EOY (Part X line 11) (`investments`)
+#'   - `F9_10_ASSET_INVEST_SEC_OTH_EOY`: Investments, other securities, EOY
+#'     (Part X line 12) (`investments`)
+#'   - `F9_10_NAFB_RESTRICT_EOY`, `F9_10_NAFB_TOT_EOY`: Restricted and total net
+#'     assets, used when a filer does not follow SFAS 117 (see
+#'     [resolve_unrestricted_net_assets()]) (`restricted_net_assets`,
+#'     `total_net_assets`)
+#'   - `F9_10_ASSET_LAND_BLDG_NET_EOY`:
 #'     Net land, buildings, and equipment (`land_buildings`)
 #'   - `F9_10_LIAB_MTG_NOTE_EOY`: Mortgages and notes payable (`mortgages_payable`)
 #'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
 #'   - `F9_09_EXP_DEPREC_TOT`: Depreciation and amortization (`depreciation`)
+#'
+#' Earlier versions used `F9_10_ASSET_INV_SALE_EOY` here. That field is Part X
+#' line 8, *inventories for sale or use*, not investments.
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -154,13 +174,16 @@
 #' @export
 get_days_cash_investments <- function( df,
                       net_assets        = "F9_10_NAFB_UNRESTRICT_EOY",
-                      investments       = "F9_10_ASSET_INV_SALE_EOY",
+                      investments       = c( "F9_10_ASSET_INVEST_SEC_EOY",
+                                             "F9_10_ASSET_INVEST_SEC_OTH_EOY" ),
                       land_buildings    = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                       mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
                       total_expenses    = "F9_09_EXP_TOT_TOT",
                       depreciation      = "F9_09_EXP_DEPREC_TOT",
                       numerator   = NULL,
                       denominator = NULL,
+                      restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+                      total_net_assets      = "F9_10_NAFB_TOT_EOY",
                       winsorize = 0.98  ,
                      range     = "np" ,
                      sanitize  = TRUE,
@@ -168,26 +191,14 @@ get_days_cash_investments <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( net_assets ) | !is.null( investments ) |
-                         !is.null( land_buildings ) | !is.null( mortgages_payable )
-  using_component_den <- !is.null( total_expenses ) | !is.null( depreciation )
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( net_assets = net_assets, investments = investments, land_buildings = land_buildings, mortgages_payable = mortgages_payable ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( total_expenses = total_expenses, depreciation = depreciation ), supplied ), environment() )
 
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the individual component arguments, not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR (total_expenses + depreciation), not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or the individual component columns." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or (total_expenses + depreciation)." )
-  }
-
-  all_cols <- c( net_assets, investments, land_buildings, mortgages_payable,
-                 total_expenses, depreciation, numerator, denominator )
   vars <- c( net_assets, investments, land_buildings, mortgages_payable, total_expenses, depreciation, numerator, denominator )
+  if ( is.null( numerator ) ) vars <- c( vars, restricted_net_assets, total_net_assets )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -198,8 +209,15 @@ get_days_cash_investments <- function( df,
   if ( !is.null( numerator ) ) {
     num <- dt[[ numerator ]]
   } else {
-    num <- dt[[ net_assets ]] + dt[[ investments ]] -
-           ( dt[[ land_buildings ]] + dt[[ mortgages_payable ]] )
+    missing_inv <- setdiff( investments, colnames( dt ) )
+    if ( length( missing_inv ) > 0 )
+      stop( "Investment column(s) not found in the data: ",
+            paste( missing_inv, collapse = ", " ) )
+    # Investment columns are summed (Part X lines 11 + 12), not coalesced.
+    inv <- Reduce( `+`, lapply( investments, function( v ) dt[[ v ]] ) )
+    una <- resolve_unrestricted_net_assets( dt, net_assets,
+                                            restricted_net_assets, total_net_assets )
+    num <- una + inv - ( dt[[ land_buildings ]] + dt[[ mortgages_payable ]] )
   }
 
   if ( !is.null( denominator ) ) {

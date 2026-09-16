@@ -15,7 +15,8 @@ get_revenue_fundevents_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{fundraising_event_revenue}{Gross revenue from fundraising events.}
+\item{fundraising_event_revenue}{Contributions received through fundraising
+events (Part VIII line 1c).}
 
 \item{total_revenue}{Total revenue.}
 
@@ -60,9 +61,9 @@ one means this channel accounted for all total revenue.
 \details{
 \subsection{Revenue Fundevents Ratio - Revenue composition measure}{
 
-Formula: fundraising event revenue / total revenue. Bounded [0, 1].
+Formula: fundraising event contributions / total revenue. Bounded [0, 1].
 
-Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures gross event revenue as a share of total revenue; net event income after direct expenses is reported elsewhere.
+Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures the contribution portion of event receipts (Part VIII line 1c) as a share of total revenue; gross event income (line 8a) and net event income after direct expenses (line 8c) are reported elsewhere.
 }
 
 \subsection{Canonical citations}{

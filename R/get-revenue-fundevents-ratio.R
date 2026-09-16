@@ -22,7 +22,8 @@
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
-#' @param fundraising_event_revenue Gross revenue from fundraising events.
+#' @param fundraising_event_revenue Contributions received through fundraising
+#'   events (Part VIII line 1c).
 #'
 #' @param total_revenue Total revenue.
 #'
@@ -35,9 +36,9 @@
 #' @details
 #' ## Revenue Fundevents Ratio - Revenue composition measure
 #'
-#' Formula: fundraising event revenue / total revenue. Bounded \[0, 1\].
+#' Formula: fundraising event contributions / total revenue. Bounded \[0, 1\].
 #'
-#' Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures gross event revenue as a share of total revenue; net event income after direct expenses is reported elsewhere.
+#' Fundraising events (galas, walks, auctions) generate contributed revenue but typically carry high direct expenses. This ratio measures the contribution portion of event receipts (Part VIII line 1c) as a share of total revenue; gross event income (line 8a) and net event income after direct expenses (line 8c) are reported elsewhere.
 #'
 #' ## Canonical citations
 #'

@@ -22,11 +22,13 @@ get_donations_revenue_ratio( df,
 
 \item{total_revenue}{Total revenue.}
 
-\item{numerator}{Optional. A pre-aggregated column name for donation revenue, bypassing
-\code{contributions} and \code{fundraising_revenue}. Cannot be combined with those arguments.}
+\item{numerator}{Optional. A pre-aggregated column name for donation revenue.
+When supplied, \code{contributions}, \code{fundraising_revenue} are ignored; it is an error
+to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column name for the denominator. Cannot be
-combined with \code{total_revenue}.}
+\item{denominator}{Optional. A pre-aggregated column name for the denominator.
+When supplied, \code{total_revenue} is ignored; it is an error to also set it
+explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -79,7 +81,7 @@ with minimal earned income; values near 0 characterize fee-based service provide
 support declines.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
