@@ -26,11 +26,15 @@
 #'   - Organizations with large permanent endowments may show low ratios without
 #'     financial weakness.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
 #' @param total_net_assets Total net assets, EOY.
+#' @param restricted_net_assets Restricted net assets, EOY. When unrestricted
+#'   and restricted net assets are both zero (filers that do not follow
+#'   SFAS 117), all net assets are treated as unrestricted; see
+#'   [resolve_unrestricted_net_assets()].
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -43,6 +47,7 @@
 #' get_netassets_composition_ratio( df,
 #'   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
 #'   total_net_assets        = "F9_10_NAFB_TOT_EOY",
+#'   restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
 #'   winsorize = 0.98 ,
 #'   range     = "zo",
 #'   sanitize  = TRUE,
@@ -95,6 +100,7 @@
 #'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
 #'     Unrestricted net assets, EOY (`unrestricted_net_assets`)
 #'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`total_net_assets`)
+#'   - `F9_10_NAFB_RESTRICT_EOY`: Restricted net assets, EOY (`restricted_net_assets`)
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -122,6 +128,7 @@
 get_netassets_composition_ratio <- function( df,
                       unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
                       total_net_assets        = "F9_10_NAFB_TOT_EOY",
+                      restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
                       winsorize = 0.98  ,
                      range     = "zo" ,
                      sanitize  = TRUE,
@@ -135,7 +142,7 @@ get_netassets_composition_ratio <- function( df,
   if ( length( total_net_assets ) > 2 )
     stop( "`total_net_assets` must be one or two column names." )
 
-  vars <- c( unrestricted_net_assets, total_net_assets )
+  vars <- c( unrestricted_net_assets, total_net_assets, restricted_net_assets )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -143,7 +150,8 @@ get_netassets_composition_ratio <- function( df,
     dt <- sanitize_financials( dt )
   }
 
-  u <- resolve_col( dt, unrestricted_net_assets )
+  u <- resolve_unrestricted_net_assets( dt, unrestricted_net_assets,
+                                        restricted_net_assets, total_net_assets )
   t <- resolve_col( dt, total_net_assets )
 
   nan.count <- sum( t == 0, na.rm = TRUE ) |> format( big.mark="," )

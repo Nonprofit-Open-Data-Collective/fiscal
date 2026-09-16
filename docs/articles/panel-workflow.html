@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Building a 990 panel • fiscal</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="../deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Building a 990 panel">
 </head>
@@ -44,7 +44,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
-    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">The fiscal health index</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
+    <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
   </ul>
 </li>
@@ -76,7 +77,12 @@
 
     
     
-<p>A multi-year fiscal-health analysis needs a <em>clean</em> panel: one row per organization per year, noise-tolerant financial fields, and a clear picture of which organizations are actually observed across time. <code>fiscal</code> provides a small set of functions — thin wrappers over <a href="https://github.com/Nonprofit-Open-Data-Collective/panel990" class="external-link"><strong>panel990</strong></a> — that take you from raw e-file downloads to a scored panel:</p>
+<p>A multi-year fiscal-health analysis needs a <em>clean</em> panel: one
+row per organization per year, noise-tolerant financial fields, and a
+clear picture of which organizations are actually observed across time.
+<code>fiscal</code> provides a small set of functions — thin wrappers
+over <a href="https://github.com/Nonprofit-Open-Data-Collective/panel990" class="external-link"><strong>panel990</strong></a>
+— that take you from raw e-file downloads to a scored panel:</p>
 <pre><code>get_panel()          # 1. retrieve &amp; stack multiple years
    |
 inspect_duplicates() # 2. see duplicate filings
@@ -88,11 +94,15 @@ panel_filter_types() #    keep the organizations you want
    |
 panel_smooth()       # 4. smooth noisy financial series
 compute_all_panel()  # 5. score every organization-year</code></pre>
-<p>The retrieval step needs a network connection, so it is shown but not run here. Every later step runs live on a small synthetic panel.</p>
+<p>The retrieval step needs a network connection, so it is shown but not
+run here. Every later step runs live on a small synthetic panel.</p>
 <div class="section level2">
 <h2 id="retrieve-a-panel">1. Retrieve a panel<a class="anchor" aria-label="anchor" href="#retrieve-a-panel"></a>
 </h2>
-<p><code><a href="../reference/get_panel.html">get_panel()</a></code> downloads multiple years of IRS 990 e-file data and stacks them into one long-format panel, stamping each row with <code>TAX_YEAR</code> and (optionally) attaching Business Master File metadata.</p>
+<p><code><a href="../reference/get_panel.html">get_panel()</a></code> downloads multiple years of IRS 990 e-file
+data and stacks them into one long-format panel, stamping each row with
+<code>TAX_YEAR</code> and (optionally) attaching Business Master File
+metadata.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># a four-year panel with the default financial tables</span></span>
 <span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_panel.html">get_panel</a></span><span class="op">(</span>years <span class="op">=</span> <span class="fl">2019</span><span class="op">:</span><span class="fl">2022</span><span class="op">)</span></span>
@@ -102,7 +112,9 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <span></span>
 <span><span class="co"># skip the BMF join (faster; attach later with merge_bmf())</span></span>
 <span><span class="va">panel</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_panel.html">get_panel</a></span><span class="op">(</span>years <span class="op">=</span> <span class="fl">2019</span><span class="op">:</span><span class="fl">2022</span>, include_bmf <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p>For the rest of this article we use a small hand-built panel that mimics the messiness of real e-file data — amended returns, group returns, and a gap:</p>
+<p>For the rest of this article we use a small hand-built panel that
+mimics the messiness of real e-file data — amended returns, group
+returns, and a gap:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ein</span>, <span class="va">yr</span>, <span class="va">grp</span> <span class="op">=</span> <span class="st">""</span>, <span class="va">amd</span> <span class="op">=</span> <span class="st">""</span>, <span class="va">stamp</span>, <span class="va">rev</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -206,7 +218,10 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <div class="section level2">
 <h2 id="remove-duplicate-filings">2. Remove duplicate filings<a class="anchor" aria-label="anchor" href="#remove-duplicate-filings"></a>
 </h2>
-<p>E-file data can contain several filings for the same organization-year: amended returns, partial-year returns, and group returns. <code><a href="../reference/inspect_duplicates.html">inspect_duplicates()</a></code> <em>diagnoses</em> the problem without changing the data:</p>
+<p>E-file data can contain several filings for the same
+organization-year: amended returns, partial-year returns, and group
+returns. <code><a href="../reference/inspect_duplicates.html">inspect_duplicates()</a></code> <em>diagnoses</em> the
+problem without changing the data:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dups</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/inspect_duplicates.html">inspect_duplicates</a></span><span class="op">(</span><span class="va">panel</span><span class="op">)</span></span>
 <span></span>
@@ -215,7 +230,12 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <span><span class="co">#&gt; 1      normal          2         1            1</span></span>
 <span><span class="co">#&gt; 2     amended          1         1            0</span></span>
 <span><span class="co">#&gt; 3       group          1         0            1</span></span></code></pre></div>
-<p><code><a href="../reference/deduplicate.html">deduplicate()</a></code> then reduces the panel to at most one record per <code>EIN2</code> × <code>TAX_YEAR</code> using ordered rules — drop group returns, drop partial-year returns, then keep the most recent filing by <code>RETURN_TIME_STAMP</code>. If a rule would drop <em>every</em> record for an organization-year, those rows are rescued and passed to the next rule.</p>
+<p><code><a href="../reference/deduplicate.html">deduplicate()</a></code> then reduces the panel to at most one
+record per <code>EIN2</code> × <code>TAX_YEAR</code> using ordered rules
+— drop group returns, drop partial-year returns, then keep the most
+recent filing by <code>RETURN_TIME_STAMP</code>. If a rule would drop
+<em>every</em> record for an organization-year, those rows are rescued
+and passed to the next rule.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_dd</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/deduplicate.html">deduplicate</a></span><span class="op">(</span><span class="va">panel</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -227,7 +247,10 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <div class="section level2">
 <h2 id="describe-the-panel">3. Describe the panel<a class="anchor" aria-label="anchor" href="#describe-the-panel"></a>
 </h2>
-<p>Who is actually observed, and when? <code><a href="../reference/panel_composition.html">panel_composition()</a></code> classifies each organization’s presence across the panel window. Ask for the per-ID classification table with <code>return_classification = TRUE</code>:</p>
+<p>Who is actually observed, and when? <code><a href="../reference/panel_composition.html">panel_composition()</a></code>
+classifies each organization’s presence across the panel window. Ask for
+the per-ID classification table with
+<code>return_classification = TRUE</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cls</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_composition.html">panel_composition</a></span><span class="op">(</span><span class="va">panel_dd</span>, return_classification <span class="op">=</span> <span class="cn">TRUE</span>, print_table <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
@@ -236,18 +259,28 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <span><span class="co">#&gt; 1    A persistent                3               0</span></span>
 <span><span class="co">#&gt; 4    B persistent                2               1</span></span>
 <span><span class="co">#&gt; 6    C    entrant                2               0</span></span></code></pre></div>
-<p>Each organization is labelled <code>persistent</code>, <code>entrant</code>, <code>exit</code>, <code>transient</code>, or <code>empty</code>, with a <code>panel_spell</code> of <code>seamless</code> or <code>segmented</code> (a segmented spell has a gap year). To attach these columns to the data instead, use <code>append_classification = TRUE</code>; <code><a href="../reference/panel_summary.html">panel_summary()</a></code> then reports the overall shape of the panel:</p>
+<p>Each organization is labelled <code>persistent</code>,
+<code>entrant</code>, <code>exit</code>, <code>transient</code>, or
+<code>empty</code>, with a <code>panel_spell</code> of
+<code>seamless</code> or <code>segmented</code> (a segmented spell has a
+gap year). To attach these columns to the data instead, use
+<code>append_classification = TRUE</code>; <code><a href="../reference/panel_summary.html">panel_summary()</a></code>
+then reports the overall shape of the panel:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_cls</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_composition.html">panel_composition</a></span><span class="op">(</span><span class="va">panel_dd</span>, append_classification <span class="op">=</span> <span class="cn">TRUE</span>, print_table <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/panel_summary.html">panel_summary</a></span><span class="op">(</span><span class="va">panel_cls</span>, print_table <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
-<p>Keep only the organizations you want to analyze with <code><a href="../reference/panel_filter_types.html">panel_filter_types()</a></code> — for example, organizations observed throughout the window:</p>
+<p>Keep only the organizations you want to analyze with
+<code><a href="../reference/panel_filter_types.html">panel_filter_types()</a></code> — for example, <code>persistent</code>
+organizations, observed in both the first and the last year of the
+window (possibly with gaps in between, like <code>B</code>):</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">persistent</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_filter_types.html">panel_filter_types</a></span><span class="op">(</span><span class="va">panel_dd</span>, panel_types <span class="op">=</span> <span class="va">cls</span>, keep <span class="op">=</span> <span class="st">"persistent"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">persistent</span><span class="op">$</span><span class="va">EIN2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "A" "B"</span></span></code></pre></div>
-<p><code><a href="../reference/panel_impute.html">panel_impute()</a></code> can fill short internal gaps for selected panel types before smoothing or scoring:</p>
+<p><code><a href="../reference/panel_impute.html">panel_impute()</a></code> can fill short internal gaps for selected
+panel types before smoothing or scoring:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_impute.html">panel_impute</a></span><span class="op">(</span></span>
 <span>  <span class="va">panel_dd</span>,</span>
@@ -259,28 +292,41 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <div class="section level2">
 <h2 id="smooth-noisy-series">4. Smooth noisy series<a class="anchor" aria-label="anchor" href="#smooth-noisy-series"></a>
 </h2>
-<p><code><a href="../reference/panel_smooth.html">panel_smooth()</a></code> replaces selected numeric fields with a rolling within-organization average, leaving the panel’s shape unchanged. On a real panel you would pass a field <em>scope</em> (<code>"PZ"</code>, <code>"PC"</code>, or <code>"ALL"</code>); here we name the columns directly:</p>
+<p><code><a href="../reference/panel_smooth.html">panel_smooth()</a></code> replaces selected numeric fields with a
+rolling within-organization average, leaving the panel’s shape
+unchanged. On a real panel you would pass a field <em>scope</em>
+(<code>"PZ"</code>, <code>"PC"</code>, or <code>"ALL"</code>); here we
+name the columns directly:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_sm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/panel_smooth.html">panel_smooth</a></span><span class="op">(</span></span>
 <span>  <span class="va">panel_dd</span>,</span>
 <span>  vars   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"F9_08_REV_TOT_TOT"</span>, <span class="st">"F9_09_EXP_TOT_TOT"</span><span class="op">)</span>,</span>
 <span>  window <span class="op">=</span> <span class="fl">3</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p><code><a href="../reference/panel_smooth.html">panel_smooth()</a></code> has its own article covering window logic and the equal / half / decay weighting schemes: see <code><a href="../articles/panel-smoothing.html">vignette("panel-smoothing")</a></code>.</p>
+<p><code><a href="../reference/panel_smooth.html">panel_smooth()</a></code> has its own article covering window logic
+and the equal / half / decay weighting schemes: see
+<code><a href="../articles/panel-smoothing.html">vignette("panel-smoothing")</a></code>.</p>
 </div>
 <div class="section level2">
 <h2 id="score-every-organization-year">5. Score every organization-year<a class="anchor" aria-label="anchor" href="#score-every-organization-year"></a>
 </h2>
-<p><code><a href="../reference/compute_all_panel.html">compute_all_panel()</a></code> is the panel-aware sibling of <code><a href="../reference/compute_all.html">compute_all()</a></code>: it computes the full battery of fiscal-health metrics <strong>within each <code>TAX_YEAR</code></strong>, so that the winsorization, standardization, and percentile ranks are all year-relative.</p>
+<p><code><a href="../reference/compute_all_panel.html">compute_all_panel()</a></code> is the panel-aware sibling of
+<code><a href="../reference/compute_all.html">compute_all()</a></code>: it computes the full battery of
+fiscal-health metrics <strong>within each
+<code>TAX_YEAR</code></strong>, so that the winsorization,
+normalization, and percentile ranks are all year-relative.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">panel_scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_all_panel.html">compute_all_panel</a></span><span class="op">(</span><span class="va">panel_sm</span>, metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ratio"</span>, <span class="st">"z"</span><span class="op">)</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">new_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">panel_scored</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">panel_sm</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">new_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">panel_scored</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">panel_sm</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">new_cols</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 2</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">new_cols</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "profit_postdepr"   "profit_postdepr_z"</span></span></code></pre></div>
-<p>The result is a clean, smoothed, scored panel — one row per organization-year, ready for longitudinal analysis or a composite index (<code><a href="../articles/fiscal-health-index.html">vignette("fiscal-health-index")</a></code>).</p>
+<p>The result is a clean, smoothed, scored panel — one row per
+organization-year, ready for longitudinal analysis or a composite index
+(<code><a href="../articles/fiscal-health-index.html">vignette("fiscal-health-index")</a></code> and
+<code><a href="../articles/fiscal-health-workflow.html">vignette("fiscal-health-workflow")</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="recap">Recap<a class="anchor" aria-label="anchor" href="#recap"></a>
@@ -312,7 +358,8 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 <tr class="odd">
 <td>Describe</td>
 <td>
-<code><a href="../reference/panel_composition.html">panel_composition()</a></code>, <code><a href="../reference/panel_summary.html">panel_summary()</a></code>, <code><a href="../reference/panel_filter_types.html">panel_filter_types()</a></code>, <code><a href="../reference/panel_impute.html">panel_impute()</a></code>
+<code><a href="../reference/panel_composition.html">panel_composition()</a></code>, <code><a href="../reference/panel_summary.html">panel_summary()</a></code>,
+<code><a href="../reference/panel_filter_types.html">panel_filter_types()</a></code>, <code><a href="../reference/panel_impute.html">panel_impute()</a></code>
 </td>
 <td>who is observed, when; subset &amp; fill</td>
 </tr>
@@ -340,7 +387,7 @@ compute_all_panel()  # 5. score every organization-year</code></pre>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>

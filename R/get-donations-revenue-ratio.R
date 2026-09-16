@@ -26,16 +26,18 @@
 #'   - Organizations above 0.90 have almost no earned income buffer if philanthropic
 #'     support declines.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param contributions Total contributions, EOY.
 #' @param fundraising_revenue Net fundraising event revenue.
 #' @param total_revenue Total revenue.
-#' @param numerator Optional. A pre-aggregated column name for donation revenue, bypassing
-#'   `contributions` and `fundraising_revenue`. Cannot be combined with those arguments.
-#' @param denominator Optional. A pre-aggregated column name for the denominator. Cannot be
-#'   combined with `total_revenue`.
+#' @param numerator Optional. A pre-aggregated column name for donation revenue.
+#'   When supplied, `contributions`, `fundraising_revenue` are ignored; it is an error
+#'   to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column name for the denominator.
+#'   When supplied, `total_revenue` is ignored; it is an error to also set it
+#'   explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -135,21 +137,11 @@ get_donations_revenue_ratio <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( contributions ) | !is.null( fundraising_revenue )
-  using_component_den <- !is.null( total_revenue )
-
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the individual component arguments (contributions, fundraising_revenue), not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR `total_revenue`, not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or (contributions + fundraising_revenue)." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or `total_revenue`." )
-  }
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( contributions = contributions, fundraising_revenue = fundraising_revenue ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( total_revenue = total_revenue ), supplied ), environment() )
 
   all_cols <- c( contributions, fundraising_revenue, total_revenue, numerator, denominator )
   vars <- c( contributions, fundraising_revenue, total_revenue, numerator, denominator )

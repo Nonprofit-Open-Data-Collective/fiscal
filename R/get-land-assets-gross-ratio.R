@@ -15,7 +15,8 @@
 #'
 #' **Definitional Range**
 #'
-#' Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+#' Usually in \[0, 1\], but can exceed 1 when accumulated depreciation is large
+#' relative to other assets. The distribution is highly right-skewed:
 #' most nonprofits with no owned real estate show values near zero, while
 #' capital-intensive organizations (healthcare, housing, higher education) may show
 #' values above 0.50.
@@ -29,23 +30,24 @@
 #' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
-#' @param land_buildings Net land, buildings, and equipment (after depreciation), EOY.
+#' @param land_buildings Land, buildings, and equipment at cost or other basis,
+#'   before accumulated depreciation (Part X line 10a).
 #'
 #' @param total_assets Total assets, EOY.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
-#'   used to set winsorization bounds. Default `"zo"`. Options:
+#'   used to set winsorization bounds. Default `"zp"`. Options:
 #'   `"np"` (negative to positive), `"zp"` (zero to positive),
 #'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
 #'   `"lo;hi"` pair (e.g. `"0;10"`).
 #'
 #' @usage
 #' get_land_assets_gross_ratio( df,
-#'   land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
+#'   land_buildings = "F9_10_ASSET_LAND_BLDG",
 #'   total_assets   = "F9_10_ASSET_TOT_EOY",
 #'   winsorize = 0.98 ,
-#'   range     = "zo",
+#'   range     = "zp",
 #'   sanitize  = TRUE,
 #'   summarize = FALSE )
 #'
@@ -67,20 +69,19 @@
 #' capital-intensive organization with a large physical footprint; a low ratio
 #' indicates a lean service organization whose assets are primarily financial.
 #'
-#' The gross version uses the accumulated depreciation field (Part X line 10b) as a
-#' proxy for the gross value of the fixed asset base. This is distinct from the net
-#' version ([get_land_assets_net_ratio()]), which uses the net book value
-#' after depreciation (Part X line 10cB). The gross version gives a better picture
-#' of the original investment in fixed assets; the net version better reflects
-#' current book value.
+#' The gross version uses the cost or other basis of land, buildings, and equipment
+#' (Part X line 10a), before accumulated depreciation (line 10b) is netted out. This
+#' is distinct from the net version ([get_land_assets_net_ratio()]), which uses the
+#' net book value after depreciation (Part X line 10c). The gross version gives a
+#' better picture of the original investment in fixed assets; the net version better
+#' reflects current book value.
 #'
 #' ## Formula variations and their sources
 #'
-#' F9_10_ASSET_LAND_BLDG_DEPREC (accumulated depreciation, line 10b) / total assets.
-#' Note: this field contains the accumulated depreciation amount, not the gross cost.
-#' Using it as a proxy for the scale of fixed asset investment is an approximation.
-#' For a cleaner measure of fixed asset intensity, [get_land_assets_net_ratio()]
-#' uses the net value directly.
+#' F9_10_ASSET_LAND_BLDG (cost or other basis, line 10a) / total assets. Because
+#' total assets carry fixed assets at net book value, the ratio can exceed 1 for
+#' heavily depreciated organizations. Earlier versions used accumulated depreciation
+#' (`F9_10_ASSET_LAND_BLDG_DEPREC`, line 10b), which is not the gross cost.
 #'
 #' ## Canonical citations
 #'
@@ -91,8 +92,8 @@
 #'
 #' ## Variables used:
 #'
-#'   - `F9_10_ASSET_LAND_BLDG_DEPREC`: 
-#'     Accumulated depreciation on land and buildings (`land_buildings`)
+#'   - `F9_10_ASSET_LAND_BLDG`: Land, buildings, and equipment, cost or other
+#'     basis, line 10a (`land_buildings`)
 #'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`)
 #'
 #'
@@ -119,10 +120,10 @@
 #'
 #' @export
 get_land_assets_gross_ratio <- function( df,
-                     land_buildings = "F9_10_ASSET_LAND_BLDG_DEPREC",
+                     land_buildings = "F9_10_ASSET_LAND_BLDG",
                      total_assets   = "F9_10_ASSET_TOT_EOY",
                      winsorize = 0.98  ,
-                     range     = "zo" ,
+                     range     = "zp" ,
                      sanitize  = TRUE,
                      summarize = FALSE )
 {

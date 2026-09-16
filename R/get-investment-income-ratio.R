@@ -32,14 +32,17 @@
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param invest_income Investment income.
-#' @param bond_proceeds Tax-exempt bond proceeds.
-#' @param rent_income Gross rents from personal property.
-#' @param asset_sale_income Net gain from sales of assets other than inventory.
+#' @param bond_proceeds Income from investment of tax-exempt bond proceeds.
+#' @param rent_income Net rental income or loss (Part VIII line 6d, column A).
+#' @param asset_sale_income Net gain or loss from sales of assets other than inventory
+#'   (Part VIII line 7d, column A).
 #' @param total_revenue Total revenue.
-#' @param numerator Optional. A pre-aggregated column for investment income. Cannot be
-#'   combined with the individual component arguments.
-#' @param denominator Optional. A pre-aggregated column for total revenue. Cannot be
-#'   combined with `total_revenue`.
+#' @param numerator Optional. A pre-aggregated column for investment income. When
+#'   supplied, `invest_income`, `bond_proceeds`, `rent_income`, `asset_sale_income`
+#'   are ignored; it is an error to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column for total revenue. When
+#'   supplied, `total_revenue` is ignored; it is an error to also set it
+#'   explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -52,8 +55,8 @@
 #' get_investment_income_ratio( df,
 #'   invest_income    = "F9_08_REV_OTH_INVEST_INCOME_TOT",
 #'   bond_proceeds    = "F9_08_REV_OTH_INVEST_BOND_TOT",
-#'   rent_income      = "F9_08_REV_OTH_RENT_GRO_PERS",
-#'   asset_sale_income= "F9_08_REV_OTH_SALE_ASSET_OTH",
+#'   rent_income      = "F9_08_REV_OTH_RENT_NET_TOT",
+#'   asset_sale_income= "F9_08_REV_OTH_SALE_GAIN_NET_TOT",
 #'   total_revenue    = "F9_08_REV_TOT_TOT",
 #'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
 #'   range     = "np",
@@ -86,7 +89,7 @@
 #' ## Formula variations and their sources
 #'
 #' (Investment income + bond income + rental income + asset sale income) / total
-#' revenue (Part VIII lines 3 + 4 + 6a(ii) + 7d / line 12A). Note that this combines
+#' revenue (Part VIII lines 3 + 4 + 6d + 7d / line 12A). Note that this combines
 #' recurring investment income with potentially one-time asset sale proceeds; some
 #' analysts separate these. The asset sale proceeds (line 7d) are particularly
 #' volatile and may distort the ratio in years with large asset disposals.
@@ -107,10 +110,10 @@
 #'     Investment income (`invest_income`)
 #'   - `F9_08_REV_OTH_INVEST_BOND_TOT`: 
 #'     Income from bond proceeds (`bond_proceeds`)
-#'   - `F9_08_REV_OTH_RENT_GRO_PERS`: 
-#'     Gross rental income (`rent_income`)
-#'   - `F9_08_REV_OTH_SALE_ASSET_OTH`: 
-#'     Net gain from asset sales (`asset_sale_income`)
+#'   - `F9_08_REV_OTH_RENT_NET_TOT`: 
+#'     Net rental income or loss, line 6d (`rent_income`)
+#'   - `F9_08_REV_OTH_SALE_GAIN_NET_TOT`: 
+#'     Net gain or loss from asset sales, line 7d (`asset_sale_income`)
 #'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
 #'
 #'
@@ -139,8 +142,8 @@
 get_investment_income_ratio <- function( df,
                       invest_income     = "F9_08_REV_OTH_INVEST_INCOME_TOT",
                       bond_proceeds     = "F9_08_REV_OTH_INVEST_BOND_TOT",
-                      rent_income       = "F9_08_REV_OTH_RENT_GRO_PERS",
-                      asset_sale_income = "F9_08_REV_OTH_SALE_ASSET_OTH",
+                      rent_income       = "F9_08_REV_OTH_RENT_NET_TOT",
+                      asset_sale_income = "F9_08_REV_OTH_SALE_GAIN_NET_TOT",
                       total_revenue     = "F9_08_REV_TOT_TOT",
                       numerator   = NULL,
                       denominator = NULL,
@@ -151,22 +154,11 @@ get_investment_income_ratio <- function( df,
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( invest_income ) | !is.null( bond_proceeds ) |
-                         !is.null( rent_income ) | !is.null( asset_sale_income )
-  using_component_den <- !is.null( total_revenue )
-
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the individual component arguments, not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR `total_revenue`, not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or the individual investment columns." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or `total_revenue`." )
-  }
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( invest_income = invest_income, bond_proceeds = bond_proceeds, rent_income = rent_income, asset_sale_income = asset_sale_income ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( total_revenue = total_revenue ), supplied ), environment() )
 
   all_cols <- c( invest_income, bond_proceeds, rent_income, asset_sale_income,
                  total_revenue, numerator, denominator )

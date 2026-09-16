@@ -87,7 +87,8 @@ finance.
 RONA is closely related to \code{\link[=get_netassets_growth_ratio]{get_netassets_growth_ratio()}}: both measure
 year-over-year equity change, but RONA uses the reported revenues-less-expenses figure
 while the growth ratio uses the direct balance sheet comparison (EOY - BOY). The two
-can differ when there are other net asset adjustments (line 20 on Form 990 Part I).
+can differ when there are other net asset adjustments (Form 990 Part XI line 9;
+Form 990-EZ Part I line 20).
 }
 
 \subsection{Formula variations and their sources}{

@@ -80,7 +80,7 @@ cash alone; reliant on receivables collection or borrowing.
 are normal if receivables are healthy.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

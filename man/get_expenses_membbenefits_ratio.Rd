@@ -15,8 +15,7 @@ get_expenses_membbenefits_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{member_benefits}{Benefits paid to or for members (total).
-)}
+\item{member_benefits}{Benefits paid to or for members (total).}
 
 \item{total_expenses}{Total functional expenses.}
 
@@ -76,8 +75,10 @@ are a core activity. For most public benefit nonprofits this ratio is near zero.
 
 \subsection{Formula}{
 
-Benefits paid to or for members (Part IX line 4, Column A) / total expenses.
-PZ scope - available to both 990 and 990EZ filers.
+Benefits paid to or for members (Part IX line 4, Column A) / total expenses
+(line 25A). The numerator field is PZ scope, but the denominator
+(\code{F9_09_EXP_TOT_TOT}) is reported only on the full 990, so the ratio is
+calculated for 990 filers only.
 }
 
 \subsection{Canonical citations}{

@@ -138,7 +138,8 @@ panel_summary(panel_cls, print_table = FALSE)
 ```
 
 Keep only the organizations you want to analyze with `panel_filter_types()` ---
-for example, organizations observed throughout the window:
+for example, `persistent` organizations, observed in both the first and the last
+year of the window (possibly with gaps in between, like `B`):
 
 ```{r}
 persistent <- panel_filter_types(panel_dd, panel_types = cls, keep = "persistent")
@@ -179,7 +180,7 @@ decay weighting schemes: see `vignette("panel-smoothing")`.
 
 `compute_all_panel()` is the panel-aware sibling of `compute_all()`: it computes
 the full battery of fiscal-health metrics **within each `TAX_YEAR`**, so that the
-winsorization, standardization, and percentile ranks are all year-relative.
+winsorization, normalization, and percentile ranks are all year-relative.
 
 ```{r}
 panel_scored <- compute_all_panel(panel_sm, metrics = c("ratio", "z"), verbose = FALSE)
@@ -191,7 +192,7 @@ head(new_cols)
 
 The result is a clean, smoothed, scored panel --- one row per organization-year,
 ready for longitudinal analysis or a composite index
-(`vignette("fiscal-health-index")`).
+(`vignette("fiscal-health-index")` and `vignette("fiscal-health-workflow")`).
 
 ## Recap
 

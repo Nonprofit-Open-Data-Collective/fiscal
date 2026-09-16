@@ -31,12 +31,14 @@ get_days_cash_operations( df,
 
 \item{depreciation}{Depreciation, depletion, and amortization.}
 
-\item{numerator}{Optional. A pre-aggregated column name for liquid assets. Cannot be
-combined with the individual asset arguments.}
+\item{numerator}{Optional. A pre-aggregated column name for liquid assets. When
+supplied, \code{cash}, \code{savings}, \code{pledges_receivable}, \code{accounts_receivable} are
+ignored; it is an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column name for annual non-depreciation
-expenses (the function divides this by 365 internally). Cannot be combined with
-\code{total_expenses} or \code{depreciation}.}
+\item{denominator}{Optional. A pre-aggregated column name for annual
+non-depreciation expenses (the function divides this by 365 internally). When
+supplied, \code{total_expenses}, \code{depreciation} are ignored; it is an error to also
+set one of them explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -94,7 +96,7 @@ for operating nonprofits but typical for foundations.
 receivables cycles.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

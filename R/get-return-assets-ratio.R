@@ -142,8 +142,10 @@
 #'
 #'   - `F9_01_EXP_REV_LESS_EXP_CY`: 
 #'     Revenues less expenses, current year (`revenues_less_expenses`, 990 + 990EZ)
-#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`, 990)
-#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I (`total_assets`, 990EZ)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`total_assets`; 990 Part X line 16,
+#'     990EZ Part II line 25)
+#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from 990 Part I line 20
+#'     (`total_assets`, fallback)
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in

@@ -6,12 +6,16 @@
 \usage{
 get_days_cash_investments( df,
   net_assets        = "F9_10_NAFB_UNRESTRICT_EOY",
-  investments       = "F9_10_ASSET_INV_SALE_EOY",
+  investments       = c( "F9_10_ASSET_INVEST_SEC_EOY",
+                         "F9_10_ASSET_INVEST_SEC_OTH_EOY" ),
   land_buildings    = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
   total_expenses    = "F9_09_EXP_TOT_TOT",
   depreciation      = "F9_09_EXP_DEPREC_TOT",
-  numerator = NULL, denominator = NULL, winsorize = 0.98 ,
+  numerator = NULL, denominator = NULL,
+  restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+  total_net_assets      = "F9_10_NAFB_TOT_EOY",
+  winsorize = 0.98 ,
   range     = "np",
   sanitize  = TRUE,
   summarize = FALSE )
@@ -21,7 +25,10 @@ get_days_cash_investments( df,
 
 \item{net_assets}{Unrestricted net assets, EOY.}
 
-\item{investments}{Investments held for sale or use, EOY.}
+\item{investments}{Investment securities, EOY. One or more column names whose
+values are \strong{summed} (unlike most column arguments, which coalesce a 990
+and a 990-EZ field). Defaults to publicly traded securities (Part X line 11)
+plus other securities (line 12).}
 
 \item{land_buildings}{Net land, buildings, and equipment, EOY.}
 
@@ -31,12 +38,14 @@ get_days_cash_investments( df,
 
 \item{depreciation}{Depreciation, depletion, and amortization.}
 
-\item{numerator}{Optional. A pre-aggregated column for investable assets. Cannot be
-combined with the individual component arguments.}
+\item{numerator}{Optional. A pre-aggregated column for investable assets. When
+supplied, \code{net_assets}, \code{investments}, \code{land_buildings}, \code{mortgages_payable} are
+ignored; it is an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column for annual non-depreciation expenses
-(the function divides this by 365 internally). Cannot be combined with
-\code{total_expenses} or \code{depreciation}.}
+\item{denominator}{Optional. A pre-aggregated column for annual non-depreciation
+expenses (the function divides this by 365 internally). When supplied,
+\code{total_expenses}, \code{depreciation} are ignored; it is an error to also set one of
+them explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -93,7 +102,7 @@ exceed liquid resources. Values above 365 indicate more than one year of coverag
 liquidity concentrated in investments rather than accessible cash.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -112,7 +121,8 @@ that hold investment portfolios. For organizations with minimal investments,
 
 \subsection{Formula variations and their sources}{
 
-The numerator is unrestricted net assets plus investments held for sale, minus
+The numerator is unrestricted net assets plus investment securities (Part X
+lines 11 and 12), minus
 net fixed assets (land/buildings/equipment), plus mortgage notes payable. This
 construction approximates the liquid, unrestricted resource base by starting from
 unrestricted net assets, adding back investment assets, and removing the illiquid
@@ -146,13 +156,23 @@ nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
 \itemize{
 \item \code{F9_10_NAFB_UNRESTRICT_EOY}:
 Unrestricted net assets, EOY (\code{net_assets})
-\item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investments})
+\item \code{F9_10_ASSET_INVEST_SEC_EOY}: Investments, publicly traded securities,
+EOY (Part X line 11) (\code{investments})
+\item \code{F9_10_ASSET_INVEST_SEC_OTH_EOY}: Investments, other securities, EOY
+(Part X line 12) (\code{investments})
+\item \code{F9_10_NAFB_RESTRICT_EOY}, \code{F9_10_NAFB_TOT_EOY}: Restricted and total net
+assets, used when a filer does not follow SFAS 117 (see
+\code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}) (\code{restricted_net_assets},
+\code{total_net_assets})
 \item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}:
 Net land, buildings, and equipment (\code{land_buildings})
 \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable (\code{mortgages_payable})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 }
+
+Earlier versions used \code{F9_10_ASSET_INV_SALE_EOY} here. That field is Part X
+line 8, \emph{inventories for sale or use}, not investments.
 }
 }
 \examples{

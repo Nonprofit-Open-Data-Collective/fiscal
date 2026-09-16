@@ -37,8 +37,10 @@ indices reflect *position*, not scale artifacts.
 For a raw ratio, the package:
 
 1. **Winsorizes** --- clips extreme tails to a percentile bound (`_w`).
-2. **Standardizes** --- centers and scales the winsorized values into a z-score (`_z`).
-3. **Ranks** --- expresses each value as a percentile, 1–100 (`_p`).
+2. **Normalizes** --- applies a distribution-aware transformation (chosen by
+   `find_best_normalization()`, below) and robustly centers and scales the
+   result into a z-score (`_z`).
+3. **Ranks** --- expresses each raw value as a percentile, 1–100 (`_p`).
 
 `apply_transformations()` is the engine that does all three at once. It is what
 each `get_*()` function calls internally:
@@ -56,7 +58,8 @@ summary(data.frame(raw = tf$raw, w = tf$winsorized, z = tf$z, p = tf$pctile))
 ```
 
 Notice the two outliers (40, 55) are pulled back in the winsorized column, which
-in turn keeps the z-score and percentile well behaved.
+keeps them from dominating the z-score. The percentile rank depends only on
+ordering, so extreme values cannot distort it either way.
 
 ## The `range` codes
 
@@ -88,9 +91,10 @@ sum(w$is_sentinel)     # observations pushed to a bound
 Standardizing a badly skewed variable produces a badly skewed z-score. For
 multivariate work --- correlations, factor analysis, the fiscal-health index ---
 we want each indicator to be *approximately normal* first.
-`find_best_normalization()` does this by choosing, per variable, one of four
-transformations based on the shape of its **stable interior** (the non-sentinel,
-non-missing values left after winsorization).
+`find_best_normalization()` does this by choosing, per variable, one of three
+transformations (a fourth, `hurdle`, is available on request) based on the shape
+of its **stable interior** (the non-sentinel, non-missing values left after
+winsorization).
 
 The procedure is always the same:
 
@@ -101,7 +105,8 @@ The procedure is always the same:
 3. **Select** a transformation from those diagnostics (or accept an explicit
    `vtype`).
 4. **Fit** the transformation's parameters and a robust center/scale
-   (median / MAD).
+   (median / MAD, falling back to mean / SD when the MAD is zero because more
+   than half of the transformed values are tied).
 5. **Report** before-and-after skewness and kurtosis so you can see whether the
    transformation actually helped.
 
@@ -117,13 +122,16 @@ of `0.10`:
 ```
 is the variable effectively in [0, 1]?  (range "zo", or >98% of values in [0,1])
 ├── yes
-│    ├── p0 > 0.10  ........................  hurdle       (zero-inflated)
+│    ├── p0 > 0.10  ........................  rank_normal  (zero-inflated)
 │    ├── p1 > 0.10  ........................  rank_normal  (piled up at the top)
 │    └── otherwise  ........................  logit        (well-spread proportion)
 └── no
      ├── non-negative? (range "zp", or min >= 0)  ....  asinh   (heavy right tail)
      └── mixed / irregular support  ................  rank_normal
 ```
+
+`hurdle` never comes out of this rule; it is used only when you ask for it with
+`vtype = "hurdle"`.
 
 The four transformations, and the distribution pathology each one targets:
 
@@ -147,7 +155,7 @@ c(type = fit$transform_type,
 plot_normalize_x(x_asinh, range = "zp")
 ```
 
-A raw skewness above 2 collapses toward zero, and the extreme kurtosis is tamed.
+A raw skewness above 2 drops sharply, and the extreme kurtosis is tamed.
 
 ### logit — well-behaved proportions
 
@@ -155,6 +163,11 @@ A raw skewness above 2 collapses toward zero, and the extreme kurtosis is tamed.
 little pile-up at the ends (many expense- and revenue-share ratios). **Transform.**
 Rescale to `[0, 1]` relative to the theoretical support, then apply `qlogis()`
 (the log-odds), which stretches the bounded scale onto the whole real line.
+Before the log-odds, values are clamped to the `(1 - winsorize) / 2` and
+`1 - (1 - winsorize) / 2` quantiles of the strictly interior values (those not
+exactly 0 or 1). An exact 0 or 1 is therefore scored at the edge of the interior
+distribution instead of at an extreme log-odds that would dominate the center,
+the scale, and any correlation.
 
 ```{r}
 set.seed(2)
@@ -167,23 +180,36 @@ c(type = fit$transform_type,
 plot_normalize_x(x_logit, range = "zo")
 ```
 
-### hurdle — structural zeros
+### hurdle — structural zeros (on request)
 
 **Pathology.** A `[0, 1]` variable with a spike of *exact* zeros --- organizations
 that simply don't do the thing (no fundraising, no grants, no debt) --- mixed with
-a continuous positive part. Treating the zeros as ordinary small numbers is wrong;
-they are qualitatively different. **Transform.** Zeros are retained as `0`; the
-positive part is transformed separately (rank or logit) and rescaled to a positive
-interval. The trigger is `p0 > boundary_mass_cutoff`.
+a continuous positive part. You may want the zeros treated as a qualitatively
+different group rather than as ordinary small numbers. **Transform.** Zeros are
+retained as `0`; the positive part is transformed separately (rank or logit) and
+rescaled to a positive interval (`hurdle_range`, default `[1, 100]`).
+
+Hurdle is **not** selected automatically. After standardization the zero block
+becomes a single spike at one end of the scale, apart from the positive values,
+which distorts correlations with other indicators. Zero-inflated proportions
+(`p0 > boundary_mass_cutoff`) are therefore routed to `rank_normal`, which scores
+the zero block at its mid-rank. Request the hurdle transform explicitly with
+`vtype = "hurdle"`:
 
 ```{r}
 set.seed(4)
 x_hurdle <- c(rep(0, 900), rbeta(1100, 2, 5))   # ~45% structural zeros
 
+# auto-detection sends a zero-inflated proportion to rank_normal
 fit <- find_best_normalization(x_hurdle, range = "zo", verbose = FALSE)
 c(type = fit$transform_type, p0_reason = fit$guess_reason)
 
-plot_normalize_x(x_hurdle, range = "zo")
+# the hurdle transform must be requested
+fit_h <- find_best_normalization(x_hurdle, range = "zo", vtype = "hurdle",
+                                 verbose = FALSE)
+fit_h$transform_type
+
+plot_normalize_x(x_hurdle, range = "zo", vtype = "hurdle")
 ```
 
 The zero spike is preserved as its own group while the positive component is
@@ -193,10 +219,13 @@ spread out.
 
 **Pathology.** Anything the parametric transforms can't handle gracefully:
 bimodal distributions, mixed positive/negative support with no clean model, or a
-`[0, 1]` variable piled up at the *top*. **Transform.** A rank-based inverse
-normal transform maps the empirical ranks onto a Gaussian. It preserves *ordering*
-but not distances, so it is robust to almost any shape --- at the cost of discarding
-the original spacing.
+`[0, 1]` variable piled up at zero or one. **Transform.** A rank-based inverse
+normal transform maps the empirical mid-ranks onto a Gaussian. Tied values (a
+block of exact zeros, say) share the score at the middle of their block, and
+because the reference distribution keeps the winsorized tail observations, clipped
+values are scored at their actual quantile rather than at the most extreme normal
+score. It preserves *ordering* but not distances, so it is robust to almost any
+shape --- at the cost of discarding the original spacing.
 
 ```{r}
 set.seed(3)
@@ -241,8 +270,10 @@ normalize_x(x, range = "np", vtype = "rank_normal")
 ## How this connects to the metrics
 
 The `_w` / `_z` / `_p` columns on every metric come from the winsorize →
-standardize → rank path shown at the top (`apply_transformations()`). The
-distribution-aware transforms in this article --- asinh, logit, hurdle,
-rank_normal --- are what you reach for when building the **fiscal-health index**
-(`vignette("fiscal-health-index")`), where each indicator should be approximately
-normal before it enters a correlation or factor model.
+normalize → rank path shown at the top (`apply_transformations()`). The `_z`
+column uses exactly the machinery in this article: `apply_transformations()`
+fits `find_best_normalization()` with the metric's `range` (auto-detecting the
+transformation, so never `hurdle`) and scores the ratio with
+`apply_normalization()`. The same transforms matter when building the
+**fiscal-health index** (`vignette("fiscal-health-index")`), where each indicator
+should be approximately normal before it enters a correlation or factor model.

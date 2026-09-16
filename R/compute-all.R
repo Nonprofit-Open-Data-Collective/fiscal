@@ -8,7 +8,9 @@
 #' Applies every `get_*()` ratio function in the `fiscal` package to
 #' a data frame in a single call. The data frame is sanitized once up front
 #' using [sanitize_financials()], then each function is called with
-#' `sanitize = FALSE` to avoid redundant imputation passes.
+#' `sanitize = FALSE` to avoid redundant imputation passes. A metric that
+#' cannot be computed (for example, because one of its input columns is
+#' missing from `df`) is skipped with a warning.
 #'
 #' @param df A `data.frame` containing IRS 990 efile financial fields.
 #' @param metrics Character vector of metric variants to return. Any combination
@@ -186,7 +188,8 @@ compute_all <- function( df,
 #' @return A `data.frame` with the same row order as `df` and the same
 #'   metric columns that [compute_all()] would produce, but with
 #'   `_w` / `_z` / `_p` values computed within each year's
-#'   cross-sectional distribution.
+#'   cross-sectional distribution. Rows whose `year` is `NA` are kept, with
+#'   `NA` metric columns.
 #'
 #' @details
 #' ## Implementation
@@ -196,18 +199,15 @@ compute_all <- function( df,
 #' 1. Validates that `year` is present and that the panel contains more
 #'    than one year (a single-year panel works but a warning is issued
 #'    since [compute_all()] would give identical results).
-#' 2. Tags each row with its original position so output rows can be
-#'    restored to the input order after splitting and stacking.
-#' 3. Splits `df` into a list of single-year slices using
-#'    `data.table::split()`.
-#' 4. Calls [compute_all()] on each slice with `verbose` passed through
-#'    so per-year messages are visible (or suppressed) as requested.
-#' 5. Stacks the per-year results with `data.table::rbindlist()`, which
-#'    handles any columns that are present in some years but absent in
-#'    others (e.g. if a 990EZ-only year lacks Part VIII columns) by
-#'    filling with `NA`.
-#' 6. Restores the original row order and drops the internal row-tag
-#'    column.
+#' 2. Splits the row indices of `df` by year with base `split()`. Rows
+#'    with a missing year are set aside with a warning.
+#' 3. Calls [compute_all()] on each year's slice with `verbose` passed
+#'    through so per-year messages are visible (or suppressed) as requested.
+#'    If a year fails, its rows are kept with `NA` metric columns.
+#' 4. Tags each result with the original row positions, stacks the
+#'    per-year results (and any rows without a year) with
+#'    `data.table::rbindlist()`, which fills columns missing from some
+#'    years with `NA`, and restores the input row order.
 #'
 #' ## Panel size considerations
 #'
@@ -264,30 +264,46 @@ compute_all_panel <- function( df,
              "compute_all() would give the same result. ",
              "Proceeding anyway.", call. = FALSE )
 
-  # ---- tag rows with original position for order restoration --------------
-  n_cols_input <- ncol(df)   # capture before adding .row_order.
-  df[[".row_order."]] <- seq_len( nrow(df) )
+  # ---- rows without a year ------------------------------------------------
+  # These cannot be placed in any single year's distribution. Keep them in
+  # the output (so row count and order match `df`) with NA metric columns.
+  row_id   <- seq_len( nrow(df) )
+  has_year <- !is.na( df[[year]] )
+  if ( any( !has_year ) )
+    warning( sum( !has_year ), " row(s) have a missing `", year, "`; they are ",
+             "returned with NA metric columns.", call. = FALSE )
+
+  # Columns kept for rows that receive no computed metrics.
+  base_cols <- function( rows ) {
+    keep <- if ( append_to_df ) names(df) else intersect( .IDVARS, names(df) )
+    df[ rows, keep, drop = FALSE ]
+  }
 
   # ---- split by year, compute, collect ------------------------------------
-  year_list <- split( df, df[[year]] )
+  # Split row indices rather than the data so each result can be tagged with
+  # its original positions. compute_all() drops unknown helper columns when
+  # append_to_df = FALSE, so the tag is added after computing.
+  idx_list  <- split( row_id[has_year], df[[year]][has_year] )
+  year_lbls <- names( idx_list )
 
   if (verbose) message(
     "Computing metrics year-by-year across ",
     n_years, " year(s): ",
-    paste( years_present, collapse = ", " ), " ..."
+    paste( year_lbls, collapse = ", " ), " ..."
   )
 
-  result_list <- vector( "list", n_years )
+  result_list <- vector( "list", length( idx_list ) )
 
-  for ( i in seq_along(year_list) ) {
+  for ( i in seq_along(idx_list) ) {
 
-    yr    <- years_present[[i]]
-    slice <- year_list[[i]]
+    yr    <- year_lbls[[i]]
+    rows  <- idx_list[[i]]
+    slice <- df[ rows, , drop = FALSE ]
 
     if (verbose) message( "\n===  Year ", yr,
                           " (", nrow(slice), " rows)  ===" )
 
-    result_list[[i]] <- tryCatch(
+    res <- tryCatch(
       compute_all(
         df           = slice,
         metrics      = metrics,
@@ -298,27 +314,34 @@ compute_all_panel <- function( df,
       error = function(e) {
         warning( "Year ", yr, " compute_all() failed: ",
                  conditionMessage(e),
-                 " --- returning input slice unchanged.", call. = FALSE )
-        # Return the slice so the year is present with NA metric columns
-        slice
+                 " --- returning the year with NA metric columns.", call. = FALSE )
+        base_cols( rows )
       }
     )
+    res <- as.data.frame( res )
+    res[[".row_order."]] <- rows
+    result_list[[i]] <- res
+  }
+
+  if ( any( !has_year ) ) {
+    missing_rows <- base_cols( row_id[!has_year] )
+    missing_rows[[".row_order."]] <- row_id[!has_year]
+    result_list <- c( result_list, list( missing_rows ) )
   }
 
   # ---- stack and restore original order -----------------------------------
   if (verbose) message( "\nStacking ", n_years, " year(s) ..." )
 
-  out <- data.table::rbindlist( result_list, fill = TRUE )
-
-  # Restore the original row order then drop the tag
-  data.table::setorder( out, .row_order. )
+  out <- as.data.frame( data.table::rbindlist( result_list, fill = TRUE, use.names = TRUE ) )
+  out <- out[ order( out[[".row_order."]] ), , drop = FALSE ]
   out[[".row_order."]] <- NULL
+  rownames( out ) <- NULL
 
-  n_new <- ncol(out) - n_cols_input
+  n_new <- length( setdiff( names(out), names(df) ) )
   if (verbose) message(
     "Done. ", n_new, " metric column(s) added across ",
     n_years, " year(s)."
   )
 
-  as.data.frame( out )
+  out
 }

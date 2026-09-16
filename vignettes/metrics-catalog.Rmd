@@ -47,7 +47,7 @@ Measures short-term liquidity by comparing current assets to current liabilities
 cr = current_assets / current_liabilities
 
 current_assets      = cash + savings + pledges_receivable + accounts_receivable
-                      + investment_sales + prepaid_expenses
+                      + inventories + prepaid_expenses
 current_liabilities = accounts_payable + grants_payable
 ```
 
@@ -59,7 +59,7 @@ current_liabilities = accounts_payable + grants_payable
 | `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
 | `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
 | `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
-| `investment_sales` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
+| `inventories` | `F9_10_ASSET_INV_SALE_EOY` | Inventories for sale or use (Part X line 8) |
 | `prepaid_expenses` | `F9_10_ASSET_EXP_PREPAID_EOY` | Prepaid expenses and deferred charges |
 | `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
 | `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
@@ -78,7 +78,7 @@ is approximately \[0, 15\], with most organizations clustered between 0.5 and 5.
   - **Above 3.0-4.0**: May indicate excess cash or slow receivables collection.
   - Sector medians generally fall in the \[1.0, 2.5\] range (Zietlow et al. 2007).
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -134,7 +134,7 @@ extremes.
   - A declining trend over consecutive years is a stronger warning signal than
     any single year's value.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -176,7 +176,7 @@ foundations and endowed organizations that carry minimal accounts payable.
   - Because this is a highly conservative measure, values somewhat below 1.0
     are normal if receivables are healthy.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -215,7 +215,7 @@ cash hoarding.
   - Foundations and endowed institutions naturally show higher ratios than
     operating nonprofits.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -254,19 +254,20 @@ for size-adjusted comparisons.
   - The Nonprofit Finance Fund recommends a minimum of three months of
     operating expenses in accessible reserves.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
-### Burn Rate
+### Burn Rate Ratio
 
 `get_cash_burn_ratio()`
 
-Monthly rate at which an organization draws down its cash reserves.
+End-of-year cash relative to beginning-of-year cash; measures whether an
+organization is drawing down or accumulating its cash position.
 
 **Formula:**
 ```
-brr = ( cash_boy - cash_eoy ) / months_in_period
+cash_burn = cash_eoy / cash_boy
 ```
 
 **Input variables**
@@ -292,7 +293,7 @@ drawdown.
   - **Below 0.50** in a single year (cash halved) warrants investigation.
   - A ratio consistently above 1.0 indicates accumulating liquidity reserves.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -337,7 +338,7 @@ for operating nonprofits but typical for foundations.
   - Healthcare nonprofits are typically benchmarked at 150+ days due to longer
     receivables cycles.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -362,7 +363,9 @@ daily_expenses    = ( total_expenses - depreciation ) / 365
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-| `investments` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
+| `investments` | `F9_10_ASSET_INVEST_SEC_EOY` + `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Investments in publicly traded and other securities (Part X lines 11 + 12) |
 | `land_buildings` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
 | `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
@@ -381,7 +384,7 @@ exceed liquid resources. Values above 365 indicate more than one year of coverag
   - A large gap between this metric and `get_days_cash_operations()` indicates
     liquidity concentrated in investments rather than accessible cash.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -425,7 +428,7 @@ operating organizations (more typical for foundations).
   - **6+ months**: Strong reserve position.
   - The Nonprofit Finance Fund recommends 3-6 months as a target.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -449,6 +452,8 @@ monthly_expenses = total_expenses / 12
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 | `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
 | `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
@@ -462,12 +467,13 @@ range for operating nonprofits is approximately \[-12, 36\] months.
 
 **Benchmarks and rules of thumb**
 
-  - Same general benchmarks as `get_operating_reserve_ratio()`: 3-6 months
-    is considered adequate for most operating nonprofits.
+  - Same general benchmarks as `get_operating_reserve_ratio()` (which is
+    expressed in years rather than months): 3-6 months is considered adequate
+    for most operating nonprofits.
   - Negative LUNA values are particularly informative: they indicate
     unrestricted equity is entirely absorbed by illiquid fixed assets.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -532,6 +538,8 @@ der = total_liabilities / unrestricted_net_assets
 |----------|---------------|-------------|
 | `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
 | `equity` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 
 
 **Definitional Range**
@@ -552,7 +560,7 @@ undefined (NA) when unrestricted net assets equal zero.
   - Negative values indicate negative unrestricted net assets, which almost
     always signals significant financial stress.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -560,33 +568,39 @@ undefined (NA) when unrestricted net assets equal zero.
 
 `get_debt_netassets_ratio()`
 
-Compares total liabilities to unrestricted net assets.
+Compares total liabilities to total net assets.
 
 **Formula:**
 ```
-dmr = total_liabilities / unrestricted_net_assets
+dnar = total_liabilities / total_net_assets
 ```
 
 **Input variables**
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
-| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (fallback) |
+| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `net_assets` | `F9_01_NAFB_TOT_EOY` | Net assets from Part I (fallback) |
 
 
 **Definitional Range**
 
-Same as `get_debt_equity_ratio()`: bounded below at zero when both
-numerator and denominator are positive; unbounded above; negative when unrestricted
-net assets are negative.
+Bounded below at zero when total net assets are positive; unbounded above as net
+assets approach zero. Negative values occur when total net assets are negative
+(liabilities exceed assets), an insolvency signal, so the ratio is not monotone in
+financial health across zero. The ratio is undefined (NaN) when total net assets
+equal zero.
 
 **Benchmarks and rules of thumb**
 
+  - Values below 1.0 mean liabilities are smaller than the net asset base.
   - Values above 3.0-5.0 are commonly flagged as high leverage in the
-    nonprofit vulnerability literature. See `get_debt_equity_ratio()` for
-    fuller benchmark guidance.
+    nonprofit vulnerability literature.
+  - Always read alongside `get_debt_equity_ratio()`, which uses only
+    unrestricted net assets: a large gap between the two means much of the
+    equity cushion is donor restricted.
 
 **Calculated For:** 990 + 990EZ filers.
 
@@ -628,7 +642,7 @@ financially stable nonprofits are in the \[0, 0.30\] range.
   - Values above 0.30 suggest near-term obligations are placing meaningful
     pressure on net assets.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -663,7 +677,7 @@ organizations (housing, healthcare, higher education) can show values above 0.70
   - For organizations with high secured debt ratios, lenders will scrutinize
     the collateral value and debt service coverage ratio.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -698,7 +712,7 @@ is highly concentrated at zero with a long right tail.
     management -- but a large and growing ratio warrants scrutiny.
   - Trend analysis is more informative than a single year's value.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -1400,7 +1414,7 @@ with minimal earned income; values near 0 characterize fee-based service provide
   - Organizations above 0.90 have almost no earned income buffer if philanthropic
     support declines.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -1414,8 +1428,7 @@ Share of total revenue derived from earned (non-donation) income sources.
 ```
 eidr = earned_revenue / total_revenue
 
-earned_revenue = program_service_revenue + membership_dues
-                 + royalties + other_revenue
+earned_revenue = program_service_revenue + royalties + other_revenue
 ```
 
 **Input variables**
@@ -1423,7 +1436,6 @@ earned_revenue = program_service_revenue + membership_dues
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `program_service_rev` | `F9_08_REV_PROG_TOT_TOT` | Program service revenue |
-| `membership_dues` | `F9_08_REV_CONTR_MEMBSHIP_DUE` | Membership dues |
 | `royalties` | `F9_08_REV_OTH_ROY_TOT` | Royalties |
 | `other_revenue` | `F9_08_REV_MISC_OTH_TOT` | Other miscellaneous revenue |
 | `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
@@ -1441,7 +1453,7 @@ zero; fee-based service providers may show values above 0.90.
   - A low ratio combined with high donation dependence indicates philanthropic
     concentration risk.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -1608,9 +1620,9 @@ investment_income = invest_income + bond_proceeds + rent_income + asset_sale_inc
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `invest_income` | `F9_08_REV_OTH_INVEST_INCOME_TOT` | Investment income |
-| `bond_proceeds` | `F9_08_REV_OTH_INVEST_BOND_TOT` | Income from bond proceeds |
-| `rent_income` | `F9_08_REV_OTH_RENT_GRO_PERS` | Gross rental income |
-| `asset_sale_income` | `F9_08_REV_OTH_SALE_ASSET_OTH` | Net gain from asset sales |
+| `bond_proceeds` | `F9_08_REV_OTH_INVEST_BOND_TOT` | Income from investment of tax-exempt bond proceeds |
+| `rent_income` | `F9_08_REV_OTH_RENT_NET_TOT` | Net rental income or loss (Part VIII line 6d) |
+| `asset_sale_income` | `F9_08_REV_OTH_SALE_GAIN_NET_TOT` | Net gain or loss from sales of assets other than inventory (Part VIII line 7d) |
 | `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
 
 
@@ -1650,6 +1662,7 @@ nacr = unrestricted_net_assets / total_net_assets
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
 | `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
 
 
 **Definitional Range**
@@ -1665,11 +1678,11 @@ this range occur when either unrestricted or total net assets are negative.
   - Organizations with large permanent endowments may show low ratios without
     financial weakness.
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
-### Operating Ratio
+### Net Assets Growth Ratio
 
 `get_netassets_growth_ratio()`
 
@@ -1728,27 +1741,30 @@ operating_reserves = unrestricted_net_assets - net_fixed_assets
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 | `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 
 
 **Definitional Range**
 
-Unbounded in both directions when expressed in months. Negative values occur when
+Unbounded in both directions, expressed as a multiple of annual expenses (multiply
+by 12 to convert to months). Negative values occur when
 unrestricted net assets are negative or when net fixed assets exceed unrestricted net
-assets. Values above 24 months are uncommon for operating organizations and may
+assets. Values above 2.0 (24 months) are uncommon for operating organizations and may
 indicate accumulation beyond what is needed for operating risk management.
 
 **Benchmarks and rules of thumb**
 
-  - **Less than 1 month**: Acute vulnerability.
-  - **1-3 months**: Below the commonly recommended minimum.
-  - **3-6 months**: Generally adequate for most operating nonprofits.
-  - **6-12 months**: Strong; appropriate for volatile-revenue or
+  - **Less than 0.083 (1 month)**: Acute vulnerability.
+  - **0.083-0.25 (1-3 months)**: Below the commonly recommended minimum.
+  - **0.25-0.50 (3-6 months)**: Generally adequate for most operating nonprofits.
+  - **0.50-1.0 (6-12 months)**: Strong; appropriate for volatile-revenue or
     capital-intensive organizations.
-  - The Nonprofit Finance Fund recommends a minimum of 3 months.
+  - The Nonprofit Finance Fund recommends a minimum of 3 months (0.25).
 
-**Calculated For:** 990 + 990EZ filers.
+**Calculated For:** 990 filers only.
 
 <hr>
 
@@ -1820,7 +1836,7 @@ nonprofits own no real property.
   - Declining values over time may reflect depreciation outpacing new capital
     investment rather than strategic deleveraging.
 
-**Calculated For:** 990 filers only.
+**Calculated For:** 990 + 990EZ filers.
 
 <hr>
 
@@ -1839,13 +1855,14 @@ lar = land_buildings_equipment / total_assets
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_DEPREC` | Accumulated depreciation on land and buildings |
+| `land_buildings` | `F9_10_ASSET_LAND_BLDG` | Land, buildings, and equipment, cost or other basis (Part X line 10a) |
 | `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
 
 
 **Definitional Range**
 
-Bounded \[0, 1\] in normal conditions. The distribution is highly right-skewed:
+Usually in \[0, 1\], but can exceed 1 when accumulated depreciation is large
+relative to other assets. The distribution is highly right-skewed:
 most nonprofits with no owned real estate show values near zero, while
 capital-intensive organizations (healthcare, housing, higher education) may show
 values above 0.50.
