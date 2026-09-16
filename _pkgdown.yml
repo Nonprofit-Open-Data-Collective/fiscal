@@ -38,6 +38,8 @@ navbar:
         href: articles/normalization.html
       - text: The fiscal health index
         href: articles/fiscal-health-index.html
+      - text: Variance-preserving normalization
+        href: articles/variance-preserving-normalization.html
       - text: "990 vs 990-EZ — form scope & sanitization"
         href: articles/form-scope.html
 
@@ -54,6 +56,7 @@ articles:
 - title: Methods
   contents:
   - normalization
+  - variance-preserving-normalization
   - fiscal-health-index
   - form-scope
 
