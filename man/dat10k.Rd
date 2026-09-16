@@ -5,149 +5,178 @@
 \alias{dat10k}
 \title{IRS 990 Efile Dataset - 2021 Tax Year (10,000 Organizations)}
 \format{
-A data frame with 10,000 rows and 98 variables. The dataset includes
-both full 990 filers and 990-EZ filers; the \code{RETURN_TYPE} column
-identifies which form each organization filed. Variables are organized into
-the following groups:
-\subsection{BMF and organizational identifiers:}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `EIN2`: Employer Identification Number (9-digit character)
-- `NTEE_NCCS`: NTEE activity code assigned by NCCS
-- `NTEEV2`: NTEE Version 2 code
-- `NTMAJ12`: NTEE major group (12-category classification)
-- `NTEE_ORG_TYPE`: Broad organization type from NTEE
-- `CENSUS_CBSA_FIPS`: Core-Based Statistical Area FIPS code
-- `CENSUS_CBSA_NAME`: CBSA name (metro/micro area)
-- `CENSUS_BLOCK_FIPS`: Census block FIPS code
-- `CENSUS_URBAN_AREA`: Urban area classification
-- `CENSUS_STATE_ABBR`: Two-letter state abbreviation
-- `CENSUS_COUNTY_NAME`: County name
-- `BMF_SUBSECTION_CODE`: IRS 501(c) subsection code
-- `BMF_FOUNDATION_CODE`: IRS foundation type code
-- `ORG_RULING_YEAR`: Year the organization received tax-exempt status
-- `F990_TOTAL_REVENUE_RECENT`: 
-Most recent total revenue from BMF
-- `F990_TOTAL_INCOME_RECENT`: Most recent total income from BMF
-- `F990_TOTAL_ASSETS_RECENT`: Most recent total assets from BMF
-- `F990_TOTAL_EXPENSES_RECENT`: 
-Most recent total expenses from BMF
-- `OBJECTID`: Internal record identifier
-- `ORG_EIN`: Organization EIN
-- `ORG_NAME_L1`: Organization name (line 1)
-- `ORG_NAME_L2`: Organization name (line 2, if present)
-}\if{html}{\out{</div>}}
+A \code{data.table} (and \code{data.frame}) with 10,000 rows and 93 variables:
+6,284 Form 990 filers and 3,716 Form 990-EZ filers, identified by
+\code{RETURN_TYPE}. Dollar amounts are whole dollars stored as plain R numbers
+(double or integer). Form line references are to the 2021 Form 990, with
+the equivalent 990-EZ line where 990-EZ filers report the field.
+Variables are organized into the following groups:
+\subsection{BMF classification, geography, and summary financials}{
+\itemize{
+\item \code{EIN2}: Employer Identification Number, formatted \code{"EIN-XX-XXXXXXX"}
+\item \code{NTEE_NCCS}: Normalized 3-character NTEE code (e.g. \code{"B94"}); the
+NCCS NTEE code, or the IRS NTEE code where NCCS has none, cleaned with
+\code{\link[=get_clean_ntee]{get_clean_ntee()}}
+\item \code{NTEEV2}: NTEE Version 2 code, \verb{[INDUSTRY]-[NTEE]-[ORGTYPE]}
+(e.g. \code{"EDU-B94-RG"}); see \code{\link[=get_nteev2]{get_nteev2()}}
+\item \code{NTMAJ12}: 3-letter major industry group (\code{ART}, \code{EDU}, \code{UNI}, \code{ENV},
+\code{HEL}, \code{HOS}, \code{IFA}, \code{PSB}, \code{MMB}, \code{UNU}, \code{REL}, \code{HMS}); see
+\code{\link[=get_industry]{get_industry()}}
+\item \code{NTEE_ORG_TYPE}: Organization type code (\code{RG}, \code{AA}, \code{MT}, \code{PA}, \code{RP},
+\code{MS}, \code{MM}, \code{NS}); see \code{\link[=get_org_type]{get_org_type()}}
+\item \code{CENSUS_CBSA_FIPS}: Core-Based Statistical Area FIPS code (integer;
+\code{NA} outside a CBSA)
+\item \code{CENSUS_CBSA_NAME}: CBSA name (metro/micro area; \code{""} outside a CBSA)
+\item \code{CENSUS_BLOCK_FIPS}: 15-digit Census block FIPS code, stored as a
+number, so codes for states with FIPS below 10 lose their leading zero
+\item \code{CENSUS_URBAN_AREA}: \code{"U"} (urban), \code{"R"} (rural), or \code{""}
+\item \code{CENSUS_STATE_ABBR}: Two-letter state abbreviation
+\item \code{CENSUS_COUNTY_NAME}: County name
+\item \code{BMF_SUBSECTION_CODE}: IRS 501(c) subsection code (e.g. \code{3} = 501(c)(3))
+\item \code{BMF_FOUNDATION_CODE}: IRS foundation code
+\item \code{ORG_RULING_YEAR}: Year of the IRS ruling granting tax-exempt status
+\item \code{F990_TOTAL_REVENUE_RECENT}: Most recent total revenue from BMF
+\item \code{F990_TOTAL_INCOME_RECENT}: Most recent total income from BMF
+\item \code{F990_TOTAL_ASSETS_RECENT}: Most recent total assets from BMF
+\item \code{F990_TOTAL_EXPENSES_RECENT}: Most recent total expenses from BMF
+}
 }
 
-\subsection{Return header fields (Part 00):}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `RETURN_AMENDED_X`: Amended return indicator
-- `RETURN_GROUP_X`: Group return indicator
-- `RETURN_PARTIAL_X`: Partial return indicator
-- `RETURN_TAXPER_DAYS`: Length of tax period in days
-- `RETURN_TIME_STAMP`: Return timestamp
-- `RETURN_TYPE`: Form type filed: `"990"` or `"990EZ"`
-- `TAX_PERIOD_BEGIN_DATE`: Start of tax period
-- `TAX_PERIOD_END_DATE`: End of tax period
-- `TAX_YEAR`: Tax year (fiscal year start)
-- `URL`: URL of the source XML filing on AWS
-- `VERSION`: 990 form schema version
-- `F9_00_BUILD_TIME_STAMP`: IRS build timestamp
-- `F9_00_NAME_ORG_CTRL`: Organization name control text
-- `F9_00_RETURN_TIME_STAMP`: Return creation timestamp
-- `F9_00_RETURN_TYPE`: Return type from XML header
-- `F9_00_TAX_PERIOD_BEGIN_DATE`: Tax period start date
-- `F9_00_TAX_PERIOD_END_DATE`: Tax period end date
-- `F9_00_TAX_YEAR`: Tax year
-- `F9_00_RETURN_GROUP_X`: Group return flag
-- `F9_00_EXEMPT_STAT_4947A1_X`: 4947(a)(1) trust indicator
-- `F9_00_EXEMPT_STAT_501C_X`: 501(c) exempt status indicator
-- `F9_00_EXEMPT_STAT_501C3_X`: 501(c)(3) indicator
-- `F9_00_TYPE_ORG_OTH_DESC`: Other organization type description
-- `F9_00_TYPE_ORG_ASSOC_X`: Association type indicator
-- `F9_00_TYPE_ORG_CORP_X`: Corporation type indicator
-- `F9_00_TYPE_ORG_OTH_X`: Other type indicator
-- `F9_00_TYPE_ORG_TRUST_X`: Trust type indicator
-- `F9_00_YEAR_FORMATION`: Year of formation
-}\if{html}{\out{</div>}}
+\subsection{Return header fields (Part 00)}{
+\itemize{
+\item \code{OBJECTID}: Efile object identifier (\code{"OID-"} plus the IRS object ID);
+unique per filing
+\item \code{ORG_EIN}: Organization EIN as an integer (leading zeros dropped)
+\item \code{ORG_NAME_L1}: Organization name (line 1)
+\item \code{ORG_NAME_L2}: Organization name (line 2; usually \code{""})
+\item \code{RETURN_AMENDED_X}: Amended return indicator (logical)
+\item \code{RETURN_GROUP_X}: Group return indicator (logical)
+\item \code{RETURN_PARTIAL_X}: Partial-year return indicator (logical)
+\item \code{RETURN_TAXPER_DAYS}: Length of tax period in days
+\item \code{RETURN_TIME_STAMP}: Date and time the return was created (\code{POSIXct})
+\item \code{RETURN_TYPE}: Form type filed: \code{"990"} or \code{"990EZ"}
+\item \code{TAX_PERIOD_BEGIN_DATE}: Start of tax period (\code{IDate})
+\item \code{TAX_PERIOD_END_DATE}: End of tax period (\code{IDate})
+\item \code{TAX_YEAR}: Tax year as reported on the return (\code{2021} for every row)
+\item \code{URL}: URL of the source XML filing on AWS
+\item \code{VERSION}: IRS efile schema version (e.g. \code{"2021v4.1"})
+\item \code{F9_00_BUILD_TIME_STAMP}: IRS build timestamp (\code{POSIXct})
+\item \code{F9_00_NAME_ORG_CTRL}: IRS name control (up to four characters)
+\item \code{F9_00_RETURN_TIME_STAMP}: Return creation timestamp; same as
+\code{RETURN_TIME_STAMP}
+\item \code{F9_00_RETURN_TYPE}: Return type from the XML header; same as \code{RETURN_TYPE}
+\item \code{F9_00_TAX_PERIOD_BEGIN_DATE}: Tax period start date; same as
+\code{TAX_PERIOD_BEGIN_DATE}
+\item \code{F9_00_TAX_PERIOD_END_DATE}: Tax period end date; same as
+\code{TAX_PERIOD_END_DATE}
+\item \code{F9_00_TAX_YEAR}: Tax year; same as \code{TAX_YEAR}
+\item \code{F9_00_RETURN_GROUP_X}: Group return flag as reported in the XML
+(\code{"0"}, \code{"1"}, \code{"false"}, or \code{"true"}; \code{""} for 990-EZ filers)
+\item \code{F9_00_EXEMPT_STAT_4947A1_X}: 4947(a)(1) trust indicator (\code{"X"} or \code{""})
+\item \code{F9_00_EXEMPT_STAT_501C_X}: 501(c) exempt status indicator (\code{"X"} or \code{""})
+\item \code{F9_00_EXEMPT_STAT_501C3_X}: 501(c)(3) indicator (\code{"X"} or \code{""})
+\item \code{F9_00_TYPE_ORG_OTH_DESC}: Other form-of-organization description
+\item \code{F9_00_TYPE_ORG_ASSOC_X}: Association indicator (\code{"X"} or \code{""})
+\item \code{F9_00_TYPE_ORG_CORP_X}: Corporation indicator (\code{"X"} or \code{""})
+\item \code{F9_00_TYPE_ORG_OTH_X}: Other form-of-organization indicator (\code{"X"} or \code{""})
+\item \code{F9_00_TYPE_ORG_TRUST_X}: Trust indicator (\code{"X"} or \code{""})
+\item \code{F9_00_YEAR_FORMATION}: Year of formation (990 filers only)
+}
 }
 
-\subsection{Part I - Summary:}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `F9_01_EXP_REV_LESS_EXP_CY`: 
-Revenues less expenses, current year (Part I, line 19)
-- `F9_01_EXP_TOT_CY`: Total expenses, current year (Part I, line 17)
-- `F9_01_NAFB_ASSET_TOT_EOY`: Total assets, EOY (Part I)
-- `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities, EOY (Part I)
-- `F9_01_NAFB_TOT_BOY`: Net assets or fund balances, BOY (Part I, line 22)
-- `F9_01_NAFB_TOT_EOY`: Net assets or fund balances, EOY (Part I, line 22)
-- `F9_01_REV_PROG_TOT_CY`: Program service revenue, current year (Part I)
-- `F9_01_REV_TOT_CY`: Total revenue, current year (Part I, line 12)
-}\if{html}{\out{</div>}}
+\subsection{Part I - Summary}{
+\itemize{
+\item \code{F9_01_EXP_REV_LESS_EXP_CY}: Revenue less expenses, current year
+(Part I, line 19; 990-EZ line 18)
+\item \code{F9_01_EXP_TOT_CY}: Total expenses, current year (Part I, line 18;
+990-EZ line 17)
+\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets, EOY (Part I, line 20;
+990 filers only)
+\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities, EOY (Part I, line 21;
+990 filers only)
+\item \code{F9_01_NAFB_TOT_BOY}: Net assets or fund balances, BOY (Part I, line 22;
+990-EZ line 19)
+\item \code{F9_01_NAFB_TOT_EOY}: Net assets or fund balances, EOY (Part I, line 22;
+990-EZ line 21)
+\item \code{F9_01_REV_PROG_TOT_CY}: Program service revenue, current year
+(Part I, line 9; 990-EZ line 2)
+\item \code{F9_01_REV_TOT_CY}: Total revenue, current year (Part I, line 12;
+990-EZ line 9)
+}
 }
 
-\subsection{Part VIII - Revenue:}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `F9_08_REV_CONTR_GOVT_GRANT`: 
-Government grants (Part VIII, line 1e)
-- `F9_08_REV_CONTR_MEMBSHIP_DUE`: 
-Membership dues (Part VIII, line 1b)
-- `F9_08_REV_CONTR_TOT`: Total contributions (Part VIII, line 1h)
-- `F9_08_REV_MISC_OTH_TOT`: Other miscellaneous revenue (Part VIII, line 11e)
-- `F9_08_REV_OTH_FUNDR_NET_TOT`: 
-Net fundraising income (Part VIII, line 8c)
-- `F9_08_REV_OTH_INVEST_BOND_TOT`: 
-Bond investment income (Part VIII, line 4)
-- `F9_08_REV_OTH_INVEST_INCOME_TOT`: 
-Investment income (Part VIII, line 3)
-- `F9_08_REV_OTH_RENT_GRO_PERS`: 
-Gross rents - personal property (Part VIII, line 6a)
-- `F9_08_REV_OTH_ROY_TOT`: Royalties (Part VIII, line 5)
-- `F9_08_REV_OTH_SALE_ASSET_OTH`: 
-Net gain from asset sales (Part VIII, line 7d)
-- `F9_08_REV_PROG_TOT_TOT`: Program service revenue total (Part VIII, line 2g)
-- `F9_08_REV_TOT_TOT`: Total revenue (Part VIII, line 12A)
-}\if{html}{\out{</div>}}
+\subsection{Part VIII - Revenue}{
+\itemize{
+\item \code{F9_08_REV_CONTR_GOVT_GRANT}: Government grants (Part VIII, line 1e)
+\item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}: Membership dues (Part VIII, line 1b;
+990-EZ Part I, line 3)
+\item \code{F9_08_REV_CONTR_TOT}: Total contributions (Part VIII, line 1h)
+\item \code{F9_08_REV_MISC_OTH_TOT}: All other miscellaneous revenue
+(Part VIII, line 11d, column A)
+\item \code{F9_08_REV_OTH_FUNDR_NET_TOT}: Net income or (loss) from fundraising
+events (Part VIII, line 8c)
+\item \code{F9_08_REV_OTH_INVEST_BOND_TOT}: Income from investment of tax-exempt
+bond proceeds (Part VIII, line 4)
+\item \code{F9_08_REV_OTH_INVEST_INCOME_TOT}: Investment income (Part VIII, line 3;
+990-EZ Part I, line 4)
+\item \code{F9_08_REV_OTH_RENT_GRO_PERS}: Gross rents, personal property
+(Part VIII, line 6a, column ii)
+\item \code{F9_08_REV_OTH_ROY_TOT}: Royalties (Part VIII, line 5)
+\item \code{F9_08_REV_OTH_SALE_ASSET_OTH}: Gross amount from sales of assets other
+than inventory, non-securities (Part VIII, line 7a, column ii)
+\item \code{F9_08_REV_PROG_TOT_TOT}: Total program service revenue (Part VIII, line 2g)
+\item \code{F9_08_REV_TOT_TOT}: Total revenue (Part VIII, line 12, column A)
+}
 }
 
-\subsection{Part IX - Expenses:}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `F9_09_EXP_DEPREC_TOT`: Depreciation, depletion, and amortization (Part IX, line 22A)
-- `F9_09_EXP_TOT_FUNDR`: Fundraising expenses (Part IX, line 25D)
-- `F9_09_EXP_TOT_MGMT`: Management and general expenses (Part IX, line 25C)
-- `F9_09_EXP_TOT_PROG`: Program service expenses (Part IX, line 25B)
-- `F9_09_EXP_TOT_TOT`: Total functional expenses (Part IX, line 25A)
-}\if{html}{\out{</div>}}
+\subsection{Part IX - Expenses}{
+\itemize{
+\item \code{F9_09_EXP_DEPREC_TOT}: Depreciation, depletion, and amortization
+(Part IX, line 22, column A)
+\item \code{F9_09_EXP_TOT_FUNDR}: Fundraising expenses (Part IX, line 25, column D)
+\item \code{F9_09_EXP_TOT_MGMT}: Management and general expenses
+(Part IX, line 25, column C)
+\item \code{F9_09_EXP_TOT_PROG}: Program service expenses (Part IX, line 25, column B)
+\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (Part IX, line 25, column A)
+}
 }
 
-\subsection{Part X - Balance Sheet:}{
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `F9_10_ASSET_ACC_NET_EOY`: Accounts receivable, net, EOY (Part X, line 4B)
-- `F9_10_ASSET_CASH_BOY`: Cash, beginning of year (Part X, line 1A)
-- `F9_10_ASSET_CASH_EOY`: Cash, end of year (Part X, line 1B)
-- `F9_10_ASSET_EXP_PREPAID_EOY`: 
-Prepaid expenses and deferred charges, EOY (Part X, line 9B)
-- `F9_10_ASSET_INV_SALE_EOY`: Investments held for sale, EOY (Part X, line 8B)
-- `F9_10_ASSET_LAND_BLDG_DEPREC`: 
-Net land, buildings, and equipment - depreciated (Part X, line 10C)
-- `F9_10_ASSET_LAND_BLDG_NET_EOY`: 
-Net land, buildings, and equipment, EOY (Part X, line 10C)
-- `F9_10_ASSET_PLEDGE_NET_EOY`: 
-Net pledges and grants receivable, EOY (Part X, line 3B)
-- `F9_10_ASSET_SAVING_EOY`: Savings and temporary cash investments, EOY (Part X, line 2B)
-- `F9_10_ASSET_TOT_EOY`: Total assets, EOY (Part X, line 16B)
-- `F9_10_LIAB_ACC_PAYABLE_EOY`: 
-Accounts payable and accrued expenses, EOY (Part X, line 17B)
-- `F9_10_LIAB_GRANT_PAYABLE_EOY`: 
-Grants and similar amounts payable, EOY (Part X, line 18B)
-- `F9_10_LIAB_MTG_NOTE_EOY`: Mortgages and notes payable, EOY (Part X, line 23B)
-- `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (Part X, line 26B)
-- `F9_10_NAFB_TOT_BOY`: Total net assets, beginning of year (Part X, line 33A)
-- `F9_10_NAFB_TOT_EOY`: Total net assets, end of year (Part X, line 33B)
-- `F9_10_NAFB_UNRESTRICT_BOY`: 
-Unrestricted net assets, beginning of year (Part X, line 27A)
-- `F9_10_NAFB_UNRESTRICT_EOY`: 
-Unrestricted net assets, end of year (Part X, line 27B)
-}\if{html}{\out{</div>}}
+\subsection{Part X - Balance Sheet}{
+\itemize{
+\item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (Part X, line 4)
+\item \code{F9_10_ASSET_CASH_BOY}: Cash, non-interest-bearing, BOY (Part X, line 1)
+\item \code{F9_10_ASSET_CASH_EOY}: Cash, non-interest-bearing, EOY (Part X, line 1)
+\item \code{F9_10_ASSET_EXP_PREPAID_EOY}: Prepaid expenses and deferred charges,
+EOY (Part X, line 9)
+\item \code{F9_10_ASSET_INV_SALE_EOY}: Inventories for sale or use, EOY
+(Part X, line 8)
+\item \code{F9_10_ASSET_LAND_BLDG_DEPREC}: Accumulated depreciation on land,
+buildings, and equipment (Part X, line 10b)
+\item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}: Land, buildings, and equipment, net
+of depreciation, EOY (Part X, line 10c)
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Pledges and grants receivable, net, EOY
+(Part X, line 3)
+\item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY
+(Part X, line 2)
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (Part X, line 16;
+990-EZ Part II, line 25)
+\item \code{F9_10_LIAB_ACC_PAYABLE_EOY}: Accounts payable and accrued expenses,
+EOY (Part X, line 17)
+\item \code{F9_10_LIAB_GRANT_PAYABLE_EOY}: Grants and similar amounts payable,
+EOY (Part X, line 18)
+\item \code{F9_10_LIAB_MTG_NOTE_EOY}: Secured mortgages and notes payable to
+unrelated third parties, EOY (Part X, line 23)
+\item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (Part X, line 26;
+990-EZ Part II, line 26)
+\item \code{F9_10_NAFB_TOT_BOY}: Total net assets or fund balances, BOY
+(Part X, line 32; 990-EZ Part II, line 27)
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets or fund balances, EOY
+(Part X, line 32; 990-EZ Part II, line 27)
+\item \code{F9_10_NAFB_UNRESTRICT_BOY}: Net assets without donor restrictions
+(formerly "unrestricted"), BOY (Part X, line 27)
+\item \code{F9_10_NAFB_UNRESTRICT_EOY}: Net assets without donor restrictions
+(formerly "unrestricted"), EOY (Part X, line 27)
+}
 }
 }
 \source{
@@ -158,25 +187,34 @@ IRS 990 efile data (2021 tax year) via the Nonprofit Open Data Collective.
 dat10k
 }
 \description{
-A dataset of 10,000 nonprofit organizations drawn from the 2021 IRS 990 efile
+A random sample of 10,000 nonprofit filings from the 2021 IRS 990 efile
 database, combining financial data from Form 990 Parts I, VIII, IX, and X with
 organizational metadata from the IRS Business Master File (BMF).
 }
 \details{
-The dataset was assembled by merging five efile tables from the 2021 tax year:
-\code{F9-P00-T00-HEADER}, \code{F9-P01-T00-SUMMARY}, \code{F9-P08-T00-REVENUE},
-\code{F9-P09-T00-EXPENSES}, and \code{F9-P10-T00-BALANCE-SHEET}. BMF fields
-(NTEE codes, geographic identifiers, and organizational metadata) were merged on
-EIN. The sample includes a mix of full 990 and 990EZ filers; see \code{RETURN_TYPE}
-to distinguish them.
+The dataset was assembled by merging five tables from the NCCS efile
+database (version 2.1, 2021 tax year): \code{F9-P00-T00-HEADER},
+\code{F9-P01-T00-SUMMARY}, \code{F9-P08-T00-REVENUE}, \code{F9-P09-T00-EXPENSES}, and
+\code{F9-P10-T00-BALANCE-SHEET}. BMF fields (NTEE codes, geographic identifiers,
+and organizational metadata) were merged on EIN from the NCCS Unified BMF
+(v1.2). The sample was drawn from filings with an NTEE code and non-negative
+total revenue (\code{F9_01_REV_TOT_CY >= 0}). Each row is a filing: four
+organizations appear twice, once with an original and once with an amended
+return.
 
-Financial fields from Part VIII, IX, and X are only populated for full 990 filers.
-990EZ filers will have \code{NA} in those columns but will have values in the
-Part I summary fields (\verb{F9_01_*}). Use \code{\link[=sanitize_financials]{sanitize_financials()}} to
-impute zero for genuine zero-value fields before computing ratios.
+Most Part VIII, IX, and X fields exist only on the full Form 990 and are \code{NA}
+for 990-EZ filers. The exceptions are fields that also appear on the 990-EZ
+(total assets, total liabilities, net assets, membership dues, and investment
+income), which are populated for both forms. Conversely, the Part I totals
+for assets and liabilities (\code{F9_01_NAFB_ASSET_TOT_EOY},
+\code{F9_01_NAFB_LIAB_TOT_EOY}) are populated only for 990 filers; use
+\code{F9_10_ASSET_TOT_EOY} and \code{F9_10_LIAB_TOT_EOY} for both. Use
+\code{\link[=sanitize_financials]{sanitize_financials()}} to impute zero for genuine zero-value fields before
+computing ratios.
 
-The dataset is built using the \code{irs990efile} R package. See
+The efile tables are produced with the \code{irs990efile} R package. See
 \url{https://github.com/Nonprofit-Open-Data-Collective/irs990efile} for details.
+The build script is \code{data-raw/create-dat10k.R}.
 }
 \examples{
 data( dat10k )
