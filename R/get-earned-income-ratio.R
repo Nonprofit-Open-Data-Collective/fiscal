@@ -12,8 +12,7 @@
 #' ```
 #' eidr = earned_revenue / total_revenue
 #'
-#' earned_revenue = program_service_revenue + membership_dues
-#'                  + royalties + other_revenue
+#' earned_revenue = program_service_revenue + royalties + other_revenue
 #' ```
 #'
 #' **Definitional Range**
@@ -28,18 +27,19 @@
 #'   - A low ratio combined with high donation dependence indicates philanthropic
 #'     concentration risk.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param program_service_rev Program service revenue.
-#' @param membership_dues Membership dues and assessments.
 #' @param royalties Royalties.
 #' @param other_revenue Other miscellaneous revenue.
 #' @param total_revenue Total revenue.
-#' @param numerator Optional. A pre-aggregated column for earned revenue. Cannot be combined
-#'   with the individual component arguments.
-#' @param denominator Optional. A pre-aggregated column for total revenue. Cannot be combined
-#'   with `total_revenue`.
+#' @param numerator Optional. A pre-aggregated column for earned revenue. When
+#'   supplied, `program_service_rev`, `royalties`, `other_revenue` are ignored; it is
+#'   an error to also set one of them explicitly.
+#' @param denominator Optional. A pre-aggregated column for total revenue. When
+#'   supplied, `total_revenue` is ignored; it is an error to also set it
+#'   explicitly.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -47,18 +47,22 @@
 #'   `"np"` (negative to positive), `"zp"` (zero to positive),
 #'   `"zo"` (zero to one), `"nz"` (negative to zero), or a custom
 #'   `"lo;hi"` pair (e.g. `"0;10"`).
+#' @param membership_dues Deprecated and ignored. Membership dues reported on
+#'   Part VIII line 1b are already part of total contributions (line 1h), so
+#'   counting them as earned income double counts them against
+#'   [get_donations_revenue_ratio()]. Supplying it raises a warning.
 #'
 #' @usage
 #' get_earned_income_ratio( df,
 #'   program_service_rev = "F9_08_REV_PROG_TOT_TOT",
-#'   membership_dues     = "F9_08_REV_CONTR_MEMBSHIP_DUE",
 #'   royalties           = "F9_08_REV_OTH_ROY_TOT",
 #'   other_revenue       = "F9_08_REV_MISC_OTH_TOT",
 #'   total_revenue       = "F9_08_REV_TOT_TOT",
 #'   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
 #'   range     = "zo",
 #'   sanitize  = TRUE,
-#'   summarize = FALSE )
+#'   summarize = FALSE,
+#'   membership_dues = NULL )
 #'
 #' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
@@ -73,10 +77,11 @@
 #' ## Primary uses and key insights
 #'
 #' The earned income dependency ratio measures the combined share of revenue from
-#' program services, membership dues, royalties, and miscellaneous revenue - the
-#' sources that flow from the organization's own activities rather than from voluntary
-#' contributions. It is the revenue-side complement to [get_self_sufficiency_ratio()],
-#' which compares program revenue to total expenses.
+#' program services, royalties, and miscellaneous revenue - the sources that flow from
+#' the organization's own activities rather than from voluntary contributions. It is
+#' the revenue-side complement to [get_donations_revenue_ratio()], and a broader
+#' version of [get_self_sufficiency_ratio()], which compares program revenue to
+#' total expenses.
 #'
 #' Organizations with high earned income ratios are often considered more financially
 #' resilient because earned revenue is tied to service delivery rather than donor
@@ -85,10 +90,17 @@
 #'
 #' ## Formula variations and their sources
 #'
-#' (Program service revenue + membership dues + royalties + other miscellaneous revenue)
-#' / total revenue (Part VIII lines 2g + 1b + 5 + 11d-11e / line 12A). This broad
-#' definition of earned income follows several studies (Young 2007). A narrower version
-#' uses only program service revenue (see [get_revenue_programs_ratio()]).
+#' (Program service revenue + royalties + other miscellaneous revenue) / total revenue
+#' (Part VIII lines 2g + 5 + 11d / line 12A). This broad definition of earned income
+#' follows several studies (Young 2007). A narrower version uses only program service
+#' revenue (see [get_revenue_programs_ratio()]).
+#'
+#' Membership dues are excluded. On the Form 990, dues that are gifts are reported on
+#' Part VIII line 1b and are already included in total contributions (line 1h), which
+#' [get_donations_revenue_ratio()] counts; dues paid in exchange for member services
+#' are reported as program service revenue (line 2) and are counted here. Earlier
+#' versions added line 1b to earned income, so `earned_income` and `donations_rev`
+#' could sum to more than 1.
 #'
 #' ## Canonical citations
 #'
@@ -103,8 +115,6 @@
 #' ## Variables used:
 #'
 #'   - `F9_08_REV_PROG_TOT_TOT`: Program service revenue (`program_service_rev`)
-#'   - `F9_08_REV_CONTR_MEMBSHIP_DUE`: 
-#'     Membership dues (`membership_dues`)
 #'   - `F9_08_REV_OTH_ROY_TOT`: Royalties (`royalties`)
 #'   - `F9_08_REV_MISC_OTH_TOT`: Other miscellaneous revenue (`other_revenue`)
 #'   - `F9_08_REV_TOT_TOT`: Total revenue (`total_revenue`)
@@ -134,7 +144,6 @@
 #' @export
 get_earned_income_ratio <- function( df,
                       program_service_rev = "F9_08_REV_PROG_TOT_TOT",
-                      membership_dues     = "F9_08_REV_CONTR_MEMBSHIP_DUE",
                       royalties           = "F9_08_REV_OTH_ROY_TOT",
                       other_revenue       = "F9_08_REV_MISC_OTH_TOT",
                       total_revenue       = "F9_08_REV_TOT_TOT",
@@ -143,30 +152,22 @@ get_earned_income_ratio <- function( df,
                       winsorize = 0.98  ,
                      range     = "zo" ,
                      sanitize  = TRUE,
-                     summarize = FALSE )
+                     summarize = FALSE,
+                     membership_dues = NULL )
 {
   if ( winsorize > 1 | winsorize < 0 ) stop( "winsorize must be between 0 and 1." )
 
-  using_component_num <- !is.null( program_service_rev ) | !is.null( membership_dues ) |
-                         !is.null( royalties ) | !is.null( other_revenue )
-  using_component_den <- !is.null( total_revenue )
+  if ( !is.null( membership_dues ) )
+    warning( "`membership_dues` is deprecated and ignored: dues on Part VIII line 1b ",
+             "are already included in total contributions (line 1h)." )
 
-  if ( !is.null( numerator ) & using_component_num ) {
-    stop( "Supply either `numerator` OR the individual component arguments, not both." )
-  }
-  if ( !is.null( denominator ) & using_component_den ) {
-    stop( "Supply either `denominator` OR `total_revenue`, not both." )
-  }
-  if ( is.null( numerator ) & !using_component_num ) {
-    stop( "No numerator specified. Supply `numerator` or the individual revenue columns." )
-  }
-  if ( is.null( denominator ) & !using_component_den ) {
-    stop( "No denominator specified. Supply `denominator` or `total_revenue`." )
-  }
+  supplied <- names( match.call() )[ -1 ]
+  list2env( resolve_components( numerator, "numerator",
+    list( program_service_rev = program_service_rev, royalties = royalties, other_revenue = other_revenue ), supplied ), environment() )
+  list2env( resolve_components( denominator, "denominator",
+    list( total_revenue = total_revenue ), supplied ), environment() )
 
-  all_cols <- c( program_service_rev, membership_dues, royalties, other_revenue,
-                 total_revenue, numerator, denominator )
-  vars <- c( program_service_rev, membership_dues, royalties, other_revenue, total_revenue, numerator, denominator )
+  vars <- c( program_service_rev, royalties, other_revenue, total_revenue, numerator, denominator )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -177,8 +178,7 @@ get_earned_income_ratio <- function( df,
   if ( !is.null( numerator ) ) {
     num <- dt[[ numerator ]]
   } else {
-    num <- dt[[ program_service_rev ]] + dt[[ membership_dues ]] +
-           dt[[ royalties ]] + dt[[ other_revenue ]]
+    num <- dt[[ program_service_rev ]] + dt[[ royalties ]] + dt[[ other_revenue ]]
   }
 
   if ( !is.null( denominator ) ) {

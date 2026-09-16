@@ -18,26 +18,33 @@
 #'
 #' **Definitional Range**
 #'
-#' Unbounded in both directions when expressed in months. Negative values occur when
+#' Unbounded in both directions, expressed as a multiple of annual expenses (multiply
+#' by 12 to convert to months). Negative values occur when
 #' unrestricted net assets are negative or when net fixed assets exceed unrestricted net
-#' assets. Values above 24 months are uncommon for operating organizations and may
+#' assets. Values above 2.0 (24 months) are uncommon for operating organizations and may
 #' indicate accumulation beyond what is needed for operating risk management.
 #'
 #' **Benchmarks and rules of thumb**
 #'
-#'   - **Less than 1 month**: Acute vulnerability.
-#'   - **1-3 months**: Below the commonly recommended minimum.
-#'   - **3-6 months**: Generally adequate for most operating nonprofits.
-#'   - **6-12 months**: Strong; appropriate for volatile-revenue or
+#'   - **Less than 0.083 (1 month)**: Acute vulnerability.
+#'   - **0.083-0.25 (1-3 months)**: Below the commonly recommended minimum.
+#'   - **0.25-0.50 (3-6 months)**: Generally adequate for most operating nonprofits.
+#'   - **0.50-1.0 (6-12 months)**: Strong; appropriate for volatile-revenue or
 #'     capital-intensive organizations.
-#'   - The Nonprofit Finance Fund recommends a minimum of 3 months.
+#'   - The Nonprofit Finance Fund recommends a minimum of 3 months (0.25).
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
 #' @param net_fixed_assets Net land, buildings, and equipment, EOY.
 #' @param total_expenses Total functional expenses.
+#' @param restricted_net_assets Restricted net assets, EOY. Used with
+#'   `total_net_assets` to detect filers that do not follow SFAS 117; see
+#'   [resolve_unrestricted_net_assets()].
+#' @param total_net_assets Total net assets, EOY. Substituted for unrestricted
+#'   net assets when unrestricted and restricted net assets are both zero.
+#'   Set to `NULL` to disable the fallback.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -51,6 +58,8 @@
 #'   unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
 #'   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   total_expenses          = "F9_09_EXP_TOT_TOT",
+#'   restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+#'   total_net_assets        = "F9_10_NAFB_TOT_EOY",
 #'   winsorize = 0.98 ,
 #'   range     = "np",
 #'   sanitize  = TRUE,
@@ -68,9 +77,9 @@
 #' @details
 #' ## Primary uses and key insights
 #'
-#' The operating reserve ratio answers a key sustainability question: how many months
-#' of operations can the organization fund from its unrestricted liquid assets, excluding
-#' illiquid fixed property? It is the recommended primary reserve adequacy metric of the
+#' The operating reserve ratio answers a key sustainability question: what share of a
+#' year of operations can the organization fund from its unrestricted liquid assets,
+#' excluding illiquid fixed property? It is the recommended primary reserve adequacy metric of the
 #' Nonprofit Finance Fund and is widely used in financial health assessments, lender due
 #' diligence, and board reporting.
 #'
@@ -82,9 +91,11 @@
 #'
 #' ## Formula variations and their sources
 #'
-#' (Unrestricted net assets - net fixed assets) / (total expenses / 12). This
+#' (Unrestricted net assets - net fixed assets) / total expenses. This
 #' implementation follows the Nonprofit Finance Fund and Zietlow et al. (2007)
-#' definition. An alternative adds back mortgage debt to fixed assets
+#' definition but expresses the result as a multiple of annual expenses rather
+#' than in months (multiply by 12 for months). An alternative adds back mortgage
+#' debt to fixed assets and divides by monthly expenses
 #' ([get_liquid_assets_months()]) to more precisely isolate the unencumbered
 #' value of fixed property. Some formulations use unrestricted net assets alone
 #' (without subtracting fixed assets), which produces higher values.
@@ -108,6 +119,15 @@
 #'   - `F9_10_ASSET_LAND_BLDG_NET_EOY`: 
 #'     Net land, buildings, and equipment (`net_fixed_assets`)
 #'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'   - `F9_10_NAFB_RESTRICT_EOY`: Restricted net assets, EOY (`restricted_net_assets`)
+#'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`total_net_assets`)
+#'
+#' ## Filers that do not follow SFAS 117
+#'
+#' Organizations that do not follow SFAS 117 report equity on Part X lines
+#' 30-32 and leave lines 27-28 blank, so their unrestricted net assets read as
+#' zero. When unrestricted and restricted net assets are both zero, total net
+#' assets are used instead (see [resolve_unrestricted_net_assets()]).
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -136,6 +156,8 @@ get_operating_reserve_ratio <- function( df,
                      unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
                      net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                      total_expenses          = "F9_09_EXP_TOT_TOT",
+                     restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+                     total_net_assets        = "F9_10_NAFB_TOT_EOY",
                      winsorize = 0.98  ,
                      range     = "np" ,
                      sanitize  = TRUE,
@@ -157,8 +179,8 @@ get_operating_reserve_ratio <- function( df,
   if ( length( total_expenses ) > 2 )
     stop( "`total_expenses` must be one or two column names." )
 
-  all_cols <- c( unrestricted_net_assets, net_fixed_assets, total_expenses )
-  vars <- c( unrestricted_net_assets, net_fixed_assets, total_expenses )
+  vars <- c( unrestricted_net_assets, net_fixed_assets, total_expenses,
+             restricted_net_assets, total_net_assets )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -166,7 +188,8 @@ get_operating_reserve_ratio <- function( df,
     dt <- sanitize_financials( dt )
   }
 
-  una <- resolve_col( dt, unrestricted_net_assets )
+  una <- resolve_unrestricted_net_assets( dt, unrestricted_net_assets,
+                                          restricted_net_assets, total_net_assets )
   nfa <- resolve_col( dt, net_fixed_assets )
   exp <- resolve_col( dt, total_expenses )
 

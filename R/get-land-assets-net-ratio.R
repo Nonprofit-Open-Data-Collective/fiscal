@@ -26,13 +26,13 @@
 #'   - Declining values over time may reflect depreciation outpacing new capital
 #'     investment rather than strategic deleveraging.
 #'
-#' **Calculated For:** 990 filers only.
+#' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param land_bldg_equip_net Net land, buildings, and equipment EOY (after accumulated depreciation).
-#')
+#'
 #' @param total_assets Total assets, EOY.
-#')
+#'
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`).
 #' @param range Character string specifying the theoretical range of the ratio,
 #'   used to set winsorization bounds. Default `"zo"`. Options:

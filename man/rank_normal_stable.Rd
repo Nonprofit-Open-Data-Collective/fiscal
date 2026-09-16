@@ -2,11 +2,11 @@
 % Please edit documentation in R/normalize-x.R
 \name{rank_normal_stable}
 \alias{rank_normal_stable}
-\title{Rank-based inverse normal transform (Blom approximation)}
+\title{Rank-based inverse normal transform (mid-ranks, \code{(rank - 0.5) / n})}
 \usage{
 rank_normal_stable(x)
 }
 \description{
-Rank-based inverse normal transform (Blom approximation)
+Rank-based inverse normal transform (mid-ranks, \code{(rank - 0.5) / n})
 }
 \keyword{internal}

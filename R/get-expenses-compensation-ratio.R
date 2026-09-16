@@ -114,22 +114,6 @@
 #'   - `expenses_compensation_z` (z-score)
 #'   - `expenses_compensation_p` (percentile rank, 1-100)
 #'
-#' @details
-#' **Variables used:**
-#'
-#'   - `F9_09_EXP_COMP_DTK_TOT`: Officer/director compensation (`officer_comp`)
-#'   - `F9_09_EXP_COMP_DSQ_PERS_TOT`: 
-#'     Disqualified person compensation (`disqualified_comp`)
-#'   - `F9_09_EXP_OTH_SAL_WAGE_TOT`: 
-#'     Other salaries and wages (`other_salaries`)
-#'   - `F9_09_EXP_PENSION_CONTR_TOT`: 
-#'     Pension contributions (`pension_contributions`)
-#'   - `F9_09_EXP_OTH_EMPL_BEN_TOT`: 
-#'     Other employee benefits (`other_employee_benefits`)
-#'   - `F9_09_EXP_PAYROLL_TAX_TOT`: Payroll taxes (`payroll_taxes`)
-#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
-#'
-#'
 #' @import dplyr
 #' @import stringr
 #' @import magrittr

@@ -18,8 +18,10 @@ library(fiscal)
 ```
 
 Nonprofits file one of two forms depending on size: the full **Form 990** or the
-shorter **Form 990-EZ**. They report *different fields* --- the 990-EZ has no
-detailed Part VIII revenue, Part IX functional expenses, or Part X balance sheet.
+shorter **Form 990-EZ**. They report *different fields* --- the 990-EZ has only
+short revenue, expense, and balance-sheet sections, so most of the detailed
+Part VIII revenue, Part IX functional-expense, and Part X balance-sheet lines have
+no EZ counterpart.
 A dataset of real filers therefore mixes two field vocabularies, and a metric that
 blindly divides two 990-only columns would produce nonsense (or silent `NA`s) for
 every EZ filer.
@@ -53,10 +55,12 @@ table(ez)
 
 Fields are grouped by the forms they appear on:
 
-- **PZ-scope** --- fields available on **both** 990 and 990-EZ (mostly Part I
-  summary lines). Retrieved with `get_pz_fields()`.
-- **PC-scope** --- fields available on the **full 990 only** (Parts VIII, IX, X
-  detail). Retrieved with `get_pc_fields()`.
+- **PZ-scope** --- fields available on **both** 990 and 990-EZ: the Part I
+  summary lines plus the revenue, expense, and balance-sheet lines that have an
+  EZ counterpart (total assets, total liabilities, total net assets, ...).
+  Retrieved with `get_pz_fields()`.
+- **PC-scope** --- fields available on the **full 990 only** (the rest of the
+  Parts VIII, IX, and X detail). Retrieved with `get_pc_fields()`.
 
 ```{r}
 length(get_pz_fields())   # available to both forms
@@ -127,16 +131,18 @@ the EZ line:
 ```{r, eval = FALSE}
 # default arguments show the coalescing pattern (990 first, EZ fallback second)
 get_debt_assets_ratio(
-  df,
+  dat10k,
   debt   = c("F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"),
   assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
 )
 ```
 
-This is why metrics like the debt-to-asset ratio, equity ratio, and surplus margin
-are **Calculated For** *990 + 990-EZ* filers, while purely PC-scope metrics (the
-current ratio, overhead ratio, days of cash) are *990 filers only*. The catalog
-(`vignette("metrics-catalog")`) lists the scope for every metric.
+Coalesced fallbacks and PZ-scope inputs are why metrics like the debt-to-asset
+ratio, equity ratio, and surplus margin can be **Calculated For** *990 + 990-EZ*
+filers, while metrics that need a PC-scope field with no EZ equivalent (the
+overhead ratio, for example, which needs Part IX functional expenses) are *990
+filers only*. The catalog (`vignette("metrics-catalog")`) lists the scope for
+every metric.
 
 ## Summary
 

@@ -59,7 +59,7 @@ within subsectors with similar capital structures.
 the collateral value and debt service coverage ratio.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

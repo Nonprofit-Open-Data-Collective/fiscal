@@ -30,7 +30,7 @@
 #'   - Because this is a highly conservative measure, values somewhat below 1.0
 #'     are normal if receivables are healthy.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.

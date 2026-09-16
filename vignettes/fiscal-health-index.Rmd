@@ -1,8 +1,8 @@
 ---
-title: "The fiscal health index"
+title: "Building a fiscal health index: a measurement approach"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{The fiscal health index}
+  %\VignetteIndexEntry{Building a fiscal health index: a measurement approach}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,173 +12,558 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment  = "#>",
   message  = FALSE,
-  warning  = FALSE
+  warning  = FALSE,
+  fig.width  = 7,
+  fig.height = 5
 )
+has_psych <- requireNamespace("psych", quietly = TRUE) &&
+             requireNamespace("GPArotation", quietly = TRUE)
+knitr::opts_chunk$set(eval = has_psych)
+```
+
+Nobody observes *fiscal health* directly. What we observe are dozens of
+accounting ratios, each a noisy, partial reflection of an organization's
+financial condition. This vignette treats fiscal health the way a psychometrician
+treats an unobserved trait: as a **latent construct** that we measure by
+combining indicators. It follows the factor-analysis recipe in
+[Measurement with factor analysis](https://lecy.github.io/econometrics/lectures2/measurement-factor-analysis.html),
+applied to 2023 Form 990 filers in `dat10k`.
+
+For the software pipeline that turns a reviewed model into reusable scores, see
+`vignette("fiscal-health-workflow")`. This vignette is about the *measurement
+decisions* that come before it.
+
+## What the model assumes
+
+Factor analysis assumes that each standardized indicator is a weighted
+combination of a few shared latent factors plus a part unique to that indicator:
+
+$$X = \Lambda F + \epsilon$$
+
+- $X$: the observed indicators (standardized fiscal ratios)
+- $F$: the latent factors, the dimensions of fiscal health we want to recover
+- $\Lambda$: the **loadings**, how strongly each indicator reflects each factor
+- $\epsilon$: the **uniqueness**, variance the factors do not explain,
+  including measurement error and ratio-specific quirks
+
+Three outputs matter most. **Loadings** tell us what each factor means.
+**Communality** ($h^2$) is the share of an indicator's variance explained by the
+factors. **Factor scores** are each organization's estimated position on each
+dimension, the building blocks of an index.
+
+> **A caveat specific to financial ratios.** The model is *reflective*: it assumes
+> the latent condition causes the indicators to move together. Accounting ratios
+> also move together *mechanically*, because they share numerators and
+> denominators (equity is literally one minus the debt ratio). Part of the
+> measurement work below is separating substantive covariation from arithmetic.
+
+## 1. Setup
+
+```{r setup}
 library(fiscal)
+library(psych)        # KMO(), cortest.bartlett(), fa.parallel(), fa(), alpha()
+library(GPArotation)  # oblique rotation used by psych::fa()
 ```
 
-The `get_*()` metrics answer "how does this organization look on *this* ratio?"
-The **fiscal-health index** answers a harder question: "how does this
-organization look *overall*?" It combines many standardized indicators into a
-small number of empirical dimensions and, optionally, a single composite score.
+## 2. Conceptualize the construct and choose candidate indicators
 
-Rather than hard-code a formula, `fiscal` builds a **reusable measurement model**
-in explicit stages. Each stage is a separate function that returns an
-inspectable object, so the pipeline is auditable and the fitted model can be
-re-applied to later panel years without re-estimating anything.
+Measurement starts with theory, not data. We define **fiscal health** as an
+organization's capacity to keep delivering its mission through ordinary shocks.
+The nonprofit finance literature (Tuckman & Chang 1991; Greenlee & Trussel 2000;
+Bowman 2011) suggests at least two facets:
 
-```
-fiscal_diagnostics()  ->  fiscal_triage()  ->  fiscal_dimensions()
-        (screen indicators)     (decide keep/drop)   (discover structure)
-                                                            |
-fiscal_health_index() <- fiscal_weights() <- fiscal_health_score() <- fiscal_health_fit()
-   (composite score)       (combine)          (apply model)            (freeze the model)
-```
+- **Resilience (stocks):** cash and reserves relative to spending, and how much
+  of the balance sheet is financed by debt.
+- **Operating performance (flows):** whether revenues cover expenses year to
+  year.
 
-Two stages deliberately require human judgment --- `fiscal_triage()` recommends
-but lets you override, and `fiscal_dimensions()` discovers but does not *name*
-dimensions. The wrapper `fiscal_health()` chains the mechanical stages once you
-have reviewed the structure.
+Content validity also tells us what fiscal health is *not*. The share of spending
+on programs or administration, and how much revenue comes from fees, describe a
+**business model** or an **efficiency** norm. We include three such indicators on
+purpose: if the model is measuring fiscal condition, they should *not* load on
+its factors (a check on discriminant validity).
 
-> This subsystem uses the `psych` package for factor-analytic diagnostics; make
-> sure it is installed.
+`fiscal_metrics()` is the data dictionary. It records each metric's category and
+the direction in which it is healthier.
 
-## Prepare indicators
+```{r dictionary}
+reg <- fiscal_metrics()
 
-Indicators should be the **standardized** (`_z`) versions of the metrics, so they
-share a common scale. Compute them with `compute_all()` and select a curated,
-non-redundant set spanning the fiscal-health domains:
-
-```{r}
-scored <- compute_all(dat10k, metrics = "z", verbose = FALSE)
-
-indicators <- scored[, c(
-  "current_z", "cash_assets_z", "cash_burn_z",      # liquidity
-  "debt_assets_z", "equity_z",                       # solvency
-  "surplus_margin_z", "op_reserve_z",                # performance / reserves
-  "prog_exp_z", "overhead_z",                        # expense structure
-  "donations_rev_z", "earned_income_z",              # revenue structure
-  "netassets_growth_z"                               # growth
-)]
-
-dim(indicators)
-```
-
-## Stage 1 — diagnose
-
-`fiscal_diagnostics()` computes variable-level diagnostics that distinguish
-indicators participating in a shared multivariate structure from those that are
-redundant, standalone, or noisy (correlation summaries, KMO/MSA, communalities,
-and so on).
-
-```{r}
-diagnostics <- fiscal_diagnostics(indicators)
-diagnostics
-```
-
-## Stage 2 — triage
-
-`fiscal_triage()` turns those diagnostics into an auditable recommendation:
-which indicators to **retain** for dimension estimation, which to keep as
-**standalone** measures, and which to drop as redundant or noise. Recommendations
-can be overridden with the `overrides` argument.
-
-```{r}
-triage <- fiscal_triage(diagnostics)
-triage
-```
-
-## Stage 3 — discover dimensions
-
-`fiscal_dimensions()` uses PCA (or exploratory factor analysis) to propose
-empirical dimensions from the retained indicators. It discovers and describes
-groupings; it does not name them or orient the scores --- that is your call.
-
-```{r}
-dimensions <- fiscal_dimensions(
-  indicators,
-  triage   = triage,
-  method   = "pca",
-  nfactors = 3,
-  seed     = 42
+candidates <- c(
+  # resilience
+  "days_cash_ops", "op_reserve", "liquid_assets_months", "cash_assets", "debt_assets",
+  # operating performance
+  "surplus_margin", "profit_predepr", "return_assets",
+  # business model / efficiency (discriminant checks)
+  "self_suff", "prog_exp", "expenses_admin",
+  # asset intensity
+  "assets_rev"
 )
-dimensions
+
+dd <- reg[match(candidates, reg$metric), c("metric", "function_name", "category", "direction")]
+dd$domain <- c(rep("resilience", 5), rep("performance", 3),
+               rep("business model", 3), "asset intensity")
+knitr::kable(dd, row.names = FALSE)
 ```
 
-## Stage 4 — fit a reusable model
+Many metrics in the registry were screened out before this point, and each
+screen is itself a measurement decision:
 
-`fiscal_health_fit()` freezes the reviewed dimensions into a scoring
-specification. The fitted object stores indicator orientation, centers, scales,
-missing-value treatment, and dimension coefficients --- everything needed to score
-new data identically later.
+- **Composition measures** (revenue mix, expense mix, asset mix) have direction
+  `"context"`: more is not clearly better or worse.
+- **Dollar levels** (`cash_on_hand`) measure size, not condition.
+- **Structural missingness:** current, quick, and cash-liquidity ratios are
+  undefined when current liabilities are zero, which is true of a large share of
+  filers.
+- **Algebraic identities:** `equity` is `1 - debt_assets`, `months_cash_ops` is a
+  rescaled `days_cash_ops`, and `overhead` is `1 - prog_exp`. Identities make the
+  correlation matrix singular and inflate a construct's apparent weight.
+- **Signed denominators:** ratios over net assets (`debt_equity`,
+  `return_netassets`, `netassets_growth`) flip sign when net assets are negative,
+  so they are not monotone in health.
 
-```{r}
-fit <- fiscal_health_fit(indicators, dimensions = dimensions)
-fit
+### The analysis sample
+
+Most indicators require full Form 990 detail (Part IX functional expenses and
+Part X balance sheet), so the sample is full-990 filers with positive revenue,
+expenses, and assets.
+
+```{r sample}
+d <- dat10k[dat10k$RETURN_TYPE == "990" &
+            dat10k$F9_08_REV_TOT_TOT  > 0 & !is.na(dat10k$F9_08_REV_TOT_TOT) &
+            dat10k$F9_09_EXP_TOT_TOT  > 0 & !is.na(dat10k$F9_09_EXP_TOT_TOT) &
+            dat10k$F9_10_ASSET_TOT_EOY > 0 & !is.na(dat10k$F9_10_ASSET_TOT_EOY), ]
+
+scored <- compute_all(d, metrics = c("ratio", "z"), append_to_df = FALSE,
+                      verbose = FALSE)
+nrow(scored)
 ```
 
-## Stage 5 — score
+## 3. Standardize and orient the indicators
 
-`fiscal_health_score()` applies the fitted model. No parameters are re-estimated;
-it just transforms and combines indicators into dimension scores (prefixed
-`fh_`). Because the model is frozen, the **same `fit`** can score a different
-panel year on the same scale.
+### Why the `_z` columns
 
-```{r}
-scored_dims <- fiscal_health_score(indicators, fit)
+Factor analysis works on the correlation matrix, the covariance matrix of
+z-scores. Plain z-scores of fiscal ratios, though, are dominated by a handful of
+organizations with near-zero denominators. Every `get_*()` function therefore
+also returns a `_z` column: the ratio is winsorized, passed through a
+distribution-aware transformation, and standardized (`vignette("normalization")`).
+The transformation is monotone, so it preserves the rank ordering of organizations.
 
-head(grep("^fh_Dimension", names(scored_dims), value = TRUE))
+Compare three raw ratios with their `_z` versions:
+
+```{r raw-vs-z, fig.height = 6}
+show <- c("op_reserve", "debt_assets", "surplus_margin")
+op <- par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))
+for (m in show) hist(scored[[m]], breaks = 60, main = m, xlab = "raw", col = "grey70", border = "white")
+for (m in show) hist(scored[[paste0(m, "_z")]], breaks = 60, main = paste0(m, "_z"),
+                     xlab = "normalized", col = "#1f6f78", border = "white")
+par(op)
 ```
 
-## Stage 6 — weight
+The raw histograms are nearly empty: a few extreme values stretch each axis so far
+that almost every organization lands in a single bar. The normalized versions use
+the whole scale. Some shapes are not bell curves, and should not be:
+`r round(100 * mean(scored$debt_assets == 0, na.rm = TRUE))`% of filers report no
+liabilities at all, so `debt_assets_z` has a single
+spike for that tied group, placed at its middle rank, followed by the rest of the
+distribution.
 
-`fiscal_weights()` defines how dimension scores and standalone indicators combine
-into the composite. The default is equal weighting; `min_coverage` controls how
-much of an observation's weighted inputs must be present before it receives a
-score.
+A useful check that the transformation has not distorted the relationships:
+Pearson correlations of the `_z` columns should track the rank (Spearman)
+correlations of the raw ratios.
 
-```{r}
-weights <- fiscal_weights(fit, min_coverage = 0.5)
-weights
+```{r z-check}
+raw <- scored[candidates]
+raw[] <- lapply(raw, function(x) { x[!is.finite(x)] <- NA; x })
+Z   <- scored[paste0(candidates, "_z")]
+names(Z) <- candidates
+
+r_spearman <- cor(raw, method = "spearman", use = "pairwise.complete.obs")
+r_pearson  <- cor(Z, use = "pairwise.complete.obs")
+low <- lower.tri(r_pearson)
+round(cor(r_spearman[low], r_pearson[low]), 3)   # agreement across all pairs
 ```
 
-## Stage 7 — the composite index
+### Orient every indicator so that higher is healthier
 
-`fiscal_health_index()` produces the single composite score (and a coverage
-column recording how much information each score is based on).
+Loadings are easiest to read when every indicator points the same way. We flip
+the sign of indicators whose registry direction is `"lower"`.
 
-```{r}
-indexed <- fiscal_health_index(scored_dims, weights)
-
-summary(indexed$fiscal_health)
+```{r orient}
+flip <- dd$metric[dd$direction == "lower"]
+flip
+X <- Z
+X[flip] <- lapply(X[flip], function(x) -x)
+used <- complete.cases(X)   # keep track of the rows that enter the model
+X <- X[used, ]
+dim(X)
 ```
 
-## The shortcut: `fiscal_health()`
+## 4. Is the data factorable?
 
-Once you have reviewed the triage and dimensions, `fiscal_health()` runs the
-mechanical stages --- fit, score, weight, index --- in one call:
+Before fitting anything, look at the correlation structure. Ordering the
+indicators by hierarchical clustering places blocks of correlated indicators
+next to each other; those blocks are the factors we expect to find.
 
-```{r}
-result <- fiscal_health(indicators, dimensions = dimensions)
-result
+```{r corr-heatmap, fig.height = 6}
+R <- cor(X)
+ord <- hclust(as.dist(1 - abs(R)))$order
+Ro <- R[ord, ord]
+
+pal <- colorRampPalette(c("#bd5416", "#f0efec", "#245b8a"))(101)
+op <- par(mar = c(9, 9, 2, 2))
+image(1:ncol(Ro), 1:nrow(Ro), t(Ro)[, nrow(Ro):1], zlim = c(-1, 1), col = pal,
+      axes = FALSE, xlab = "", ylab = "", main = "Correlations (clustered)")
+axis(1, at = 1:ncol(Ro), labels = colnames(Ro), las = 2, cex.axis = 0.8)
+axis(2, at = nrow(Ro):1, labels = rownames(Ro), las = 1, cex.axis = 0.8)
+text(rep(1:ncol(Ro), each = nrow(Ro)), rep(nrow(Ro):1, ncol(Ro)),
+     sprintf("%.2f", Ro), cex = 0.6)
+par(op)
 ```
 
-It deliberately does **not** automate diagnostics, triage, or dimension discovery,
-because those stages require substantive review.
+Two standard checks:
 
-## Scoring new data with a fitted model
+- **Kaiser-Meyer-Olkin (KMO)** measures how much of each correlation is shared
+  with the other indicators. Above 0.70 is good; indicators below 0.50 share
+  little with the set and are candidates for removal.
+- **Bartlett's test** asks whether the correlation matrix differs from an
+  identity matrix. A small p-value means there is shared variance to factor.
 
-The payoff of separating *fit* from *score* is reuse. Fit the model once on a
-reference sample (say, one panel year), then score every other year on the same
-scale by passing the stored `fit`:
+```{r factorability}
+kmo  <- KMO(R)
+bart <- cortest.bartlett(R, n = nrow(X))
 
-```{r, eval = FALSE}
-fit <- fiscal_health_fit(indicators_2019, dimensions = reviewed_dims)
-
-scores_2020 <- fiscal_health_score(indicators_2020, fit)
-scores_2021 <- fiscal_health_score(indicators_2021, fit)
+round(kmo$MSA, 2)
+sort(round(kmo$MSAi, 2))
+bart$p.value
 ```
 
-This keeps scores comparable across years --- exactly what you need when the index
-feeds a longitudinal analysis of the panel you built in
-`vignette("panel-workflow")`.
+The overall KMO of `r round(kmo$MSA, 2)` is mediocre but workable, and Bartlett's
+test rejects an identity matrix. The item-level values already flag
+`r paste0("\x60", names(kmo$MSAi)[kmo$MSAi < 0.5], "\x60", collapse = " and ")`
+as sharing little with the other indicators.
+
+## 5. How many factors?
+
+A **scree plot** shows the eigenvalues in descending order; look for the elbow.
+**Parallel analysis** compares them with eigenvalues from random data of the
+same size and keeps the factors that beat the random benchmark.
+
+```{r parallel, fig.height = 4.5}
+set.seed(2023)
+pa <- fa.parallel(X, fm = "pa", fa = "fa", n.iter = 50,
+                  main = "Scree plot and parallel analysis")
+pa$nfact
+round(pa$fa.values, 2)
+```
+
+With thousands of organizations, even trivial factors beat random noise, so
+parallel analysis recommends `r pa$nfact` factors. The scree plot tells a
+simpler story: two large factors, a much smaller third, then a flat tail.
+The number of factors is a judgment that balances statistical evidence against
+interpretability, so we compare two and three.
+
+```{r n-factors}
+fa2 <- fa(X, nfactors = 2, fm = "pa", rotate = "oblimin")
+fa3 <- fa(X, nfactors = 3, fm = "pa", rotate = "oblimin")
+
+print(fa3$loadings, cutoff = 0.30, sort = TRUE)
+```
+
+```{r third-factor}
+L3 <- unclass(fa3$loadings)
+main_cols <- c(which.max(abs(L3["op_reserve", ])), which.max(abs(L3["surplus_margin", ])))
+third <- setdiff(seq_len(ncol(L3)), main_cols)
+third_items <- rownames(L3)[abs(L3[, third]) >= 0.40]
+third_items
+```
+
+The first two factors are the same resilience and performance structure found
+with two factors. The third is defined by
+`r paste0("\x60", third_items, "\x60", collapse = " and ")`, indicators the
+content screen in section 2 already classified as business-model or asset-mix
+measures. A factor built from how an organization spends or structures its
+assets is not a dimension of fiscal health, so we keep two factors.
+
+## 6. Fit the factor model
+
+`psych::fa()` fits the model:
+
+- `nfactors = 2`, as chosen above
+- `fm = "pa"`: principal axis factoring, which does not assume multivariate
+  normality (fiscal ratios are far from normal)
+- `rotate = "oblimin"`: an **oblique** rotation. There is no reason to believe
+  that resilience and operating performance are uncorrelated (surpluses build
+  reserves), so we let the factors correlate and estimate that correlation.
+
+```{r fit-initial}
+print(fa2, digits = 2, cut = 0.30, sort = TRUE)
+```
+
+## 7. Interpret the loadings and refine
+
+Rules of thumb: |loading| ≥ 0.30 is potentially meaningful, and ≥ 0.40 is strong.
+A **loadings heatmap** shows the whole structure at once, with each indicator's
+communality alongside.
+
+```{r loading-plot-fn}
+plot_loadings <- function(f, main = "") {
+  L  <- unclass(f$loadings)
+  h2 <- f$communality
+  primary <- apply(abs(L), 1, which.max)
+  peak    <- apply(abs(L), 1, max)
+  o <- order(ifelse(peak < 0.30, ncol(L) + 1, primary), -peak)
+  L <- L[o, , drop = FALSE]; h2 <- h2[o]
+
+  pal <- colorRampPalette(c("#bd5416", "#f0efec", "#245b8a"))(101)
+  layout(matrix(1:2, 1), widths = c(3, 1.2))
+  op <- par(mar = c(3, 11, 4.5, 0.5))
+  Lc <- pmax(pmin(L, 1), -1)   # Heywood loadings can exceed 1; clamp the colors only
+  image(1:ncol(L), 1:nrow(L), t(Lc[nrow(L):1, , drop = FALSE]), zlim = c(-1, 1),
+        col = pal, axes = FALSE, xlab = "", ylab = "")
+  title(main, line = 2.5)
+  axis(3, at = 1:ncol(L), labels = colnames(L), tick = FALSE, line = -0.5)
+  axis(2, at = nrow(L):1, labels = rownames(L), las = 1, tick = FALSE)
+  txt <- ifelse(abs(L) >= 0.30, sprintf("%.2f", L), "")
+  text(rep(1:ncol(L), each = nrow(L)), rep(nrow(L):1, ncol(L)), txt, cex = 0.8)
+  par(mar = c(3, 0.5, 4.5, 1))
+  barplot(rev(pmin(h2, 1)), horiz = TRUE, xlim = c(0, 1), names.arg = "",
+          col = "grey55", border = NA, space = 0.2)
+  title("Communality", line = 2.5)
+  par(op); layout(1)
+}
+```
+
+```{r loadings-initial, fig.height = 5}
+plot_loadings(fa2, "Initial two-factor model")
+```
+
+Reading down the columns:
+
+- **Resilience:** operating reserves, liquid unrestricted net assets, and days of
+  cash load together, with debt (reversed) loading on the same factor.
+- **Operating performance:** surplus margin, the pre-depreciation margin, and
+  return on assets.
+
+The rows at the bottom are just as informative. **Program-expense share,
+administrative share, and self-sufficiency load on neither factor** and have
+communalities near zero. The construct we are recovering is financial condition,
+not spending efficiency or revenue model, which is the discriminant validity we
+hoped to see. `cash_assets` also has almost no communality; it measures the
+composition of the asset base, not its adequacy.
+
+`assets_rev` is a different kind of problem. After orientation (its registry
+direction is `"lower"`), it loads *negatively* on resilience: organizations with
+more assets per dollar of revenue also hold larger reserves. The indicator's
+meaning is ambiguous, so it cannot be scored in a single healthy direction.
+
+**Refinement.** Following the rules above, drop the indicators with low KMO or
+low communality, and the indicator whose direction is ambiguous:
+
+```{r refine}
+drop <- c("self_suff", "prog_exp", "expenses_admin", "cash_assets", "assets_rev")
+items <- setdiff(candidates, drop)
+X2 <- X[items]
+
+round(KMO(cor(X2))$MSA, 2)
+
+fit <- fa(X2, nfactors = 2, fm = "pa", rotate = "oblimin", scores = "tenBerge")
+print(fit, digits = 2, cut = 0.30, sort = TRUE)
+```
+
+KMO rises to `r round(KMO(cor(X2))$MSA, 2)`, and the root mean square of the
+residuals is `r round(fit$rms, 2)`: two factors reproduce the correlations among
+these indicators closely. (Chi-square based statistics such as RMSEA penalize
+any misfit heavily with samples this large and non-normal indicators; the goal
+here is an interpretable measure, not a close-fitting confirmatory model.)
+
+### Name the factors
+
+```{r name}
+L <- unclass(fit$loadings)
+res_col  <- which.max(abs(L["op_reserve", ]))
+perf_col <- which.max(abs(L["surplus_margin", ]))
+factor_names <- setNames(c("resilience", "performance"),
+                         colnames(L)[c(res_col, perf_col)])
+factor_names
+```
+
+```{r loadings-final, fig.height = 4}
+f_named <- fit
+colnames(f_named$loadings) <- factor_names[colnames(fit$loadings)]
+plot_loadings(f_named, "Refined model")
+```
+
+### About the Heywood case
+
+`op_reserve` has a communality at or slightly above 1.00 (an *ultra-Heywood*
+case), which is impossible for a true variance share. The reason is visible in
+the correlation matrix: operating reserves and liquid unrestricted net assets are
+correlated `r round(cor(X2$op_reserve, X2$liquid_assets_months), 2)`. The two
+formulas differ only in whether mortgage debt is added back, so the resilience
+factor is defined almost entirely by this near-duplicate pair. The same is true
+of the surplus margin and the pre-depreciation margin
+(`r round(cor(X2$surplus_margin, X2$profit_predepr), 2)`). The solution remains
+usable, but the next section checks that it does not depend on the estimator, and
+the refinement notes below return to redundancy.
+
+### Factor correlation
+
+```{r phi}
+Phi <- fit$Phi
+dimnames(Phi) <- list(factor_names[colnames(fit$loadings)], factor_names[colnames(fit$loadings)])
+round(Phi, 2)
+```
+
+Resilience and performance are positively but modestly correlated
+(`r round(Phi[1, 2], 2)`). They are related, distinct dimensions, which matters
+for how an overall index should be built.
+
+## 8. Does the solution depend on the estimator?
+
+Refit with maximum likelihood and compare the loadings. Congruence above 0.95
+means the factors are essentially the same.
+
+```{r estimator}
+fit_ml <- fa(X2, nfactors = 2, fm = "ml", rotate = "oblimin")
+round(factor.congruence(fit, fit_ml), 2)
+```
+
+Each principal-axis factor has a maximum-likelihood twin with congruence near
+1.00, so the two dimensions are not an artifact of the estimation method.
+
+## 9. Extract the new features
+
+Factor scores give every organization a value on each dimension. With an
+oblique rotation, the ten Berge method preserves the factor correlations.
+
+```{r scores}
+scores <- as.data.frame(fit$scores)
+names(scores) <- paste0("fh_", factor_names[names(scores)])
+head(round(scores, 2))
+round(cor(scores), 2)
+```
+
+## 10. Weighted scores versus a simple index
+
+How much does factoring buy over the simplest approach, averaging the oriented
+z-scores of the indicators that define each dimension? Cronbach's alpha tells us
+whether those indicators are reliable as a unit-weighted scale.
+
+```{r simple-index}
+dims <- list(
+  resilience  = c("days_cash_ops", "op_reserve", "liquid_assets_months", "debt_assets"),
+  performance = c("surplus_margin", "profit_predepr", "return_assets")
+)
+
+compare <- do.call(rbind, lapply(names(dims), function(k) {
+  simple <- rowMeans(X2[dims[[k]]])
+  data.frame(
+    dimension         = k,
+    items             = length(dims[[k]]),
+    cronbach_alpha    = round(psych::alpha(X2[dims[[k]]])$total$raw_alpha, 2),
+    r_simple_vs_score = round(cor(simple, scores[[paste0("fh_", k)]]), 2)
+  )
+}))
+compare
+```
+
+```{r simple-plot, fig.height = 4}
+op <- par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+for (k in names(dims)) {
+  plot(rowMeans(X2[dims[[k]]]), scores[[paste0("fh_", k)]],
+       pch = 19, cex = 0.4, col = grDevices::adjustcolor("grey30", 0.3), bty = "n",
+       xlab = "Simple index (mean z)", ylab = "Factor score", main = k)
+}
+par(op)
+```
+
+Both dimensions are reliable scales, and the factor scores correlate highly with
+the simple averages. Weighting matters most when some indicators are much noisier
+than others. The scoring weights show where the two approaches part ways:
+
+```{r score-weights}
+W <- fit$weights
+colnames(W) <- factor_names[colnames(W)]
+round(W, 2)
+```
+
+The resilience score is essentially `op_reserve` alone, the Heywood indicator,
+and it even gives `surplus_margin` a *negative* weight (an oblique model uses the
+performance indicators to net out the correlation between the factors). The performance
+score leans mostly on `surplus_margin`. A unit-weighted average spreads the weight
+across all of a dimension's indicators, so it is less sensitive to any one ratio;
+with near-duplicate indicators like these, that robustness is a good reason to
+prefer the simple index until the redundancy is resolved.
+
+## 11. From dimensions to an index
+
+The two dimensions answer different questions, so the most informative output is
+a **profile**: an organization can have deep reserves and a current-year deficit
+(drawing down savings on purpose), or a healthy surplus and almost no cushion.
+When a single number is needed, the simplest defensible composite weights the
+dimensions equally.
+
+```{r composite}
+index <- data.frame(scores,
+                    fiscal_health = rowMeans(scale(scores)))
+summary(index$fiscal_health)
+```
+
+### Validity: does the index separate organizations known to differ?
+
+A measure should rank organizations in ways that match conditions we can verify
+directly in the raw filings (known-groups validity). The conditions below are
+*not* inputs to the index: a cash balance that fell by a quarter or more, a
+decline in total net assets, negative total net assets, and current liabilities
+exceeding current assets.
+
+```{r validity}
+stopifnot(identical(scored$EIN2, d$EIN2))   # compute_all() preserves row order
+d_used <- d[used, ]
+s_used <- scored[used, ]
+
+quintile <- cut(index$fiscal_health,
+                quantile(index$fiscal_health, 0:5 / 5),
+                include.lowest = TRUE, labels = paste0("Q", 1:5))
+share <- function(condition) round(tapply(condition, quintile, mean, na.rm = TRUE), 2)
+
+validity <- data.frame(
+  quintile                 = levels(quintile),
+  cash_fell_25pct          = share(s_used$cash_burn < 0.75),
+  net_assets_declined      = share(s_used$netassets_growth < 0),
+  negative_net_assets      = share(d_used$F9_10_NAFB_TOT_EOY < 0),
+  current_ratio_below_1    = share(s_used$current < 1)
+)
+knitr::kable(validity, row.names = FALSE)
+```
+
+Every warning sign is most common in the bottom quintile. Declining net assets
+fall steadily as the index rises; negative net assets and current liabilities
+exceeding current assets are concentrated in the bottom quintile. Sharp cash
+declines drop by half between the first and second quintiles and then level off:
+a falling cash balance is common even among healthy organizations that move cash
+into investments or spend down planned reserves.
+
+## Notes on refinement
+
+This vignette follows the exploratory recipe step by step. Before treating the
+index as a validated instrument:
+
+- **Resolve redundancy.** Operating reserves and liquid unrestricted net assets,
+  and the two margin measures, are near-duplicates. Keep one of each pair, or
+  combine each pair into a single indicator, and refit.
+- **Add indicators that broaden each dimension.** With redundant pairs removed,
+  each factor rests on very few distinct measures. Candidates that survive the
+  screens in section 2 are scarce, which is itself a finding about what the Form
+  990 can measure.
+- **Confirm the structure on new data.** Fit a confirmatory factor analysis on
+  another tax year before relying on the scores.
+- **Check measurement invariance.** Hospitals, universities, and small
+  community organizations may not load the same way; compare the model across
+  subsectors (`nteev2_subsector`) and size groups.
+- **Freeze the model for reuse.** Once the structure is settled,
+  `fiscal_dimensions()`, `fiscal_health_fit()`, and `fiscal_health_score()` store
+  the orientation, centering, and weights so later years are scored on the same
+  scale. See `vignette("fiscal-health-workflow")`.

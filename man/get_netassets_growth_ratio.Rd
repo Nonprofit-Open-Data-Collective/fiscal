@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-netassets-growth-ratio.R
 \name{get_netassets_growth_ratio}
 \alias{get_netassets_growth_ratio}
-\title{Operating Ratio}
+\title{Net Assets Growth Ratio}
 \usage{
 get_netassets_growth_ratio( df,
   net_assets_eoy = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
@@ -43,7 +43,7 @@ the results and plots density curves for all four output columns
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `netassets_growth`   - operating ratio (raw)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `netassets_growth`   - net assets growth ratio (raw)
 - `netassets_growth_w` - winsorized version
 - `netassets_growth_z` - standardized z-score (based on winsorized values)
 - `netassets_growth_p` - percentile rank (1-100)

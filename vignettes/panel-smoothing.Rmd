@@ -21,7 +21,7 @@ library(fiscal)
 series to reduce year-to-year noise in financial variables. It returns a data
 frame with **identical dimensions and column names** --- only the selected
 numeric columns are replaced with smoothed values --- so the smoothed panel drops
-straight into `compute_all()` or any downstream step.
+straight into `compute_all_panel()` or any downstream step.
 
 This article explains the window logic, the three weighting schemes, and how
 missing values are handled. For where smoothing sits in the larger
@@ -95,7 +95,8 @@ a half-life rule (`1, 1/2, 1/4, …`) before being normalized to sum to one.
 * If *every* value in a window is missing, the result is `NA`.
 
 For example, a window `{2, NA, 4}` with weights `{0.50, 0.25, 0.25}` collapses to
-`{2, 4}` with re-normalized weights `{0.625, 0.375}`.
+`{2, 4}` with re-normalized weights `{0.667, 0.333}` (i.e. `0.50 / 0.75` and
+`0.25 / 0.75`), giving `2.667`.
 
 ## Worked example: the math
 
@@ -203,8 +204,8 @@ individual columns:
 # smooth the PZ-scope financial fields with a 3-year window
 panel_smoothed <- panel_smooth(panel_clean, vars = "PZ", window = 3)
 
-# then score the cleaned, smoothed panel
-panel_ratios <- compute_all(panel_smoothed)
+# then score the cleaned, smoothed panel year by year
+panel_ratios <- compute_all_panel(panel_smoothed)
 ```
 
 ## Summary

@@ -46,6 +46,20 @@ test_that( "dat10k financial columns have plausible dollar magnitudes", {
   expect_gt( mean( abs( gap ) <= 1, na.rm = TRUE ), 0.9 )
 })
 
+test_that( "every dat10k row has a usable NTEE code", {
+  # The BMF marks organizations without a code as "UNDEFINED", "INVALID", or
+  # the "Z99" placeholder; none of those may enter the sample.
+  ntee <- dat10k$ntee_code_clean
+  expect_false( anyNA( ntee ) )
+  expect_equal( ntee[ !grepl( "^[A-Y][0-9][0-9A-Z]$", ntee ) ], character(0) )
+  expect_false( any( dat10k$nteev2_subsector == "UNU", na.rm = TRUE ) )
+
+  # nteev2 is [SUBSECTOR]-[NTEE]-[ORGTYPE]; specialty codes map to "<letter>00",
+  # so compare only the major-group letter with ntee_code_clean.
+  expect_true( all( grepl( "^[A-Z]{3}-[A-Y][0-9][0-9A-Z]-[A-Z]{2}$", dat10k$nteev2 ) ) )
+  expect_identical( substr( dat10k$nteev2, 5, 5 ), substr( ntee, 1, 1 ) )
+})
+
 
 # ---- detection and repair helpers ----------------------------------------
 

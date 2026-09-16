@@ -33,7 +33,9 @@ A \code{data.frame}.
 Applies every \verb{get_*()} ratio function in the \code{fiscal} package to
 a data frame in a single call. The data frame is sanitized once up front
 using \code{\link[=sanitize_financials]{sanitize_financials()}}, then each function is called with
-\code{sanitize = FALSE} to avoid redundant imputation passes.
+\code{sanitize = FALSE} to avoid redundant imputation passes. A metric that
+cannot be computed (for example, because one of its input columns is
+missing from \code{df}) is skipped with a warning.
 }
 \examples{
 library( fiscal )

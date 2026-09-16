@@ -43,7 +43,8 @@ Default \code{TRUE}.}
 
 \item{one_tol}{Tolerance for near-one detection. Default \code{1e-8}.}
 
-\item{boundary_mass_cutoff}{Hurdle/rank_normal trigger threshold. Default
+\item{boundary_mass_cutoff}{Share of values at zero (or one) above which a
+[0, 1] variable is given \code{"rank_normal"} instead of \code{"logit"}. Default
 \code{0.10}.}
 
 \item{hurdle_trans}{Positive-part transformation for hurdle variables.
@@ -69,7 +70,9 @@ constants, and returns a \code{normalize_x_fit} object that can be reused via
 Separating fitting from scoring allows the same fitted model to be applied
 to new data (e.g. a holdout year) without re-estimating parameters, and
 ensures that sentinel observations do not distort the center and spread
-estimates used for standardization.
+estimates used for standardization. The exception is \code{"rank_normal"}, whose
+reference distribution (and therefore its center and spread) keeps the
+winsorized tail observations so that they are scored at their true quantile.
 }
 \examples{
 x <- c( rnorm(200), rep(0, 30) )

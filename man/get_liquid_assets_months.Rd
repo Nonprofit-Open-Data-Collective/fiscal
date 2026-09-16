@@ -9,6 +9,8 @@ get_liquid_assets_months( df,
   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
   mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
   total_expenses          = "F9_09_EXP_TOT_TOT",
+  restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+  total_net_assets        = "F9_10_NAFB_TOT_EOY",
   winsorize = 0.98 ,
   range     = "np",
   sanitize  = TRUE,
@@ -24,6 +26,14 @@ get_liquid_assets_months( df,
 \item{mortgages_payable}{Mortgages and notes payable, EOY.}
 
 \item{total_expenses}{Total functional expenses.}
+
+\item{restricted_net_assets}{Restricted net assets, EOY. Used with
+\code{total_net_assets} to detect filers that do not follow SFAS 117; see
+\code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}.}
+
+\item{total_net_assets}{Total net assets, EOY. Substituted for unrestricted
+net assets when unrestricted and restricted net assets are both zero.
+Set to \code{NULL} to disable the fallback.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -74,13 +84,14 @@ range for operating nonprofits is approximately [-12, 36] months.
 
 \strong{Benchmarks and rules of thumb}
 \itemize{
-\item Same general benchmarks as \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}}: 3-6 months
-is considered adequate for most operating nonprofits.
+\item Same general benchmarks as \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}} (which is
+expressed in years rather than months): 3-6 months is considered adequate
+for most operating nonprofits.
 \item Negative LUNA values are particularly informative: they indicate
 unrestricted equity is entirely absorbed by illiquid fixed assets.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -103,8 +114,10 @@ mortgage balance) - and the mortgage liability already reduces unrestricted net 
 Adding it back avoids double-counting the encumbrance.
 
 This formulation follows Zietlow et al. (2007) and is cited by Calabrese (2013).
-It differs from \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}} only in the addition of
-mortgages_payable to the numerator.
+It differs from \code{\link[=get_operating_reserve_ratio]{get_operating_reserve_ratio()}} in the addition of
+mortgages_payable to the numerator and in its units: LUNA divides by monthly
+expenses (months), while the operating reserve ratio divides by annual expenses
+(a multiple of annual expenses).
 }
 
 \subsection{Canonical citations}{
@@ -124,7 +137,12 @@ Unrestricted net assets, EOY (\code{unrestricted_net_assets})
 Net land, buildings, and equipment (\code{net_fixed_assets})
 \item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable (\code{mortgages_payable})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
+\item \code{F9_10_NAFB_RESTRICT_EOY}: Restricted net assets, EOY (\code{restricted_net_assets})
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{total_net_assets})
 }
+
+Unrestricted net assets fall back to total net assets for filers that do
+not follow SFAS 117 (see \code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}).
 }
 }
 \examples{

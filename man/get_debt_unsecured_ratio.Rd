@@ -59,7 +59,7 @@ management -- but a large and growing ratio warrants scrutiny.
 \item Trend analysis is more informative than a single year's value.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

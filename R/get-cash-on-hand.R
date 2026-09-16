@@ -29,7 +29,7 @@
 #'   - The Nonprofit Finance Fund recommends a minimum of three months of
 #'     operating expenses in accessible reserves.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash Cash on hand, EOY.

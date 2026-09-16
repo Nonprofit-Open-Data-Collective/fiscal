@@ -2,7 +2,7 @@
 % Please edit documentation in R/get-cash-burn-ratio.R
 \name{get_cash_burn_ratio}
 \alias{get_cash_burn_ratio}
-\title{Burn Rate}
+\title{Burn Rate Ratio}
 \usage{
 get_cash_burn_ratio( df,
   cash_eoy         = "F9_10_ASSET_CASH_EOY",
@@ -20,8 +20,9 @@ get_cash_burn_ratio( df,
 
 \item{cash_boy}{Cash on hand, beginning of year.}
 
-\item{months_in_period}{Number of months in the reporting period. Defaults to 12 for
-a standard annual filing. Adjust for short-year filers.}
+\item{months_in_period}{Deprecated and ignored. Retained for backward
+compatibility with the earlier dollar-per-month formulation; the EOY/BOY
+ratio does not depend on period length. Supplying it raises a warning.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -46,18 +47,19 @@ the results and plots density curves for all four output columns
 Object of class \code{data.frame}: the original dataframe appended with four
 new columns:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{- `cash_burn`   - monthly burn rate in dollars (raw)
+\if{html}{\out{<div class="sourceCode">}}\preformatted{- `cash_burn`   - EOY cash / BOY cash (raw)
 - `cash_burn_w` - winsorized version
 - `cash_burn_z` - standardized z-score (based on winsorized values)
 - `cash_burn_p` - percentile rank (1-100)
 }\if{html}{\out{</div>}}
 }
 \description{
-Monthly rate at which an organization draws down its cash reserves.
+End-of-year cash relative to beginning-of-year cash; measures whether an
+organization is drawing down or accumulating its cash position.
 
 \strong{Formula:}
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{brr = ( cash_boy - cash_eoy ) / months_in_period
+\if{html}{\out{<div class="sourceCode">}}\preformatted{cash_burn = cash_eoy / cash_boy
 }\if{html}{\out{</div>}}
 
 \strong{Definitional Range}
@@ -76,7 +78,7 @@ a single year below 1.0 may reflect planned reserve spending.
 \item A ratio consistently above 1.0 indicates accumulating liquidity reserves.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
