@@ -1,0 +1,384 @@
+---
+title: "Asset-Liability Matching and Pecking Order, Tax Year 2023"
+subtitle: "Pre-specified tests of H1-H3 from the ratio-correlation memo"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: show
+    df_print: kable
+params:
+  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  efile_file: "efile-2023-bmf-dedup.rds"
+  pkg_dir: "../.."
+  seed: 2023
+  perms: 200
+  results_file: ""
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120)
+```
+
+# Purpose
+
+`vignette("ratio-correlation-artifacts")` showed that the fiscal health
+dimensions are largely predicted by how the ratios are built, and that a few
+pairwise relationships survive a conditional construction null. The strongest
+concern how organizations finance their assets. This document tests three of
+them directly, as regressions on 990 dollar lines rather than as correlations
+between ratios:
+
+* **H1 Long-term matching.** Fixed assets are financed with long-term debt.
+* **H1a Subsector.** Matching is stronger in capital-intensive subsectors
+  (hospitals, universities, housing).
+* **H2 Short-term matching.** Non-cash current assets are financed with
+  short-term liabilities.
+* **H3 Pecking order.** Organizations with more cash carry less long-term debt.
+
+The specification, evidence rule, and support/rejection criteria were fixed in
+the memo before any model below was estimated. They are repeated here and not
+changed.
+
+```{r packages}
+library(knitr)
+library(splines)
+if (file.exists(file.path(params$pkg_dir, "DESCRIPTION"))) {
+  pkgload::load_all(params$pkg_dir, quiet = TRUE)
+} else {
+  library(fiscal)
+}
+set.seed(params$seed)
+fmt <- function(x, d = 2) formatC(x, format = "f", digits = d, big.mark = ",")
+```
+
+# 1. Pre-specification
+
+| | Outcome | Coefficient | Support if | Reject if |
+|---|---|---|---|---|
+| H1 | Long-term debt: any; log amount | log fixed assets | > 0 in both parts, and larger for long-term debt than for short-term liabilities (log amount) | <= 0 in either part, or not larger than in the short-term equation |
+| H1a | Long-term debt: log amount | log fixed assets x capital-intensive subsector | > 0 | <= 0 |
+| H2 | Short-term liabilities: any; log amount | log non-cash current assets | > 0 in both parts, and larger than in the long-term equation (log amount) | <= 0 in either part, or not larger than in the long-term equation |
+| H3 | Long-term debt: any; log amount | log cash | < 0 in both parts | > 0 in both parts (supports the rival collateral account) |
+
+* **Lines.** Long-term debt = tax-exempt bonds + secured mortgages and notes +
+  unsecured notes (Part X lines 20, 23, 24). Short-term liabilities = accounts
+  payable + grants payable + deferred revenue (17-19). Cash = cash + savings
+  (1-2). Non-cash current assets = pledges + accounts receivable + inventories
+  + prepaid expenses (3, 4, 8, 9). Fixed assets = land, buildings, and
+  equipment, net (10c). Other assets = total assets minus those four, floored
+  at 0.
+* **Models.** Linear probability model for any positive amount; OLS on log
+  amount among filers with a positive amount. Predictors enter as log(1 + x)
+  plus an indicator for x > 0. Size controls: 4-df natural splines of log
+  expenses and log(1 + other assets), plus an indicator for zero other assets.
+* **Evidence rule.** A coefficient counts only if it is in the predicted
+  direction and beyond the 0.5th or 99.5th percentile of `r params$perms`
+  refits in which the predictor (its log and indicator together) is shuffled
+  within 400 cells of expenses x assets per dollar of expenses. Cross-equation
+  comparisons use the same shuffles. A result in the predicted direction that
+  does not clear the bound is **inconclusive**.
+* **Replication.** 2021 `dat10k`, with long-term debt = mortgages only and
+  short-term liabilities = payables + grants payable (the other lines are not
+  in that file). Success = same sign and beyond the 2.5th or 97.5th percentile.
+* **Implementation details not in the memo.** Negative line values (rare
+  reporting errors) are floored at 0 before logs. `dat10k` uses 100 cells
+  (10 x 10) because it has about 6,000 filers.
+
+# 2. Functions
+
+```{r functions}
+fix64 <- function(x) {
+  if (inherits(x, "integer64")) return(as.numeric(x))
+  if (is.double(x)) {
+    nz <- x[!is.na(x) & x != 0]
+    if (length(nz) && all(abs(nz) < 1e-300)) {
+      class(x) <- "integer64"
+      return(as.numeric(x))
+    }
+  }
+  x
+}
+
+matching_lines <- function(d) {
+  d <- as.data.frame(d)
+  d <- d[d$RETURN_TYPE == "990", ]
+  has <- function(f) f %in% names(d)
+  fin <- function(f) {
+    x <- if (has(f)) suppressWarnings(as.numeric(fix64(d[[f]]))) else rep(0, nrow(d))
+    x[is.na(x)] <- 0
+    x
+  }
+  ntee <- if (has("ntee_code_clean")) as.character(d$ntee_code_clean) else
+          if (has("NTEE_NCCS")) as.character(d$NTEE_NCCS) else rep(NA_character_, nrow(d))
+  sub  <- if (has("nteev2_subsector")) as.character(d$nteev2_subsector) else
+          if (has("NTEEV2")) substr(as.character(d$NTEEV2), 1, 3) else rep(NA_character_, nrow(d))
+  m <- data.frame(
+    cash  = fin("F9_10_ASSET_CASH_EOY") + fin("F9_10_ASSET_SAVING_EOY"),
+    ncca  = fin("F9_10_ASSET_PLEDGE_NET_EOY") + fin("F9_10_ASSET_ACC_NET_EOY") +
+            fin("F9_10_ASSET_INV_SALE_EOY") + fin("F9_10_ASSET_EXP_PREPAID_EOY"),
+    fixed = fin("F9_10_ASSET_LAND_BLDG_NET_EOY"),
+    A     = fin("F9_10_ASSET_TOT_EOY"),
+    E     = fin("F9_09_EXP_TOT_TOT"),
+    lt    = fin("F9_10_LIAB_TAX_EXEMPT_BOND_EOY") + fin("F9_10_LIAB_MTG_NOTE_EOY") +
+            fin("F9_10_LIAB_NOTE_UNSEC_EOY"),
+    st    = fin("F9_10_LIAB_ACC_PAYABLE_EOY") + fin("F9_10_LIAB_GRANT_PAYABLE_EOY") +
+            fin("F9_10_LIAB_REV_DEFERRED_EOY"),
+    subsector = sub,
+    capital = (sub %in% c("HOS", "UNI")) | (!is.na(ntee) & substr(ntee, 1, 1) == "L"))
+  m <- m[m$E > 0 & m$A > 0, ]
+  lines <- c("cash", "ncca", "fixed", "lt", "st")
+  attr(m, "negative_share") <- sapply(m[lines], function(x) mean(x < 0))
+  for (v in lines) m[[v]] <- pmax(m[[v]], 0)
+  attr(m, "lines_present") <- c(
+    bonds = has("F9_10_LIAB_TAX_EXEMPT_BOND_EOY"), unsecured_notes = has("F9_10_LIAB_NOTE_UNSEC_EOY"),
+    deferred_revenue = has("F9_10_LIAB_REV_DEFERRED_EOY"))
+  m
+}
+
+size_cells <- function(E, A, bins) {
+  eb <- cut(rank(E, ties.method = "first"), bins, labels = FALSE)
+  ab <- ave(A / E, eb, FUN = function(v) cut(rank(v, ties.method = "first"), bins, labels = FALSE))
+  (eb - 1) * bins + ab
+}
+
+# p[i] = a random organization in the same cell as i.
+permute_within <- function(cells) {
+  n <- length(cells)
+  p <- integer(n)
+  p[order(cells, seq_len(n))] <- order(cells, runif(n))
+  p
+}
+
+design <- function(m) {
+  other <- pmax(m$A - m$cash - m$ncca - m$fixed, 0)
+  sE <- ns(log(m$E), df = 4); colnames(sE) <- paste0("size_E", 1:4)
+  sO <- ns(log1p(other), df = 4); colnames(sO) <- paste0("size_other", 1:4)
+  list(
+    blocks = list(
+      fixed = cbind(log_fixed = log1p(m$fixed), any_fixed = as.numeric(m$fixed > 0)),
+      cash  = cbind(log_cash  = log1p(m$cash),  any_cash  = as.numeric(m$cash > 0)),
+      ncca  = cbind(log_ncca  = log1p(m$ncca),  any_ncca  = as.numeric(m$ncca > 0))),
+    Z = cbind(intercept = 1, sE, sO, no_other = as.numeric(other == 0)))
+}
+
+outcome_models <- function(m) list(
+  lt_any    = list(rows = rep(TRUE, nrow(m)), y = as.numeric(m$lt > 0)),
+  lt_amount = list(rows = m$lt > 0,           y = log(m$lt[m$lt > 0])),
+  st_any    = list(rows = rep(TRUE, nrow(m)), y = as.numeric(m$st > 0)),
+  st_amount = list(rows = m$st > 0,           y = log(m$st[m$st > 0])))
+
+# OLS with HC1 standard errors.
+robust_fit <- function(y, W) {
+  XtXi <- solve(crossprod(W))
+  b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  data.frame(term = colnames(W), estimate = b, se = sqrt(diag(V)), row.names = NULL)
+}
+
+# Coefficient on the first column of a shuffled block, holding everything else
+# fixed (Frisch-Waugh-Lovell), for each outcome model, over B shuffles.
+perm_block <- function(block, others, models, cells, B, build = function(Bp) Bp) {
+  prep <- lapply(models, function(md) {
+    q <- qr(others[md$rows, , drop = FALSE])
+    list(q = q, ry = qr.resid(q, md$y))
+  })
+  coef_for <- function(Bfull) sapply(names(models), function(nm) {
+    R <- qr.resid(prep[[nm]]$q, Bfull[models[[nm]]$rows, , drop = FALSE])
+    solve(crossprod(R), crossprod(R, prep[[nm]]$ry))[1]
+  })
+  list(observed = coef_for(build(block)),
+       perms = do.call(rbind, lapply(seq_len(B), function(i)
+         coef_for(build(block[permute_within(cells), , drop = FALSE])))))
+}
+
+run_tests <- function(m, bins, B, alpha) {
+  D <- design(m)
+  models <- outcome_models(m)
+  cells <- size_cells(m$E, m$A, bins)
+  W <- cbind(do.call(cbind, D$blocks), D$Z)
+
+  coefs <- do.call(rbind, lapply(names(models), function(nm) {
+    f <- robust_fit(models[[nm]]$y, W[models[[nm]]$rows, , drop = FALSE])
+    cbind(model = nm, n = sum(models[[nm]]$rows), f[f$term %in% c("log_fixed", "log_cash", "log_ncca"), ])
+  }))
+
+  perm <- lapply(names(D$blocks), function(b) {
+    others <- cbind(do.call(cbind, D$blocks[setdiff(names(D$blocks), b)]), D$Z)
+    perm_block(D$blocks[[b]], others, models, cells, B)
+  })
+  names(perm) <- names(D$blocks)
+
+  # H1a: interaction with capital-intensive subsector, long-term amount only.
+  cap <- as.numeric(m$capital)
+  others_a <- cbind(D$blocks$cash, D$blocks$ncca, D$Z, capital = cap)
+  h1a <- perm_block(D$blocks$fixed, others_a, models["lt_amount"], cells, B,
+                    build = function(Bp) cbind(Bp[, "log_fixed"] * cap, Bp[, "any_fixed"] * cap, Bp))
+  Wa <- cbind(fixed_x_capital = D$blocks$fixed[, "log_fixed"] * cap,
+              any_fixed_x_capital = D$blocks$fixed[, "any_fixed"] * cap, W, capital = cap)
+  h1a_fit <- robust_fit(models$lt_amount$y, Wa[models$lt_amount$rows, , drop = FALSE])
+
+  lo <- alpha / 2; hi <- 1 - alpha / 2
+  term_block <- c(log_fixed = "fixed", log_cash = "cash", log_ncca = "ncca")
+  coefs$perm_lo <- mapply(function(t, md) quantile(perm[[term_block[[t]]]]$perms[, md], lo), coefs$term, coefs$model)
+  coefs$perm_hi <- mapply(function(t, md) quantile(perm[[term_block[[t]]]]$perms[, md], hi), coefs$term, coefs$model)
+
+  b <- function(block, md) perm[[block]]$observed[[md]]
+  q <- function(x, p) unname(quantile(x, p))
+  # The pre-specified rule: the estimate has the predicted sign AND lies beyond
+  # the shuffle bound on that side. The shuffle distributions are not centered
+  # at zero (size structure carries some association), so both conditions matter.
+  beyond <- function(obs, dist, dir) sign(obs) == dir && (if (dir > 0) obs > q(dist, hi) else obs < q(dist, lo))
+  diff_test <- function(block, a, c) {
+    obs <- b(block, a) - b(block, c)
+    dist <- perm[[block]]$perms[, a] - perm[[block]]$perms[, c]
+    list(obs = obs, lo = q(dist, lo), mid = q(dist, 0.5), hi = q(dist, hi), pass = beyond(obs, dist, +1))
+  }
+
+  checks <- list(
+    H1 = list(
+      any    = list(obs = b("fixed", "lt_any"), dist = perm$fixed$perms[, "lt_any"], dir = +1),
+      amount = list(obs = b("fixed", "lt_amount"), dist = perm$fixed$perms[, "lt_amount"], dir = +1),
+      diff   = diff_test("fixed", "lt_amount", "st_amount")),
+    H2 = list(
+      any    = list(obs = b("ncca", "st_any"), dist = perm$ncca$perms[, "st_any"], dir = +1),
+      amount = list(obs = b("ncca", "st_amount"), dist = perm$ncca$perms[, "st_amount"], dir = +1),
+      diff   = diff_test("ncca", "st_amount", "lt_amount")),
+    H3 = list(
+      any    = list(obs = b("cash", "lt_any"), dist = perm$cash$perms[, "lt_any"], dir = -1),
+      amount = list(obs = b("cash", "lt_amount"), dist = perm$cash$perms[, "lt_amount"], dir = -1)),
+    H1a = list(
+      interaction = list(obs = h1a$observed[[1]], dist = h1a$perms[, 1], dir = +1)))
+
+  verdict <- function(h, ch) {
+    parts <- ch[setdiff(names(ch), "diff")]
+    pass  <- sapply(parts, function(x) beyond(x$obs, x$dist, x$dir))
+    right <- sapply(parts, function(x) sign(x$obs) == x$dir)
+    if (h == "H3") {
+      wrong_beyond <- sapply(parts, function(x) beyond(x$obs, x$dist, -x$dir))
+      if (all(pass)) return("supported")
+      if (all(wrong_beyond)) return("rejected (collateral account supported)")
+      return("inconclusive")
+    }
+    if (!is.null(ch$diff)) {
+      if (all(right) && ch$diff$obs > 0 && all(pass) && ch$diff$pass) return("supported")
+      if (!all(right) || ch$diff$obs <= 0) return("rejected")
+      return("inconclusive")
+    }
+    if (all(pass)) "supported" else if (!all(right)) "rejected" else "inconclusive"
+  }
+  verdicts <- data.frame(hypothesis = names(checks),
+                         verdict = mapply(verdict, names(checks), checks), row.names = NULL)
+
+  detail <- do.call(rbind, lapply(names(checks), function(h) do.call(rbind, lapply(names(checks[[h]]), function(p) {
+    x <- checks[[h]][[p]]
+    if (p == "diff") return(data.frame(hypothesis = h, part = "long vs. short difference", estimate = x$obs,
+                                       perm_lo = x$lo, perm_median = x$mid, perm_hi = x$hi, meets_rule = x$pass))
+    data.frame(hypothesis = h, part = p, estimate = x$obs, perm_lo = q(x$dist, lo),
+               perm_median = q(x$dist, 0.5), perm_hi = q(x$dist, hi),
+               meets_rule = beyond(x$obs, x$dist, x$dir))
+  }))))
+
+  list(n = nrow(m), cells = length(unique(cells)), coefs = coefs, perm = perm, h1a = h1a,
+       h1a_fit = h1a_fit[h1a_fit$term == "fixed_x_capital", ], verdicts = verdicts, detail = detail,
+       elasticity_near_1 = b("fixed", "lt_amount") >= 0.5 && b("fixed", "lt_amount") <= 1.5)
+}
+```
+
+# 3. Data
+
+```{r data}
+efile <- readRDS(file.path(params$data_dir, params$efile_file))
+m23 <- matching_lines(efile)
+rm(efile); invisible(gc())
+
+describe <- function(m) data.frame(
+  filers = nrow(m),
+  share_long_term_debt = mean(m$lt > 0), share_short_term = mean(m$st > 0),
+  share_fixed_assets = mean(m$fixed > 0), share_cash = mean(m$cash > 0),
+  share_noncash_current = mean(m$ncca > 0), share_capital_subsector = mean(m$capital),
+  median_expenses = median(m$E), median_long_term_debt_if_any = median(m$lt[m$lt > 0]))
+kable(describe(m23), digits = 3, format.args = list(big.mark = ","))
+kable(t(attr(m23, "negative_share")), digits = 4, caption = "Share of negative values floored at 0")
+```
+
+# 4. Results, 2023
+
+```{r run-2023}
+set.seed(params$seed)
+res23 <- run_tests(m23, bins = 20, B = params$perms, alpha = 0.01)
+kable(res23$verdicts, caption = "Verdicts under the pre-specified rule")
+kable(res23$detail, digits = 3, row.names = FALSE,
+      caption = "Carrying coefficients and the 0.5th/99.5th percentiles of within-cell shuffles")
+```
+
+The shuffle distributions are not centered at zero. Shuffling a line within a
+cell keeps its link to the cell's total assets, and total assets are not a
+control (they contain the predictors), so part of any size-driven association
+survives the shuffle. `perm_median` shows that baseline. The rule therefore
+asks for two things: the predicted sign, and a distance from that baseline.
+
+```{r coefs-2023}
+kable(res23$coefs, digits = 3, row.names = FALSE, format.args = list(big.mark = ","),
+      caption = "All three predictors in all four models (HC1 standard errors; shuffle bounds)")
+kable(res23$h1a_fit, digits = 3, row.names = FALSE, caption = "H1a interaction (HC1)")
+```
+
+The long-term-debt elasticity with respect to fixed assets is
+`r fmt(res23$perm$fixed$observed[["lt_amount"]])`, which
+`r if (res23$elasticity_near_1) "falls" else "does not fall"` in the 0.5-1.5
+range read as "near 1".
+
+# 5. Replication, 2021 `dat10k`
+
+```{r replication}
+data(dat10k, package = "fiscal")
+m21 <- matching_lines(dat10k)
+kable(t(attr(m21, "lines_present")), caption = "Lines available in dat10k")
+kable(describe(m21), digits = 3, format.args = list(big.mark = ","))
+set.seed(params$seed + 1)
+res21 <- run_tests(m21, bins = 10, B = params$perms, alpha = 0.05)
+kable(res21$verdicts, caption = "2021 verdicts (2.5th/97.5th percentile bounds)")
+kable(res21$detail, digits = 3, row.names = FALSE)
+
+replication <- merge(res23$detail[, c("hypothesis", "part", "estimate")],
+                     res21$detail[, c("hypothesis", "part", "estimate", "meets_rule")],
+                     by = c("hypothesis", "part"), suffixes = c("_2023", "_2021"))
+replication$replicates <- sign(replication$estimate_2023) == sign(replication$estimate_2021) &
+                          replication$meets_rule
+kable(replication, digits = 3, row.names = FALSE,
+      caption = "Replication: same sign as 2023, and the 2021 estimate meets the rule at the 2.5th/97.5th bound")
+```
+
+# 6. Summary
+
+```{r summary-values, include = FALSE}
+v23 <- setNames(res23$verdicts$verdict, res23$verdicts$hypothesis)
+v21 <- setNames(res21$verdicts$verdict, res21$verdicts$hypothesis)
+```
+
+| Hypothesis | 2023 verdict | 2021 verdict |
+|---|---|---|
+| H1 Long-term matching | `r v23[["H1"]]` | `r v21[["H1"]]` |
+| H1a Subsector | `r v23[["H1a"]]` | `r v21[["H1a"]]` |
+| H2 Short-term matching | `r v23[["H2"]]` | `r v21[["H2"]]` |
+| H3 Pecking order | `r v23[["H3"]]` | `r v21[["H3"]]` |
+
+These are associations. Borrowing and acquiring property are decided together,
+and organizations that own rather than lease both hold fixed assets and carry
+mortgages, which inflates H1.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(res23 = res23, res21 = res21, describe23 = describe(m23), describe21 = describe(m21),
+               replication = replication), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

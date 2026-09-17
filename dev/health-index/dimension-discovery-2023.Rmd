@@ -1,0 +1,729 @@
+---
+title: "Fiscal Health Dimensions, Tax Year 2023"
+subtitle: "Dimension discovery on the winsorized + normalized ratio frame"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  pkg_dir: "../.."
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, knitr.kable.NA = "")
+```
+
+<!-- Web fonts load at view time; data-external keeps them out of the self-contained file -->
+<link rel="stylesheet" data-external="1" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap">
+
+## Purpose
+
+`fiscal-health-index-2023.Rmd` found two dimensions: *Reserves & Solvency* and
+*Operating Performance*. That result depended on screening out most of the
+candidate ratios. The AA/NH/PI study (Urban Institute) found four: growth
+potential, leverage, solvency, and organizational slack.
+`vignette("variance-preserving-normalization")` showed that the difference
+comes mostly from **which ratios are measured, and how**, not from the
+transformation. It then built a measurement model that keeps every candidate
+ratio defined for every organization:
+
+* bounded or symmetric reformulations where the direction of an undefined case
+  is known (negative net assets, a non-positive growth base);
+* stochastic conditional imputation where it is not (no current liabilities,
+  unreported functional expenses);
+* 1st/99th percentile winsorizing, then asinh for ratios that stay skewed, then
+  a z-score.
+
+This document reruns dimension discovery on that frame for all 2023 full-990
+filers, and records how each decision was made.
+
+<div class="concepts">
+
+**Key ideas**
+
+- **Measurement model first:** decide how each ratio is defined, filled in, and
+  transformed *before* factoring. Those choices determine which correlations
+  the model can find.
+- **Parallel analysis and MAP:** two rules for how many dimensions to keep.
+  Parallel analysis keeps components that beat random data; MAP stops when
+  another component no longer removes shared (partial) correlation.
+- **Oblique rotation (oblimin):** lets dimensions correlate, which is realistic
+  for financial constructs. The component correlation matrix shows how much
+  they overlap.
+- **Tucker congruence:** similarity of two loading patterns. At 0.95 or above,
+  the dimension has effectively reproduced.
+- **Context dimension:** a stable empirical dimension with no healthy
+  direction. Use it to describe or stratify organizations, not in a health
+  score.
+
+</div>
+
+```{r packages}
+library(dplyr)
+library(knitr)
+library(psych)
+library(corrplot)
+if (file.exists(file.path(params$pkg_dir, "DESCRIPTION"))) {
+  pkgload::load_all(params$pkg_dir, quiet = TRUE)
+} else {
+  library(fiscal)
+}
+source("build-ratio-frame.R")   # measurement model from the vignette
+set.seed(params$seed)
+fmt <- function(x, d = 2) format(round(x, d), nsmall = d, big.mark = ",")
+```
+
+## 1. Build the ratio frame
+
+```{r build}
+# Cached by fiscal-health-index-2023.Rmd (efile-2023.rds) or data-raw/create-dat10k.R
+# (efile-2023-bmf-dedup.rds); either deduplicated 2023 extract works.
+cache_file <- file.path(params$data_dir, c("efile-2023.rds", "efile-2023-bmf-dedup.rds"))
+cache_file <- cache_file[file.exists(cache_file)][1]
+if (is.na(cache_file)) stop("No cached 2023 e-file extract; render fiscal-health-index-2023.Rmd first.")
+efile <- readRDS(cache_file)
+
+# 2022 header, summary, and balance-sheet tables: used in Section 6 to fill
+# prior-year revenue the 2023 return leaves blank and to validate growth rates.
+prior_file <- file.path(params$data_dir, "efile-2022-p01p10-dedup.rds")
+if (file.exists(prior_file)) {
+  prior <- readRDS(prior_file)
+} else {
+  prior <- retrieve_efile_data(year = 2022, tables = c("P00", "P01", "P10"),
+                               include_bmf = FALSE,
+                               path = file.path(params$data_dir, "efdata"), verbose = FALSE)
+  prior <- deduplicate(prior, verbose = FALSE)
+  saveRDS(prior, prior_file)
+}
+prior <- as.data.frame(prior)[, intersect(c("EIN2", "F9_01_REV_TOT_CY", "F9_10_ASSET_TOT_EOY",
+                                  "F9_01_NAFB_ASSET_TOT_EOY"), names(prior))]
+
+# growth = TRUE appends rev_growth and asset_growth; every other ratio is
+# identical to the frame built without them.
+built <- build_ratio_frame(efile, seed = params$seed, growth = TRUE, prior = prior)
+rm(efile); invisible(gc())
+
+frame <- built$frame
+growth_vars <- c("rev_growth", "asset_growth")
+# Program share = 1 - admin share - fundraising share, so it is left out to
+# avoid building a closure component into the matrix. Growth measures are held
+# out of Sections 2-5 and tested in Section 6.
+candidates <- setdiff(names(frame), c("prog_exp", growth_vars))
+X <- as.data.frame(lapply(frame[candidates], winsor_normalize))
+
+data.frame(organizations = format(nrow(X), big.mark = ","),
+           candidate_ratios = length(candidates))
+kable(data.frame(ratio = names(built$imputed_share),
+                 share_imputed = round(built$imputed_share, 3))[built$imputed_share > 0, ],
+      row.names = FALSE, caption = "Ratios with imputed values")
+```
+
+## 2. Diagnostics and triage
+
+```{r diagnostics}
+diagnostics <- fiscal_diagnostics(X)
+cat("Overall KMO:", fmt(diagnostics$kmo$MSA, 3), "\n")
+triage_auto <- fiscal_triage(diagnostics)
+kable(triage_auto$decisions[, c("variable", "kmo_msa", "communality", "mean_abs_cor",
+                                "max_abs_cor", "redundant_with", "decision")],
+      digits = 3, row.names = FALSE)
+```
+
+The automatic triage flags four things:
+
+* **`debt_una` is redundant with `debt_assets`**
+  (r = `r fmt(diagnostics$correlation["debt_una", "debt_assets"], 2)`). Once
+  negative unrestricted net assets are placed at the worst end, leverage on
+  unrestricted equity and debt-to-assets rank organizations almost identically.
+  Keeping both would double-weight one idea.
+* **`self_suff`, `admin_exp`, and `fundr_exp`** share almost no variance with
+  anything else (communality
+  ≤ `r fmt(max(diagnostics$variables$communality[diagnostics$variables$variable %in% c("self_suff", "admin_exp", "fundr_exp")]), 2)`).
+* **`land_assets` is marked standalone** because of its low communality in the
+  preliminary screen.
+* **Asset-composition ratios (`cash_assets`, `land_assets`, `assets_rev`)** have
+  individual KMO just below 0.50.
+
+The preliminary communality screen fits only
+`r diagnostics$settings$nfactors_comm` factors. Section 3 shows that a fourth
+component is defined by `land_assets` and `cash_assets`. So a three-factor
+communality is not a fair test of whether `land_assets` shares variance, and we
+override it.
+
+```{r triage}
+triage <- fiscal_triage(diagnostics, overrides = c(land_assets = "retain"))
+kable(triage$decisions[, c("variable", "decision", "overridden", "reason")], row.names = FALSE)
+retained <- triage$selected_for_dimensions
+retained
+```
+
+> **Decision A: Drop `debt_una` as redundant and keep `debt_assets`.**
+> Debt-to-assets needs no net-asset-class data and is the more widely used
+> measure.
+>
+> **Decision B: Keep `land_assets` for dimension estimation**, overriding the
+> three-factor communality screen (see Section 3).
+>
+> **Decision C: Keep `self_suff`, `admin_exp`, and `fundr_exp` out of dimension
+> estimation as standalone measures.** They describe revenue model and expense
+> allocation, and they carry little shared variance with financial condition.
+> Section 3.3 shows what happens if they are forced in.
+
+## 3. How many dimensions?
+
+### 3.1 Retention criteria
+
+```{r retention}
+R <- cor(X[retained])
+eig <- eigen(R, only.values = TRUE)$values
+invisible(capture.output(
+  pa <- fa.parallel(R, n.obs = nrow(X), fa = "both", plot = FALSE, n.iter = 50)))
+invisible(capture.output(v <- vss(R, n = 8, n.obs = nrow(X), plot = FALSE)))
+kable(data.frame(component = seq_along(eig), eigenvalue = eig,
+                 pca_random = pa$pc.sim[seq_along(eig)],
+                 share = eig / sum(eig), cumulative = cumsum(eig) / sum(eig)),
+      digits = 3, row.names = FALSE)
+data.frame(criterion = c("Parallel analysis (PCA)", "Parallel analysis (FA)",
+                         "Velicer MAP minimum", "Kaiser (eigenvalue > 1)"),
+           dimensions = c(pa$ncomp, pa$nfact, which.min(v$map), sum(eig > 1)))
+```
+
+```{r scree, fig.height = 3.5}
+plot(eig, type = "b", pch = 19, col = "#153243", bty = "n", xlab = "Component",
+     ylab = "Eigenvalue", main = "Retained ratios: observed vs. random-data eigenvalues")
+lines(pa$pc.sim[seq_along(eig)], type = "b", lty = 2, lwd = 2, col = "#bd5416")
+abline(h = 1, col = "#dcdfe4")
+legend("topright", c("Observed", "Parallel (random data)"), lty = c(1, 2),
+       col = c("#153243", "#bd5416"), bty = "n")
+```
+
+### 3.2 Solutions with 3, 4, and 5 components
+
+All solutions use PCA with an oblique (oblimin) rotation, so dimensions are
+allowed to correlate. Loadings below 0.30 are blanked.
+
+```{r solutions}
+show_solution <- function(k) {
+  m <- principal(R, nfactors = k, rotate = "oblimin", n.obs = nrow(X))
+  L <- unclass(m$loadings)
+  L[abs(L) < 0.30] <- NA
+  colnames(L) <- paste0("k", k, "_C", seq_len(k))
+  L
+}
+kable(do.call(cbind, lapply(3:5, show_solution)), digits = 2)
+```
+
+```{r dimensions}
+dimensions <- fiscal_dimensions(X, triage = triage, method = "pca", nfactors = NULL,
+                                seed = params$seed, parallel_iter = 50)
+dimensions
+kable(dimensions$assignments, digits = 2, row.names = FALSE)
+kable(dimensions$clusters, row.names = FALSE)
+```
+
+```{r efa}
+efa <- fa(R, nfactors = dimensions$nfactors, rotate = "oblimin", fm = "minres", n.obs = nrow(X))
+L_efa <- unclass(efa$loadings); L_efa[abs(L_efa) < 0.30] <- NA
+kable(L_efa, digits = 2, caption = "EFA (minres, oblimin): same number of factors")
+kable(round(efa$Phi, 2), caption = "EFA factor correlations")
+```
+
+> **Decision D: Retain four dimensions.**
+>
+> *Why:*
+>
+> * **Criteria disagree, as they usually do.** PCA parallel analysis and the
+>   Kaiser rule keep `r pa$ncomp` and `r sum(eig > 1)`; factor-analytic
+>   parallel analysis keeps `r pa$nfact`. Velicer's MAP reaches its minimum
+>   with `r which.min(v$map)` component(s). MAP is known to under-extract when each dimension has
+>   only two to four indicators, and here it mainly signals that a general
+>   factor sits behind the ratios. That is consistent with building a
+>   composite, but it is not a reason to collapse distinct constructs.
+> * **Three components merge two clusters.** Leverage and liquidity collapse
+>   into one bipolar component, even though the four-component solution shows
+>   they separate cleanly.
+> * **Five components trade one coherent dimension for a finer split.** The
+>   liquidity block splits into *short-term liquidity* (current ratio, months of
+>   cash) and *accumulated reserves* (liquid months, asset intensity). Asset
+>   structure breaks up: land share becomes a near-singleton, and cash share
+>   cross-loads on both liquidity components. That split is substantively
+>   plausible and worth testing on panel data. At four components, though,
+>   every dimension is an interpretable multi-indicator cluster.
+> * **Simple structure.** In the four-component solution, every cluster has at
+>   least two indicators with primary loadings above 0.75. Only `current` and
+>   `assets_rev` cross-load.
+> * **EFA agrees.** Common-factor analysis, which ignores unique variance,
+>   recovers the same grouping. The current ratio and liquid months take small
+>   secondary loadings on leverage.
+>
+> If the automated `fiscal_dimensions()` count differs from four, the fit below
+> uses four explicitly. The comparison above is the basis for that choice.
+
+```{r fix-k}
+if (dimensions$nfactors != 4) {
+  dimensions <- fiscal_dimensions(X, triage = triage, method = "pca", nfactors = 4,
+                                  seed = params$seed)
+}
+kable(dimensions$clusters, row.names = FALSE)
+```
+
+### 3.3 What happens if the expense and revenue-model ratios are forced in?
+
+```{r forced}
+R_all <- cor(X[setdiff(candidates, "debt_una")])
+invisible(capture.output(pa_all <- fa.parallel(R_all, n.obs = nrow(X), fa = "both",
+                                               plot = FALSE, n.iter = 20)))
+for (k in c(5, 6)) {
+  m <- principal(R_all, nfactors = k, rotate = "oblimin", n.obs = nrow(X))
+  L <- unclass(m$loadings); L[abs(L) < 0.30] <- NA
+  print(kable(L, digits = 2, caption = paste(k, "components with all candidate ratios")))
+}
+c(parallel_pca = pa_all$ncomp, parallel_fa = pa_all$nfact)
+```
+
+With every candidate included, PCA parallel analysis adds a component for
+fundraising share, self-sufficiency, and admin share. That is expected: PCA
+gives variance to any variable not explained by the others. But the component
+is not a shared construct. Communalities for these ratios are near zero, and
+the component breaks into singletons as soon as a sixth is allowed. **In 2023,
+organizational slack does not appear as a dimension** once program share (the
+arithmetic complement of admin and fundraising shares) is removed.
+
+## 4. Stability
+
+A dimension worth naming should reappear:
+
+* in independent halves of the data;
+* in organizations of very different size;
+* under alternative transformations;
+* in a different tax year.
+
+We compare loading matrices with Tucker's congruence coefficient, matching
+components across solutions by the best permutation. Values ≥ 0.95 mean the
+factors are effectively equal; 0.85–0.94 means fair similarity.
+
+```{r stability-fns}
+perms <- function(n) {
+  if (n == 1) return(list(1L))
+  out <- list()
+  for (i in seq_len(n)) for (p in perms(n - 1)) out[[length(out) + 1]] <- c(i, setdiff(seq_len(n), i)[p])
+  out
+}
+loadings_k4 <- function(df) unclass(principal(df[retained], nfactors = 4, rotate = "oblimin")$loadings)
+label_components <- function(L) {
+  anchors <- c(leverage = "debt_assets", performance = "return_assets",
+               reserves = "months_cash", asset_structure = "land_assets")
+  lab <- vapply(seq_len(ncol(L)), function(j) {
+    a <- names(anchors)[which.max(abs(L[anchors, j]))]
+    a
+  }, "")
+  colnames(L) <- lab
+  L
+}
+congruence <- function(A, B) {
+  C <- abs(psych::factor.congruence(A, B))
+  P <- perms(ncol(B))
+  best <- P[[which.max(vapply(P, function(p) sum(C[cbind(seq_len(nrow(C)), p)]), 0))]]
+  out <- C[cbind(seq_len(nrow(C)), best)]
+  names(out) <- colnames(label_components(A))
+  out
+}
+L_ref <- loadings_k4(X)
+```
+
+```{r stability}
+rev_total <- built$components$R
+exp_total <- built$components$E
+half <- sample(nrow(X), nrow(X) / 2)
+
+X_rank <- as.data.frame(lapply(frame[candidates], rank_normal))
+X_w595 <- as.data.frame(lapply(frame[candidates], winsor_normalize, p = 0.05))
+X_wins <- as.data.frame(lapply(frame[candidates], function(x) as.numeric(scale(winsor(x)))))
+
+data(dat10k, package = "fiscal")
+built21 <- build_ratio_frame(dat10k, seed = params$seed)
+X21 <- as.data.frame(lapply(built21$frame[candidates], winsor_normalize))
+
+checks <- list(
+  `Random half A vs. half B`          = list(X[half, ], X[-half, ]),
+  `Expenses < $500k vs. full sample`  = list(X[exp_total < 5e5, ], X),
+  `$500k-$5M vs. full sample`         = list(X[exp_total >= 5e5 & exp_total < 5e6, ], X),
+  `>= $5M vs. full sample`            = list(X[exp_total >= 5e6, ], X),
+  `Rank-normal vs. winsorized+normalized`      = list(X_rank, X),
+  `Winsorize 5/95 vs. 1/99 (normalized)`       = list(X_w595, X),
+  `Winsorized only vs. winsorized+normalized`  = list(X_wins, X),
+  `2021 sample (dat10k) vs. 2023`              = list(X21, X))
+
+stab <- do.call(rbind, lapply(names(checks), function(nm) {
+  A <- loadings_k4(checks[[nm]][[1]])
+  B <- if (identical(checks[[nm]][[2]], X)) L_ref else loadings_k4(checks[[nm]][[2]])
+  cg <- congruence(B, A)
+  data.frame(comparison = nm, n = nrow(checks[[nm]][[1]]), t(round(cg, 3)), check.names = FALSE)
+}))
+kable(stab, row.names = FALSE, format.args = list(big.mark = ","))
+```
+
+```{r size-loadings}
+by_size <- lapply(list(`< $500k` = exp_total < 5e5, `$500k-$5M` = exp_total >= 5e5 & exp_total < 5e6,
+                       `>= $5M` = exp_total >= 5e6),
+                  function(rows) label_components(loadings_k4(X[rows, ])))
+kable(do.call(cbind, lapply(names(by_size), function(s) {
+  L <- by_size[[s]][, c("leverage", "performance", "reserves", "asset_structure")]
+  colnames(L) <- paste(s, colnames(L)); L })), digits = 2,
+  caption = "Four-component loadings by organization size (total expenses)")
+```
+
+**Stability findings.**
+
+* **Near-perfect reproduction** across random halves, across the two smaller
+  size groups, under rank-normal scoring and 5/95 winsorizing, and in the
+  independent 2021 sample. In each case congruence is at least
+  `r fmt(min(as.matrix(stab[c(1:3, 5, 6, 8), -(1:2)])), 2)`.
+* **Large organizations** (expenses ≥ $5M) still give fair-to-equal congruence
+  (≥ `r fmt(min(as.matrix(stab[4, -(1:2)])), 2)`), but the reserve–leverage
+  boundary shifts. Their current ratio and liquid months load substantially on
+  leverage. For large institutions, liquid unrestricted net assets are largely
+  whatever is left after debt-financed property, so liquidity and leverage move
+  together more.
+* **Winsorizing without normalizing** blurs the leverage dimension the most.
+  That matches the vignette's finding that residual skew weakens correlations
+  among the debt ratios.
+
+## 5. The four dimensions
+
+```{r final-loadings}
+L_final <- label_components(L_ref)[, c("leverage", "performance", "reserves", "asset_structure")]
+kable(L_final, digits = 2, caption = "Four-component oblimin loadings, all 2023 filers")
+m4 <- principal(R, nfactors = 4, rotate = "oblimin", n.obs = nrow(X))
+Phi <- m4$Phi
+dimnames(Phi) <- list(colnames(label_components(unclass(m4$loadings))),
+                      colnames(label_components(unclass(m4$loadings))))
+kable(round(Phi[colnames(L_final), colnames(L_final)], 2), caption = "Component correlations")
+```
+
+```{r corrplot, fig.width = 6.5, fig.height = 6.5}
+ord <- names(sort(apply(abs(L_final), 1, which.max) * 10 - apply(abs(L_final), 1, max)))
+C <- cor(X[ord])
+res <- corrplot(C, order = "original", tl.col = "black", tl.cex = 0.8, mar = c(0, 0, 1.5, 0),
+                title = "Retained ratios, grouped by primary dimension")
+grp <- apply(abs(L_final[ord, ]), 1, which.max)
+corrRect(res, index = c(which(!duplicated(grp)), length(grp)), col = "#bd5416", lwd = 2)
+```
+
+Each label names what the indicators have in common: their accounting source,
+what they respond to, and the question they answer. "Higher is healthier" is
+stated only where the direction is unambiguous.
+
+#### Leverage (`debt_assets`, `payables_una`)
+
+* **Source.** Balance-sheet claims. Debt-to-assets is the share of all assets
+  financed by liabilities. The payables share is the share of short-term
+  capital (payables plus unrestricted equity) that is owed to vendors and
+  grantees.
+* **Why separate from reserves.** The three-component solution merges them. In
+  four, leverage stands on its own, correlates only modestly (negatively) with
+  reserves, and reproduces across sizes and years. Organizations can hold large
+  reserves *and* significant debt (property financed by mortgages), or neither.
+* **Healthy direction.** Lower. High scores mean creditors, not the
+  organization, have the claim on its resources.
+* **Relation to the AA/NH/PI study.** This corresponds to *leverage*. Unlike
+  the study, debt-to-assets belongs here and not in a separate solvency
+  dimension. Once negative net assets are handled, debt-to-equity-style ratios
+  and debt-to-assets measure one construct.
+
+#### Operating performance (`surplus_margin`, `return_assets`, `na_growth`)
+
+* **Source.** Income-statement flows and their result: this year's surplus
+  relative to revenue and assets, and the resulting change in net assets.
+* **Healthy direction.** Higher, within reason. A single deficit year is not
+  distress.
+* **Relation to the AA/NH/PI study.** *Growth potential.* That dimension also
+  included asset and revenue growth. Section 6 adds those and finds that they
+  join this dimension.
+
+#### Liquidity and reserves (`months_cash`, `liquid_months`, `assets_rev`, `current`)
+
+* **Source.** Stocks of liquid and unrestricted resources measured against
+  spending: months of cash and receivables, months of liquid unrestricted net
+  assets, assets per dollar of revenue, and current assets per dollar of
+  current liabilities.
+* **Why `assets_rev` loads here.** It measures the stock of resources relative
+  to the flow of activity. Organizations with more assets per dollar of revenue
+  carry larger reserves relative to operations. It also cross-loads on asset
+  structure, because *what* those assets are (cash or buildings) matters too.
+* **Why `current` is the weakest member.** Its denominator is a liability, so
+  it loads almost equally (with opposite sign) on leverage. It is best treated
+  as a secondary indicator of this dimension.
+* **Healthy direction.** Higher, up to a point. The index doesn't penalize
+  hoarding.
+* **Relation to the AA/NH/PI study.** The resilience half of *solvency*. The
+  study's solvency dimension mixed reserves, debt-to-assets, and asset mix.
+
+#### Asset structure (`cash_assets` vs. `land_assets`)
+
+* **Source.** Composition of the asset base: liquid (cash and savings) versus
+  fixed (land, buildings, equipment).
+* **Caveat.** Cash and property are shares of the same total, so part of their
+  negative correlation is compositional. That is why the individual KMO values
+  sit just below 0.50.
+* **Healthy direction.** **None.** A capital-intensive organization (hospital,
+  school, housing provider) isn't less healthy than a cash-based one; it has a
+  different business model.
+* **Recommendation.** Treat asset structure as a **context dimension**: a
+  stratifier or control. Don't add it to a directional health composite.
+* **Relation to the AA/NH/PI study.** The asset-mix part of *solvency* and of
+  *organizational slack* (land-to-assets and asset-to-revenue loaded on both).
+
+#### Standalone measures (not dimensions)
+
+* **Administrative share, fundraising share, self-sufficiency.** They share
+  almost no variance with financial condition or with each other. Report them
+  as descriptors of expense allocation and revenue model.
+* **Organizational slack.** The study's slack dimension paired the
+  administrative-expense ratio with the program-efficiency ratio. Those two are
+  complements by construction, so the pair forms a component regardless of how
+  organizations behave. Without the complement, no slack dimension appears.
+
+## 6. Adding revenue and asset growth
+
+The AA/NH/PI study's *growth potential* dimension combined one-year asset
+growth and one-year revenue growth with net profit and operating margins. This
+section tests whether growth measures join the performance dimension here too.
+
+**Measurement model for growth.** A panel isn't strictly needed. One 2023
+return already reports both years:
+
+* **Revenue:** Part I lists prior-year and current-year total revenue
+  (`F9_01_REV_TOT_PY`, `F9_01_REV_TOT_CY`).
+* **Assets:** Part X lists beginning- and end-of-year total assets
+  (`F9_10_ASSET_TOT_BOY`, `F9_10_ASSET_TOT_EOY`).
+
+Both use the same **symmetric growth rate** as net-asset growth:
+change ÷ mean(abs(new), abs(old)). It is bounded in [−2, 2], defined whenever
+either year is nonzero, and 0 when both are zero.
+
+A blank prior-year revenue means *not reported* (for example, first-year
+filers), not zero. It is filled from the organization's 2022 return where one
+exists; the rest are imputed conditionally, like every other undefined ratio.
+
+```{r growth-sources}
+src <- ifelse(is.na(built$components$R_py_source), "imputed (no 2022 return)",
+              built$components$R_py_source)
+kable(data.frame(prior_year_revenue_source = names(table(src)),
+                 share = round(as.numeric(prop.table(table(src))), 3)),
+      row.names = FALSE)
+```
+
+### 6.1 Single-return growth vs. panel growth
+
+If a single return is a sound substitute for a panel, its prior-year figures
+should match what the organization reported on its 2022 return, and the growth
+rates should rank organizations the same way.
+
+```{r growth-panel}
+prior <- prior[!duplicated(prior$EIN2), ]
+m <- match(built$ein, prior$EIN2)
+k <- built$components
+R22 <- suppressWarnings(as.numeric(fix64(prior$F9_01_REV_TOT_CY)))[m]
+A22 <- suppressWarnings(as.numeric(fix64(prior$F9_10_ASSET_TOT_EOY)))[m]
+A22_ez <- suppressWarnings(as.numeric(fix64(prior$F9_01_NAFB_ASSET_TOT_EOY)))[m]
+swap <- (is.na(A22) | A22 == 0) & !is.na(A22_ez)
+A22[swap] <- A22_ez[swap]
+
+panel_rev_growth   <- ifelse(is.na(R22), NA, sym_growth(k$R_cy, R22))
+panel_asset_growth <- ifelse(is.na(A22), NA, sym_growth(k$A, A22))
+ok_rev   <- !is.na(panel_rev_growth) & k$R_py_source %in% "return"
+ok_asset <- !is.na(panel_asset_growth)
+within_1pct <- function(a, b) mean(abs(a - b) <= 0.01 * pmax(abs(b), 1))
+
+kable(data.frame(
+  check = c("2023 filers matched to a 2022 return",
+            "Prior-year revenue within 1% of 2022 current-year revenue",
+            "Spearman rho: revenue growth, single return vs. panel",
+            "Beginning-of-year assets within 1% of 2022 end-of-year assets",
+            "Spearman rho: asset growth, single return vs. panel"),
+  value = c(mean(!is.na(m)),
+            within_1pct(k$R_py[ok_rev], R22[ok_rev]),
+            cor(frame$rev_growth[ok_rev], panel_rev_growth[ok_rev], method = "spearman"),
+            within_1pct(k$A_boy[ok_asset], A22[ok_asset]),
+            cor(frame$asset_growth[ok_asset], panel_asset_growth[ok_asset], method = "spearman"))),
+  digits = 3, row.names = FALSE)
+```
+
+> **Decision E: Measure growth within the 2023 return, filling blanks from the
+> 2022 return.**
+>
+> *Why:* The single-return figures agree with the panel almost exactly. The
+> small differences likely reflect amended figures and changed fiscal years. Using
+> the return itself covers every filer, including organizations without a
+> matched 2022 e-filing, while the panel covers only
+> `r round(100 * mean(!is.na(m)))`%. Section 6.3 confirms the dimensions are
+> the same either way.
+
+### 6.2 Where growth loads
+
+```{r growth-diagnostics}
+retained_g <- c(retained, growth_vars)
+Xg <- as.data.frame(lapply(frame[retained_g], winsor_normalize))
+Rg <- cor(Xg)
+diag_g <- fiscal_diagnostics(Xg)
+kable(diag_g$variables[diag_g$variables$variable %in% c(growth_vars, "na_growth",
+                                                         "surplus_margin", "return_assets"),
+                       c("variable", "kmo_msa", "communality", "max_abs_cor", "redundant_with")],
+      digits = 3, row.names = FALSE)
+kable(round(Rg[growth_vars, ], 2), caption = "Correlations of growth with the retained ratios")
+invisible(capture.output(
+  pa_g <- fa.parallel(Rg, n.obs = nrow(Xg), fa = "both", plot = FALSE, n.iter = 50)))
+c(parallel_pca = pa_g$ncomp, parallel_fa = pa_g$nfact)
+```
+
+```{r growth-solutions}
+show_solution_g <- function(k) {
+  L <- unclass(principal(Rg, nfactors = k, rotate = "oblimin", n.obs = nrow(Xg))$loadings)
+  L[abs(L) < 0.30] <- NA
+  colnames(L) <- paste0("k", k, "_C", seq_len(k))
+  L
+}
+kable(do.call(cbind, lapply(4:5, show_solution_g)), digits = 2,
+      caption = "PCA (oblimin) with growth measures added")
+efa_g <- fa(Rg, nfactors = 4, rotate = "oblimin", fm = "minres", n.obs = nrow(Xg))
+L_efa_g <- unclass(efa_g$loadings); L_efa_g[abs(L_efa_g) < 0.30] <- NA
+kable(L_efa_g, digits = 2, caption = "EFA (minres, oblimin), 4 factors, with growth measures")
+```
+
+### 6.3 Stability of the growth-augmented solution
+
+```{r growth-stability}
+loadings_g <- function(df) {
+  unclass(principal(df[retained_g], nfactors = 4, rotate = "oblimin")$loadings)
+}
+Lg_ref <- loadings_g(Xg)
+
+both_panel <- ok_asset & !is.na(panel_rev_growth)
+frame_panel <- frame[both_panel, retained_g]
+frame_panel$rev_growth   <- panel_rev_growth[both_panel]
+frame_panel$asset_growth <- panel_asset_growth[both_panel]
+Xg_panel  <- as.data.frame(lapply(frame_panel, winsor_normalize))
+Xg_single <- Xg[both_panel, ]
+Xg_rank   <- as.data.frame(lapply(frame[retained_g], rank_normal))
+half_g    <- sample(nrow(Xg), nrow(Xg) / 2)
+
+growth_checks <- list(
+  `Random half A vs. half B`               = list(Xg[half_g, ], Xg[-half_g, ]),
+  `Expenses < $500k vs. full sample`       = list(Xg[exp_total < 5e5, ], NULL),
+  `$500k-$5M vs. full sample`              = list(Xg[exp_total >= 5e5 & exp_total < 5e6, ], NULL),
+  `>= $5M vs. full sample`                 = list(Xg[exp_total >= 5e6, ], NULL),
+  `Rank-normal vs. winsorized+normalized`  = list(Xg_rank, NULL),
+  `Panel growth vs. single-return growth (matched filers)` = list(Xg_panel, Xg_single))
+
+growth_stab <- do.call(rbind, lapply(names(growth_checks), function(nm) {
+  A <- loadings_g(growth_checks[[nm]][[1]])
+  B <- if (is.null(growth_checks[[nm]][[2]])) Lg_ref else loadings_g(growth_checks[[nm]][[2]])
+  cg <- congruence(B, A)
+  data.frame(comparison = nm, n = format(nrow(growth_checks[[nm]][[1]]), big.mark = ","),
+             t(setNames(sprintf("%.2f", cg), names(cg))), check.names = FALSE)
+}))
+kable(growth_stab, row.names = FALSE, format.args = list(big.mark = ","))
+
+Lg_final <- label_components(Lg_ref)[, c("leverage", "performance", "reserves", "asset_structure")]
+kable(Lg_final, digits = 2, caption = "Four-component oblimin loadings with growth measures, all 2023 filers")
+kable(cbind(without_growth = L_final[retained, "performance"],
+            with_growth    = Lg_final[retained, "performance"]), digits = 2,
+      caption = "Performance loadings of the original ratios, before and after adding growth")
+```
+
+```{r growth-numbers, include = FALSE}
+perf_g <- Lg_final[, "performance"]
+off_perf_max <- max(abs(Lg_final[growth_vars, c("leverage", "reserves", "asset_structure")]))
+comm_g <- setNames(diag_g$variables$communality, diag_g$variables$variable)
+```
+
+**What the growth test shows.**
+
+* **Both growth measures join performance.** In the four-component solution,
+  asset growth loads `r fmt(perf_g[["asset_growth"]], 2)` and revenue growth
+  `r fmt(perf_g[["rev_growth"]], 2)` on the performance component. Neither
+  loads above `r fmt(off_perf_max, 2)` anywhere else, and EFA assigns them to
+  the same factor.
+* **The other three dimensions are unchanged.** Leverage, liquidity and
+  reserves, and asset structure keep the same indicators and near-identical
+  loadings. Performance loadings for the original ratios barely move.
+* **This matches the AA/NH/PI study's *growth potential*.** In that study,
+  asset growth loaded highest and revenue growth lowest, with the margins in
+  between. The same ordering appears here.
+* **Revenue growth is the weakest member.** Its communality is
+  `r fmt(comm_g[["rev_growth"]], 2)`. Revenue fluctuates with one-time grants
+  and gifts, while asset and net-asset growth accumulate the whole year's
+  result. When a fifth component is allowed, revenue growth pairs with surplus
+  margin (the two *revenue-statement* measures) and separates from the
+  *balance-sheet* growth measures. That split is a possible refinement, not a
+  replacement.
+* **Asset growth and net-asset growth overlap strongly**
+  (r = `r fmt(Rg["asset_growth", "na_growth"], 2)`), because assets =
+  liabilities + net assets. The overlap is below the redundancy cutoff, and
+  asset growth also reflects growth financed by borrowing. Keep both, but note
+  that balance-sheet growth carries two of the five performance indicators.
+
+> **Decision F: Add revenue growth and asset growth to the performance
+> dimension, and relabel it *Performance & growth*.**
+>
+> The structure is stable across random halves, organization size, and
+> transformation. It is also identical whether growth comes from the single
+> return or from the 2022–2023 panel.
+
+## 7. Comparison with earlier results
+
+| | AA/NH/PI study | `fiscal-health-index-2023` | This analysis |
+|---|---|---|---|
+| Ratios entering discovery | 13 | 5 | `r length(retained)` |
+| Negative denominators | kept (sign flips) | excluded ratios | bounded reformulation |
+| Undefined cases | dropped | excluded ratios | rules + conditional imputation |
+| Transformation | winsorize 5/95, log, z | rank-normal | winsorize 1/99, asinh, z |
+| Dimensions | 4 | 2 | 4 (3 directional + 1 context) |
+| Performance / growth | yes (growth potential) | yes (margins only) | yes (margins, net-asset, asset, and revenue growth) |
+| Leverage | yes | merged into reserves | yes |
+| Reserves / solvency | yes (mixed with asset mix) | yes (with debt) | yes (liquidity & reserves) |
+| Slack | yes | — | no (closure artifact) |
+| Asset structure | inside solvency and slack | excluded | yes (context) |
+
+The two-dimension result came from excluding leverage and asset-structure
+ratios at the screening stage. The leverage ratios were excluded because their
+denominators can be negative; the bounded reformulation fixes that. The
+asset-structure ratios were excluded because their healthy direction is
+ambiguous, which is still true. That is why asset structure is kept as a
+context dimension rather than part of the health composite.
+
+## 8. Next steps
+
+* **Fit the measurement model** with `fiscal_health_fit()`. Use the three
+  directional dimensions:
+
+  | Dimension | Direction |
+  |---|---|
+  | leverage | lower is better |
+  | performance & growth (including `rev_growth`, `asset_growth`) | higher |
+  | reserves | higher |
+
+  Keep `asset_structure` and the three standalone measures as reported, non-weighted
+  columns.
+* **Package support.** Port the rules and conditional imputation in
+  `build-ratio-frame.R` into package functions, so the `_z` columns match the
+  measurement model used here. This includes fixing the zero-MAD failure for
+  zero-inflated shares.
+* **Multi-year stability.** Repeat the discovery for 2022 and earlier years,
+  now that growth can be measured within a single return. Check whether the
+  five-component split (revenue growth with margin, separate from
+  balance-sheet growth) recurs.
+
+```{r session}
+sessionInfo()
+```

@@ -1,0 +1,1449 @@
+---
+title: "Construction-induced correlation among fiscal ratios"
+output: rmarkdown::html_vignette
+params:
+  efile_path: ""
+  reps: 30
+  seed: 2023
+  save_results: ""
+vignette: >
+  %\VignetteIndexEntry{Construction-induced correlation among fiscal ratios}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse   = TRUE,
+  comment    = "#>",
+  message    = FALSE,
+  warning    = FALSE,
+  fig.width  = 7,
+  fig.height = 4.5,
+  dpi        = 96
+)
+options(width = 110)
+```
+
+```{r packages}
+library(fiscal)
+library(psych)
+library(splines)
+set.seed(params$seed)
+```
+
+## The question
+
+The fiscal health index factors a correlation matrix of 14 ratios. Those ratios
+are built from about 20 Form 990 lines, and many of them share a line: the
+same denominator (total expenses, total assets), the same numerator (cash, the
+surplus), or a line that sits on top of one ratio and underneath another. Two
+ratios that share a line correlate even when nothing links the organizations'
+finances. Shares of one whole correlate negatively by definition.
+
+This article asks three questions:
+
+1. **How much of each pairwise correlation is construction?** We build a
+   *construction null*: the same 990 lines, shuffled across organizations so
+   that every substantive relationship is destroyed while the arithmetic of the
+   ratios, the accounting identities, and the pipeline (rules, imputation,
+   winsorizing, asinh) are kept.
+2. **Does the construction null manufacture factors?** If PCA on arithmetic
+   alone returns components that look like the health dimensions, those
+   dimensions are at least partly definitional.
+3. **Is there one pre-processing fix that removes the artifact consistently
+   across all 91 pairs**, without destroying variables or the matrix?
+4. **Does redesigning the variable set by link type work better** than
+   transforming the ratios?
+
+By default the article runs on the bundled `dat10k` sample (2021). Set the
+`efile_path` parameter to an e-file extract (for example the deduplicated 2023
+file) to run it on a full tax year.
+
+## 1. Components and ratios
+
+The ratio rules and imputation are the measurement model from
+`vignette("variance-preserving-normalization")`. They are split into two
+steps here, **lines** and **ratios**, so the null can shuffle lines and then
+rebuild ratios exactly as the real data are built.
+
+```{r helpers}
+fix64 <- function(x) {
+  if (inherits(x, "integer64")) return(as.numeric(x))
+  if (is.double(x)) {
+    nz <- x[!is.na(x) & x != 0]
+    if (length(nz) && all(abs(nz) < 1e-300)) {
+      class(x) <- "integer64"
+      return(as.numeric(x))
+    }
+  }
+  x
+}
+pct_rank    <- function(x) { r <- rank(x, na.last = "keep"); (r - 0.5) / sum(!is.na(x)) }
+rank_normal <- function(x) qnorm(pct_rank(x))
+fill_median <- function(x) { x[is.na(x)] <- median(x, na.rm = TRUE); x }
+winsor <- function(x, p = 0.01) {
+  q <- quantile(x, c(p, 1 - p), na.rm = TRUE)
+  pmin(pmax(x, q[[1]]), q[[2]])
+}
+winsor_normalize <- function(x, p = 0.01) {
+  w  <- winsor(x, p)
+  sk <- psych::skew(w)
+  if (sk > 1) {
+    s <- median(abs(w[w != 0])); w <- asinh(w / s)
+  } else if (sk < -1) {
+    r <- max(w) - w; s <- median(r[r != 0]); w <- -asinh(r / s)
+  }
+  as.numeric(scale(w))
+}
+cond_impute <- function(target, predictors, miss) {
+  y   <- rank_normal(target)
+  X   <- as.data.frame(lapply(predictors, rank_normal))
+  fit <- stats::lm(y ~ ., data = cbind(y = y, X)[!miss, ])
+  z   <- stats::predict(fit, newdata = X[miss, , drop = FALSE]) +
+         stats::rnorm(sum(miss), 0, summary(fit)$sigma)
+  out <- target
+  out[miss] <- stats::quantile(target[!miss], stats::pnorm(z), names = FALSE, na.rm = TRUE)
+  out
+}
+```
+
+```{r lines-ratios}
+# Step 1: the 990 lines each ratio is built from.
+efile_lines <- function(d) {
+  d <- as.data.frame(d)
+  d <- d[d$RETURN_TYPE == "990", ]
+  fin <- function(f) {
+    x <- if (f %in% names(d)) suppressWarnings(as.numeric(fix64(d[[f]]))) else rep(0, nrow(d))
+    x[is.na(x)] <- 0
+    x
+  }
+  k <- data.frame(
+    cash    = fin("F9_10_ASSET_CASH_EOY") + fin("F9_10_ASSET_SAVING_EOY"),
+    recv    = fin("F9_10_ASSET_PLEDGE_NET_EOY") + fin("F9_10_ASSET_ACC_NET_EOY"),
+    othca   = fin("F9_10_ASSET_INV_SALE_EOY") + fin("F9_10_ASSET_EXP_PREPAID_EOY"),
+    ap      = fin("F9_10_LIAB_ACC_PAYABLE_EOY"),
+    cl      = fin("F9_10_LIAB_ACC_PAYABLE_EOY") + fin("F9_10_LIAB_GRANT_PAYABLE_EOY"),
+    A = fin("F9_10_ASSET_TOT_EOY"), L = fin("F9_10_LIAB_TOT_EOY"),
+    NA_eoy = fin("F9_10_NAFB_TOT_EOY"), NA_boy = fin("F9_10_NAFB_TOT_BOY"),
+    UNA = fin("F9_10_NAFB_UNRESTRICT_EOY"), RES = fin("F9_10_NAFB_RESTRICT_EOY"),
+    land = fin("F9_10_ASSET_LAND_BLDG_NET_EOY"), mtg = fin("F9_10_LIAB_MTG_NOTE_EOY"),
+    R = fin("F9_08_REV_TOT_TOT"), E = fin("F9_09_EXP_TOT_TOT"), dep = fin("F9_09_EXP_DEPREC_TOT"),
+    progrev = fin("F9_08_REV_PROG_TOT_TOT"),
+    P = fin("F9_09_EXP_TOT_PROG"), M = fin("F9_09_EXP_TOT_MGMT"), Fu = fin("F9_09_EXP_TOT_FUNDR"))
+  k[k$E > 0, ]
+}
+
+# Step 2: rules, conditional imputation, winsorize + normalize.
+candidates <- c("current", "months_cash", "liquid_months", "cash_assets", "debt_assets",
+                "payables_una", "surplus_margin", "return_assets", "na_growth", "self_suff",
+                "admin_exp", "fundr_exp", "land_assets", "assets_rev")
+
+lines_to_frame <- function(k) {
+  k$ca   <- k$cash + k$recv + k$othca
+  k$una  <- ifelse(k$UNA == 0 & k$RES == 0, k$NA_eoy, k$UNA)
+  k$fsum <- k$P + k$M + k$Fu
+  k$opE  <- ifelse(k$E - k$dep > 0, k$E - k$dep, k$E)
+  rules <- with(k, data.frame(
+    current        = ifelse(cl > 0, ca / cl, NA),
+    months_cash    = (cash + recv) / (opE / 12),
+    liquid_months  = (una - land + mtg) / (E / 12),
+    cash_assets    = ifelse(A > 0, pmin(cash / A, 1), NA),
+    debt_assets    = ifelse(A > 0, L / A, ifelse(L > 0, NA, 0)),
+    payables_una   = ifelse(ap > 0, ap / (ap + pmax(una, 0)), 0),
+    surplus_margin = (R - E) / pmax(R, E),
+    return_assets  = ifelse(A > 0, (R - E) / A, NA),
+    na_growth      = ifelse(NA_eoy == 0 & NA_boy == 0, 0,
+                            (NA_eoy - NA_boy) / ((abs(NA_eoy) + abs(NA_boy)) / 2)),
+    self_suff      = progrev / E,
+    admin_exp      = ifelse(fsum > 0, M / fsum, NA),
+    fundr_exp      = ifelse(fsum > 0, Fu / fsum, NA),
+    land_assets    = ifelse(A > 0, land / A, 0),
+    assets_rev     = A / ifelse(R > 0, R, E)))
+  if (any(k$A <= 0 & k$L > 0))
+    rules$debt_assets[k$A <= 0 & k$L > 0] <- max(rules$debt_assets, na.rm = TRUE)
+  frame <- rules
+  preds <- as.data.frame(lapply(
+    rules[, c("liquid_months", "surplus_margin", "debt_assets", "months_cash")], fill_median))
+  frame$current <- cond_impute(rules$current, preds, k$cl == 0)
+  base_preds <- c("liquid_months", "surplus_margin", "months_cash", "self_suff")
+  for (v in names(frame)) if (anyNA(frame[[v]])) {
+    frame[[v]] <- cond_impute(frame[[v]], frame[, setdiff(base_preds, v), drop = FALSE],
+                              is.na(frame[[v]]))
+  }
+  frame
+}
+normalize_frame <- function(frame) as.data.frame(lapply(frame[candidates], winsor_normalize))
+lines_to_ratios <- function(k) normalize_frame(lines_to_frame(k))
+```
+
+```{r data}
+if (nzchar(params$efile_path)) {
+  efile <- readRDS(params$efile_path)
+  source_label <- basename(params$efile_path)
+} else {
+  data(dat10k, package = "fiscal")
+  efile <- dat10k
+  source_label <- "dat10k (2021 sample)"
+}
+k <- efile_lines(efile)
+rm(efile); invisible(gc())
+frame_obs <- lines_to_frame(k)
+X <- normalize_frame(frame_obs)
+R_obs <- cor(X)
+data.frame(source = source_label, organizations = format(nrow(X), big.mark = ","),
+           ratios = ncol(X))
+```
+
+## 2. The pairwise audit
+
+Each of the 91 pairs is classified from the formulas alone, before looking at
+any data:
+
+* **closure**: both numerators are disjoint parts of the shared denominator;
+  forced negative.
+* **shared_den**: same denominator (or two denominators that are nearly the
+  same flow, E and R); forced positive for positive numerators.
+* **reciprocal**: a line on top of one ratio sits underneath the other; forced
+  negative.
+* **shared_num**: the same line in both numerators; forced in the direction
+  of the signs.
+* **identity**: linked through an accounting identity (NA = A - L,
+  change in NA ~ R - E) rather than a shared line.
+* **none**: no shared line.
+
+`role` records whether the shared term is part of what *both* ratios are meant
+to measure (**construct**), of neither (**artifact**), or of one (**mixed**).
+`fix` is the repair that fits the pair taken alone.
+
+```{r audit}
+audit <- read.table(sep = "|", header = TRUE, strip.white = TRUE, text = "
+v1|v2|type|shared|sign|role|fix
+current|months_cash|shared_num|cash, recv|+|construct|keep
+current|liquid_months|identity|ca in una; cl in L|+|construct|keep
+current|cash_assets|shared_num|cash|+|artifact|benchmark
+current|debt_assets|reciprocal|ca in A; cl in L|-|mixed|benchmark
+current|payables_una|reciprocal|ap|-|artifact|benchmark
+current|surplus_margin|none||0||none
+current|return_assets|reciprocal|ca in A (signed numerator)|mixed|artifact|benchmark
+current|na_growth|none||0||none
+current|self_suff|none||0||none
+current|admin_exp|none||0||none
+current|fundr_exp|none||0||none
+current|land_assets|identity|ca and land in A|-|artifact|benchmark
+current|assets_rev|shared_num|ca in A|+|mixed|benchmark
+months_cash|liquid_months|shared_den|E; cash, recv in una|+|construct|keep
+months_cash|cash_assets|shared_num|cash|+|artifact|benchmark
+months_cash|debt_assets|reciprocal|cash, recv in A|-|artifact|benchmark
+months_cash|payables_una|identity|cash, recv in una|-|artifact|benchmark
+months_cash|surplus_margin|shared_den|E (signed numerator)|+|artifact|resid_E
+months_cash|return_assets|shared_den|E (+); cash in A (-)|mixed|artifact|resid_E
+months_cash|na_growth|identity|dNA ~ R - E|+|artifact|resid_E
+months_cash|self_suff|shared_den|E|+|artifact|resid_E
+months_cash|admin_exp|shared_den|E|+|artifact|resid_E
+months_cash|fundr_exp|shared_den|E|+|artifact|resid_E
+months_cash|land_assets|identity|cash and land in A|-|artifact|benchmark
+months_cash|assets_rev|shared_num|cash in A; E ~ R|+|mixed|benchmark
+liquid_months|cash_assets|identity|cash in una|+|artifact|benchmark
+liquid_months|debt_assets|identity|L lowers una|-|mixed|benchmark
+liquid_months|payables_una|reciprocal|una|-|artifact|benchmark
+liquid_months|surplus_margin|shared_den|E (signed numerator)|+|artifact|resid_E
+liquid_months|return_assets|shared_den|E (+); una in A (-)|mixed|artifact|resid_E
+liquid_months|na_growth|identity|una in NA|mixed|mixed|benchmark
+liquid_months|self_suff|shared_den|E|+|artifact|resid_E
+liquid_months|admin_exp|shared_den|E|+|artifact|resid_E
+liquid_months|fundr_exp|shared_den|E|+|artifact|resid_E
+liquid_months|land_assets|shared_num|land (opposite signs)|-|construct|keep
+liquid_months|assets_rev|identity|una in A; E ~ R|+|mixed|benchmark
+cash_assets|debt_assets|shared_den|A|+|artifact|resid_A
+cash_assets|payables_una|none||0||none
+cash_assets|surplus_margin|none||0||none
+cash_assets|return_assets|shared_den|A (signed numerator)|mixed|artifact|resid_A
+cash_assets|na_growth|none||0||none
+cash_assets|self_suff|none||0||none
+cash_assets|admin_exp|none||0||none
+cash_assets|fundr_exp|none||0||none
+cash_assets|land_assets|closure|parts of A|-|artifact|log_ratio
+cash_assets|assets_rev|reciprocal|A|-|artifact|benchmark
+debt_assets|payables_una|shared_num|ap in L; una = A - L - RES|+|construct|keep
+debt_assets|surplus_margin|none||0||none
+debt_assets|return_assets|shared_den|A (signed numerator)|mixed|artifact|resid_A
+debt_assets|na_growth|identity|NA = A - L|mixed|artifact|benchmark
+debt_assets|self_suff|none||0||none
+debt_assets|admin_exp|none||0||none
+debt_assets|fundr_exp|none||0||none
+debt_assets|land_assets|shared_den|A|+|mixed|resid_A
+debt_assets|assets_rev|reciprocal|A|-|artifact|benchmark
+payables_una|surplus_margin|none||0||none
+payables_una|return_assets|none||0||none
+payables_una|na_growth|identity|una in NA|mixed|artifact|benchmark
+payables_una|self_suff|none||0||none
+payables_una|admin_exp|none||0||none
+payables_una|fundr_exp|none||0||none
+payables_una|land_assets|none||0||none
+payables_una|assets_rev|identity|una in A|-|artifact|benchmark
+surplus_margin|return_assets|shared_num|R - E|+|construct|combine
+surplus_margin|na_growth|identity|dNA ~ R - E|+|construct|combine
+surplus_margin|self_suff|shared_num|progrev in R; E|+|artifact|resid_E
+surplus_margin|admin_exp|shared_den|E|+|artifact|resid_E
+surplus_margin|fundr_exp|shared_den|E|+|artifact|resid_E
+surplus_margin|land_assets|none||0||none
+surplus_margin|assets_rev|reciprocal|R|-|artifact|benchmark
+return_assets|na_growth|identity|dNA ~ R - E|+|construct|combine
+return_assets|self_suff|shared_num|progrev in R|+|artifact|benchmark
+return_assets|admin_exp|shared_den|E|+|artifact|resid_E
+return_assets|fundr_exp|shared_den|E|+|artifact|resid_E
+return_assets|land_assets|shared_den|A (signed numerator)|mixed|artifact|resid_A
+return_assets|assets_rev|reciprocal|A; R|-|artifact|benchmark
+na_growth|self_suff|identity|progrev in R; dNA ~ R - E|+|artifact|benchmark
+na_growth|admin_exp|none||0||none
+na_growth|fundr_exp|none||0||none
+na_growth|land_assets|none||0||none
+na_growth|assets_rev|identity|NA in A|mixed|artifact|benchmark
+self_suff|admin_exp|shared_den|E|+|artifact|resid_E
+self_suff|fundr_exp|shared_den|E|+|artifact|resid_E
+self_suff|land_assets|none||0||none
+self_suff|assets_rev|reciprocal|progrev in R; E ~ R|mixed|artifact|benchmark
+admin_exp|fundr_exp|closure|parts of E|-|artifact|log_ratio
+admin_exp|land_assets|none||0||none
+admin_exp|assets_rev|shared_den|E ~ R|+|artifact|resid_E
+fundr_exp|land_assets|none||0||none
+fundr_exp|assets_rev|shared_den|E ~ R|+|artifact|resid_E
+land_assets|assets_rev|reciprocal|A|-|artifact|benchmark
+", colClasses = "character", na.strings = NULL)
+stopifnot(nrow(audit) == choose(length(candidates), 2))
+audit$r_obs <- R_obs[cbind(audit$v1, audit$v2)]
+table(audit$type)
+table(audit$fix)
+```
+
+## 3. The construction null
+
+The null keeps each organization's size and every accounting identity, and
+destroys everything else. Each 990 line is divided by a **size reference**,
+shuffled across organizations independently of every other line, multiplied
+back, and the totals are rebuilt from their parts (A = sum of asset lines,
+L = sum of liability lines, NA = A - L, NA_boy from the surplus). The ratios are
+then rebuilt with the same rules, imputation, and transformations as the real
+data.
+
+Coupling through a denominator is an artifact only to the extent that the
+denominator varies independently of size, so the null depends on the size
+reference. We run two:
+
+* **flow anchor**: size = total expenses. Expense-denominator coupling is
+  absent by definition; balance-sheet coupling is present.
+* **stock anchor**: size = total assets. Expenses become an independent draw
+  relative to assets, so expense-denominator coupling is present.
+
+```{r null}
+# `draw(x, line)` reassigns one size-scaled line across organizations. The
+# default is an independent shuffle; section 10 swaps in a draw that plants
+# known factors.
+null_lines <- function(k, anchor = c("flow", "stock", "joint"),
+                       draw = function(x, line) x[sample.int(length(x))]) {
+  anchor <- match.arg(anchor)
+  # "joint" (section 11): balance-sheet lines relative to assets, flow lines
+  # relative to the organization's own expenses, which are never shuffled.
+  gp     <- k$cl - k$ap
+  otherA <- pmax(k$A - k$cash - k$recv - k$othca - k$land, 0)
+  otherL <- pmax(k$L - k$cl - k$mtg, 0)
+  res_sh <- ifelse(k$UNA >= 0 & k$RES > 0, k$RES / (k$UNA + k$RES), 0)
+  na_oth <- (k$NA_eoy - k$NA_boy) - (k$R - k$E)
+  size <- if (anchor == "flow") k$E else ifelse(k$A > 0, k$A, k$E)
+  E    <- if (anchor == "stock") draw(k$E / size, "E") * size else k$E
+  bs <- function(x, line) draw(x / size, line) * size   # balance-sheet lines
+  fl <- function(x, line) draw(x / k$E, line) * E       # flow lines, relative to expenses
+  out <- k
+  out$cash <- bs(k$cash, "cash"); out$recv <- bs(k$recv, "recv"); out$othca <- bs(k$othca, "othca")
+  out$land <- bs(k$land, "land"); out$ap <- bs(k$ap, "ap"); out$mtg <- bs(k$mtg, "mtg")
+  out$cl <- out$ap + bs(gp, "gp")
+  out$A  <- out$cash + out$recv + out$othca + out$land + bs(otherA, "otherA")
+  out$L  <- out$cl + out$mtg + bs(otherL, "otherL")
+  out$NA_eoy <- out$A - out$L
+  out$RES <- ifelse(out$NA_eoy > 0, draw(res_sh, "res_sh") * out$NA_eoy, 0)
+  out$UNA <- out$NA_eoy - out$RES
+  out$E <- E
+  out$R <- fl(k$R, "R"); out$dep <- fl(k$dep, "dep"); out$progrev <- fl(k$progrev, "progrev")
+  out$P <- fl(k$P, "P"); out$M <- fl(k$M, "M"); out$Fu <- fl(k$Fu, "Fu")
+  out$NA_boy <- out$NA_eoy - (out$R - out$E) - fl(na_oth, "na_oth")
+  out
+}
+```
+
+## 4. Candidate fixes
+
+All fixes are applied to each variable, not to each correlation, except F1,
+which is included to show why pairwise correction fails.
+
+* **F0 as built**: the winsorized, normalized frame.
+* **F1 pairwise null subtraction**: R_obs - (R_null - I), one adjustment per
+  pair.
+* **F2 common size residualization**: every ratio is regressed on natural
+  splines of log expenses and log assets; the residuals are re-standardized.
+* **F3 denominator-specific residualization**: each ratio is regressed only on
+  the scale variable in its own denominator (E, A, or nothing for `current`,
+  `payables_una`, and `na_growth`).
+
+```{r fixes}
+den_scale <- c(current = "none", months_cash = "E", liquid_months = "E", cash_assets = "A",
+               debt_assets = "A", payables_una = "none", surplus_margin = "E",
+               return_assets = "A", na_growth = "none", self_suff = "E", admin_exp = "E",
+               fundr_exp = "E", land_assets = "A", assets_rev = "E")
+
+residualize <- function(X, k, mode = c("common", "denominator")) {
+  mode <- match.arg(mode)
+  BE <- ns(log(k$E), df = 4)
+  BA <- ns(log1p(pmax(k$A, 0)), df = 4)
+  basis <- list(E = cbind(1, BE), A = cbind(1, BA), both = cbind(1, BE, BA), none = NULL)
+  out <- lapply(names(X), function(v) {
+    b <- if (mode == "common") "both" else den_scale[[v]]
+    if (b == "none") return(X[[v]])
+    as.numeric(scale(lm.fit(basis[[b]], X[[v]])$residuals))
+  })
+  names(out) <- names(X)
+  as.data.frame(out)
+}
+size_basis <- cbind(1, ns(log(k$E), df = 4), ns(log1p(pmax(k$A, 0)), df = 4))
+size_r2 <- vapply(names(X), function(v) 1 - var(lm.fit(size_basis, X[[v]])$residuals) / var(X[[v]]), 0)
+round(sort(size_r2, decreasing = TRUE), 3)
+```
+
+`size_r2` is the share of each ratio's variance explained by the size splines.
+A value near 1 means residualizing on size erases the variable.
+
+```{r run-null}
+reps <- params$reps
+run_null <- function(anchor) {
+  lapply(seq_len(reps), function(i) {
+    kn <- null_lines(k, anchor)
+    Xn <- lines_to_ratios(kn)
+    list(F0 = cor(Xn),
+         F2 = cor(residualize(Xn, kn, "common")),
+         F3 = cor(residualize(Xn, kn, "denominator")))
+  })
+}
+null_runs <- list(flow = run_null("flow"), stock = run_null("stock"))
+
+mean_mat <- function(runs, fix) Reduce(`+`, lapply(runs, `[[`, fix)) / length(runs)
+eig_q95  <- function(runs, fix) apply(sapply(runs, function(r) eigen(r[[fix]], TRUE, only.values = TRUE)$values),
+                                      1, quantile, 0.95)
+R_null <- lapply(null_runs, function(runs) lapply(c(F0 = "F0", F2 = "F2", F3 = "F3"),
+                                                   function(f) mean_mat(runs, f)))
+for (a in names(R_null)) audit[[paste0("r_null_", a)]] <- R_null[[a]]$F0[cbind(audit$v1, audit$v2)]
+```
+
+## 5. How much of each correlation is construction?
+
+```{r null-vs-observed, fig.height = 5}
+type_col <- c(closure = "#8A3A2C", shared_den = "#2C5A4C", reciprocal = "#C07A2C",
+              shared_num = "#4A6FA5", identity = "#7A5C99", none = "#9AA59E")
+op <- par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+for (a in c("flow", "stock")) {
+  x <- audit[[paste0("r_null_", a)]]
+  plot(x, audit$r_obs, pch = 19, col = type_col[audit$type], xlim = c(-1, 1), ylim = c(-1, 1),
+       xlab = paste("null r,", a, "anchor"), ylab = "observed r", main = paste(a, "anchor"))
+  abline(0, 1, lty = 2); abline(h = 0, v = 0, col = "grey80")
+}
+legend("bottomright", legend = names(type_col), col = type_col, pch = 19, cex = 0.7, bty = "n")
+par(op)
+```
+
+```{r null-by-type}
+audit$r_null_max <- ifelse(abs(audit$r_null_flow) >= abs(audit$r_null_stock),
+                           audit$r_null_flow, audit$r_null_stock)
+by_type <- do.call(rbind, lapply(split(audit, audit$type), function(s) data.frame(
+  type = s$type[1], pairs = nrow(s),
+  mean_abs_obs = mean(abs(s$r_obs)),
+  mean_abs_null_flow = mean(abs(s$r_null_flow)),
+  mean_abs_null_stock = mean(abs(s$r_null_stock)),
+  share_of_obs = sum(abs(s$r_null_max)) / sum(abs(s$r_obs)))))
+knitr::kable(by_type[order(-by_type$mean_abs_null_flow), ], digits = 3, row.names = FALSE)
+
+# Does the formula-based sign prediction match the null?
+signed <- audit[audit$sign %in% c("+", "-") & abs(audit$r_null_max) >= 0.05, ]
+sign_hit <- mean(sign(signed$r_null_max) == ifelse(signed$sign == "+", 1, -1))
+none_ok  <- mean(abs(audit$r_null_max[audit$type == "none"]) < 0.05)
+c(signed_pairs_with_null_r_ge_05 = nrow(signed), sign_agreement = round(sign_hit, 3),
+  none_pairs_below_05 = round(none_ok, 3))
+```
+
+```{r largest-null}
+top <- audit[order(-abs(audit$r_null_max)), c("v1", "v2", "type", "role", "sign",
+                                               "r_obs", "r_null_flow", "r_null_stock")]
+knitr::kable(head(top, 20), digits = 2, row.names = FALSE,
+             caption = "The 20 pairs with the largest construction-null correlation")
+```
+
+## 6. Does arithmetic alone produce components?
+
+```{r eigen, fig.height = 4}
+eig_obs <- eigen(R_obs, TRUE, only.values = TRUE)$values
+eig_rand <- apply(replicate(20, eigen(cor(matrix(rnorm(nrow(X) * ncol(X)), ncol = ncol(X))),
+                                      TRUE, only.values = TRUE)$values), 1, quantile, 0.95)
+eig_flow  <- eig_q95(null_runs$flow, "F0")
+eig_stock <- eig_q95(null_runs$stock, "F0")
+matplot(seq_along(eig_obs), cbind(eig_obs, eig_rand, eig_flow, eig_stock), type = "b",
+        pch = 19, lty = 1, col = c("black", "grey60", "#2C5A4C", "#C07A2C"),
+        xlab = "component", ylab = "eigenvalue")
+legend("topright", c("observed", "random normal (95th pct)", "null, flow anchor (95th pct)",
+                     "null, stock anchor (95th pct)"),
+       col = c("black", "grey60", "#2C5A4C", "#C07A2C"), pch = 19, bty = "n", cex = 0.8)
+# Components retained: leading eigenvalues that exceed the reference, stopping at the first that does not.
+n_retain <- function(obs, ref) { x <- c(obs > ref, FALSE); which.min(x) - 1 }
+retain <- c(random_normal = n_retain(eig_obs, eig_rand), null_flow = n_retain(eig_obs, eig_flow),
+            null_stock = n_retain(eig_obs, eig_stock))
+retain
+knitr::kable(data.frame(component = seq_along(eig_obs), observed = eig_obs, random_normal = eig_rand,
+                        null_flow = eig_flow, null_stock = eig_stock), digits = 2)
+```
+
+```{r loadings}
+anchors <- c(performance = "return_assets", reserves = "months_cash",
+             leverage = "debt_assets", asset_structure = "land_assets",
+             expense = "fundr_exp")
+pca5 <- function(R) {
+  L <- unclass(psych::principal(R, nfactors = 5, rotate = "oblimin", n.obs = nrow(X))$loadings)
+  perms <- function(n) if (n == 1) list(1L) else
+    do.call(c, lapply(seq_len(n), function(i) lapply(perms(n - 1), function(p) c(i, setdiff(seq_len(n), i)[p]))))
+  P <- perms(5)
+  A <- abs(L[anchors, , drop = FALSE])
+  best <- P[[which.max(vapply(P, function(p) sum(A[cbind(1:5, p)]), 0))]]
+  L <- L[, best]
+  L <- sweep(L, 2, sign(diag(L[anchors, ])), `*`)   # anchor loads positively
+  colnames(L) <- names(anchors)
+  L
+}
+show_loadings <- function(L, caption) {
+  L[abs(L) < 0.30] <- NA
+  knitr::kable(L, digits = 2, caption = caption)
+}
+congruence <- function(A, B) diag(psych::factor.congruence(A, B, digits = 3))
+
+L_obs <- pca5(R_obs)
+show_loadings(L_obs, "F0 as built: five-component oblimin loadings")
+L_null_flow  <- pca5(R_null$flow$F0)
+L_null_stock <- pca5(R_null$stock$F0)
+show_loadings(L_null_flow, "Construction null, flow anchor")
+show_loadings(L_null_stock, "Construction null, stock anchor")
+round(rbind(null_flow = congruence(L_null_flow, L_obs),
+            null_stock = congruence(L_null_stock, L_obs)), 2)
+```
+
+Congruence here compares each null component with the observed component of
+the same label. Values of 0.85 or more mean the arithmetic alone reproduces
+that component's loading pattern.
+
+## 7. Do the fixes remove the artifact consistently?
+
+```{r fix-null}
+off <- function(R) R[upper.tri(R)]
+fix_null <- do.call(rbind, lapply(names(R_null), function(a) do.call(rbind, lapply(
+  c("F0", "F2", "F3"), function(f) {
+    r <- off(R_null[[a]][[f]])
+    data.frame(anchor = a, fix = f, mean_abs_null_r = mean(abs(r)),
+               max_abs_null_r = max(abs(r)), pairs_abs_ge_10 = sum(abs(r) >= 0.10))
+  }))))
+knitr::kable(fix_null, digits = 3, row.names = FALSE)
+
+# Remaining null correlation by pair type, after each fix
+pair_idx <- cbind(match(audit$v1, candidates), match(audit$v2, candidates))
+type_fix <- do.call(rbind, lapply(names(R_null), function(a) {
+  m <- sapply(c("F0", "F2", "F3"), function(f) tapply(abs(R_null[[a]][[f]][pair_idx]), audit$type, mean))
+  data.frame(anchor = a, type = rownames(m), m, row.names = NULL)
+}))
+knitr::kable(type_fix, digits = 3, row.names = FALSE,
+             caption = "Mean |null r| by pair type and fix")
+```
+
+```{r fix-observed}
+X_F2 <- residualize(X, k, "common")
+X_F3 <- residualize(X, k, "denominator")
+R_F2 <- cor(X_F2); R_F3 <- cor(X_F3)
+R_F1 <- R_obs - (R_null$flow$F0 - diag(ncol(X)))
+R_F1s <- R_obs - (R_null$stock$F0 - diag(ncol(X)))
+
+min_eig <- sapply(list(F0 = R_obs, F1_flow = R_F1, F1_stock = R_F1s, F2 = R_F2, F3 = R_F3),
+                  function(R) min(eigen(R, TRUE, only.values = TRUE)$values))
+round(min_eig, 3)
+
+ev <- function(R) eigen(R, TRUE, only.values = TRUE)$values
+retain_fix <- rbind(
+  F0 = c(n_retain(eig_obs, eig_flow), n_retain(eig_obs, eig_stock)),
+  F2 = c(n_retain(ev(R_F2), eig_q95(null_runs$flow, "F2")),
+         n_retain(ev(R_F2), eig_q95(null_runs$stock, "F2"))),
+  F3 = c(n_retain(ev(R_F3), eig_q95(null_runs$flow, "F3")),
+         n_retain(ev(R_F3), eig_q95(null_runs$stock, "F3"))))
+colnames(retain_fix) <- c("vs null flow", "vs null stock")
+retain_fix
+
+R_F1pd <- as.matrix(Matrix::nearPD(R_F1, corr = TRUE)$mat)
+dimnames(R_F1pd) <- dimnames(R_obs)
+L_F1 <- pca5(R_F1pd); L_F2 <- pca5(R_F2); L_F3 <- pca5(R_F3)
+show_loadings(L_F1, "F1 pairwise null subtraction (flow anchor, nearest PD)")
+show_loadings(L_F2, "F2 common size residualization")
+show_loadings(L_F3, "F3 denominator-specific residualization")
+round(rbind(F1 = congruence(L_F1, L_obs), F2 = congruence(L_F2, L_obs),
+            F3 = congruence(L_F3, L_obs)), 2)
+```
+
+## 8. Findings
+
+```{r findings-values, include = FALSE}
+cg_stock <- congruence(L_null_stock, L_obs)
+cg_flow  <- congruence(L_null_flow, L_obs)
+share    <- setNames(by_type$share_of_obs, by_type$type)
+fn <- function(x, d = 2) formatC(x, format = "f", digits = d)
+fx <- function(a, f, col = "mean_abs_null_r") fix_null[fix_null$anchor == a & fix_null$fix == f, col]
+```
+
+**Most of the correlation structure is construction.** For closure,
+reciprocal, identity, and shared-numerator pairs, the construction null
+reproduces `r fn(100 * min(share[c("closure", "reciprocal", "identity", "shared_num")]), 0)`%
+or more of the observed absolute correlation. Only shared-denominator pairs
+(`r fn(100 * share[["shared_den"]], 0)`%) and unlinked pairs
+(`r fn(100 * share[["none"]], 0)`%) carry mostly non-arithmetic
+correlation. The formula-based sign prediction matches the null for
+`r fn(100 * sign_hit, 0)`% of the `r nrow(signed)` pairs where the null
+correlation reaches 0.05.
+
+**Arithmetic alone reproduces the dimensions.** With assets as the size
+reference, PCA on the null matrix recovers the observed performance, reserves,
+leverage, and asset-structure components with congruence
+`r fn(cg_stock[["performance"]])`, `r fn(cg_stock[["reserves"]])`,
+`r fn(cg_stock[["leverage"]])`, and `r fn(cg_stock[["asset_structure"]])`.
+The null's leading eigenvalues (`r paste(fn(eig_stock[1:3]), collapse = ", ")`)
+sit next to the observed ones (`r paste(fn(eig_obs[1:3]), collapse = ", ")`).
+Against a construction null, parallel analysis retains
+`r retain[["null_stock"]]` component, not `r retain[["random_normal"]]`.
+The components are shared-ingredient components: `surplus_margin`,
+`return_assets`, and `na_growth` are one number (the surplus) on three scales,
+and `months_cash`, `liquid_months`, and `assets_rev` all inherit the ratio of
+assets to expenses.
+
+**No single fix is consistent across the set.**
+
+* *Pairwise null subtraction (F1)* produces an invalid correlation matrix
+  (smallest eigenvalue `r fn(min_eig[["F1_flow"]])`), and after projection
+  to the nearest valid matrix the components no longer resemble any
+  interpretable structure.
+* *Common size residualization (F2)* removes most shared-denominator artifact
+  (mean |null r| for those pairs falls from
+  `r fn(type_fix$F0[type_fix$anchor == "flow" & type_fix$type == "shared_den"], 3)` to
+  `r fn(type_fix$F2[type_fix$anchor == "flow" & type_fix$type == "shared_den"], 3)`),
+  but leaves closure and shared-numerator artifact untouched and erases
+  `r fn(100 * size_r2[["assets_rev"]], 0)`% of `assets_rev`. Reserves and
+  asset structure are rebuilt around what is left (congruence
+  `r fn(congruence(L_F2, L_obs)[["reserves"]])` and
+  `r fn(congruence(L_F2, L_obs)[["asset_structure"]])`).
+* *Denominator-specific residualization (F3)* keeps the matrix valid and the
+  structure intact, but lowers the average null correlation only from
+  `r fn(fx("flow", "F0"), 3)` to `r fn(fx("flow", "F3"), 3)`.
+
+The artifact lives in different places for different link types, so the repair
+has to be chosen by link type. The one step that applies to all 91 pairs is the
+construction null itself, used as a benchmark: for retention decisions, for
+reading loadings, and for reporting how much of each correlation exceeds
+what the arithmetic implies.
+
+## 9. Repairing the variable set by link type
+
+Section 7 transformed the 14 ratios. This section instead **redesigns the set**,
+choosing one repair per link type, and runs the redesigned set through the same
+construction null.
+
+| Link type | Ratios affected | Repair | New variable |
+|---|---|---|---|
+| Closure | `cash_assets`, `land_assets` | one bounded contrast, 0 when both parts are 0 | `cash_land` = (cash - land) / (cash + land) |
+| Closure | `admin_exp`, `fundr_exp` | one bounded contrast, imputed when both parts are 0 | `admin_fundr` = (M - Fu) / (M + Fu) |
+| Shared numerator, construct | `surplus_margin`, `return_assets`, `na_growth` | enter the surplus once | `surplus` = mean of the three normalized ratios |
+| Stock over flow | `months_cash`, `liquid_months`, `assets_rev` | split into a share of assets and one scale | `liquid_assets_share` = (cash + recv) / A; `una_liquid_share` = (una - land + mtg) / A; `assets_exp` = A / E |
+| Reciprocal, identity | `current`, `debt_assets`, `payables_una`, `self_suff` | kept as built | unchanged |
+
+Because months of cash = 12 x `liquid_assets_share` x `assets_exp` (up to the
+depreciation adjustment), the redesign keeps the information in the original
+ratios. The difference is that the assets-to-expenses scale enters once, as its
+own variable, instead of being hidden in three.
+
+```{r redesign-def}
+redesign_vars <- c("current", "liquid_assets_share", "una_liquid_share", "assets_exp",
+                   "cash_land", "debt_assets", "payables_una", "surplus", "self_suff",
+                   "admin_fundr")
+
+redesign <- function(k, frame) {
+  una <- ifelse(k$UNA == 0 & k$RES == 0, k$NA_eoy, k$UNA)
+  new <- with(k, data.frame(
+    liquid_assets_share = ifelse(A > 0, pmin((cash + recv) / A, 1), NA),
+    una_liquid_share    = ifelse(A > 0, (una - land + mtg) / A, NA),
+    assets_exp          = A / E,
+    cash_land           = ifelse(cash + land > 0, pmin(pmax((cash - land) / (cash + land), -1), 1), 0),
+    admin_fundr         = ifelse(M + Fu > 0, pmin(pmax((M - Fu) / (M + Fu), -1), 1), NA)))
+  base_preds <- c("liquid_months", "surplus_margin", "months_cash", "self_suff")
+  for (v in names(new)) if (anyNA(new[[v]])) {
+    new[[v]] <- cond_impute(new[[v]], frame[, base_preds], is.na(new[[v]]))
+  }
+  Z <- as.data.frame(lapply(cbind(frame[c("current", "debt_assets", "payables_una", "self_suff",
+                                          "surplus_margin", "return_assets", "na_growth")], new),
+                            winsor_normalize))
+  Z$surplus <- as.numeric(scale(rowMeans(Z[c("surplus_margin", "return_assets", "na_growth")])))
+  Z[redesign_vars]
+}
+
+X_S2 <- redesign(k, frame_obs)
+R_S2 <- cor(X_S2)
+```
+
+```{r redesign-null}
+set.seed(params$seed + 1)
+run_null_S2 <- function(anchor) {
+  lapply(seq_len(reps), function(i) {
+    kn <- null_lines(k, anchor)
+    cor(redesign(kn, lines_to_frame(kn)))
+  })
+}
+null_S2 <- list(flow = run_null_S2("flow"), stock = run_null_S2("stock"))
+R_null_S2 <- lapply(null_S2, function(runs) Reduce(`+`, runs) / length(runs))
+eig_q95_S2 <- lapply(null_S2, function(runs)
+  apply(sapply(runs, function(r) eigen(r, TRUE, only.values = TRUE)$values), 1, quantile, 0.95))
+eig_rand_S2 <- apply(replicate(20, eigen(cor(matrix(rnorm(nrow(X_S2) * ncol(X_S2)), ncol = ncol(X_S2))),
+                                         TRUE, only.values = TRUE)$values), 1, quantile, 0.95)
+```
+
+### 9.1 How much construction is left?
+
+```{r redesign-summary}
+set_summary <- function(label, R_o, R_f, R_s, e_rand, e_f, e_s) {
+  up <- upper.tri(R_o)
+  data.frame(set = label, variables = ncol(R_o), pairs = sum(up),
+             mean_abs_obs = mean(abs(R_o[up])),
+             mean_abs_null_flow = mean(abs(R_f[up])), mean_abs_null_stock = mean(abs(R_s[up])),
+             share_pairs_null_ge_10 = mean(pmax(abs(R_f[up]), abs(R_s[up])) >= 0.10),
+             retain_random = n_retain(ev(R_o), e_rand),
+             retain_null_flow = n_retain(ev(R_o), e_f), retain_null_stock = n_retain(ev(R_o), e_s))
+}
+s2_summary <- rbind(
+  set_summary("F0: 14 ratios as built", R_obs, R_null$flow$F0, R_null$stock$F0, eig_rand, eig_flow, eig_stock),
+  set_summary("S2: redesigned set", R_S2, R_null_S2$flow, R_null_S2$stock,
+              eig_rand_S2, eig_q95_S2$flow, eig_q95_S2$stock))
+knitr::kable(s2_summary, digits = 3, row.names = FALSE)
+
+knitr::kable(data.frame(component = seq_len(ncol(R_S2)), observed = ev(R_S2), random_normal = eig_rand_S2,
+                        null_flow = eig_q95_S2$flow, null_stock = eig_q95_S2$stock),
+             digits = 2, caption = "Redesigned set: eigenvalues")
+```
+
+```{r redesign-pairs}
+ij <- which(upper.tri(R_S2), arr.ind = TRUE)
+s2_pairs <- data.frame(v1 = redesign_vars[ij[, 1]], v2 = redesign_vars[ij[, 2]],
+                       r_obs = R_S2[ij], r_null_flow = R_null_S2$flow[ij],
+                       r_null_stock = R_null_S2$stock[ij])
+# Beyond null: the observed correlation minus the null that lies closer to it.
+s2_pairs$beyond_null <- with(s2_pairs, ifelse(abs(r_obs - r_null_flow) < abs(r_obs - r_null_stock),
+                                              r_obs - r_null_flow, r_obs - r_null_stock))
+s2_pairs <- s2_pairs[order(-abs(s2_pairs$r_obs)), ]
+knitr::kable(head(s2_pairs, 20), digits = 2, row.names = FALSE,
+             caption = "Redesigned set: the 20 largest observed correlations and their nulls")
+```
+
+The stock-over-flow decomposition is the clearest test. Before the redesign,
+`months_cash` and `liquid_months` had a null correlation of
+`r fn(R_null$flow$F0["months_cash", "liquid_months"])` (flow) and
+`r fn(R_null$stock$F0["months_cash", "liquid_months"])` (stock). Their
+asset-share counterparts have
+`r fn(R_null_S2$flow["liquid_assets_share", "una_liquid_share"])` and
+`r fn(R_null_S2$stock["liquid_assets_share", "una_liquid_share"])`.
+
+### 9.2 What structure does the redesigned set carry?
+
+```{r redesign-loadings}
+perms <- function(n) if (n == 1) list(1L) else
+  do.call(c, lapply(seq_len(n), function(i) lapply(perms(n - 1), function(p) c(i, setdiff(seq_len(n), i)[p]))))
+pca_k <- function(R, nf) {
+  L <- unclass(psych::principal(R, nfactors = nf, rotate = if (nf > 1) "oblimin" else "none",
+                                n.obs = nrow(X))$loadings)
+  colnames(L) <- paste0("C", seq_len(nf))
+  L
+}
+# Reorder and re-sign the columns of L to best match ref; return matched loadings and congruence.
+match_to <- function(L, ref) {
+  C <- psych::factor.congruence(L, ref, digits = 3)
+  P <- perms(ncol(ref))
+  p <- P[[which.max(vapply(P, function(q) sum(abs(C[cbind(q, seq_len(ncol(ref)))])), 0))]]
+  s <- sign(C[cbind(p, seq_len(ncol(ref)))])
+  L <- sweep(L[, p, drop = FALSE], 2, s, `*`)
+  colnames(L) <- colnames(ref)
+  list(L = L, congruence = setNames(abs(C[cbind(p, seq_len(ncol(ref)))]), colnames(ref)))
+}
+
+k_S2 <- max(2, n_retain(ev(R_S2), eig_rand_S2))
+L_S2 <- pca_k(R_S2, k_S2)
+L_S2_flow  <- match_to(pca_k(R_null_S2$flow, k_S2), L_S2)
+L_S2_stock <- match_to(pca_k(R_null_S2$stock, k_S2), L_S2)
+show_loadings(L_S2, paste0("Redesigned set, observed: ", k_S2, " components"))
+show_loadings(L_S2_stock$L, "Redesigned set, construction null (stock anchor)")
+round(rbind(null_flow = L_S2_flow$congruence, null_stock = L_S2_stock$congruence), 2)
+```
+
+### 9.3 Findings for the redesign
+
+```{r redesign-values, include = FALSE}
+f0s <- s2_summary[1, ]; s2s <- s2_summary[2, ]
+```
+
+* **Construction correlation.** Mean |null r| is
+  `r fn(s2s$mean_abs_null_flow, 3)` (flow) and `r fn(s2s$mean_abs_null_stock, 3)`
+  (stock) in the redesigned set, against `r fn(f0s$mean_abs_null_flow, 3)` and
+  `r fn(f0s$mean_abs_null_stock, 3)` for the as-built ratios. The share of pairs
+  with a null correlation of 0.10 or more is
+  `r fn(100 * s2s$share_pairs_null_ge_10, 0)`%, against
+  `r fn(100 * f0s$share_pairs_null_ge_10, 0)`%. The observed mean |r| is
+  `r fn(s2s$mean_abs_obs, 3)`, against `r fn(f0s$mean_abs_obs, 3)`.
+* **Where the construction correlation now sits.** The largest null
+  correlations are
+  `r s2_top <- s2_pairs[order(-pmax(abs(s2_pairs$r_null_flow), abs(s2_pairs$r_null_stock))), ][1:4, ]; paste(sprintf("%s x %s (%s)", s2_top$v1, s2_top$v2, fn(ifelse(abs(s2_top$r_null_flow) > abs(s2_top$r_null_stock), s2_top$r_null_flow, s2_top$r_null_stock))), collapse = "; ")`.
+  Putting every balance-sheet quantity over total assets turns stock-over-flow
+  coupling into composition: the asset shares, `debt_assets`, and
+  `una_liquid_share` are parts of the same balance sheet.
+* **Retention against the null.** Parallel analysis keeps
+  `r s2s$retain_random` components against random data, and
+  `r s2s$retain_null_flow` (flow) and `r s2s$retain_null_stock` (stock) against
+  the construction null, compared with `r f0s$retain_null_flow` and
+  `r f0s$retain_null_stock` for the as-built ratios.
+* **How much of the remaining structure is arithmetic.** Congruence of the
+  null components with the observed `r k_S2`-component solution is
+  `r paste(fn(L_S2_stock$congruence), collapse = ", ")` (stock anchor) and
+  `r paste(fn(L_S2_flow$congruence), collapse = ", ")` (flow anchor).
+* **What the data add beyond arithmetic.** The largest gaps between an observed
+  correlation and the nearer null are
+  `r s2_gap <- s2_pairs[order(-abs(s2_pairs$beyond_null)), ][1:5, ]; paste(sprintf("%s x %s (%s observed, %s beyond null)", s2_gap$v1, s2_gap$v2, fn(s2_gap$r_obs), fn(s2_gap$beyond_null)), collapse = "; ")`.
+  These are the relationships a factor model of this set would be entitled to
+  interpret.
+
+## 10. A factor model with construction held fixed
+
+Sections 7 and 9 tried to remove construction correlation from the data. This
+section keeps the data as they are and puts the arithmetic into the model. The
+construction null gives the correlation matrix the ratios would have if only
+arithmetic linked them. Call its off-diagonal part **C**. The factor model is
+
+    Sigma = Lambda Lambda' + Psi + C
+
+with C **fixed**, and Lambda and Psi estimated by maximum likelihood. Unlike
+the pairwise subtraction in section 7, the model is fit to the observed
+matrix, which is a valid correlation matrix. The factors only have to explain
+covariance the arithmetic does not already account for.
+
+Two questions:
+
+1. **Does it work when the truth is known?** Plant known factors in the 990
+   lines, rebuild the ratios, and check whether the model recovers them where
+   ordinary factor analysis does not.
+2. **What does it find in the real data?** Fit it to the 14 as-built ratios,
+   to the redesigned set from section 9, and to a composition set that treats
+   the balance sheet as parts of one total.
+
+### 10.1 The model
+
+```{r offset-model}
+# ML fit of Sigma = L L' + diag(psi) + C, with C's off-diagonal fixed.
+fit_offset <- function(S, C = NULL, nf, n.obs) {
+  p <- ncol(S)
+  if (is.null(C)) C <- matrix(0, p, p)
+  diag(C) <- 0
+  if (nf > 0) {
+    e  <- eigen(S - C, symmetric = TRUE)
+    L0 <- e$vectors[, seq_len(nf), drop = FALSE] %*%
+          diag(sqrt(pmax(e$values[seq_len(nf)] - 1, 0.05)), nf)
+    L0 <- L0 * pmin(1, 0.9 / sqrt(pmax(rowSums(L0^2), 1e-8)))
+  } else {
+    L0 <- matrix(0, p, 0)
+  }
+  psi0 <- pmax(1 - rowSums(L0^2), 0.05)
+  bump <- 0
+  while (inherits(try(chol(tcrossprod(L0) + diag(psi0 + bump) + C), silent = TRUE), "try-error"))
+    bump <- bump + 0.1
+  unpack <- function(th) list(L = matrix(th[seq_len(p * nf)], p, nf), psi = exp(th[p * nf + seq_len(p)]))
+  sigma  <- function(u) tcrossprod(u$L) + diag(u$psi) + C
+  fn <- function(th) {
+    ch <- try(chol(sigma(unpack(th))), silent = TRUE)
+    if (inherits(ch, "try-error")) return(1e10)
+    2 * sum(log(diag(ch))) + sum(S * chol2inv(ch))
+  }
+  gr <- function(th) {
+    u  <- unpack(th)
+    ch <- try(chol(sigma(u)), silent = TRUE)
+    if (inherits(ch, "try-error")) return(rep(0, length(th)))
+    Si <- chol2inv(ch)
+    G  <- Si - Si %*% S %*% Si
+    c(2 * G %*% u$L, diag(G) * u$psi)
+  }
+  opt <- optim(c(L0, log(psi0 + bump)), fn, gr, method = "BFGS", control = list(maxit = 5000))
+  u   <- unpack(opt$par)
+  Sig <- sigma(u)
+  Fml <- opt$value - as.numeric(determinant(S)$modulus) - p
+  df  <- p * (p + 1) / 2 - (p * nf + p - nf * (nf - 1) / 2)
+  chi <- (n.obs - 1) * Fml
+  low <- lower.tri(S, diag = TRUE)
+  L <- u$L
+  rownames(L) <- colnames(S)
+  list(L = L, psi = u$psi, converged = opt$convergence == 0, df = df,
+       rmsea = sqrt(max(chi - df, 0) / (max(df, 1) * (n.obs - 1))),
+       srmr = sqrt(mean((S - Sig)[low]^2)))
+}
+
+# Oblimin pattern (for display) and structure (for comparison with truth).
+rotate_fit <- function(L) {
+  if (ncol(L) < 2) {
+    colnames(L) <- paste0("F", seq_len(ncol(L)))
+    return(list(pattern = L, structure = L))
+  }
+  r <- GPArotation::oblimin(L)
+  P <- unclass(r$loadings)
+  colnames(P) <- paste0("F", seq_len(ncol(P)))
+  S <- P %*% r$Phi
+  dimnames(S) <- dimnames(P)
+  list(pattern = P, structure = S)
+}
+
+null_mean_offdiag <- function(null_list) {
+  C <- Reduce(`+`, null_list) / length(null_list)
+  diag(C) <- 0
+  C
+}
+
+# Parallel analysis for the fixed-construction model: eigenvalues of S - C
+# against those of each null draw minus C.
+offset_retain <- function(S, null_list) {
+  C <- null_mean_offdiag(null_list)
+  q <- apply(sapply(null_list, function(R) ev(R - C)), 1, quantile, 0.95)
+  n_retain(ev(S - C), q)
+}
+rand_eig <- function(p, n) apply(replicate(20, ev(cor(matrix(rnorm(n * p), ncol = p)))),
+                                 1, quantile, 0.95)
+```
+
+### 10.2 Test against planted factors
+
+The planted data use the same lines and the same flow-anchored shuffle as the
+construction null. The difference is that some lines are reassigned through
+a Gaussian copula driven by three latent factors, so each line keeps its exact
+distribution but co-moves with the others that share its factor:
+
+* **liquidity**: cash, receivables, other current assets up; payables and
+  grants payable down;
+* **capital**: land and buildings, mortgages, other liabilities, depreciation
+  up;
+* **performance**: revenue relative to expenses, other net-asset changes,
+  program revenue up.
+
+The "true" loading of each ratio on each factor is its correlation with the
+planted factor. A second scenario plants nothing, so any factor found there is
+false.
+
+```{r planted}
+line_loadings <- rbind(
+  cash = c(0.7, 0, 0), recv = c(0.5, 0, 0), othca = c(0.3, 0, 0), ap = c(-0.4, 0, 0),
+  gp = c(-0.3, 0, 0), land = c(0, 0.7, 0), mtg = c(0, 0.6, 0), otherL = c(0, 0.3, 0),
+  dep = c(0, 0.5, 0), R = c(0, 0, 0.7), na_oth = c(0, 0, 0.4), progrev = c(0, 0, 0.3))
+colnames(line_loadings) <- c("liquidity", "capital", "performance")
+
+planted_lines <- function(k, lam) {
+  n  <- nrow(k)
+  Fm <- matrix(rnorm(n * ncol(lam)), n, ncol(lam), dimnames = list(NULL, colnames(lam)))
+  draw <- function(x, line) {
+    l <- if (line %in% rownames(lam)) lam[line, ] else rep(0, ncol(lam))
+    if (all(l == 0)) return(x[sample.int(n)])
+    s <- drop(Fm %*% l) + sqrt(1 - sum(l^2)) * rnorm(n)
+    sort(x)[rank(s, ties.method = "first")]
+  }
+  list(k = null_lines(k, "flow", draw), F = Fm)
+}
+
+reps_p <- min(reps, 10)
+run_scenario <- function(lam) {
+  pl <- planted_lines(k, lam)
+  Xp <- lines_to_ratios(pl$k)
+  list(S = cor(Xp), T = cor(Xp, pl$F),
+       nulls = lapply(c(flow = "flow", stock = "stock"), function(a)
+         lapply(seq_len(reps_p), function(i) cor(lines_to_ratios(null_lines(pl$k, a))))))
+}
+set.seed(params$seed + 2)
+scen <- list(none = run_scenario(line_loadings * 0), planted = run_scenario(line_loadings))
+eig_rand_14 <- rand_eig(length(candidates), nrow(X))
+
+select_table <- function(S, nulls, e_rand) {
+  null_q <- function(a) apply(sapply(nulls[[a]], ev), 1, quantile, 0.95)
+  data.frame(random_pa = n_retain(ev(S), e_rand),
+             construction_pa_flow = n_retain(ev(S), null_q("flow")),
+             construction_pa_stock = n_retain(ev(S), null_q("stock")),
+             fixed_construction_flow = offset_retain(S, nulls$flow),
+             fixed_construction_stock = offset_retain(S, nulls$stock))
+}
+planted_sel <- cbind(scenario = c("nothing planted", "3 factors planted"), true_factors = c(0, 3),
+                     rbind(select_table(scen$none$S, scen$none$nulls, eig_rand_14),
+                           select_table(scen$planted$S, scen$planted$nulls, eig_rand_14)))
+knitr::kable(planted_sel, row.names = FALSE, caption = "Number of factors retained")
+```
+
+```{r planted-recovery}
+sp <- scen$planted
+C_pf <- null_mean_offdiag(sp$nulls$flow)
+C_ps <- null_mean_offdiag(sp$nulls$stock)
+recover <- function(fit) {
+  rf <- rotate_fit(fit$L)
+  m  <- match_to(rf$structure, sp$T)
+  list(congruence = m$congruence, structure = m$L)
+}
+planted_fits <- list(
+  `ordinary ML factor analysis`       = fit_offset(sp$S, NULL, 3, nrow(X)),
+  `fixed construction, flow null`     = fit_offset(sp$S, C_pf, 3, nrow(X)),
+  `fixed construction, stock null`    = fit_offset(sp$S, C_ps, 3, nrow(X)))
+planted_rec <- lapply(planted_fits, recover)
+
+# Control: the same three fits on data with nothing planted, scored against
+# the planted structure. A method that "recovers" the planted structure here
+# is reading arithmetic, not the planted factors.
+sn <- scen$none
+control_fits <- list(
+  `ordinary ML factor analysis`    = fit_offset(sn$S, NULL, 3, nrow(X)),
+  `fixed construction, flow null`  = fit_offset(sn$S, null_mean_offdiag(sn$nulls$flow), 3, nrow(X)),
+  `fixed construction, stock null` = fit_offset(sn$S, null_mean_offdiag(sn$nulls$stock), 3, nrow(X)))
+control_rec <- lapply(control_fits, recover)
+
+recovery_table <- data.frame(
+  method = names(planted_rec),
+  planted = sapply(planted_rec, function(r) mean(r$congruence)),
+  nothing_planted = sapply(control_rec, function(r) mean(r$congruence)),
+  t(sapply(planted_rec, `[[`, "congruence")), row.names = NULL, check.names = FALSE)
+recovery_table$detection_margin <- recovery_table$planted - recovery_table$nothing_planted
+knitr::kable(recovery_table, digits = 2, row.names = FALSE,
+             caption = "Mean congruence with the planted structure (3 factors), with and without planting")
+
+show_loadings(sp$T, "Planted structure: correlation of each ratio with each factor")
+show_loadings(planted_rec$`ordinary ML factor analysis`$structure, "Ordinary ML factor analysis")
+show_loadings(planted_rec$`fixed construction, flow null`$structure, "Fixed construction, flow null")
+
+planted_fit_k <- do.call(rbind, lapply(names(scen), function(s) {
+  sc <- scen[[s]]
+  Cf <- null_mean_offdiag(sc$nulls$flow); Cs <- null_mean_offdiag(sc$nulls$stock)
+  do.call(rbind, lapply(0:4, function(nf) {
+    f <- list(ordinary = fit_offset(sc$S, NULL, nf, nrow(X)),
+              fixed_flow = fit_offset(sc$S, Cf, nf, nrow(X)),
+              fixed_stock = fit_offset(sc$S, Cs, nf, nrow(X)))
+    data.frame(scenario = s, factors = nf,
+               t(unlist(lapply(f, function(x) c(rmsea = x$rmsea, srmr = x$srmr)))))
+  }))
+}))
+knitr::kable(planted_fit_k, digits = 3, row.names = FALSE,
+             caption = "Fit by number of factors, both scenarios")
+```
+
+### 10.3 The balance sheet as parts of one total
+
+The composition set replaces every balance-sheet ratio with a share of total
+assets from one of the two partitions of the balance sheet. On the asset side
+the parts are liquid assets (cash, receivables, other current assets), land and
+buildings, and other assets. On the funding side they are liabilities,
+unrestricted net assets, and restricted net assets. One part per side is left
+out so the shares are not perfectly collinear; when restricted net assets are
+not reported (as in `dat10k`), the funding side is liabilities alone. Flow
+measures enter as ratios to expenses. The closure among the shares is left in
+the data on purpose: the fixed C in the model accounts for it.
+
+```{r composition}
+composition <- function(k, frame, with_una) {
+  una <- ifelse(k$UNA == 0 & k$RES == 0, k$NA_eoy, k$UNA)
+  new <- with(k, data.frame(
+    liquid_share = ifelse(A > 0, (cash + recv + othca) / A, NA),
+    fixed_share  = ifelse(A > 0, land / A, NA),
+    liab_share   = ifelse(A > 0, L / A, NA),
+    una_share    = ifelse(A > 0, una / A, NA),
+    assets_exp   = A / E))
+  if (!with_una) new$una_share <- NULL
+  base_preds <- c("liquid_months", "surplus_margin", "months_cash", "self_suff")
+  for (v in names(new)) if (anyNA(new[[v]])) {
+    new[[v]] <- cond_impute(new[[v]], frame[, base_preds], is.na(new[[v]]))
+  }
+  as.data.frame(lapply(cbind(new, frame[c("surplus_margin", "self_suff", "admin_exp", "fundr_exp")]),
+                       winsor_normalize))
+}
+with_una <- any(k$RES != 0)
+X_S3 <- composition(k, frame_obs, with_una)
+R_S3 <- cor(X_S3)
+
+set.seed(params$seed + 3)
+null_S3 <- lapply(c(flow = "flow", stock = "stock"), function(a) lapply(seq_len(reps), function(i) {
+  kn <- null_lines(k, a)
+  cor(composition(kn, lines_to_frame(kn), with_una))
+}))
+names(X_S3)
+```
+
+### 10.4 The real data
+
+```{r real-offset}
+real_sets <- list(
+  `as built (14 ratios)` = list(S = R_obs, nulls = lapply(null_runs, function(runs) lapply(runs, `[[`, "F0"))),
+  `redesigned (section 9)` = list(S = R_S2, nulls = null_S2),
+  `composition` = list(S = R_S3, nulls = null_S3))
+
+real_sel <- do.call(rbind, lapply(names(real_sets), function(nm) {
+  s <- real_sets[[nm]]
+  cbind(set = nm, variables = ncol(s$S), select_table(s$S, s$nulls, rand_eig(ncol(s$S), nrow(X))))
+}))
+knitr::kable(real_sel, row.names = FALSE, caption = "Number of factors retained, real data")
+
+real_fit_k <- do.call(rbind, lapply(names(real_sets), function(nm) {
+  s <- real_sets[[nm]]
+  Cf <- null_mean_offdiag(s$nulls$flow); Cs <- null_mean_offdiag(s$nulls$stock)
+  do.call(rbind, lapply(0:4, function(nf) {
+    f <- list(ordinary = fit_offset(s$S, NULL, nf, nrow(X)),
+              fixed_flow = fit_offset(s$S, Cf, nf, nrow(X)),
+              fixed_stock = fit_offset(s$S, Cs, nf, nrow(X)))
+    data.frame(set = nm, factors = nf, t(unlist(lapply(f, function(x) c(rmsea = x$rmsea, srmr = x$srmr)))))
+  }))
+}))
+knitr::kable(real_fit_k, digits = 3, row.names = FALSE, caption = "Fit by number of factors, real data")
+```
+
+```{r real-loadings, results = "asis"}
+real_loadings <- lapply(names(real_sets), function(nm) {
+  s  <- real_sets[[nm]]
+  out <- list()
+  for (a in c("flow", "stock")) {
+    nf <- max(1, min(4, real_sel$fixed_construction_flow[real_sel$set == nm] * (a == "flow") +
+                        real_sel$fixed_construction_stock[real_sel$set == nm] * (a == "stock")))
+    fit <- fit_offset(s$S, null_mean_offdiag(s$nulls[[a]]), nf, nrow(X))
+    out[[a]] <- rotate_fit(fit$L)$pattern
+    cat(show_loadings(out[[a]], paste0(nm, ": fixed construction, ", a, " null, ", nf, " factor(s)")),
+        sep = "\n")
+    cat("\n\n")
+  }
+  out
+})
+names(real_loadings) <- names(real_sets)
+```
+
+### 10.5 Findings
+
+```{r offset-values, include = FALSE}
+ps <- planted_sel
+rt <- recovery_table
+pr <- setNames(rt$planted, rt$method)
+pn <- setNames(rt$nothing_planted, rt$method)
+rs <- real_sel
+```
+
+* **False factors.** With nothing planted, ordinary parallel analysis keeps
+  `r ps$random_pa[1]` factor(s). Parallel analysis against the construction
+  null keeps `r ps$construction_pa_flow[1]` (flow) and
+  `r ps$construction_pa_stock[1]` (stock). The fixed-construction model keeps
+  `r ps$fixed_construction_flow[1]` (flow) and `r ps$fixed_construction_stock[1]`
+  (stock).
+* **True factors.** With three factors planted, the same methods keep
+  `r ps$random_pa[2]`, `r ps$construction_pa_flow[2]`,
+  `r ps$construction_pa_stock[2]`, `r ps$fixed_construction_flow[2]`,
+  and `r ps$fixed_construction_stock[2]`.
+* **Recovery.** Mean congruence with the planted structure is
+  `r fn(pr[["ordinary ML factor analysis"]])` for ordinary factor analysis,
+  `r fn(pr[["fixed construction, flow null"]])` with the matching (flow)
+  construction null held fixed, and `r fn(pr[["fixed construction, stock null"]])`
+  with the mismatched (stock) null. On data with nothing planted, the same
+  fits score `r fn(pn[["ordinary ML factor analysis"]])`,
+  `r fn(pn[["fixed construction, flow null"]])`, and
+  `r fn(pn[["fixed construction, stock null"]])` against the planted structure.
+  Only the gap between the two is evidence that a method detects the planted
+  factors rather than the arithmetic.
+* **Real data.** The fixed-construction model keeps
+  `r paste(sprintf("%s (flow) and %s (stock) factors for the %s set", rs$fixed_construction_flow, rs$fixed_construction_stock, rs$set), collapse = "; ")`.
+* **Single-variable factors.** Of the factors shown in 10.4,
+  `r singles <- unlist(lapply(real_loadings, function(s) lapply(s, function(P) apply(abs(P), 2, max) >= 0.95))); sum(singles)`
+  of `r length(singles)` have a loading of 0.95 or more on one variable. A
+  factor like that is not a shared dimension. It absorbs the misfit between
+  that variable's observed correlations and the ones the construction null
+  implies, which is what happens when the null does not describe how the real
+  lines are built.
+
+## 11. A conditional construction null
+
+Both nulls so far break the real relationship between expenses and assets: the
+flow null keeps expenses and scrambles assets relative to them, and the stock
+null does the reverse. Section 10 showed the fixed-construction model is only
+as good as its null. This section builds a **conditional** null: organizations
+are grouped into cells of similar expenses and similar assets per dollar of
+expenses, each organization keeps its own expenses, and every size-scaled line
+is shuffled only within its cell.
+
+The conditional null is stricter than the other two. It keeps the arithmetic
+**and** every relationship that runs through size and asset intensity. A
+correlation that exceeds it cannot be explained by construction or by how big
+and how asset-heavy organizations are.
+
+```{r joint-null-def}
+cell_bins <- if (nrow(k) > 1e5) 20 else 10
+
+# Cells: bins of expenses, then bins of assets per dollar of expenses within each.
+size_cells <- function(k, bins) {
+  eb <- cut(rank(k$E, ties.method = "first"), bins, labels = FALSE)
+  ae <- ifelse(k$A > 0, k$A / k$E, -1)
+  ab <- ave(ae, eb, FUN = function(v) cut(rank(v, ties.method = "first"), bins, labels = FALSE))
+  (eb - 1) * bins + ab
+}
+
+# Reassign values within cells in the order of a score: random for a shuffle,
+# factor-driven for planted structure.
+within_cells <- function(cell, score = function(line, n) runif(n)) {
+  force(cell)
+  function(x, line) {
+    s   <- score(line, length(x))
+    out <- numeric(length(x))
+    out[order(cell, s)] <- x[order(cell, x)]
+    out
+  }
+}
+
+cells_obs <- size_cells(k, cell_bins)
+c(cells = length(unique(cells_obs)), median_orgs_per_cell = median(table(cells_obs)))
+```
+
+### 11.1 How much of the observed structure does it absorb?
+
+```{r joint-null-run}
+set.seed(params$seed + 4)
+joint_runs <- lapply(seq_len(reps), function(i) {
+  kn <- null_lines(k, "joint", within_cells(cells_obs))
+  fr <- lines_to_frame(kn)
+  list(F0 = cor(normalize_frame(fr)), S2 = cor(redesign(kn, fr)),
+       S3 = cor(composition(kn, fr, with_una)))
+})
+R_joint <- lapply(c(F0 = "F0", S2 = "S2", S3 = "S3"), function(s)
+  Reduce(`+`, lapply(joint_runs, `[[`, s)) / reps)
+
+audit$r_null_joint <- R_joint$F0[cbind(audit$v1, audit$v2)]
+joint_by_type <- do.call(rbind, lapply(split(audit, audit$type), function(s) data.frame(
+  type = s$type[1], pairs = nrow(s), mean_abs_obs = mean(abs(s$r_obs)),
+  mean_abs_null_flow = mean(abs(s$r_null_flow)), mean_abs_null_stock = mean(abs(s$r_null_stock)),
+  mean_abs_null_joint = mean(abs(s$r_null_joint)))))
+knitr::kable(joint_by_type, digits = 3, row.names = FALSE,
+             caption = "Mean |r| by link type: observed and three nulls (14 as-built ratios)")
+
+eig_joint <- apply(sapply(joint_runs, function(r) ev(r$F0)), 1, quantile, 0.95)
+L_null_joint <- pca5(R_joint$F0)
+show_loadings(L_null_joint, "Conditional null: five-component oblimin loadings")
+joint_summary <- data.frame(
+  null = c("flow", "stock", "joint"),
+  mean_abs_null_r = c(mean(abs(off(R_null$flow$F0))), mean(abs(off(R_null$stock$F0))),
+                      mean(abs(off(R_joint$F0)))),
+  retained = c(retain[["null_flow"]], retain[["null_stock"]], n_retain(eig_obs, eig_joint)),
+  rbind(congruence(L_null_flow, L_obs), congruence(L_null_stock, L_obs),
+        congruence(L_null_joint, L_obs)))
+knitr::kable(joint_summary, digits = 2, row.names = FALSE,
+             caption = "Mean |null r|, components retained, and null congruence with the observed components")
+
+gap_joint <- audit[order(-abs(audit$r_obs - audit$r_null_joint)),
+                   c("v1", "v2", "type", "r_obs", "r_null_flow", "r_null_stock", "r_null_joint")]
+knitr::kable(head(gap_joint, 10), digits = 2, row.names = FALSE,
+             caption = "Largest gaps between observed r and the conditional null")
+```
+
+### 11.2 Planted-factor test, rerun
+
+The planted data are now generated inside the same cells: each line is
+reassigned within its cell in the order of the planted factor score. The
+conditional null is therefore the correct one, and the global flow null is the
+wrong one.
+
+```{r joint-planted}
+planted_within <- function(cell, lam, Fm) within_cells(cell, function(line, n) {
+  l <- if (line %in% rownames(lam)) lam[line, ] else rep(0, ncol(lam))
+  if (all(l == 0)) runif(n) else drop(Fm %*% l) + sqrt(1 - sum(l^2)) * rnorm(n)
+})
+
+run_scenario_joint <- function(lam) {
+  n  <- nrow(k)
+  Fm <- matrix(rnorm(n * ncol(lam)), n, ncol(lam), dimnames = list(NULL, colnames(lam)))
+  kp <- null_lines(k, "joint", planted_within(cells_obs, lam, Fm))
+  Xp <- lines_to_ratios(kp)
+  cp <- size_cells(kp, cell_bins)   # cells rebuilt from the planted data, as they would be in practice
+  list(S = cor(Xp), T = cor(Xp, Fm),
+       nulls = list(
+         joint = lapply(seq_len(reps_p), function(i)
+           cor(lines_to_ratios(null_lines(kp, "joint", within_cells(cp))))),
+         flow  = lapply(seq_len(reps_p), function(i) cor(lines_to_ratios(null_lines(kp, "flow"))))))
+}
+set.seed(params$seed + 5)
+scen_j <- list(none = run_scenario_joint(line_loadings * 0),
+               planted = run_scenario_joint(line_loadings))
+
+select_by <- function(S, nulls, e_rand) {
+  out <- data.frame(random_pa = n_retain(ev(S), e_rand))
+  for (a in names(nulls)) {
+    q <- apply(sapply(nulls[[a]], ev), 1, quantile, 0.95)
+    out[[paste0("construction_pa_", a)]] <- n_retain(ev(S), q)
+    out[[paste0("fixed_construction_", a)]] <- offset_retain(S, nulls[[a]])
+  }
+  out
+}
+joint_planted_sel <- cbind(scenario = c("nothing planted", "3 factors planted"), true_factors = c(0, 3),
+                           rbind(select_by(scen_j$none$S, scen_j$none$nulls, eig_rand_14),
+                                 select_by(scen_j$planted$S, scen_j$planted$nulls, eig_rand_14)))
+knitr::kable(joint_planted_sel, row.names = FALSE, caption = "Number of factors retained (conditional planting)")
+
+recover_to <- function(fit, Tm) {
+  m <- match_to(rotate_fit(fit$L)$structure, Tm)
+  list(congruence = m$congruence, structure = m$L)
+}
+Tj <- scen_j$planted$T
+joint_fits <- function(sc) list(
+  `ordinary ML factor analysis`   = fit_offset(sc$S, NULL, 3, nrow(X)),
+  `fixed construction, joint null` = fit_offset(sc$S, null_mean_offdiag(sc$nulls$joint), 3, nrow(X)),
+  `fixed construction, flow null`  = fit_offset(sc$S, null_mean_offdiag(sc$nulls$flow), 3, nrow(X)))
+jp_rec <- lapply(joint_fits(scen_j$planted), recover_to, Tm = Tj)
+jn_rec <- lapply(joint_fits(scen_j$none), recover_to, Tm = Tj)
+joint_recovery <- data.frame(
+  method = names(jp_rec),
+  planted = sapply(jp_rec, function(r) mean(r$congruence)),
+  nothing_planted = sapply(jn_rec, function(r) mean(r$congruence)),
+  t(sapply(jp_rec, `[[`, "congruence")), row.names = NULL, check.names = FALSE)
+joint_recovery$detection_margin <- joint_recovery$planted - joint_recovery$nothing_planted
+knitr::kable(joint_recovery, digits = 2, row.names = FALSE,
+             caption = "Mean congruence with the planted structure (3 factors), conditional planting")
+
+joint_planted_fit_k <- do.call(rbind, lapply(names(scen_j), function(s) {
+  sc <- scen_j[[s]]
+  Cj <- null_mean_offdiag(sc$nulls$joint); Cf <- null_mean_offdiag(sc$nulls$flow)
+  do.call(rbind, lapply(0:4, function(nf) {
+    f <- list(ordinary = fit_offset(sc$S, NULL, nf, nrow(X)),
+              fixed_joint = fit_offset(sc$S, Cj, nf, nrow(X)),
+              fixed_flow = fit_offset(sc$S, Cf, nf, nrow(X)))
+    data.frame(scenario = s, factors = nf,
+               t(unlist(lapply(f, function(x) c(rmsea = x$rmsea, srmr = x$srmr)))))
+  }))
+}))
+knitr::kable(joint_planted_fit_k, digits = 3, row.names = FALSE,
+             caption = "Fit by number of factors, conditional planting")
+```
+
+### 11.3 Real data, rerun
+
+```{r joint-real, results = "asis"}
+joint_sets <- list(
+  `as built (14 ratios)`   = list(S = R_obs, nulls = list(joint = lapply(joint_runs, `[[`, "F0"))),
+  `redesigned (section 9)` = list(S = R_S2,  nulls = list(joint = lapply(joint_runs, `[[`, "S2"))),
+  `composition`            = list(S = R_S3,  nulls = list(joint = lapply(joint_runs, `[[`, "S3"))))
+
+joint_real_sel <- do.call(rbind, lapply(names(joint_sets), function(nm) {
+  s <- joint_sets[[nm]]
+  cbind(set = nm, variables = ncol(s$S), select_by(s$S, s$nulls, rand_eig(ncol(s$S), nrow(X))))
+}))
+cat(knitr::kable(joint_real_sel, row.names = FALSE, caption = "Number of factors retained, conditional null"),
+    sep = "\n")
+cat("\n\n")
+
+joint_real_fit_k <- do.call(rbind, lapply(names(joint_sets), function(nm) {
+  s  <- joint_sets[[nm]]
+  Cj <- null_mean_offdiag(s$nulls$joint)
+  do.call(rbind, lapply(0:4, function(nf) {
+    f <- list(ordinary = fit_offset(s$S, NULL, nf, nrow(X)), fixed_joint = fit_offset(s$S, Cj, nf, nrow(X)))
+    data.frame(set = nm, factors = nf, t(unlist(lapply(f, function(x) c(rmsea = x$rmsea, srmr = x$srmr)))))
+  }))
+}))
+cat(knitr::kable(joint_real_fit_k, digits = 3, row.names = FALSE,
+                 caption = "Fit by number of factors, conditional null"), sep = "\n")
+cat("\n\n")
+
+joint_real_loadings <- lapply(names(joint_sets), function(nm) {
+  s  <- joint_sets[[nm]]
+  nf <- max(1, min(4, joint_real_sel$fixed_construction_joint[joint_real_sel$set == nm]))
+  P  <- rotate_fit(fit_offset(s$S, null_mean_offdiag(s$nulls$joint), nf, nrow(X))$L)$pattern
+  cat(show_loadings(P, paste0(nm, ": fixed construction, conditional null, ", nf, " factor(s)")), sep = "\n")
+  cat("\n\n")
+  P
+})
+names(joint_real_loadings) <- names(joint_sets)
+
+gap_pairs <- function(S, C) {
+  ij <- which(upper.tri(S), arr.ind = TRUE)
+  d  <- data.frame(v1 = colnames(S)[ij[, 1]], v2 = colnames(S)[ij[, 2]], r_obs = S[ij], r_null_joint = C[ij])
+  d$beyond <- d$r_obs - d$r_null_joint
+  d[order(-abs(d$beyond)), ]
+}
+joint_gaps <- lapply(names(joint_sets), function(nm) {
+  s <- joint_sets[[nm]]
+  g <- gap_pairs(s$S, Reduce(`+`, s$nulls$joint) / length(s$nulls$joint))
+  cat(knitr::kable(head(g, 6), digits = 2, row.names = FALSE,
+                   caption = paste0(nm, ": largest correlations beyond the conditional null")), sep = "\n")
+  cat("\n\n")
+  g
+})
+names(joint_gaps) <- names(joint_sets)
+```
+
+### 11.4 Findings
+
+```{r joint-values, include = FALSE}
+jr <- joint_recovery
+jps <- joint_planted_sel
+jrs <- joint_real_sel
+jsingle <- sapply(joint_real_loadings, function(P) sum(apply(abs(P), 2, max) >= 0.95))
+jn_fac  <- sapply(joint_real_loadings, ncol)
+jfit4   <- joint_real_fit_k[joint_real_fit_k$factors == 4, ]
+jfit0   <- joint_real_fit_k[joint_real_fit_k$factors == 0, ]
+pf0     <- joint_planted_fit_k[joint_planted_fit_k$factors == 0, ]
+```
+
+* **Absorption.** The conditional null reproduces a mean |r| of
+  `r fn(joint_summary$mean_abs_null_r[3], 3)` across the 91 pairs, against
+  `r fn(mean(abs(audit$r_obs)), 3)` observed. Its components match the
+  observed ones with congruence
+  `r paste(fn(unlist(joint_summary[3, names(anchors)])), collapse = ", ")`
+  (`r paste(names(anchors), collapse = ", ")`).
+* **Planted test.** With the conditional null held fixed, zero factors fit the
+  nothing-planted data with SRMR `r fn(pf0$fixed_joint.srmr[pf0$scenario == "none"], 3)`.
+  Mean congruence with the planted structure is
+  `r fn(jr$planted[2])` when factors are planted and
+  `r fn(jr$nothing_planted[2])` when they are not (margin
+  `r fn(jr$detection_margin[2])`). Ordinary factor analysis scores
+  `r fn(jr$planted[1])` and `r fn(jr$nothing_planted[1])`
+  (margin `r fn(jr$detection_margin[1])`); the wrong, global flow null gives a
+  margin of `r fn(jr$detection_margin[3])`.
+* **Real data fit.** With zero factors, the conditional null leaves SRMR of
+  `r paste(sprintf("%s (%s)", fn(jfit0$fixed_joint.srmr, 3), jfit0$set), collapse = ", ")`.
+  With four factors:
+  `r paste(sprintf("%s (%s)", fn(jfit4$fixed_joint.srmr, 3), jfit4$set), collapse = ", ")`.
+* **Single-variable factors.** `r sum(jsingle)` of `r sum(jn_fac)` factors
+  load 0.95 or more on one variable.
+
+```{r save, include = FALSE}
+if (nzchar(params$save_results)) {
+  saveRDS(list(source = source_label, n = nrow(X), reps = reps, audit = audit,
+               by_type = by_type, sign_hit = sign_hit, n_signed = nrow(signed), none_ok = none_ok,
+               size_r2 = size_r2, eig = list(obs = eig_obs, rand = eig_rand, flow = eig_flow,
+                                             stock = eig_stock), retain = retain,
+               L = list(obs = L_obs, null_flow = L_null_flow, null_stock = L_null_stock,
+                        F1 = L_F1, F2 = L_F2, F3 = L_F3),
+               fix_null = fix_null, type_fix = type_fix, min_eig = min_eig,
+               retain_fix = retain_fix, R_obs = R_obs, R_null = R_null,
+               R_F2 = R_F2, R_F3 = R_F3,
+               S2 = list(summary = s2_summary, pairs = s2_pairs, R = R_S2, R_null = R_null_S2,
+                         eig = list(obs = ev(R_S2), rand = eig_rand_S2, flow = eig_q95_S2$flow,
+                                    stock = eig_q95_S2$stock),
+                         k = k_S2, L = L_S2, L_null_flow = L_S2_flow, L_null_stock = L_S2_stock),
+               joint = list(cells = length(unique(cells_obs)), audit = audit, by_type = joint_by_type,
+                            summary = joint_summary, gaps_F0 = gap_joint, R = R_joint,
+                            L_null = L_null_joint, eig = eig_joint,
+                            planted_sel = joint_planted_sel, recovery = joint_recovery,
+                            planted_fit_k = joint_planted_fit_k, real_sel = joint_real_sel,
+                            real_fit_k = joint_real_fit_k, real_loadings = joint_real_loadings,
+                            real_gaps = joint_gaps, planted_T = Tj,
+                            planted_structure = lapply(jp_rec, `[[`, "structure")),
+               offset = list(planted_sel = planted_sel, planted_rec = planted_rec,
+                             control_rec = control_rec, recovery_table = recovery_table,
+                             planted_fits = planted_fits, planted_T = scen$planted$T,
+                             planted_fit_k = planted_fit_k, real_sel = real_sel,
+                             real_fit_k = real_fit_k, real_loadings = real_loadings,
+                             S3_vars = names(X_S3), R_S3 = R_S3,
+                             R_null_S3 = lapply(null_S3, null_mean_offdiag))),
+          params$save_results)
+}
+```

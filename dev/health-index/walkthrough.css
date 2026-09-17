@@ -1,0 +1,208 @@
+/* Walkthrough styling adapted from lecy/econometrics lectures2/measurement-factor-analysis.rmd */
+:root{
+  --ground:#ffffff;
+  --surface:#f3f4f6;
+  --ink:#1f2429;
+  --ink-mid:#4d565f;
+  --ink-soft:#6d7681;
+  --rule:#dcdfe4;
+  --rule-strong:#c3c8cf;
+  --accent:#bd5416;
+  --accent-ink:#8f3f10;
+  --accent-wash:#fbf0e7;
+  --navy:#153243;
+  --pumpkin:#dc965a;
+  --font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+  --font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+  --font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+  --measure:40rem;
+}
+
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:1.0625rem;
+  line-height:1.62;
+  max-width:52rem;
+  margin:0 auto;
+  padding:0 1.5rem 5rem;
+}
+
+/* ---------- masthead (theme: null renders a bare h1.title + h3.subtitle) ---------- */
+h1.title{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:2.75rem;
+  line-height:1.06;
+  letter-spacing:-.015em;
+  margin:0;
+  padding-top:3.5rem;
+}
+h1.title::before{
+  content:"Nonprofit Fiscal Health · R walkthrough";
+  display:block;
+  font-family:var(--font-body);
+  font-size:.8125rem;
+  line-height:1.4;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  font-weight:600;
+  color:var(--accent-ink);
+  margin-bottom:.9rem;
+}
+h3.subtitle{
+  font-family:var(--font-body);
+  font-weight:400;
+  font-size:1.25rem;
+  line-height:1.5;
+  color:var(--ink-mid);
+  margin:.9rem 0 0;
+  padding-bottom:2rem;
+  border-bottom:1px solid var(--rule);
+  max-width:none;
+}
+
+/* ---------- table of contents ---------- */
+#TOC{
+  background:var(--surface);
+  border-radius:10px;
+  padding:1.25rem 1.5rem;
+  margin:2rem 0 1rem;
+}
+#TOC::before{
+  content:"Contents";
+  display:block;
+  font-size:.8125rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--ink-soft);
+  margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+/* ---------- headings ---------- */
+h2{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:2rem;
+  line-height:1.14;
+  margin:3.5rem 0 1rem;
+  padding-top:1.5rem;
+  border-top:1px solid var(--rule);
+}
+h3{
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:1.45rem;
+  line-height:1.24;
+  margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+/* ---------- callouts (use > blockquotes) ---------- */
+blockquote{
+  background:var(--accent-wash);
+  border:0;
+  border-radius:3px;
+  padding:1.1rem 1.3rem;
+  margin:1.5rem 0;
+  max-width:var(--measure);
+  font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+/* ---------- key-idea panel: wrap in <div class="concepts"> ---------- */
+.concepts{
+  background:var(--navy);
+  color:#fff;
+  border-radius:10px;
+  padding:1.75rem 2rem 1.5rem;
+  margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+/* ---------- code ---------- */
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+  font-family:var(--font-code);
+  font-size:.85rem;
+  line-height:1.5;
+  background:var(--surface);
+  border:0;
+  border-radius:3px;
+  padding:.9rem 1.1rem;
+  margin:1rem 0 1.25rem;
+  overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+/* ---------- math ---------- */
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+/* ---------- tables ---------- */
+table{
+  border-collapse:collapse;
+  font-size:.9rem;
+  margin:1.25rem 0 1.75rem;
+  display:block;
+  max-width:100%;
+  overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+  font-size:.75rem;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--ink-soft);
+  border-bottom:1.5px solid var(--rule-strong);
+  white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+  caption-side:top;
+  text-align:left;
+  font-size:.8rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--ink-soft);
+  padding-bottom:.6rem;
+}
+
+/* ---------- figures ---------- */
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+
+@media (max-width:640px){
+  h1.title{font-size:2.1rem;}
+  h2{font-size:1.65rem;}
+  h3{font-size:1.3rem;}
+  body{padding:0 1rem 3.5rem;}
+  .concepts{padding:1.35rem 1.25rem;}
+}

@@ -1,0 +1,956 @@
+---
+title: "A Fiscal Health Index for Nonprofits, Tax Year 2023"
+subtitle: "Reproducible workflow and decision log"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  pkg_dir: "../.."
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, scipen = 6, knitr.kable.NA = "")
+```
+
+<!-- Web fonts load at view time; data-external keeps them out of the self-contained file -->
+<link rel="stylesheet" data-external="1" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap">
+
+## Purpose
+
+This document builds a fiscal health index for U.S. nonprofits from 2023 IRS
+Form 990 e-file data. It records every analytic decision made along the way
+and explains why it was made. It follows the strategy in
+`dev/health-index/index-construction.rmd`:
+
+1. **Clustered indicators** that move together define a small number of
+   empirical *dimensions*.
+2. **Standalone indicators** are kept as individual measures rather than forced
+   into a dimension.
+3. **Noisy or redundant indicators** are dropped from the measurement system.
+
+The staged `fiscal` pipeline implements this strategy. Each stage returns an
+object you can inspect:
+
+```
+fiscal_diagnostics() -> fiscal_triage() -> fiscal_dimensions()
+   -> fiscal_health_fit() -> fiscal_health_score() -> fiscal_weights() -> fiscal_health_index()
+```
+
+The software discovers structure, but people decide what to keep, which way
+each indicator points, and what the dimensions mean. Every one of those
+decisions is marked below as a **Decision** block with its reasoning.
+[Summary of decisions](#summary-of-decisions) at the end collects them in one
+table.
+
+<div class="concepts">
+
+**Key ideas**
+
+- **Dimension:** a group of indicators that move together closely enough to
+  be read as one underlying financial construct and scored as a single index.
+- **Standalone indicator:** a ratio that is kept in the measurement system but
+  not forced into a dimension, because it shares little variance with the rest.
+- **Orientation:** the direction ("higher is healthier" or "lower is
+  healthier") applied to each indicator before indicators are averaged.
+- **Rank-normal score:** each value's rank mapped onto a standard normal
+  distribution. It keeps ordering and ignores outliers.
+- **Parallel analysis:** keep only the components whose eigenvalues beat those
+  from random data of the same size.
+- **Congruence:** a similarity score between two loading matrices. At 0.95 or
+  above, the dimensions are effectively the same.
+
+</div>
+
+```{r packages}
+library(dplyr)
+library(knitr)
+library(psych)
+
+# Use the development version of fiscal in this repository when rendering
+# from dev/health-index/; otherwise fall back to the installed package.
+if (file.exists(file.path(params$pkg_dir, "DESCRIPTION"))) {
+  pkgload::load_all(params$pkg_dir, quiet = TRUE)
+} else {
+  library(fiscal)
+}
+set.seed(params$seed)
+
+# Small helpers used throughout.
+num  <- function(x) suppressWarnings(as.numeric(x))
+zero <- function(x) { x <- num(x); x[is.na(x)] <- 0; x }
+pct  <- function(x, d = 1) paste0(format(round(100 * x, d), nsmall = d), "%")
+fmt  <- function(x, d = 2) format(round(x, d), nsmall = d, big.mark = ",")
+quiet <- function(expr) {
+  out <- NULL
+  invisible(capture.output(out <- suppressMessages(suppressWarnings(expr))))
+  out
+}
+```
+
+## 1. Data
+
+### 1.1 Retrieve and deduplicate 2023 e-filings
+
+We pull the one-to-one Form 990 tables (header, Part I summary, Part VIII
+revenue, Part IX expenses, Part X balance sheet) with `retrieve_efile_data()`.
+Then `deduplicate()` keeps one filing per EIN: it drops group and partial-year
+returns and keeps the most recent submission. Downloads are about 1.4 GB, so
+the merged, deduplicated file is cached under `params$data_dir`.
+
+```{r retrieve}
+dir.create(params$data_dir, recursive = TRUE, showWarnings = FALSE)
+cache_file <- file.path(params$data_dir, "efile-2023.rds")
+# data-raw/create-dat10k.R caches an equivalent deduplicated extract; reuse it
+# rather than downloading the tables again.
+shared_cache <- file.path(params$data_dir, "efile-2023-bmf-dedup.rds")
+if (!file.exists(cache_file) && file.exists(shared_cache)) cache_file <- shared_cache
+
+if (file.exists(cache_file)) {
+  efile <- readRDS(cache_file)
+} else {
+  efile <- retrieve_efile_data(year = 2023, include_bmf = FALSE,
+                               path = file.path(params$data_dir, "efdata"),
+                               verbose = FALSE)
+  efile <- deduplicate(efile, verbose = FALSE)
+  saveRDS(efile, cache_file)
+}
+
+table(efile$RETURN_TYPE)
+```
+
+### 1.2 Analysis sample
+
+```{r sample}
+n_all <- nrow(efile)
+d <- efile[efile$RETURN_TYPE == "990", ]
+n_990 <- nrow(d)
+d <- d[which(num(d$F9_09_EXP_TOT_TOT) > 0 &
+             num(d$F9_10_ASSET_TOT_EOY) > 0 &
+             num(d$F9_08_REV_TOT_TOT) > 0), ]
+d <- sanitize_financials(d)
+rm(efile); invisible(gc())
+
+data.frame(step = c("Deduplicated 2023 filings", "Full Form 990 filers",
+                    "Positive revenue, expenses, and assets"),
+           n = format(c(n_all, n_990, nrow(d)), big.mark = ","))
+```
+
+> **Decision 1: Restrict the sample to full Form 990 filers with positive
+> revenue, expenses, and total assets.**
+>
+> *Why:* Most fiscal health ratios need line items that only appear on the full
+> Form 990: Part IX functional expenses, and Part X detail on cash, payables,
+> fixed assets, and net-asset classes. 990-EZ filers would enter with
+> structural zeros that look like real values. Mixing them in would mostly
+> separate *form type* rather than financial condition. Positive denominators
+> keep the core ratios (margins, return on assets, months of spending) defined
+> for every organization. As a result, the index describes organizations large
+> enough to file the full 990 (roughly $200k+ in gross receipts or $500k+ in
+> assets). It does not describe the smallest nonprofits.
+
+## 2. Correcting indicator inputs
+
+Before choosing indicators, we checked whether each candidate ratio measures
+what it claims to. Three problems turned up, and each changes what goes into
+the model.
+
+### 2.1 Net-asset classes for filers that do not follow SFAS 117
+
+Part X lines 27–28 (net assets without/with donor restrictions) apply only to
+organizations that follow SFAS 117 / ASC 958. Other filers report equity on
+lines 30–32 (capital stock, paid-in surplus, retained earnings). For those
+filers, unrestricted net assets read as **zero** even when total net assets are
+large. Every reserve metric built on unrestricted net assets then understates
+their reserves.
+
+```{r sfas117}
+unr <- zero(d$F9_10_NAFB_UNRESTRICT_EOY)
+res <- zero(d$F9_10_NAFB_RESTRICT_EOY)
+tot <- zero(d$F9_10_NAFB_TOT_EOY)
+non_sfas <- unr == 0 & res == 0 & tot != 0
+d$NAFB_UNRESTRICT_ADJ <- ifelse(unr == 0 & res == 0, tot, unr)
+
+data.frame(
+  measure = c("Report no net-asset classes but nonzero total net assets",
+              "Negative total net assets"),
+  share = pct(c(mean(non_sfas), mean(tot < 0)))
+)
+```
+
+> **Decision 2: When lines 27–28 are both zero, treat total net assets as
+> unrestricted.**
+>
+> *Why:* About `r pct(mean(non_sfas), 0)` of the sample would otherwise score as
+> having no discretionary reserves. Without donor-restriction reporting, an
+> organization's equity is, for practical purposes, unrestricted: retained
+> earnings and paid-in capital are not donor-restricted. The adjusted field
+> feeds the operating-reserve and liquid-assets metrics through their column
+> arguments. The package functions themselves are unchanged.
+
+### 2.2 Two ratio functions that do not match their documentation
+
+```{r bugs}
+d$CASH_SAVINGS   <- zero(d$F9_10_ASSET_CASH_EOY) + zero(d$F9_10_ASSET_SAVING_EOY)
+d$EXP_MGMT_FUNDR <- zero(d$F9_09_EXP_TOT_MGMT) + zero(d$F9_09_EXP_TOT_FUNDR)
+
+pkg <- quiet(compute_all(d, metrics = c("ratio", "z"), append_to_df = FALSE))
+
+overhead_fixed <- d$EXP_MGMT_FUNDR / num(d$F9_09_EXP_TOT_TOT)
+prog_exp_raw   <- pkg$prog_exp
+
+data.frame(
+  check = c("Package overhead identical to administrative-expense ratio",
+            "Filers with any fundraising expense",
+            "Corrected overhead vs. program-expense ratio (Pearson r)",
+            "Package cash/assets vs. (cash + savings)/assets (Spearman rho)"),
+  value = c(isTRUE(all.equal(pkg$overhead, pkg$expenses_admin)),
+            pct(mean(zero(d$F9_09_EXP_TOT_FUNDR) > 0)),
+            fmt(cor(overhead_fixed, prog_exp_raw, use = "pair"), 3),
+            fmt(cor(pkg$cash_assets, d$CASH_SAVINGS / num(d$F9_10_ASSET_TOT_EOY),
+                    method = "spearman", use = "pair"), 3))
+)
+```
+
+* `get_overhead_ratio()` leaves fundraising out of its numerator. The result is
+  identical to `get_expenses_admin_ratio()`, even though many filers report
+  fundraising costs. Once corrected, overhead is by construction the complement
+  of the program-expense ratio (program + management + fundraising = total).
+  The observed r of `r fmt(cor(overhead_fixed, prog_exp_raw, use = "pair"), 2)`
+  falls short of −1 only because of reporting noise in the functional columns,
+  so overhead adds no independent information.
+* `get_cash_assets_ratio()` leaves savings and temporary cash investments out of
+  its numerator. We pass `cash = "CASH_SAVINGS"` to get the documented
+  definition.
+
+> **Decision 3: Use corrected inputs for cash/assets, and exclude overhead as a
+> complement of the program-expense ratio.** The underlying function fixes are
+> tracked separately from this analysis.
+
+### 2.3 Compute the corrected candidate metrics
+
+```{r corrected-metrics}
+f <- d
+f <- quiet(get_days_cash_operations(f, sanitize = FALSE))
+f <- quiet(get_cash_assets_ratio(f, cash = "CASH_SAVINGS", sanitize = FALSE))
+f <- quiet(get_operating_reserve_ratio(f, unrestricted_net_assets = "NAFB_UNRESTRICT_ADJ",
+                                       sanitize = FALSE))
+f <- quiet(get_liquid_assets_months(f, unrestricted_net_assets = "NAFB_UNRESTRICT_ADJ",
+                                    sanitize = FALSE))
+f <- quiet(get_debt_assets_ratio(f, sanitize = FALSE))
+f <- quiet(get_surplus_margin_ratio(f, sanitize = FALSE))
+f <- quiet(get_profit_margin_predepr(f, sanitize = FALSE))
+f <- quiet(get_return_assets_ratio(f, sanitize = FALSE))
+f <- quiet(get_program_expenses_ratio(f, sanitize = FALSE))
+f <- quiet(get_expenses_admin_ratio(f, sanitize = FALSE))
+f <- quiet(get_self_sufficiency_ratio(f, sanitize = FALSE))
+f <- quiet(get_assets_revenue_ratio(f, sanitize = FALSE))
+```
+
+## 3. Candidate indicator pool
+
+The package registry (`fiscal_metrics()`) lists `r nrow(fiscal_metrics())`
+metrics. An index needs indicators that are **directional** (more is clearly
+better or clearly worse), **scale-free** (not a dollar amount), **defined for
+nearly everyone**, **monotone in health**, and **not algebraically identical**
+to another indicator. The table below screens every metric against those
+criteria.
+
+```{r screening}
+reg <- fiscal_metrics()
+coverage <- vapply(reg$metric, function(m)
+  if (m %in% names(pkg)) mean(is.finite(pkg[[m]])) else NA_real_, numeric(1))
+
+reason <- setNames(rep(NA_character_, nrow(reg)), reg$metric)
+reason[reg$direction == "context"] <-
+  "Composition measure; registry direction is context-dependent"
+reason["cash_on_hand"]   <- "Dollar level: measures size, not condition"
+reason["cash_burn"]      <- "Dollars per month (not a ratio): measures size"
+reason[c("current", "quick", "cash_liq")] <-
+  "Undefined when current liabilities = 0 (structural missingness)"
+reason[c("debt_equity", "debt_netassets", "debt_shortterm",
+         "return_netassets", "netassets_growth")] <-
+  "Net-asset denominator can be <= 0, so the ratio's sign flips (not monotone)"
+reason[c("debt_secured", "debt_unsecured")] <-
+  "Liability composition; undefined when total liabilities = 0"
+reason["fundr_eff"]      <- "Undefined without contributions; registry direction is reversed"
+reason["equity"]         <- "Identity: equity = 1 - debt_assets"
+reason["months_cash_ops"] <- "Identity: days_cash_ops x 12/365"
+reason["overhead"]       <- "Package bug (= admin ratio); corrected form = 1 - prog_exp"
+reason["profit_postdepr"] <- "Duplicates surplus_margin (Part VIII/IX vs. Part I)"
+reason["days_cash_inv"]  <- "Adds inventories (line 8), not investments; mis-specified"
+reason["cash_assets"]    <- "Enters pool (numerator corrected)"
+reason[c("op_reserve", "liquid_assets_months")] <- "Enters pool (adjusted unrestricted net assets)"
+reason[is.na(reason)]    <- "Enters pool"
+
+screen <- data.frame(metric = reg$metric, category = reg$category,
+                     direction = reg$direction, coverage = pct(coverage, 0),
+                     decision = reason, row.names = NULL)
+pool <- screen$metric[grepl("^Enters pool", screen$decision)]
+stopifnot(all(pool %in% names(f)))
+kable(screen[order(!grepl("^Enters", screen$decision), screen$category), ],
+      row.names = FALSE)
+```
+
+Supporting evidence for the identity and structural-missingness screens:
+
+```{r screening-evidence}
+data.frame(
+  check = c("Current liabilities (payables + grants payable) equal zero",
+            "Total liabilities equal zero",
+            "Spearman rho, surplus_margin vs. profit_postdepr",
+            "Spearman rho, days_cash_ops vs. months_cash_ops",
+            "Pearson r, equity vs. debt_assets"),
+  value = c(pct(mean(zero(d$F9_10_LIAB_ACC_PAYABLE_EOY) +
+                     zero(d$F9_10_LIAB_GRANT_PAYABLE_EOY) == 0)),
+            pct(mean(zero(d$F9_10_LIAB_TOT_EOY) == 0)),
+            fmt(cor(pkg$surplus_margin, pkg$profit_postdepr, method = "spearman", use = "pair"), 3),
+            fmt(cor(pkg$days_cash_ops, pkg$months_cash_ops, method = "spearman", use = "pair"), 3),
+            fmt(cor(pkg$equity, pkg$debt_assets, use = "pair"), 3))
+)
+```
+
+> **Decision 4: Screen out metrics that are directional in name only.**
+> `r length(pool)` indicators enter the model:
+> `r paste0("\x60", pool, "\x60", collapse = ", ")`.
+>
+> *Why:*
+>
+> * **Composition measures** (revenue mix, expense mix, asset mix) describe a
+>   business model, not financial condition. A high government-grant share is
+>   neither healthy nor unhealthy on its face.
+> * **Dollar levels** would make the index mostly about size.
+> * **Structural missingness:** current ratios are undefined for the ~40% of
+>   filers with no payables. Estimating dimensions on complete cases would
+>   quietly drop the simplest balance sheets.
+> * **Signed net-asset denominators** make ratios non-monotone. An insolvent
+>   organization with negative net assets gets a *negative* debt-to-net-assets
+>   ratio and would rank as the least leveraged.
+> * **Algebraic identities** make the correlation matrix singular. That breaks
+>   KMO and factor estimation and inflates a construct's apparent weight.
+>
+> Borderline cases (`self_suff`, `assets_rev`, `prog_exp`) are registry-directional
+> but arguably context-dependent. They enter the pool so the data can show how
+> they behave, and they are revisited at triage.
+
+## 4. Transformation: rank-normal scores
+
+Nonprofit ratios have extreme tails. Near-zero denominators and data-entry
+errors produce values in the thousands. The package's `_z` columns winsorize
+and then apply a fitted normalizing transform. Correlation-based modeling,
+though, needs the Pearson correlations between transformed indicators to
+preserve the monotone association in the raw data. We checked whether they do.
+
+```{r transform-check}
+rank_normal <- function(x) {
+  x[!is.finite(x)] <- NA
+  r <- rank(x, na.last = "keep", ties.method = "average")
+  qnorm((r - 0.5) / sum(!is.na(x)))
+}
+
+pairs <- list(c("prog_exp", "expenses_admin"), c("days_cash_ops", "debt_assets"),
+              c("surplus_margin", "return_assets"), c("debt_shortterm", "debt_assets"),
+              c("days_cash_ops", "surplus_margin"))
+kable(do.call(rbind, lapply(pairs, function(p) {
+  a <- pkg[[p[1]]]; b <- pkg[[p[2]]]
+  a[!is.finite(a)] <- NA; b[!is.finite(b)] <- NA
+  data.frame(pair = paste(p, collapse = " ~ "),
+             spearman_raw   = cor(a, b, method = "spearman", use = "pair"),
+             pearson_pkg_z  = cor(pkg[[paste0(p[1], "_z")]], pkg[[paste0(p[2], "_z")]], use = "pair"),
+             pearson_rank_normal = cor(rank_normal(a), rank_normal(b), use = "pair"))
+})), digits = 3)
+```
+
+```{r z-moments}
+zc <- paste0(intersect(pool, names(pkg)), "_z")
+kable(data.frame(column = zc,
+                 mean = sapply(pkg[zc], mean, na.rm = TRUE),
+                 sd   = sapply(pkg[zc], sd, na.rm = TRUE),
+                 share_abs_gt_4 = sapply(pkg[zc], function(v) mean(abs(v) > 4, na.rm = TRUE))),
+      digits = 3, row.names = FALSE)
+```
+
+> **Decision 5: Model rank-normal (van der Waerden) scores of the raw ratios,
+> not the package `_z` columns.**
+>
+> *Why:* For several pairs, the `_z` columns shrink strong raw associations
+> toward zero (compare `spearman_raw` with `pearson_pkg_z`). Some `_z` columns
+> are far from standardized (means well away from 0, heavy tails). Rank-normal
+> scores are bounded, symmetric, and insensitive to outliers. Their Pearson
+> correlations track the raw Spearman correlations, so the correlation matrix
+> that PCA sees reflects the real monotone structure in the data.
+>
+> *Cost:* The transform depends on the reference distribution. To score a
+> later year on the 2023 scale, map each value to its position in the 2023
+> distribution (for example with `ecdf()`) rather than re-ranking within the
+> new year.
+
+```{r indicators}
+ind <- as.data.frame(lapply(f[pool], rank_normal))
+names(ind) <- pool
+kable(data.frame(indicator = pool,
+                 observed = pct(sapply(ind, function(v) mean(!is.na(v))))),
+      row.names = FALSE)
+```
+
+## 5. Stage 1: Diagnostics
+
+```{r diagnostics}
+diagnostics <- fiscal_diagnostics(ind)
+cat("Overall KMO (MSA):", fmt(diagnostics$kmo$MSA, 3), "\n")
+kable(diagnostics$variables[, c("variable", "kmo_msa", "communality", "smc",
+                                "mean_abs_cor", "max_abs_cor", "redundant_with")],
+      digits = 3, row.names = FALSE)
+```
+
+```{r cor-matrix}
+kable(round(diagnostics$correlation, 2))
+```
+
+What the diagnostics show:
+
+* **Two tight clusters.** The reserve measures (`days_cash_ops`, `op_reserve`,
+  `liquid_assets_months`) correlate strongly with each other, as do the
+  performance measures (`surplus_margin`, `profit_predepr`, `return_assets`).
+  `debt_assets` is negatively related to reserves.
+* **Near-duplicates.** Some pairs exceed the redundancy cutoff (|r| >= 0.90).
+* **Weak connectors.** `prog_exp`, `expenses_admin`, and `self_suff` have very
+  low communality: they share almost no variance with the financial-condition
+  measures.
+* **Low-KMO asset-composition measures.** `cash_assets` and `assets_rev` have
+  individual KMO below 0.50. They relate to the reserve cluster inconsistently:
+  `assets_rev` rises with reserves, while `cash_assets` is unrelated to liquid
+  months of reserves. The two are strongly *negatively* correlated with each
+  other
+  (r = `r fmt(diagnostics$correlation["cash_assets", "assets_rev"], 2)`). That
+  pattern points to a contrast between cash-based and asset-heavy
+  organizations, not a shared health signal.
+
+## 6. Stage 2: Triage
+
+First, the automatic recommendation:
+
+```{r triage-auto}
+triage_auto <- fiscal_triage(diagnostics)
+kable(triage_auto$decisions[, c("variable", "kmo_msa", "communality", "decision", "reason")],
+      digits = 3, row.names = FALSE)
+kable(triage_auto$redundancy_groups, row.names = FALSE)
+```
+
+Then the reviewed version. Each override is justified below.
+
+```{r triage-reviewed}
+kmo_i <- setNames(diagnostics$variables$kmo_msa, diagnostics$variables$variable)
+overrides <- c(cash_assets    = "review",
+               assets_rev     = "review",
+               surplus_margin = "retain",
+               profit_predepr = "redundant")
+triage <- fiscal_triage(diagnostics, overrides = overrides)
+triage
+kable(triage$decisions[, c("variable", "decision", "overridden", "reason")], row.names = FALSE)
+```
+
+For comparison, here is the dimension solution you get if the automatic triage
+is accepted without review:
+
+```{r unreviewed-solution}
+dims_auto <- fiscal_dimensions(ind, triage = triage_auto, method = "pca",
+                               nfactors = NULL, seed = 42, parallel_iter = 50)
+dims_auto
+kable(dims_auto$assignments[, c("variable", "primary_dimension", "primary_loading",
+                                "secondary_abs_loading", "status")],
+      digits = 2, row.names = FALSE)
+kable(dims_auto$clusters, row.names = FALSE)
+```
+
+> **Decision 6: Keep the asset-composition measures (`cash_assets`, `assets_rev`)
+> out of dimension estimation (`review`).**
+>
+> *Why:* Both fall below the conventional KMO adequacy floor
+> (`r fmt(kmo_i[["cash_assets"]], 2)` and `r fmt(kmo_i[["assets_rev"]], 2)`).
+> Substantively, their "healthy" direction depends on the organization's model:
+>
+> * **`cash_assets`:** A high cash share of assets marks a small organization
+>   with no property or investments. An endowed university holds most of its
+>   liquidity in securities and so has a *low* cash share.
+> * **`assets_rev`:** The registry treats this as *lower is better* (asset
+>   efficiency). In the data it loads *positively* with reserves, because
+>   endowed and capital-rich organizations have high asset-to-revenue ratios.
+>   Oriented by the registry, it would cancel against the reserve indicators.
+>
+> The unreviewed solution above shows the consequence. Parallel analysis retains
+> `r dims_auto$nfactors` components. `debt_assets` and `assets_rev`
+> cross-load, and a separate component forms around `cash_assets`, set against
+> `debt_assets` and `assets_rev`. That component separates cash-based
+> organizations from capital-intensive ones: a difference in business model,
+> not in condition.
+>
+> **Decision 7: Represent the performance cluster with `surplus_margin`, not
+> `profit_predepr`.**
+>
+> *Why:* The automatic rule keeps the member with the higher KMO. Here the two
+> differ only in the third decimal place, so the choice falls to substance.
+> Surplus margin is the bottom line reported on Part I, line 19. It is the
+> standard nonprofit operating-margin measure, and depreciation is a real cost
+> of sustaining capacity.
+>
+> **Accepted automatic recommendations:**
+>
+> * *`liquid_assets_months` over `op_reserve`* (r >= 0.90). Liquid unrestricted
+>   net assets add back mortgage debt on property, so they don't treat
+>   debt-financed buildings as spent reserves. This matches the
+>   "months of liquid unrestricted net assets" standard in sector benchmarking.
+> * *`expenses_admin` as noise.* It has low KMO, low communality, and weak
+>   connectedness.
+> * *`prog_exp` and `self_suff` as standalone.* Their role in the composite is
+>   decided in Section 9.
+
+## 7. Stage 3: Discover dimensions
+
+### 7.1 How many dimensions?
+
+```{r dimensions}
+dimensions <- fiscal_dimensions(ind, triage = triage, method = "pca",
+                                nfactors = NULL, seed = 42, parallel_iter = 50)
+dimensions
+sel <- dimensions$variables
+cc  <- dimensions$rows_used
+eig <- eigen(dimensions$correlation, only.values = TRUE)$values
+kable(data.frame(component = seq_along(eig), eigenvalue = eig,
+                 observed_share = eig / sum(eig),
+                 parallel_sim = dimensions$parallel$pc.sim[seq_along(eig)]),
+      digits = 3)
+```
+
+```{r scree, fig.height = 3.5}
+plot(eig, type = "b", pch = 19, col = "#153243", bty = "n", xlab = "Component",
+     ylab = "Eigenvalue", main = "Scree plot with parallel-analysis reference",
+     ylim = c(0, max(eig)))
+lines(dimensions$parallel$pc.sim[seq_along(eig)], type = "b", lty = 2, lwd = 2, col = "#bd5416")
+legend("topright", c("Observed", "Parallel (random data)"), lty = c(1, 2),
+       col = c("#153243", "#bd5416"), bty = "n")
+```
+
+### 7.2 Compare one-, two-, and three-dimension solutions
+
+```{r solutions}
+X <- ind[cc, sel]
+show_loadings <- function(k) {
+  m <- psych::principal(X, nfactors = k, rotate = if (k > 1) "oblimin" else "none")
+  L <- unclass(m$loadings); colnames(L) <- paste0("k", k, "_C", seq_len(k))
+  L
+}
+kable(do.call(cbind, lapply(1:3, show_loadings)), digits = 2)
+```
+
+```{r efa-check}
+efa <- psych::fa(X, nfactors = 2, rotate = "oblimin", fm = "minres")
+kable(unclass(efa$loadings), digits = 2, caption = "EFA (minres, oblimin), 2 factors")
+cat("Factor correlation:", fmt(efa$Phi[1, 2], 2), "\n")
+```
+
+> **Decision 8: Retain two dimensions.**
+>
+> *Why:*
+>
+> * **Parallel analysis** keeps `r dimensions$nfactors` components: only those
+>   eigenvalues exceed what random data of the same size produce.
+> * **Simple structure.** The two-component solution has no cross-loadings, and
+>   every indicator loads above 0.60 on exactly one component.
+> * **The one-component solution** loads everything in the expected direction.
+>   That is evidence a general health factor exists and that a composite is
+>   meaningful. But it explains less than half the variance and hides the
+>   distinction between stocks and flows (Section 8).
+> * **The three-component solution** just splits `debt_assets` off as a
+>   singleton. A one-indicator "dimension" is not a latent construct, and its
+>   eigenvalue sits below the parallel-analysis threshold.
+> * **EFA agrees.** Common-factor analysis, which models only shared variance,
+>   recovers the same two groups.
+
+### 7.3 Stability
+
+A dimension worth naming should reappear in independent halves of the data and
+in organizations of very different size. We use Tucker's congruence coefficient
+between loading matrices. Values of 0.95 or higher mean the factors are
+effectively equal; 0.85–0.94 means fair similarity.
+
+```{r stability}
+loadings_for <- function(rows) {
+  unclass(psych::principal(ind[rows, sel], nfactors = 2, rotate = "oblimin")$loadings)
+}
+match_congruence <- function(A, B) {
+  C <- psych::factor.congruence(A, B)
+  # align components by best absolute match
+  diag(C[, apply(abs(C), 1, which.max), drop = FALSE])
+}
+half <- sample(cc, length(cc) / 2)
+rev_total <- num(f$F9_08_REV_TOT_TOT)
+groups <- list(
+  `Random half A vs. half B`   = list(half, setdiff(cc, half)),
+  `Revenue < $500k vs. >= $5M` = list(cc[rev_total[cc] < 5e5], cc[rev_total[cc] >= 5e6]),
+  `$500k-$5M vs. full sample`  = list(cc[rev_total[cc] >= 5e5 & rev_total[cc] < 5e6], cc)
+)
+stab <- do.call(rbind, lapply(names(groups), function(g) {
+  cg <- match_congruence(loadings_for(groups[[g]][[1]]), loadings_for(groups[[g]][[2]]))
+  data.frame(comparison = g, n_first = length(groups[[g]][[1]]),
+             n_second = length(groups[[g]][[2]]),
+             congruence_C1 = cg[1], congruence_C2 = cg[2])
+}))
+kable(stab, digits = 3, row.names = FALSE,
+      format.args = list(big.mark = ","))
+```
+
+```{r stability-size}
+# Label components by content so small/large columns line up.
+label_cols <- function(L) {
+  perf <- which.max(abs(L["surplus_margin", ]))
+  L <- L[, c(setdiff(1:2, perf), perf)]
+  colnames(L) <- c("reserves", "performance")
+  L
+}
+L_small <- label_cols(loadings_for(groups[[2]][[1]]))
+L_large <- label_cols(loadings_for(groups[[2]][[2]]))
+kable(cbind(`small: reserves` = L_small[, 1], `small: performance` = L_small[, 2],
+            `large: reserves` = L_large[, 1], `large: performance` = L_large[, 2]),
+      digits = 2,
+      caption = "Two-component loadings, small (<$500k) and large (>=$5M) organizations")
+```
+
+> **Stability finding.** The structure reproduces essentially perfectly across
+> random halves. It also holds across a ten-fold difference in organization
+> size (congruence ≥ `r fmt(min(stab$congruence_C1[2], stab$congruence_C2[2]), 2)`).
+> One indicator shifts. Among large organizations, `days_cash_ops` loads more on
+> the performance component
+> (`r fmt(L_large["days_cash_ops", "performance"], 2)`) than on reserves
+> (`r fmt(L_large["days_cash_ops", "reserves"], 2)`). Among small organizations
+> it is a clean reserve indicator
+> (`r fmt(L_small["days_cash_ops", "reserves"], 2)`). The likely reason: for
+> large operating nonprofits, cash and receivables relative to spending track
+> this year's operating results more closely than accumulated equity does.
+> Months of liquid net assets and debt-to-assets anchor the balance-sheet
+> dimension at every size. `days_cash_ops` is kept on that dimension because
+> it belongs there conceptually and in the pooled solution. Users analyzing
+> only large organizations should read the reserve score with this in mind.
+
+## 8. Naming and interpreting the dimensions
+
+```{r assignment}
+kable(dimensions$assignments[, c("variable", "primary_dimension", "primary_loading",
+                                 "secondary_abs_loading", "status")],
+      digits = 2, row.names = FALSE)
+members <- split(dimensions$assignments$variable, dimensions$assignments$primary_dimension)
+label_for <- function(m) {
+  if ("liquid_assets_months" %in% m) "reserves_solvency"
+  else if ("surplus_margin" %in% m) "operating_performance"
+  else NA_character_
+}
+dimension_names <- vapply(members, label_for, character(1))
+stopifnot(!anyNA(dimension_names), !anyDuplicated(dimension_names))
+dimension_names
+```
+
+The labels come from what the grouped indicators have in common: their
+accounting source, their time horizon, and the financial question they answer.
+Dimensions are matched to labels by indicator membership, not by component
+number, so the labels stay correct if the component order changes on
+re-estimation.
+
+#### Dimension A: Reserves and Solvency (`reserves_solvency`)
+
+| Indicator | Sign | What it measures |
+|---|---|---|
+| `liquid_assets_months` | + | Liquid unrestricted net assets (net of property, plus mortgage debt) in months of spending |
+| `days_cash_ops` | + | Cash, savings, and receivables in days of cash operating expenses |
+| `debt_assets` | − | Share of assets financed by liabilities |
+
+**Why this label.**
+
+* *Same source and horizon.* All three are **balance-sheet stocks** measured at
+  year end. None depends on this year's revenue or surplus.
+* *Same question.* How much cushion does the organization have, and how much of
+  it is already claimed? The two reserve measures express the cushion in units
+  of spending (months or days it could keep operating). Debt-to-assets loads
+  negatively because liabilities are claims against that cushion: a leveraged
+  organization's apparent assets are less available to absorb a shock.
+* *Why "solvency" is in the name.* Parallel analysis did not support separating
+  leverage from liquidity (the three-component solution only splits off a
+  singleton). Keeping `debt_assets` in the label makes clear the dimension
+  covers both *having* reserves and *not owing* them away.
+
+**Interpretation.** High scores mean financial resilience: enough liquid,
+unencumbered equity to ride out a revenue disruption, delayed reimbursement, or
+unexpected cost. Low scores mean thin or negative liquid reserves and heavy
+reliance on borrowed resources. Such organizations are vulnerable even in a
+year with a surplus. This dimension changes slowly; it is the accumulated
+result of past years.
+
+#### Dimension B: Operating Performance (`operating_performance`)
+
+| Indicator | Sign | What it measures |
+|---|---|---|
+| `surplus_margin` | + | Revenue less expenses, as a share of revenue |
+| `return_assets` | + | Revenue less expenses, as a share of total assets |
+
+**Why this label.**
+
+* *Same source and horizon.* Both are **income-statement flows** for the
+  current year. They share a numerator (the annual surplus or deficit) and
+  differ only in denominator (revenue vs. assets). Their loadings reflect that
+  shared numerator.
+* *Why not "profitability."* That term implies profit maximization, which is
+  not a nonprofit objective. "Operating performance" describes whether the
+  year's activities covered their full cost, including depreciation, which is
+  the quantity lenders, funders, and boards monitor.
+
+**Interpretation.** High scores mean the organization covered its costs this
+year with room to spare, which is the source of future reserves. Low scores
+mean an operating deficit. A single deficit year is not distress, and deficits
+can be deliberate spend-downs of prior surpluses. Persistent low scores erode
+Dimension A.
+
+#### How the two dimensions relate
+
+```{r dim-relation}
+cat("Correlation between the two components (oblimin, full sample):",
+    fmt(psych::principal(X, nfactors = 2, rotate = "oblimin")$Phi[1, 2], 2), "\n")
+```
+
+The dimensions are positively but modestly correlated. That matches the
+stock–flow logic: surpluses build reserves over time, but in any one year many
+organizations have strong balance sheets and a deficit, or the reverse. This
+modest correlation is why the index reports **both** dimension scores next to
+the composite. Two organizations with the same composite can have very
+different profiles: a well-reserved organization spending down savings, or a
+thinly capitalized one running surpluses.
+
+## 9. Stage 4–7: Fit, score, weight, index
+
+### 9.1 Fit the measurement model
+
+```{r fit}
+directions <- c(liquid_assets_months = "higher", days_cash_ops = "higher",
+                debt_assets = "lower", surplus_margin = "higher",
+                return_assets = "higher", prog_exp = "higher", self_suff = "higher")
+fit <- fiscal_health_fit(ind, dimensions = dimensions,
+                         dimension_names = dimension_names,
+                         scoring = "standardized_mean",
+                         indicator_direction = directions,
+                         missing = "median", strict_direction = TRUE)
+fit
+```
+
+> **Decision 9: Score each dimension as the standardized mean of its oriented
+> indicators.**
+>
+> *Why:* With two or three indicators per dimension, a simple average is
+> transparent, reproducible, and needs no estimated weights. The check below
+> shows it is practically indistinguishable from first-principal-component
+> scoring. Orientation is set explicitly (`strict_direction = TRUE`) rather than
+> inferred, so the direction of every indicator is part of the audit record.
+
+```{r scoring-check}
+fit_pca <- fiscal_health_fit(ind, dimensions = dimensions, dimension_names = dimension_names,
+                             scoring = "pca", indicator_direction = directions,
+                             missing = "median")
+s_mean <- fiscal_health_score(ind, fit, append = FALSE, include_standalone = FALSE)
+s_pca  <- fiscal_health_score(ind, fit_pca, append = FALSE, include_standalone = FALSE)
+kable(data.frame(dimension = dimension_names,
+                 r_mean_vs_pca = sapply(paste0("fh_", dimension_names),
+                                        function(v) cor(s_mean[[v]], s_pca[[v]], use = "pair")),
+                 cronbach_alpha = sapply(dimension_names, function(dn) {
+                   spec <- fit$dimensions[[dn]]
+                   z <- sweep(as.matrix(ind[spec$indicators]), 2, spec$indicator_multiplier, "*")
+                   psych::alpha(z, check.keys = FALSE, warnings = FALSE)$total$raw_alpha
+                 })), digits = 3, row.names = FALSE)
+```
+
+Internal consistency is acceptable for Reserves & Solvency and high for
+Operating Performance. Read both with care. The performance alpha is partly
+mechanical, because its two indicators share a numerator (annual surplus).
+The reserve alpha is held down by combining assets (reserves) with liabilities
+(leverage). Accounting ratios are not survey items written to measure one
+trait, so the scores are best read as **formative summaries** of a coherent
+block of ratios, not as reflective latent traits.
+
+### 9.2 Score, weight, and build the composite
+
+```{r score-index}
+scored  <- fiscal_health_score(ind, fit)
+weights <- fiscal_weights(fit, include_standalone = FALSE, min_coverage = 0.5)
+weights
+indexed <- fiscal_health_index(scored, weights)
+indexed$fiscal_health_pctile <- dplyr::ntile(indexed$fiscal_health, 100)
+```
+
+> **Decision 10: Weight the composite 50/50 across the two dimensions, and keep
+> the standalone indicators (`prog_exp`, `self_suff`) out of it.**
+>
+> *Why equal weights:* No external outcome in a single cross-section can
+> calibrate weights (for example, later closure or insolvency). The two
+> dimensions carry similar variance, and equal weights are the transparent
+> default that is easiest to defend. `fiscal_weights()` accepts custom weights
+> once panel outcomes are available to calibrate against.
+>
+> *Why exclude the standalones:* With equal weighting, each standalone would get
+> as much weight as a whole dimension.
+>
+> * **`prog_exp`** has communality near zero: it carries almost no information
+>   about reserves or results. Its "higher is better" reading is contested,
+>   since chronic underinvestment in administration is a documented risk factor
+>   (the "nonprofit starvation cycle").
+> * **`self_suff`** (program revenue ÷ expenses) describes the revenue model.
+>   A donor-funded organization with low self-sufficiency is not less healthy.
+>
+> Both are still scored (`fh_prog_exp`, `fh_self_suff`) and returned for
+> descriptive use.
+
+## 10. Results
+
+### 10.1 Distribution of scores
+
+```{r distribution, fig.height = 3.5}
+score_cols <- c(paste0("fh_", dimension_names), "fiscal_health")
+kable(t(sapply(indexed[score_cols], function(v)
+  c(n = sum(!is.na(v)), mean = mean(v, na.rm = TRUE), sd = sd(v, na.rm = TRUE),
+    quantile(v, c(.05, .25, .5, .75, .95), na.rm = TRUE)))), digits = 2)
+kable(round(cor(indexed[score_cols], use = "pair"), 2))
+par(mfrow = c(1, 3))
+for (v in score_cols) hist(indexed[[v]], breaks = 60, main = v, xlab = "score", col = "#6d7681", border = "white", yaxt = "n", ylab = "")
+```
+
+### 10.2 Face validity: raw financial conditions by index quintile
+
+If the index measures fiscal health, quintiles should line up with raw,
+untransformed conditions that analysts recognize as distress signals. The check
+is partly circular, since these conditions feed the index. Still, it confirms
+that orientation and scoring behave as intended on the raw scale, including at
+the extremes that rank-normal scoring compresses.
+
+```{r face-validity}
+validity <- data.frame(
+  quintile        = dplyr::ntile(indexed$fiscal_health, 5),
+  deficit         = f$surplus_margin < 0,
+  neg_net_assets  = zero(f$F9_10_NAFB_TOT_EOY) < 0,
+  neg_liquid      = f$liquid_assets_months < 0,
+  under_1mo_liquid = f$liquid_assets_months < 1,
+  liquid_months   = f$liquid_assets_months,
+  surplus_margin  = f$surplus_margin,
+  revenue         = rev_total
+)
+kable(validity |>
+  group_by(quintile) |>
+  summarise(n = n(),
+            `deficit year` = pct(mean(deficit, na.rm = TRUE)),
+            `negative net assets` = pct(mean(neg_net_assets, na.rm = TRUE)),
+            `negative liquid reserves` = pct(mean(neg_liquid, na.rm = TRUE)),
+            `< 1 month liquid reserves` = pct(mean(under_1mo_liquid, na.rm = TRUE)),
+            `median liquid months` = fmt(median(liquid_months, na.rm = TRUE), 1),
+            `median surplus margin` = pct(median(surplus_margin, na.rm = TRUE)),
+            `median revenue ($)` = format(round(median(revenue, na.rm = TRUE)), big.mark = ",")),
+  align = "r")
+```
+
+Every distress signal falls steadily from the bottom quintile to the top. Two
+patterns deserve attention:
+
+* **The top quintile is not the largest organizations.** Median revenue is
+  lowest in the top quintile. Small organizations with no debt and
+  accumulated reserves score well, while large operating nonprofits (hospitals,
+  human-service providers) carry more liabilities and run thinner margins by
+  design. The index measures financial *condition relative to scale*, not
+  institutional strength.
+* **The index treats more as better without limit.** The top quintile's median
+  surplus margin is very high. Some of these organizations are raising capital
+  or collecting multi-year grants in one year, and some hold reserves far
+  beyond operating need. The index does not penalize accumulation.
+
+### 10.3 Profiles: agreement and disagreement between dimensions
+
+```{r profiles}
+hi <- function(v) v >= median(v, na.rm = TRUE)
+prof <- table(
+  `Reserves & Solvency`   = ifelse(hi(indexed$fh_reserves_solvency), "above median", "below median"),
+  `Operating Performance` = ifelse(hi(indexed$fh_operating_performance), "above median", "below median"))
+kable(as.data.frame.matrix(round(100 * prop.table(prof), 1)),
+      caption = "Percent of organizations. Rows: Reserves & Solvency; columns: Operating Performance")
+```
+
+The off-diagonal cells are where the two-dimension design matters most. Those
+organizations are either spending down healthy reserves or earning surpluses on
+thin balance sheets, and a single composite would put them in the same place.
+
+### 10.4 Output data
+
+```{r output}
+out <- cbind(
+  d[, intersect(c("EIN2", "ORG_EIN", "ORG_NAME_L1", "TAX_YEAR", "RETURN_TYPE"), names(d))],
+  f[, pool],
+  indexed[, c(score_cols, "fiscal_health_pctile", "fh_prog_exp", "fh_self_suff")]
+)
+saveRDS(list(data = out, fit = fit, weights = weights, triage = triage,
+             dimensions = dimensions, reference_indicators = ind),
+        file.path(params$data_dir, "fiscal-health-index-2023.rds"))
+head(out[, c("ORG_NAME_L1", score_cols, "fiscal_health_pctile")])
+```
+
+## Summary of decisions {#summary-of-decisions}
+
+| # | Stage | Decision | Principal reason |
+|---|---|---|---|
+| 1 | Sample | Full 990 filers with positive revenue, expenses, and assets | Most ratios need Part IX/X detail; 990-EZ rows would add structural zeros |
+| 2 | Inputs | Total net assets stand in for unrestricted net assets when lines 27–28 are blank | ~1 in 4 filers do not follow SFAS 117; their reserves would read as zero |
+| 3 | Inputs | Correct cash/assets numerator; drop overhead | Package functions diverge from their documented formulas |
+| 4 | Pool | `r length(pool)` of `r nrow(reg)` metrics enter the model | Only directional, scale-free, defined, monotone, non-identical ratios |
+| 5 | Transform | Rank-normal scores instead of `_z` | `_z` attenuates the raw correlations the model depends on |
+| 6 | Triage | `cash_assets`, `assets_rev` to review | KMO < 0.50; direction depends on business model; they create a spurious third component |
+| 7 | Triage | `surplus_margin` over `profit_predepr` | KMO tie; surplus margin is the standard bottom-line measure |
+| 8 | Dimensions | Two dimensions | Parallel analysis, simple structure, EFA agreement, stable across halves and size |
+| 9 | Scoring | Standardized mean, explicit directions | Transparent; r ≈ 1 with PCA scoring |
+| 10 | Composite | Equal weights; standalones excluded | No outcome to calibrate against; standalones are not condition measures |
+
+**Retained dimensions.**
+
+* **Reserves & Solvency** (balance-sheet stocks): liquid reserves and cash
+  runway, net of leverage. It measures *resilience*, the capacity to absorb
+  shocks.
+* **Operating Performance** (income-statement flows): surplus relative to
+  revenue and assets. It measures whether *current operations are sustainable*.
+
+## Limitations and next steps
+
+* **One cross-section.** Stability across tax years, and predictive validity
+  (does a low score precede closure, filing lapses, or deficits?), need the
+  multi-year panel. Scoring later years on the 2023 scale needs a
+  reference-quantile version of the rank-normal transform.
+* **Monotone scoring.** Every indicator is treated as better-when-higher (or
+  lower), with no ceiling. Adding an "excess reserves" or target-range rule,
+  for example a penalty above a benchmark number of months of reserves, would
+  be a substantive policy choice, and it is left to users.
+* **Coverage.** Organizations filing 990-EZ or 990-N are out of scope. A
+  990-EZ-compatible variant could use the Part I and Part II fields shared by
+  both forms.
+* **Industry context.** Reserve norms differ by subsector: hospitals and
+  universities differ from arts groups or food banks. The index is comparable
+  *across* the sector as defined here. NTEE-relative percentiles (via the BMF
+  merge) would add within-field comparisons.
+* **Package fixes to follow up:**
+  * `get_overhead_ratio()` numerator
+  * `get_cash_assets_ratio()` numerator
+  * the SFAS 117 net-asset gap in reserve metrics
+  * the `fundr_eff` registry direction
+  * the `days_cash_inv` / current-ratio use of `F9_10_ASSET_INV_SALE_EOY`
+    (inventories)
+  * the `_z` normalization, which distorts correlations
+
+```{r session}
+sessionInfo()
+```

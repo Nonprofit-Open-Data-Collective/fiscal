@@ -50,7 +50,15 @@ get_industry <- function( x ) {
   letter   <- substr( x, 1, 1 )
   last_two <- substr( x, 4, 5 )
   ntee_ind <- substr( x, 1, 3 )
-  ntee_ind[ nchar(x) == 5 ] <- paste0( letter[ nchar(x) == 5 ], last_two[ nchar(x) == 5 ] )
+  # The last-two-digits rule applies only to SPECIALTY codes -- digits 2-3 in
+  # 01-19 -- exactly as in get_clean_ntee(). Applying it to every 5-character
+  # code makes the two functions disagree: B8340 cleans to B83 (student
+  # fraternities) but the industry would read the trailing "40" as B40 and
+  # return UNI, yielding UNI-B83-RG, a higher-ed subsector on a fraternity code.
+  first_two_num <- suppressWarnings( as.numeric( substr( x, 2, 3 ) ) )
+  first_two_num[ is.na(first_two_num) ] <- 99
+  specialty5 <- first_two_num <= 19 & nchar(x) == 5
+  ntee_ind[ specialty5 ] <- paste0( letter[ specialty5 ], last_two[ specialty5 ] )
   dplyr::case_when(
     ntee_ind %in% c("B40","B41","B42","B43","B50")  ~ "UNI",
     ntee_ind %in% c("E20","E21","E22","E24")         ~ "HOS",
