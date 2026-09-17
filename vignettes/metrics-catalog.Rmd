@@ -346,37 +346,39 @@ for operating nonprofits but typical for foundations.
 
 `get_days_cash_investments()`
 
-Measures days of operating coverage using liquid and investment assets, net of
-fixed property obligations.
+Measures how many days an organization can operate using its liquid assets plus
+its investment securities.
 
 **Formula:**
 ```
-doci = investable_assets / daily_expenses
+doci = ( liquid_assets + investments ) / daily_expenses
 
-investable_assets = unrestricted_net_assets + investments
-                    - ( land_buildings_equipment + mortgages_payable )
-daily_expenses    = ( total_expenses - depreciation ) / 365
+liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
+investments    = publicly_traded_securities + other_securities
+daily_expenses = ( total_expenses - depreciation ) / 365
 ```
 
 **Input variables**
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
-| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
 | `investments` | `F9_10_ASSET_INVEST_SEC_EOY` + `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Investments in publicly traded and other securities (Part X lines 11 + 12) |
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
-| `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 | `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
 
 
 **Definitional Range**
 
-Unbounded in both directions. Negative values occur when unrestricted net assets are
-negative (accumulated deficits exceed equity) or when fixed assets net of debt
-exceed liquid resources. Values above 365 indicate more than one year of coverage.
+Zero or positive for ordinary filings and unbounded above, expressed in days.
+Values above 365 indicate more than one year of coverage. The metric adds
+investments to the numerator of `get_days_cash_operations()`, so it is at least
+as large whenever the reported investment balances are non-negative. Negative
+values come only from filing anomalies: negative receivable or investment
+balances, or depreciation larger than total expenses.
 
 **Benchmarks and rules of thumb**
 

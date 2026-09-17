@@ -590,14 +590,14 @@ longer receivables cycles.</li>
 <h3 id="days-of-operating-cash-and-investments">Days of Operating Cash and Investments<a class="anchor" aria-label="anchor" href="#days-of-operating-cash-and-investments"></a>
 </h3>
 <p><code><a href="../reference/get_days_cash_investments.html">get_days_cash_investments()</a></code></p>
-<p>Measures days of operating coverage using liquid and investment
-assets, net of fixed property obligations.</p>
+<p>Measures how many days an organization can operate using its liquid
+assets plus its investment securities.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">doci</span> <span class="op">=</span> <span class="va">investable_assets</span> <span class="op">/</span> <span class="va">daily_expenses</span></span>
+<pre><code><span><span class="va">doci</span> <span class="op">=</span> <span class="op">(</span> <span class="va">liquid_assets</span> <span class="op">+</span> <span class="va">investments</span> <span class="op">)</span> <span class="op">/</span> <span class="va">daily_expenses</span></span>
 <span></span>
-<span><span class="va">investable_assets</span> <span class="op">=</span> <span class="va">unrestricted_net_assets</span> <span class="op">+</span> <span class="va">investments</span></span>
-<span>                    <span class="op">-</span> <span class="op">(</span> <span class="va">land_buildings_equipment</span> <span class="op">+</span> <span class="va">mortgages_payable</span> <span class="op">)</span></span>
-<span><span class="va">daily_expenses</span>    <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
+<span><span class="va">liquid_assets</span>  <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">+</span> <span class="va">pledges_receivable</span> <span class="op">+</span> <span class="va">accounts_receivable</span></span>
+<span><span class="va">investments</span>    <span class="op">=</span> <span class="va">publicly_traded_securities</span> <span class="op">+</span> <span class="va">other_securities</span></span>
+<span><span class="va">daily_expenses</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
 <p><strong>Input variables</strong></p>
 <table class="table">
 <colgroup>
@@ -612,22 +612,26 @@ assets, net of fixed property obligations.</p>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td><code>net_assets</code></td>
-<td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
-<td>Unrestricted net assets, EOY</td>
+<td><code>cash</code></td>
+<td><code>F9_10_ASSET_CASH_EOY</code></td>
+<td>Cash on hand, EOY</td>
 </tr>
 <tr class="even">
-<td><code>restricted_net_assets</code></td>
-<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
-<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
+<td><code>savings</code></td>
+<td><code>F9_10_ASSET_SAVING_EOY</code></td>
+<td>Savings and temporary cash investments</td>
 </tr>
 <tr class="odd">
-<td><code>total_net_assets</code></td>
-<td><code>F9_10_NAFB_TOT_EOY</code></td>
-<td>Total net assets, EOY; replaces unrestricted net assets when lines
-27 and 28 are both zero (non-SFAS 117 filers)</td>
+<td><code>pledges_receivable</code></td>
+<td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
+<td>Net pledges receivable</td>
 </tr>
 <tr class="even">
+<td><code>accounts_receivable</code></td>
+<td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
+<td>Accounts receivable, net</td>
+</tr>
+<tr class="odd">
 <td><code>investments</code></td>
 <td>
 <code>F9_10_ASSET_INVEST_SEC_EOY</code> +
@@ -636,22 +640,12 @@ assets, net of fixed property obligations.</p>
 <td>Investments in publicly traded and other securities (Part X lines 11
 + 12)</td>
 </tr>
-<tr class="odd">
-<td><code>land_buildings</code></td>
-<td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
-<td>Net land, buildings, and equipment</td>
-</tr>
 <tr class="even">
-<td><code>mortgages_payable</code></td>
-<td><code>F9_10_LIAB_MTG_NOTE_EOY</code></td>
-<td>Mortgages and notes payable</td>
-</tr>
-<tr class="odd">
 <td><code>total_expenses</code></td>
 <td><code>F9_09_EXP_TOT_TOT</code></td>
 <td>Total functional expenses</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td><code>depreciation</code></td>
 <td><code>F9_09_EXP_DEPREC_TOT</code></td>
 <td>Depreciation and amortization</td>
@@ -659,10 +653,13 @@ assets, net of fixed property obligations.</p>
 </tbody>
 </table>
 <p><strong>Definitional Range</strong></p>
-<p>Unbounded in both directions. Negative values occur when unrestricted
-net assets are negative (accumulated deficits exceed equity) or when
-fixed assets net of debt exceed liquid resources. Values above 365
-indicate more than one year of coverage.</p>
+<p>Zero or positive for ordinary filings and unbounded above, expressed
+in days. Values above 365 indicate more than one year of coverage. The
+metric adds investments to the numerator of
+<code><a href="../reference/get_days_cash_operations.html">get_days_cash_operations()</a></code>, so it is at least as large
+whenever the reported investment balances are non-negative. Negative
+values come only from filing anomalies: negative receivable or
+investment balances, or depreciation larger than total expenses.</p>
 <p><strong>Benchmarks and rules of thumb</strong></p>
 <ul>
 <li>

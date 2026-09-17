@@ -465,25 +465,24 @@ current_liabilities = accounts_payable + grants_payable
 
 **Ratio:** Days of Cash and Investments
 
-**Definition:** Days of operating coverage including investment assets net of related debt.
+**Definition:** Days of operating coverage from liquid assets plus investment securities. Adds investments to the numerator of `get_days_cash_operations()`, so the difference between the two metrics is the coverage investments provide.
 
 **Formula:**
 ```
-days_cash_inv = liquid_and_investment_assets / daily_expenses
+days_cash_inv = ( liquid_assets + investments ) / daily_expenses
 
-liquid_and_investment_assets = unrestricted_net_assets + investments
-                               - ( land_buildings + mortgages_payable )
-daily_expenses               = ( total_expenses - depreciation ) / 365
+liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
+investments    = publicly_traded_securities + other_securities
+daily_expenses = ( total_expenses - depreciation ) / 365
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
-| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
 | `investments` | `F9_10_ASSET_INVEST_SEC_EOY` + `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Investments in publicly traded and other securities (Part X lines 11 + 12) |
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
-| `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 | `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
 

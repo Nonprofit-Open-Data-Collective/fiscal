@@ -170,9 +170,6 @@ test_that( "reserve metrics use total net assets for non-SFAS 117 filers", {
 
   nac <- quiet_metric( get_netassets_composition_ratio( df, sanitize = FALSE ) )$netassets_comp
   expect_equal( nac[1:3], c( 0.6, 1, 0 ) )
-
-  doci <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
-  expect_equal( doci[1:3], ( c( 600, 900, 0 ) + 15 - ( 100 + 50 ) ) / ( 1200 / 365 ) )
 })
 
 test_that( "setting total_net_assets = NULL restores the unadjusted reserve metric", {
@@ -186,20 +183,53 @@ test_that( "setting total_net_assets = NULL restores the unadjusted reserve metr
 # ---- 5. F9_10_ASSET_INV_SALE_EOY is inventories (Part X line 8) -------------
 
 test_that( "get_days_cash_investments() uses investment securities, not inventories", {
-  df <- make_sfas_df()
+  df <- make_test_df( n = 10 )
   base <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
 
   df$F9_10_ASSET_INV_SALE_EOY <- 1e6
   with_inventory <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
   expect_equal( with_inventory, base )
 
+  daily <- ( df$F9_09_EXP_TOT_TOT - df$F9_09_EXP_DEPREC_TOT ) / 365
   df$F9_10_ASSET_INVEST_SEC_OTH_EOY <- df$F9_10_ASSET_INVEST_SEC_OTH_EOY + 365
   more_inv <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
-  expect_equal( ( more_inv - base )[1:3], rep( 365 / ( 1200 / 365 ), 3 ) )
+  expect_equal( more_inv - base, 365 / daily )
+})
+
+test_that( "days_cash_inv = (cash + savings + receivables + investments) / daily expenses", {
+  df <- make_test_df( n = 10 )
+  daily <- ( df$F9_09_EXP_TOT_TOT - df$F9_09_EXP_DEPREC_TOT ) / 365
+  liquid <- df$F9_10_ASSET_CASH_EOY + df$F9_10_ASSET_SAVING_EOY +
+            df$F9_10_ASSET_PLEDGE_NET_EOY + df$F9_10_ASSET_ACC_NET_EOY
+  inv    <- df$F9_10_ASSET_INVEST_SEC_EOY + df$F9_10_ASSET_INVEST_SEC_OTH_EOY
+
+  doci <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
+  doch <- quiet_metric( get_days_cash_operations( df, sanitize = FALSE ) )$days_cash_ops
+  expect_equal( doci, ( liquid + inv ) / daily )
+
+  # nests over days of cash: the difference is exactly the investment coverage
+  expect_equal( doci - doch, inv / daily )
+  expect_true( all( doci >= doch ) )
+})
+
+test_that( "days_cash_inv ignores net assets, fixed assets, and mortgages", {
+  df   <- make_test_df( n = 10 )
+  base <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
+
+  df$F9_10_NAFB_UNRESTRICT_EOY     <- -1e7
+  df$F9_10_ASSET_LAND_BLDG_NET_EOY <- 5e7
+  df$F9_10_LIAB_MTG_NOTE_EOY       <- 5e7
+  alt <- quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) )$days_cash_inv
+  expect_equal( alt, base )
+  expect_true( all( alt >= 0 ) )
+
+  expect_equal( formals( get_days_cash_investments )$range, "zp" )
+  expect_false( any( c( "net_assets", "land_buildings", "mortgages_payable" ) %in%
+                       names( formals( get_days_cash_investments ) ) ) )
 })
 
 test_that( "get_days_cash_investments() errors clearly when investment columns are absent", {
-  df <- make_sfas_df()
+  df <- make_test_df( n = 10 )
   df$F9_10_ASSET_INVEST_SEC_OTH_EOY <- NULL
   expect_error( quiet_metric( get_days_cash_investments( df, sanitize = FALSE ) ),
                 "F9_10_ASSET_INVEST_SEC_OTH_EOY" )

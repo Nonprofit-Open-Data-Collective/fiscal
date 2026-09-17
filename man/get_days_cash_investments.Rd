@@ -5,42 +5,44 @@
 \title{Days of Operating Cash and Investments}
 \usage{
 get_days_cash_investments( df,
-  net_assets        = "F9_10_NAFB_UNRESTRICT_EOY",
-  investments       = c( "F9_10_ASSET_INVEST_SEC_EOY",
-                         "F9_10_ASSET_INVEST_SEC_OTH_EOY" ),
-  land_buildings    = "F9_10_ASSET_LAND_BLDG_NET_EOY",
-  mortgages_payable = "F9_10_LIAB_MTG_NOTE_EOY",
-  total_expenses    = "F9_09_EXP_TOT_TOT",
-  depreciation      = "F9_09_EXP_DEPREC_TOT",
+  cash                = "F9_10_ASSET_CASH_EOY",
+  savings             = "F9_10_ASSET_SAVING_EOY",
+  pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
+  accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
+  investments         = c( "F9_10_ASSET_INVEST_SEC_EOY",
+                           "F9_10_ASSET_INVEST_SEC_OTH_EOY" ),
+  total_expenses      = "F9_09_EXP_TOT_TOT",
+  depreciation        = "F9_09_EXP_DEPREC_TOT",
   numerator = NULL, denominator = NULL,
-  restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
-  total_net_assets      = "F9_10_NAFB_TOT_EOY",
   winsorize = 0.98 ,
-  range     = "np",
+  range     = "zp",
   sanitize  = TRUE,
   summarize = FALSE )
 }
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{net_assets}{Unrestricted net assets, EOY.}
+\item{cash}{Cash on hand, EOY.}
+
+\item{savings}{Savings and temporary cash investments, EOY.}
+
+\item{pledges_receivable}{Net pledges and grants receivable, EOY.}
+
+\item{accounts_receivable}{Accounts receivable, net, EOY.}
 
 \item{investments}{Investment securities, EOY. One or more column names whose
 values are \strong{summed} (unlike most column arguments, which coalesce a 990
 and a 990-EZ field). Defaults to publicly traded securities (Part X line 11)
 plus other securities (line 12).}
 
-\item{land_buildings}{Net land, buildings, and equipment, EOY.}
-
-\item{mortgages_payable}{Mortgages and notes payable, EOY.}
-
 \item{total_expenses}{Total functional expenses.}
 
 \item{depreciation}{Depreciation, depletion, and amortization.}
 
-\item{numerator}{Optional. A pre-aggregated column for investable assets. When
-supplied, \code{net_assets}, \code{investments}, \code{land_buildings}, \code{mortgages_payable} are
-ignored; it is an error to also set one of them explicitly.}
+\item{numerator}{Optional. A pre-aggregated column for liquid assets plus
+investments. When supplied, \code{cash}, \code{savings}, \code{pledges_receivable},
+\code{accounts_receivable}, and \code{investments} are ignored; it is an error to also set
+one of them explicitly.}
 
 \item{denominator}{Optional. A pre-aggregated column for annual non-depreciation
 expenses (the function divides this by 365 internally). When supplied,
@@ -51,7 +53,7 @@ them explicitly.}
 winsorizes at the 1st and 99th percentiles.}
 
 \item{range}{Character string specifying the theoretical range of the ratio,
-used to set winsorization bounds. Default \code{"np"}. Options:
+used to set winsorization bounds. Default \code{"zp"}. Options:
 \code{"np"} (negative to positive), \code{"zp"} (zero to positive),
 \code{"zo"} (zero to one), \code{"nz"} (negative to zero), or a custom
 \code{"lo;hi"} pair (e.g. \code{"0;10"}).}
@@ -77,23 +79,26 @@ new columns:
 }\if{html}{\out{</div>}}
 }
 \description{
-Measures days of operating coverage using liquid and investment assets, net of
-fixed property obligations.
+Measures how many days an organization can operate using its liquid assets plus
+its investment securities.
 
 \strong{Formula:}
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{doci = investable_assets / daily_expenses
+\if{html}{\out{<div class="sourceCode">}}\preformatted{doci = ( liquid_assets + investments ) / daily_expenses
 
-investable_assets = unrestricted_net_assets + investments
-                    - ( land_buildings_equipment + mortgages_payable )
-daily_expenses    = ( total_expenses - depreciation ) / 365
+liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
+investments    = publicly_traded_securities + other_securities
+daily_expenses = ( total_expenses - depreciation ) / 365
 }\if{html}{\out{</div>}}
 
 \strong{Definitional Range}
 
-Unbounded in both directions. Negative values occur when unrestricted net assets are
-negative (accumulated deficits exceed equity) or when fixed assets net of debt
-exceed liquid resources. Values above 365 indicate more than one year of coverage.
+Zero or positive for ordinary filings and unbounded above, expressed in days.
+Values above 365 indicate more than one year of coverage. The metric adds
+investments to the numerator of \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}, so it is at least
+as large whenever the reported investment balances are non-negative. Negative
+values come only from filing anomalies: negative receivable or investment
+balances, or depreciation larger than total expenses.
 
 \strong{Benchmarks and rules of thumb}
 \itemize{
@@ -107,39 +112,39 @@ liquidity concentrated in investments rather than accessible cash.
 \details{
 \subsection{Primary uses and key insights}{
 
-Days of cash and investments extends \code{\link[=get_days_cash_operations]{get_days_cash_operations()}} by
-incorporating investment assets into the liquidity numerator. It asks: if the
-organization could liquidate its unrestricted assets (net of fixed property and
-related debt), how many days of operations could it fund? This broader measure
-captures organizations that hold significant reserves in investment portfolios
-rather than bank accounts.
+Days of cash and investments extends \code{\link[=get_days_cash_operations]{get_days_cash_operations()}} by adding
+investment securities to the liquidity numerator. It asks: if the organization
+drew on its cash, receivables, and investment portfolio, how many days of
+operations could it fund? This broader measure captures organizations that hold
+significant reserves in investment portfolios rather than bank accounts.
 
 It is most relevant for endowed organizations, foundations, and mature nonprofits
-that hold investment portfolios. For organizations with minimal investments,
-\code{\link[=get_days_cash_operations]{get_days_cash_operations()}} and this metric will be nearly identical.
+that hold investment portfolios. For organizations with no investments,
+\code{\link[=get_days_cash_operations]{get_days_cash_operations()}} and this metric are identical, so the difference
+between the two is the coverage that investments add.
 }
 
 \subsection{Formula variations and their sources}{
 
-The numerator is unrestricted net assets plus investment securities (Part X
-lines 11 and 12), minus
-net fixed assets (land/buildings/equipment), plus mortgage notes payable. This
-construction approximates the liquid, unrestricted resource base by starting from
-unrestricted net assets, adding back investment assets, and removing the illiquid
-fixed asset component (net of its associated debt). The denominator uses the same
-daily expense base as \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}: (total expenses -
-depreciation) / 365.
+(Cash + savings + pledges receivable + accounts receivable + publicly traded
+securities + other securities) / ((total expenses - depreciation) / 365), using
+Part X lines 1, 2, 3, 4, 11, and 12 and Part IX line 25 less line 22. Rating
+agencies use a similar "days cash on hand" measure that adds unrestricted cash and
+investments; this version keeps the receivables in \code{\link[=get_days_cash_operations]{get_days_cash_operations()}}
+so the two metrics nest. Program-related investments (line 13) are excluded
+because they are not held for liquidity.
 
-This formulation follows Zietlow et al. (2007) and is related to the LUNA measure
-(\code{\link[=get_liquid_assets_months]{get_liquid_assets_months()}}).
-}
+The Form 990 does not separate donor-restricted investments, such as permanent
+endowment, from unrestricted ones, so the numerator can overstate the resources
+available for general operations. For organizations with large restricted
+endowments, read this metric alongside \code{\link[=get_netassets_composition_ratio]{get_netassets_composition_ratio()}}.
 
-\subsection{Why this formula was chosen}{
-
-By netting out fixed assets and their associated mortgage debt, the formula isolates
-resources that could realistically be accessed in a financial emergency - the
-organization cannot liquidate its building overnight, but it can liquidate investment
-securities. This is more operationally meaningful than simply summing all assets.
+Earlier versions started from unrestricted net assets, added investments, and
+subtracted both net fixed assets and mortgages. That counted investments twice
+(they are already part of net assets) and treated mortgage debt as reducing
+liquidity a second time, so organizations with mortgaged buildings often scored
+negative. Earlier versions also used \code{F9_10_ASSET_INV_SALE_EOY} (Part X line 8,
+inventories) as investments.
 }
 
 \subsection{Canonical citations}{
@@ -154,25 +159,20 @@ nonprofit organizations. \emph{Nonprofit Management and Leadership}, 23(3),
 
 \subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_NAFB_UNRESTRICT_EOY}:
-Unrestricted net assets, EOY (\code{net_assets})
+\item \code{F9_10_ASSET_CASH_EOY}: Cash, non-interest bearing, EOY (Part X line 1) (\code{cash})
+\item \code{F9_10_ASSET_SAVING_EOY}: Savings and temporary cash investments, EOY (Part X
+line 2) (\code{savings})
+\item \code{F9_10_ASSET_PLEDGE_NET_EOY}: Pledges and grants receivable, net, EOY (Part X
+line 3) (\code{pledges_receivable})
+\item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (Part X line 4)
+(\code{accounts_receivable})
 \item \code{F9_10_ASSET_INVEST_SEC_EOY}: Investments, publicly traded securities,
 EOY (Part X line 11) (\code{investments})
 \item \code{F9_10_ASSET_INVEST_SEC_OTH_EOY}: Investments, other securities, EOY
 (Part X line 12) (\code{investments})
-\item \code{F9_10_NAFB_RESTRICT_EOY}, \code{F9_10_NAFB_TOT_EOY}: Restricted and total net
-assets, used when a filer does not follow SFAS 117 (see
-\code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}) (\code{restricted_net_assets},
-\code{total_net_assets})
-\item \code{F9_10_ASSET_LAND_BLDG_NET_EOY}:
-Net land, buildings, and equipment (\code{land_buildings})
-\item \code{F9_10_LIAB_MTG_NOTE_EOY}: Mortgages and notes payable (\code{mortgages_payable})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 \item \code{F9_09_EXP_DEPREC_TOT}: Depreciation and amortization (\code{depreciation})
 }
-
-Earlier versions used \code{F9_10_ASSET_INV_SALE_EOY} here. That field is Part X
-line 8, \emph{inventories for sale or use}, not investments.
 }
 }
 \examples{
