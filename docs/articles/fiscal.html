@@ -133,7 +133,7 @@ offline with no download.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="va">dat10k</span><span class="op">$</span><span class="va">RETURN_TYPE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;   990 990EZ </span></span>
-<span><span class="co">#&gt;  6289  3711</span></span></code></pre></div>
+<span><span class="co">#&gt;  6051  3949</span></span></code></pre></div>
 <p>Score the entire battery of fiscal-health metrics and append it to
 your data:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -153,11 +153,11 @@ column names:</p>
 <span></span>
 <span><span class="va">df</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"debt_assets"</span>, <span class="st">"debt_assets_w"</span>, <span class="st">"debt_assets_z"</span>, <span class="st">"debt_assets_p"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;   debt_assets debt_assets_w debt_assets_z debt_assets_p</span></span>
-<span><span class="co">#&gt; 1  0.07100170    0.07100170    -0.2536736            69</span></span>
-<span><span class="co">#&gt; 2  0.03412921    0.03412921    -0.5014824            63</span></span>
-<span><span class="co">#&gt; 3  0.15265765    0.15265765     0.1817018            75</span></span>
-<span><span class="co">#&gt; 4  0.84668028    0.84668028     1.5432887            94</span></span>
-<span><span class="co">#&gt; 5  0.88483740    0.88483740     1.5804982            95</span></span></code></pre></div>
+<span><span class="co">#&gt; 1   0.1016725     0.1016725  -0.074172138            72</span></span>
+<span><span class="co">#&gt; 2   0.0000000     0.0000000  -0.758550952             1</span></span>
+<span><span class="co">#&gt; 3   0.0000000     0.0000000  -0.758550952             1</span></span>
+<span><span class="co">#&gt; 4   0.1146878     0.1146878  -0.003320409            73</span></span>
+<span><span class="co">#&gt; 5         NaN           NaN           NaN            NA</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="the-four-versions-of-every-metric">The four versions of every metric<a class="anchor" aria-label="anchor" href="#the-four-versions-of-every-metric"></a>
@@ -200,14 +200,14 @@ does — and how the package chooses one automatically — is covered in
 <code><a href="../articles/normalization.html">vignette("normalization")</a></code>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">df</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"debt_assets"</span>, <span class="st">"debt_assets_w"</span>, <span class="st">"debt_assets_z"</span>, <span class="st">"debt_assets_p"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   debt_assets         debt_assets_w      debt_assets_z     debt_assets_p   </span></span>
-<span><span class="co">#&gt;  Min.   :-111.69476   Min.   :0.000000   Min.   :-0.7505   Min.   :  1.00  </span></span>
-<span><span class="co">#&gt;  1st Qu.:   0.00000   1st Qu.:0.000000   1st Qu.:-0.7505   1st Qu.: 25.00  </span></span>
-<span><span class="co">#&gt;  Median :   0.00306   Median :0.003061   Median :-0.7279   Median : 50.00  </span></span>
-<span><span class="co">#&gt;  Mean   :   0.45918   Mean   :0.186229   Mean   :-0.1995   Mean   : 50.47  </span></span>
-<span><span class="co">#&gt;  3rd Qu.:   0.15415   3rd Qu.:0.154155   3rd Qu.: 0.1883   3rd Qu.: 75.00  </span></span>
-<span><span class="co">#&gt;  Max.   : 986.79661   Max.   :3.108076   Max.   : 2.6471   Max.   :100.00  </span></span>
-<span><span class="co">#&gt;  NA's   :294          NA's   :294        NA's   :294       NA's   :294</span></span></code></pre></div>
+<span><span class="co">#&gt;   debt_assets        debt_assets_w     debt_assets_z     debt_assets_p   </span></span>
+<span><span class="co">#&gt;  Min.   :   -0.326   Min.   :0.00000   Min.   :-0.7585   Min.   :  1.00  </span></span>
+<span><span class="co">#&gt;  1st Qu.:    0.000   1st Qu.:0.00000   1st Qu.:-0.7585   1st Qu.: 25.00  </span></span>
+<span><span class="co">#&gt;  Median :    0.002   Median :0.00176   Median :-0.7454   Median : 50.00  </span></span>
+<span><span class="co">#&gt;  Mean   :    4.769   Mean   :0.20833   Mean   :-0.2021   Mean   : 50.37  </span></span>
+<span><span class="co">#&gt;  3rd Qu.:    0.145   3rd Qu.:0.14478   3rd Qu.: 0.1460   3rd Qu.: 75.00  </span></span>
+<span><span class="co">#&gt;  Max.   :39469.200   Max.   :4.27719   Max.   : 2.9480   Max.   :100.00  </span></span>
+<span><span class="co">#&gt;  NA's   :346         NA's   :346       NA's   :346       NA's   :346</span></span></code></pre></div>
 <p>Set <code>summarize = TRUE</code> on any metric to print these
 summaries and plot the four density curves as you compute:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -272,14 +272,14 @@ append all four):</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">metrics_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_all.html">compute_all</a></span><span class="op">(</span><span class="va">dat10k</span>, append_to_df <span class="op">=</span> <span class="cn">FALSE</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">metrics_only</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span></span>
-<span><span class="co">#&gt;             EIN2               OBJECTID   ORG_EIN                   ORG_NAME_L1</span></span>
-<span><span class="co">#&gt; 1 EIN-54-1725912 OID-202403099349301810 541725912 SOCIETY FOR DEVELOPMENTAL AND</span></span>
-<span><span class="co">#&gt; 2 EIN-84-3091568 OID-202421309349303942 843091568                  IF U LOVE ME</span></span>
-<span><span class="co">#&gt; 3 EIN-91-0905177 OID-202403189349304665 910905177      OLYMPIA MASONIC CEMETERY</span></span>
-<span><span class="co">#&gt;                 ORG_NAME_L2 RETURN_AMENDED_X</span></span>
-<span><span class="co">#&gt; 1 BEHAVIORAL PEDIATRICS INC            FALSE</span></span>
-<span><span class="co">#&gt; 2                                      FALSE</span></span>
-<span><span class="co">#&gt; 3                                      FALSE</span></span></code></pre></div>
+<span><span class="co">#&gt;             EIN2               OBJECTID   ORG_EIN</span></span>
+<span><span class="co">#&gt; 1 EIN-83-2321599 OID-202403479349200600 832321599</span></span>
+<span><span class="co">#&gt; 2 EIN-33-0821317 OID-202441069349301519 330821317</span></span>
+<span><span class="co">#&gt; 3 EIN-30-0846685 OID-202421279349202317 300846685</span></span>
+<span><span class="co">#&gt;                                ORG_NAME_L1     ORG_NAME_L2 RETURN_AMENDED_X</span></span>
+<span><span class="co">#&gt; 1             FRANKIE DIAZ HOUSE OF PRAYER MINISTRIES CORP            FALSE</span></span>
+<span><span class="co">#&gt; 2           SUNYATA MEDITATION ASSOCIATION                            FALSE</span></span>
+<span><span class="co">#&gt; 3 CANYON HIGH SCHOOL FOOTBALL BOOSTER CLUB                            FALSE</span></span></code></pre></div>
 <p>The <code>get_*()</code> functions are also pipe-enabled, so metrics
 can be chained:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">

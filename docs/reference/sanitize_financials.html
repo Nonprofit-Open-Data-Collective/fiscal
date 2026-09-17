@@ -118,6 +118,10 @@ are treated as 990EZ filers.</p>
 protected zero imputation over the shared concordance-derived field scopes.
 Supplying <code>pz_vars</code>/<code>pc_vars</code> explicitly falls back to the local imputer for
 backward compatibility.</p>
+<p>Before imputing, bit64 <code>integer64</code> columns are converted to double. Columns
+holding integer64 bytes with the class attribute dropped (every nonzero value
+smaller than 1e-300 in absolute value) are repaired with a warning; imputing
+them first would zero out negative amounts, which such columns read as <code>NaN</code>.</p>
     </div>
 
     <div class="section level2">
@@ -130,9 +134,9 @@ backward compatibility.</p>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># All ratios can then be computed without worrying about NA/zero ambiguity</span></span></span>
 <span class="r-in"><span><span class="va">dat_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="get_grants_govt_ratio.html">get_grants_govt_ratio</a></span><span class="op">(</span> <span class="va">dat_clean</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 62 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 64 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="va">dat_clean</span> <span class="op">&lt;-</span> <span class="fu"><a href="get_program_expenses_ratio.html">get_program_expenses_ratio</a></span><span class="op">(</span> <span class="va">dat_clean</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total expenses equal to zero :: 157 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total expenses equal to zero :: 206 case(s) replaced with NaN</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

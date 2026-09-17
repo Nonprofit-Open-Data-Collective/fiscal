@@ -286,15 +286,15 @@ Revenues less expenses, current year (<code>revenues_less_expenses</code>, 990 +
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_return_assets_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total assets equal to zero :: 294 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total assets equal to zero :: 346 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"return_assets"</span>, <span class="st">"return_assets_w"</span>, <span class="st">"return_assets_z"</span>, <span class="st">"return_assets_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   return_assets return_assets_w return_assets_z return_assets_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  -0.009070259    -0.009070259      -0.3405220              37</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.247378277     0.247378277       0.9486927              83</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  -0.010638137    -0.010638137      -0.3553381              37</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.103944559     0.103944559       0.4877952              69</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5   0.041959818     0.041959818       0.1332661              56</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6   0.237101854     0.237101854       0.9207116              83</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1    0.89832745      0.89832745       1.7187302              96</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   -0.03668845     -0.03668845      -0.5180661              31</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   -1.71635150     -1.71635150      -1.8809791               3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   -0.48841416     -0.48841416      -1.3643205               9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5           NaN             NaN              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   -0.40983607     -0.40983607      -1.2939881              10</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

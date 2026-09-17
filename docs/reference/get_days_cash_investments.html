@@ -293,16 +293,16 @@ line 8, <em>inventories for sale or use</em>, not investments.</p>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_days_cash_investments</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,554 case(s) use total net assets</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 54 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,305 case(s) use total net assets</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 63 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"days_cash_inv"</span>, <span class="st">"days_cash_inv_w"</span>, <span class="st">"days_cash_inv_z"</span>, <span class="st">"days_cash_inv_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   days_cash_inv days_cash_inv_w days_cash_inv_z days_cash_inv_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1    762.137516      762.137516       0.5977093              73</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2    111.120678      111.120678      -0.3769284              35</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3   1185.457625     1185.457625       0.8112056              80</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      5.877105        5.877105      -0.8837471              19</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     32.308670       32.308670      -0.7201160              24</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    1257.01084      1257.01084       0.9174942              82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      14.85018        14.85018      -0.7715515              22</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6     720.26667       720.26667       0.6621916              75</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

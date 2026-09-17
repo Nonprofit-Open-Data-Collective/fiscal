@@ -164,15 +164,15 @@ organizations. <em>Journal of Public Administration Research and Theory</em>,
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span> <span class="va"><a href="https://nonprofit-open-data-collective.github.io/fiscal/">fiscal</a></span> <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_revenue_membdues_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 62 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 64 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"revenue_membdues"</span>, <span class="st">"revenue_membdues_w"</span>, <span class="st">"revenue_membdues_z"</span>, <span class="st">"revenue_membdues_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   revenue_membdues revenue_membdues_w revenue_membdues_z revenue_membdues_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1        0.1966913          0.1966913           0.388375                 94</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2        0.0000000          0.0000000          -2.399666                  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        0.0000000          0.0000000          -2.399666                  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4        0.0000000          0.0000000          -2.399666                  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5        0.0000000          0.0000000          -2.399666                  1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6               NA                 NA                 NA                 NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1               NA                 NA                 NA                 NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                0                  0          -2.221119                  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3               NA                 NA                 NA                 NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                0                  0          -2.221119                  1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5               NA                 NA                 NA                 NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6              NaN                NaN                NaN                 NA</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

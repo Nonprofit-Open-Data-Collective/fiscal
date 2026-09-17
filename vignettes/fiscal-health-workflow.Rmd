@@ -94,8 +94,9 @@ diagnostics$redundancy_pairs
 
 The diagnostics find the three near-duplicate pairs: `equity_z` mirrors
 `debt_assets_z`, and the two reserve measures and the two margin measures differ
-only in small adjustments. The expense and self-sufficiency shares share almost
-no variance with the rest of the set.
+only in small adjustments. The program- and administrative-expense shares are
+related to each other, but neither they nor the self-sufficiency ratio share much
+variance with the financial-condition indicators.
 
 ## Stage 2 — triage
 
@@ -108,17 +109,20 @@ triage <- fiscal_triage(diagnostics)
 triage$decisions[, c("variable", "decision", "reason")]
 ```
 
-The triage keeps one indicator from each redundant pair and drops the
-administrative-expense share as noise. It proposes keeping `prog_exp_z` and
-`self_suff_z` as **standalone** measures because they are unrelated to the other
-indicators. A statistical rule cannot tell *why* an indicator stands alone. Here
-it is because these shares describe a spending pattern and a revenue model rather
-than financial condition, so we override the recommendation and exclude them:
+The triage keeps one indicator from each redundant pair. Its recommendations for
+the three business-model indicators follow only from their correlations: the two
+expense shares correlate with each other, so the rules can retain them for
+dimension estimation (where they would form a small "spending mix" dimension),
+and self-sufficiency, which correlates with nothing, is flagged as standalone or
+noise. A statistical rule cannot tell whether an indicator measures the construct
+at all. These three describe a spending pattern and a revenue model rather than
+financial condition, so we override the recommendations and exclude them:
 
 ```{r}
 triage <- fiscal_triage(
   diagnostics,
-  overrides = c(prog_exp_z = "noise", self_suff_z = "noise")
+  overrides = c(prog_exp_z = "noise", expenses_admin_z = "noise",
+                self_suff_z = "noise")
 )
 triage$selected_for_dimensions
 triage$retained_standalone

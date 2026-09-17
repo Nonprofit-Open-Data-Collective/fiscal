@@ -212,15 +212,15 @@ Working Paper 04-016</em>.</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_profit_margin_postdepr</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Revenue equal to zero :: 62 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Revenue equal to zero :: 64 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"profit_postdepr"</span>, <span class="st">"profit_postdepr_w"</span>, <span class="st">"profit_postdepr_z"</span>, <span class="st">"profit_postdepr_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   profit_postdepr profit_postdepr_w profit_postdepr_z profit_postdepr_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     -0.01528298       -0.01528298       -0.36966811                36</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      0.07233303        0.07233303        0.20918931                59</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     -0.04298182       -0.04298182       -0.51904590                30</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      0.01079839        0.01079839       -0.16740023                44</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      0.03124373        0.03124373       -0.02495555                49</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6              NA                NA                NA                NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1              NA                NA                NA                NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      -0.8396223        -0.8396223        -1.7201124                 5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3              NA                NA                NA                NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      -0.1312060        -0.1312060        -0.8691617                20</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5              NA                NA                NA                NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6             NaN               NaN                NA                NA</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

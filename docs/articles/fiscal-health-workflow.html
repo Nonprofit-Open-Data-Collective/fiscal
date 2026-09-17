@@ -135,7 +135,7 @@ shares describe spending patterns rather than financial condition.</p>
 <span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">indicators</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 6115   11</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 5892   11</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="stage-1-diagnose">Stage 1 — diagnose<a class="anchor" aria-label="anchor" href="#stage-1-diagnose"></a>
@@ -154,14 +154,15 @@ structure from those that are redundant, standalone, or noisy
 <span></span>
 <span><span class="va">diagnostics</span><span class="op">$</span><span class="va">redundancy_pairs</span></span>
 <span><span class="co">#&gt;               var1                   var2          r</span></span>
-<span><span class="co">#&gt; 1     op_reserve_z liquid_assets_months_z  0.9165347</span></span>
-<span><span class="co">#&gt; 2    debt_assets_z               equity_z -0.9422924</span></span>
-<span><span class="co">#&gt; 3 surplus_margin_z       profit_predepr_z  0.9424185</span></span></code></pre></div>
+<span><span class="co">#&gt; 1     op_reserve_z liquid_assets_months_z  0.9295005</span></span>
+<span><span class="co">#&gt; 2    debt_assets_z               equity_z -0.9403921</span></span>
+<span><span class="co">#&gt; 3 surplus_margin_z       profit_predepr_z  0.9566320</span></span></code></pre></div>
 <p>The diagnostics find the three near-duplicate pairs:
 <code>equity_z</code> mirrors <code>debt_assets_z</code>, and the two
 reserve measures and the two margin measures differ only in small
-adjustments. The expense and self-sufficiency shares share almost no
-variance with the rest of the set.</p>
+adjustments. The program- and administrative-expense shares are related
+to each other, but neither they nor the self-sufficiency ratio share
+much variance with the financial-condition indicators.</p>
 </div>
 <div class="section level2">
 <h2 id="stage-2-triage">Stage 2 — triage<a class="anchor" aria-label="anchor" href="#stage-2-triage"></a>
@@ -182,8 +183,8 @@ measures, and which to drop as redundant or noise.</p>
 <span><span class="co">#&gt; 6        surplus_margin_z     retain</span></span>
 <span><span class="co">#&gt; 7        profit_predepr_z  redundant</span></span>
 <span><span class="co">#&gt; 8         return_assets_z     retain</span></span>
-<span><span class="co">#&gt; 9              prog_exp_z standalone</span></span>
-<span><span class="co">#&gt; 10       expenses_admin_z      noise</span></span>
+<span><span class="co">#&gt; 9              prog_exp_z     retain</span></span>
+<span><span class="co">#&gt; 10       expenses_admin_z     retain</span></span>
 <span><span class="co">#&gt; 11            self_suff_z standalone</span></span>
 <span><span class="co">#&gt;                                                                                                        reason</span></span>
 <span><span class="co">#&gt; 1                                                               Eligible for multivariate dimension modeling.</span></span>
@@ -194,21 +195,24 @@ measures, and which to drop as redundant or noise.</p>
 <span><span class="co">#&gt; 6                                                               Eligible for multivariate dimension modeling.</span></span>
 <span><span class="co">#&gt; 7                                                 Provisional drop from a highly correlated redundancy group.</span></span>
 <span><span class="co">#&gt; 8                                                               Eligible for multivariate dimension modeling.</span></span>
-<span><span class="co">#&gt; 9  Low communality; retain as a possible standalone indicator rather than forcing it into a shared dimension.</span></span>
-<span><span class="co">#&gt; 10                                                  Low KMO, low communality, and weak overall connectedness.</span></span>
+<span><span class="co">#&gt; 9                                                               Eligible for multivariate dimension modeling.</span></span>
+<span><span class="co">#&gt; 10                                                              Eligible for multivariate dimension modeling.</span></span>
 <span><span class="co">#&gt; 11 Low communality; retain as a possible standalone indicator rather than forcing it into a shared dimension.</span></span></code></pre></div>
-<p>The triage keeps one indicator from each redundant pair and drops the
-administrative-expense share as noise. It proposes keeping
-<code>prog_exp_z</code> and <code>self_suff_z</code> as
-<strong>standalone</strong> measures because they are unrelated to the
-other indicators. A statistical rule cannot tell <em>why</em> an
-indicator stands alone. Here it is because these shares describe a
-spending pattern and a revenue model rather than financial condition, so
-we override the recommendation and exclude them:</p>
+<p>The triage keeps one indicator from each redundant pair. Its
+recommendations for the three business-model indicators follow only from
+their correlations: the two expense shares correlate with each other, so
+the rules can retain them for dimension estimation (where they would
+form a small “spending mix” dimension), and self-sufficiency, which
+correlates with nothing, is flagged as standalone or noise. A
+statistical rule cannot tell whether an indicator measures the construct
+at all. These three describe a spending pattern and a revenue model
+rather than financial condition, so we override the recommendations and
+exclude them:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">triage</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/fiscal_triage.html">fiscal_triage</a></span><span class="op">(</span></span>
 <span>  <span class="va">diagnostics</span>,</span>
-<span>  overrides <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>prog_exp_z <span class="op">=</span> <span class="st">"noise"</span>, self_suff_z <span class="op">=</span> <span class="st">"noise"</span><span class="op">)</span></span>
+<span>  overrides <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>prog_exp_z <span class="op">=</span> <span class="st">"noise"</span>, expenses_admin_z <span class="op">=</span> <span class="st">"noise"</span>,</span>
+<span>                self_suff_z <span class="op">=</span> <span class="st">"noise"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">triage</span><span class="op">$</span><span class="va">selected_for_dimensions</span></span>
 <span><span class="co">#&gt; [1] "days_cash_ops_z"        "liquid_assets_months_z" "equity_z"              </span></span>
@@ -241,11 +245,11 @@ name them — that is your call.</p>
 <span><span class="co">#&gt;   Unassigned indicators: 0</span></span>
 <span><span class="va">dimensions</span><span class="op">$</span><span class="va">assignments</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"variable"</span>, <span class="st">"primary_dimension"</span>, <span class="st">"primary_loading"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;                 variable primary_dimension primary_loading</span></span>
-<span><span class="co">#&gt; 1        days_cash_ops_z        Dimension1       0.7065477</span></span>
-<span><span class="co">#&gt; 2 liquid_assets_months_z        Dimension1       0.8828913</span></span>
-<span><span class="co">#&gt; 3               equity_z        Dimension1       0.7591951</span></span>
-<span><span class="co">#&gt; 4       surplus_margin_z        Dimension2       0.9228641</span></span>
-<span><span class="co">#&gt; 5        return_assets_z        Dimension2       0.9565405</span></span></code></pre></div>
+<span><span class="co">#&gt; 1        days_cash_ops_z        Dimension1       0.6922338</span></span>
+<span><span class="co">#&gt; 2 liquid_assets_months_z        Dimension1       0.8898898</span></span>
+<span><span class="co">#&gt; 3               equity_z        Dimension1       0.7687656</span></span>
+<span><span class="co">#&gt; 4       surplus_margin_z        Dimension2       0.9192845</span></span>
+<span><span class="co">#&gt; 5        return_assets_z        Dimension2       0.9556156</span></span></code></pre></div>
 <p>Reserves and solvency indicators form one dimension; the margin and
 return indicators form the other. Name them after their content:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -274,7 +278,7 @@ needed to score new data identically later.</p>
 <span><span class="co">#&gt; Fitted fiscal-health measurement model</span></span>
 <span><span class="co">#&gt;   Dimensions: 2 </span></span>
 <span><span class="co">#&gt;   Standalone indicators: 0 </span></span>
-<span><span class="co">#&gt;   Reference observations: 6115 </span></span>
+<span><span class="co">#&gt;   Reference observations: 5892 </span></span>
 <span><span class="co">#&gt;   Missing-value rule: median</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -292,7 +296,7 @@ panel year on the same scale.</p>
 <span><span class="co">#&gt; [1] "fh_resilience"           "fh_performance"         </span></span>
 <span><span class="co">#&gt; [3] "fh_resilience_coverage"  "fh_performance_coverage"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">scored_dims</span><span class="op">$</span><span class="va">fh_resilience</span>, <span class="va">scored_dims</span><span class="op">$</span><span class="va">fh_performance</span>, use <span class="op">=</span> <span class="st">"complete.obs"</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.33</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 0.36</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="stage-6-weight">Stage 6 — weight<a class="anchor" aria-label="anchor" href="#stage-6-weight"></a>
@@ -324,7 +328,7 @@ is based on).</p>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">indexed</span><span class="op">$</span><span class="va">fiscal_health</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span></span>
-<span><span class="co">#&gt; -2.58112 -0.57628 -0.01676  0.00000  0.54129  2.96468</span></span></code></pre></div>
+<span><span class="co">#&gt; -2.50353 -0.59180 -0.02616  0.00000  0.54486  2.95750</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="the-shortcut-fiscal_health">The shortcut: <code>fiscal_health()</code><a class="anchor" aria-label="anchor" href="#the-shortcut-fiscal_health"></a>
@@ -338,7 +342,7 @@ weight, index — in one call:</p>
 <span><span class="va">result</span></span>
 <span><span class="co">#&gt; Fiscal-health result</span></span>
 <span><span class="co">#&gt;   Mode: fit_and_score </span></span>
-<span><span class="co">#&gt;   Observations: 6115 </span></span>
+<span><span class="co">#&gt;   Observations: 5892 </span></span>
 <span><span class="co">#&gt;   Dimensions: 2 </span></span>
 <span><span class="co">#&gt;   Standalone indicators: 0 </span></span>
 <span><span class="co">#&gt;   Composite index: yes</span></span></code></pre></div>

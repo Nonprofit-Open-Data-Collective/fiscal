@@ -222,16 +222,16 @@ Unrestricted net assets, EOY (<code>unrestricted_net_assets</code>)</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_netassets_composition_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,554 case(s) use total net assets</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total net assets equal to zero :: 282 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,305 case(s) use total net assets</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total net assets equal to zero :: 335 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"netassets_comp"</span>, <span class="st">"netassets_comp_w"</span>, <span class="st">"netassets_comp_z"</span>, <span class="st">"netassets_comp_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   netassets_comp netassets_comp_w netassets_comp_z netassets_comp_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1      0.8377319        0.8377319       0.07880324               15</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2      1.0000000        1.0000000       2.74197254               28</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      1.0000000        1.0000000       2.74197254               28</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      1.0000000        1.0000000       2.74197254               28</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      1.0000000        1.0000000       2.74197254               28</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6             NA               NA               NA               NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1             NA               NA               NA               NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2              1                1         2.753406               28</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3             NA               NA               NA               NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4              1                1         2.753406               28</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5             NA               NA               NA               NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6              1                1         2.753406               28</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

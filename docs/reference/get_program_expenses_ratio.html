@@ -233,15 +233,15 @@ analysis of program expense ratio benchmarks and their perverse incentives.</p><
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_program_expenses_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total expenses equal to zero :: 104 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total expenses equal to zero :: 134 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"prog_exp"</span>, <span class="st">"prog_exp_w"</span>, <span class="st">"prog_exp_z"</span>, <span class="st">"prog_exp_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    prog_exp prog_exp_w prog_exp_z prog_exp_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 0.8940655  0.8940655  0.3978048         62</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 0.3869583  0.3869583 -1.9510752         16</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 1.0000000  1.0000000  4.0475623         88</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.9783875  0.9783875  1.9193461         82</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5 1.0000000  1.0000000  4.0475623         88</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6        NA         NA         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    prog_exp prog_exp_w  prog_exp_z prog_exp_p</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        NA         NA          NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2 1.0000000  1.0000000  3.97694160         88</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3        NA         NA          NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 0.8591898  0.8591898  0.08541827         50</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5        NA         NA          NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 0.0000000  0.0000000 -3.25372824          1</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

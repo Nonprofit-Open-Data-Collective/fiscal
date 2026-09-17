@@ -163,8 +163,9 @@ par(op)
 
 The raw histograms are nearly empty: a few extreme values stretch each axis so far
 that almost every organization lands in a single bar. The normalized versions use
-the whole scale. Some shapes are not bell curves, and should not be: about a
-quarter of filers report no liabilities at all, so `debt_assets_z` has a single
+the whole scale. Some shapes are not bell curves, and should not be:
+`r round(100 * mean(scored$debt_assets == 0, na.rm = TRUE))`% of filers report no
+liabilities at all, so `debt_assets_z` has a single
 spike for that tied group, placed at its middle rank, followed by the rest of the
 distribution.
 
@@ -270,10 +271,20 @@ fa3 <- fa(X, nfactors = 3, fm = "pa", rotate = "oblimin")
 print(fa3$loadings, cutoff = 0.30, sort = TRUE)
 ```
 
-The third factor is defined by `cash_assets` and the reversed `assets_rev`:
-balance sheets that are small and cash-heavy relative to revenue. That is
-**asset intensity**, a feature of the business model, not a dimension of fiscal
-health. We keep two factors.
+```{r third-factor}
+L3 <- unclass(fa3$loadings)
+main_cols <- c(which.max(abs(L3["op_reserve", ])), which.max(abs(L3["surplus_margin", ])))
+third <- setdiff(seq_len(ncol(L3)), main_cols)
+third_items <- rownames(L3)[abs(L3[, third]) >= 0.40]
+third_items
+```
+
+The first two factors are the same resilience and performance structure found
+with two factors. The third is defined by
+`r paste0("\x60", third_items, "\x60", collapse = " and ")`, indicators the
+content screen in section 2 already classified as business-model or asset-mix
+measures. A factor built from how an organization spends or structures its
+assets is not a dimension of fiscal health, so we keep two factors.
 
 ## 6. Fit the factor model
 
@@ -479,8 +490,8 @@ round(W, 2)
 ```
 
 The resilience score is essentially `op_reserve` alone, the Heywood indicator,
-and it even gives small *negative* weights to the margin indicators (an oblique
-model uses them to net out the correlation between the factors). The performance
+and it even gives `surplus_margin` a *negative* weight (an oblique model uses the
+performance indicators to net out the correlation between the factors). The performance
 score leans mostly on `surplus_margin`. A unit-weighted average spreads the weight
 across all of a dimension's indicators, so it is less sensitive to any one ratio;
 with near-duplicate indicators like these, that robustness is a good reason to
@@ -528,11 +539,12 @@ validity <- data.frame(
 knitr::kable(validity, row.names = FALSE)
 ```
 
-Every warning sign is most common in the bottom quintile. Declining and negative
-net assets, and current liabilities exceeding current assets, fall steadily as the
-index rises. Sharp cash declines drop by half between the first and second
-quintiles and then level off: a falling cash balance is common even among healthy
-organizations that move cash into investments or spend down planned reserves.
+Every warning sign is most common in the bottom quintile. Declining net assets
+fall steadily as the index rises; negative net assets and current liabilities
+exceeding current assets are concentrated in the bottom quintile. Sharp cash
+declines drop by half between the first and second quintiles and then level off:
+a falling cash balance is common even among healthy organizations that move cash
+into investments or spend down planned reserves.
 
 ## Notes on refinement
 

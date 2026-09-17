@@ -248,15 +248,15 @@ Grants and similar amounts payable, EOY (<code>grants_payable</code>)</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_cash_liquidity_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Current liabilities equal to zero :: 2,599 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Current liabilities equal to zero :: 2,483 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"cash_liq"</span>, <span class="st">"cash_liq_w"</span>, <span class="st">"cash_liq_z"</span>, <span class="st">"cash_liq_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   cash_liq cash_liq_w cash_liq_z cash_liq_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1 13.47462   13.47462  0.1700025         57</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2 27.84362   27.84362  0.5227140         70</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3 13.83959   13.83959  0.1806738         57</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      NaN        NaN         NA         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5      NaN        NaN         NA         NA</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6       NA         NA         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1       NA         NA         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2      NaN        NaN         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       NA         NA         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 1.645558   1.645558 -0.7946472         21</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5       NA         NA         NA         NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 5.228571   5.228571 -0.2824576         39</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
