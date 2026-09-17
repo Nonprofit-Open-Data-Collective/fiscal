@@ -159,8 +159,10 @@ context; demonstrates subsector variation.
 \itemize{
 \item \code{F9_01_EXP_REV_LESS_EXP_CY}:
 Revenues less expenses, current year (\code{revenues_less_expenses}, 990 + 990EZ)
-\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets}, 990)
-\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{total_assets}, 990EZ)
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{total_assets}; 990 Part X line 16,
+990EZ Part II line 25)
+\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from 990 Part I line 20
+(\code{total_assets}, fallback)
 }
 }
 }

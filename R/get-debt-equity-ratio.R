@@ -31,13 +31,15 @@
 #'   - Negative values indicate negative unrestricted net assets, which almost
 #'     always signals significant financial stress.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param debt Total liabilities, EOY. Accepts one or two column names; if two are provided
 #'   they are coalesced with the 990 value taking priority.
 #'
-#' @param equity Unrestricted net assets, EOY. Accepts one or two column names.
+#' @param equity Unrestricted net assets, EOY. Accepts one or two column names;
+#'   if two are provided they are coalesced with the first taking priority.
+#' @inheritParams get_operating_reserve_ratio
 #'
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
@@ -50,7 +52,9 @@
 #' @usage
 #' get_debt_equity_ratio( df,
 #'   debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"    ),
-#'   equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY"  ),
+#'   equity = "F9_10_NAFB_UNRESTRICT_EOY",
+#'   restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+#'   total_net_assets      = "F9_10_NAFB_TOT_EOY",
 #'   winsorize = 0.98 ,
 #'   range     = "np",
 #'   sanitize  = TRUE,
@@ -89,7 +93,8 @@
 #' true organizational equity available to cover obligations.
 #'
 #' An alternative uses total net assets in the denominator (restricted + unrestricted),
-#' which is more generous and less analytically precise. A third variant uses only
+#' which is more generous and less analytically precise; see
+#' [get_debt_netassets_ratio()]. A third variant uses only
 #' long-term debt in the numerator. This implementation uses total liabilities /
 #' unrestricted net assets as the most commonly cited nonprofit version.
 #'
@@ -106,8 +111,14 @@
 #' ## Variables used:
 #'
 #'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`)
-#'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
+#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I line 21 (`debt`, fallback)
+#'   - `F9_10_NAFB_UNRESTRICT_EOY`:
 #'     Unrestricted net assets, EOY (`equity`)
+#'   - `F9_10_NAFB_RESTRICT_EOY`: Restricted net assets, EOY (`restricted_net_assets`)
+#'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`total_net_assets`)
+#'
+#' Unrestricted net assets fall back to total net assets for filers that do
+#' not follow SFAS 117 (see [resolve_unrestricted_net_assets()]).
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -134,7 +145,9 @@
 #' @export
 get_debt_equity_ratio <- function( df,
                      debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"   ),
-                     equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY" ),
+                     equity = "F9_10_NAFB_UNRESTRICT_EOY",
+                     restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+                     total_net_assets      = "F9_10_NAFB_TOT_EOY",
                      winsorize = 0.98  ,
                      range     = "np" ,
                      sanitize  = TRUE,
@@ -145,7 +158,7 @@ get_debt_equity_ratio <- function( df,
   if ( length( debt )   > 2 ) stop( "`debt` must be one or two column names."   )
   if ( length( equity ) > 2 ) stop( "`equity` must be one or two column names." )
 
-  vars <- c( debt, equity )
+  vars <- c( debt, equity, restricted_net_assets, total_net_assets )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -154,7 +167,7 @@ get_debt_equity_ratio <- function( df,
   }
 
   d <- resolve_col( dt, debt )
-  e <- resolve_col( dt, equity )
+  e <- resolve_unrestricted_net_assets( dt, equity, restricted_net_assets, total_net_assets )
 
   nan.count <- sum( e == 0, na.rm = TRUE ) |> format( big.mark="," )
   message( paste0( "   :: Equity equal to zero :: ", nan.count,

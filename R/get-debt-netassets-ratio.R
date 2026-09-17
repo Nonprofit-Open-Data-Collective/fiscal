@@ -6,32 +6,38 @@
 #' Debt to Net Assets Ratio
 #'
 #' @description
-#' Compares total liabilities to unrestricted net assets.
+#' Compares total liabilities to total net assets.
 #'
 #' **Formula:**
 #' ```
-#' dmr = total_liabilities / unrestricted_net_assets
+#' dnar = total_liabilities / total_net_assets
 #' ```
 #'
 #' **Definitional Range**
 #'
-#' Same as [get_debt_equity_ratio()]: bounded below at zero when both
-#' numerator and denominator are positive; unbounded above; negative when unrestricted
-#' net assets are negative.
+#' Bounded below at zero when total net assets are positive; unbounded above as net
+#' assets approach zero. Negative values occur when total net assets are negative
+#' (liabilities exceed assets), an insolvency signal, so the ratio is not monotone in
+#' financial health across zero. The ratio is undefined (NaN) when total net assets
+#' equal zero.
 #'
 #' **Benchmarks and rules of thumb**
 #'
+#'   - Values below 1.0 mean liabilities are smaller than the net asset base.
 #'   - Values above 3.0-5.0 are commonly flagged as high leverage in the
-#'     nonprofit vulnerability literature. See [get_debt_equity_ratio()] for
-#'     fuller benchmark guidance.
+#'     nonprofit vulnerability literature.
+#'   - Always read alongside [get_debt_equity_ratio()], which uses only
+#'     unrestricted net assets: a large gap between the two means much of the
+#'     equity cushion is donor restricted.
 #'
 #' **Calculated For:** 990 + 990EZ filers.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param liabilities Total liabilities, EOY. Accepts one or two column names; if two are
-#'   provided they are coalesced with the 990 value taking priority over 990EZ.
+#'   provided they are coalesced with the first taking priority.
 #'
-#' @param net_assets Unrestricted net assets, EOY.
+#' @param net_assets Total net assets, EOY. Accepts one or two column names; if two are
+#'   provided they are coalesced with the first taking priority.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -43,7 +49,7 @@
 #' @usage
 #' get_debt_netassets_ratio( df,
 #'   liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
-#'   net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
+#'   net_assets  = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
 #'   winsorize = 0.98 ,
 #'   range     = "np",
 #'   sanitize  = TRUE,
@@ -61,23 +67,20 @@
 #' @details
 #' ## Primary uses and key insights
 #'
-#' The debt to net assets ratio compares total liabilities to unrestricted net assets,
-#' similar to [get_debt_equity_ratio()]. The key distinction is in scope:
-#' this function accepts both 990 and 990EZ filers (PZ scope) because it can use the
-#' Part I liabilities field as a fallback for 990EZ filers, whereas [get_debt_equity_ratio()]
-#' requires the Part X unrestricted net assets breakdown which is only on the full 990.
-#'
-#' The practical use case for this function is cross-sectional analyses that include
-#' both 990 and 990EZ filers. For full-990-only datasets, [get_debt_equity_ratio()]
-#' provides a more precise measure.
+#' The debt to net assets ratio compares total obligations with the organization's
+#' entire equity base, restricted and unrestricted. It is the nonprofit analogue of
+#' the commercial debt-to-equity ratio. Because total net assets are reported on both
+#' the Form 990 (Part X line 33) and the 990-EZ (Part II line 27), this ratio is
+#' available for both filer types.
 #'
 #' ## Formula variations and their sources
 #'
-#' See [get_debt_equity_ratio()] for a full discussion of formula variations.
-#' This implementation uses `F9_10_NAFB_UNRESTRICT_EOY` as the denominator
-#' (unrestricted net assets, Part X line 27B) and falls back to the Part I summary
-#' liabilities field for the numerator when needed. The Part X unrestricted net assets
-#' field is not available on 990EZ, so 990EZ filers will have NA for this ratio.
+#' Total liabilities (Part X line 26) / total net assets (Part X line 33). A stricter
+#' variant, [get_debt_equity_ratio()], divides by unrestricted net assets only, on the
+#' argument that donor-restricted resources cannot be used to meet general
+#' obligations. The two ratios are identical for organizations with no restricted
+#' net assets. Earlier versions of this function used unrestricted net assets, which
+#' made it a duplicate of [get_debt_equity_ratio()].
 #'
 #' ## Canonical citations
 #'
@@ -89,10 +92,13 @@
 #'
 #' ## Variables used:
 #'
-#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`liabilities`, 990)
-#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I (`liabilities`, 990EZ fallback)
-#'   - `F9_10_NAFB_UNRESTRICT_EOY`: 
-#'     Unrestricted net assets, EOY (`net_assets`)
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (Part X line 26; 990-EZ Part II
+#'     line 26) (`liabilities`)
+#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I line 21 (`liabilities`,
+#'     fallback)
+#'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (Part X line 33; 990-EZ Part II
+#'     line 27) (`net_assets`)
+#'   - `F9_01_NAFB_TOT_EOY`: Net assets from Part I line 22 (`net_assets`, fallback)
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -119,7 +125,7 @@
 #' @export
 get_debt_netassets_ratio <- function( df,
                      liabilities = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
-                     net_assets  = "F9_10_NAFB_UNRESTRICT_EOY",
+                     net_assets  = c( "F9_10_NAFB_TOT_EOY", "F9_01_NAFB_TOT_EOY" ),
                      winsorize = 0.98  ,
                      range     = "np" ,
                      sanitize  = TRUE,
@@ -146,9 +152,9 @@ get_debt_netassets_ratio <- function( df,
                    " case(s) replaced with NaN" ) )
   n[ n == 0 ] <- NaN
 
-  dmr <- l / n
+  dnar <- l / n
 
-  v <- apply_transformations( dmr, winsorize, range )
+  v <- apply_transformations( dnar, winsorize, range )
   DEBT_NETASSETS <- data.frame( debt_netassets   = v$raw,
                      debt_netassets_w = v$winsorized,
                      debt_netassets_z = v$z,

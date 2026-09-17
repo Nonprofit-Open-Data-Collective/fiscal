@@ -95,8 +95,8 @@ df[1:5, c("debt_assets", "debt_assets_w", "debt_assets_z", "debt_assets_p")]
 |------------------|-----------------------------------------------------|
 | `debt_assets`    | the raw financial ratio                             |
 | `debt_assets_w`  | winsorized (extreme tails clipped)                  |
-| `debt_assets_z`  | standardized as a z-score (from the winsorized values) |
-| `debt_assets_p`  | percentile rank, 1–100                              |
+| `debt_assets_z`  | normalized z-score (a distribution-aware transform of the winsorized values, then standardized) |
+| `debt_assets_p`  | percentile rank of the raw ratio, 1–100             |
 
 The winsorized, standardized, and percentile versions exist so that outliers and
 differences in scale don't dominate cross-organization comparisons or any
@@ -116,8 +116,9 @@ df <- get_debt_assets_ratio(dat10k, summarize = TRUE)
 
 ## Controlling the output
 
-`compute_all()` (and each `get_*()`) takes a `metrics` argument that selects
-which of the four versions to return:
+`compute_all()` (and `compute_all_panel()`) takes a `metrics` argument that
+selects which of the four versions to return (individual `get_*()` functions
+always append all four):
 
 | Value     | Returns                    |
 |-----------|----------------------------|
@@ -146,8 +147,6 @@ metrics_only[1:3, 1:6]
 The `get_*()` functions are also pipe-enabled, so metrics can be chained:
 
 ```{r, eval = FALSE}
-library(dplyr)
-
 df <- dat10k |>
   get_debt_assets_ratio() |>
   get_current_ratio() |>
@@ -171,6 +170,8 @@ coalesced. This is the subject of `vignette("form-scope")`.
   how transformations are chosen.
 - **`vignette("panel-workflow")`** --- build, clean, and score a multi-year panel.
 - **`vignette("panel-smoothing")`** --- smoothing noisy longitudinal financials.
-- **`vignette("fiscal-health-index")`** --- combine metrics into a composite
-  fiscal-health index.
+- **`vignette("fiscal-health-index")`** --- build a fiscal-health index as a
+  measurement problem: choosing indicators, factor analysis, and validation.
+- **`vignette("fiscal-health-workflow")`** --- the staged pipeline that turns a
+  reviewed measurement model into reusable dimension and composite scores.
 - **`vignette("form-scope")`** --- 990 vs 990-EZ field scope and sanitization.

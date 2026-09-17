@@ -36,12 +36,14 @@ navbar:
       - text: "Methods"
       - text: Normalization & transformations
         href: articles/normalization.html
-      - text: The fiscal health index
-        href: articles/fiscal-health-index.html
       - text: Variance-preserving normalization
         href: articles/variance-preserving-normalization.html
       - text: Construction-induced correlation among ratios
         href: articles/ratio-correlation-artifacts.html
+      - text: "Building a fiscal health index: a measurement approach"
+        href: articles/fiscal-health-index.html
+      - text: The fiscal health workflow
+        href: articles/fiscal-health-workflow.html
       - text: "990 vs 990-EZ — form scope & sanitization"
         href: articles/form-scope.html
 
@@ -61,6 +63,7 @@ articles:
   - variance-preserving-normalization
   - ratio-correlation-artifacts
   - fiscal-health-index
+  - fiscal-health-workflow
   - form-scope
 
 reference:
@@ -219,6 +222,7 @@ reference:
   - impute_zero
   - coerce_numeric
   - resolve_col
+  - resolve_unrestricted_net_assets
   - validate_inputs
 
 - title: Bundled data

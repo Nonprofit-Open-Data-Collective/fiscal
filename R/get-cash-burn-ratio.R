@@ -3,14 +3,15 @@
 ###---------------------------------------------------
 
 #' @title
-#' Burn Rate
+#' Burn Rate Ratio
 #'
 #' @description
-#' Monthly rate at which an organization draws down its cash reserves.
+#' End-of-year cash relative to beginning-of-year cash; measures whether an
+#' organization is drawing down or accumulating its cash position.
 #'
 #' **Formula:**
 #' ```
-#' brr = ( cash_boy - cash_eoy ) / months_in_period
+#' cash_burn = cash_eoy / cash_boy
 #' ```
 #'
 #' **Definitional Range**
@@ -28,13 +29,14 @@
 #'   - **Below 0.50** in a single year (cash halved) warrants investigation.
 #'   - A ratio consistently above 1.0 indicates accumulating liquidity reserves.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param cash_eoy Cash on hand, end of year.
 #' @param cash_boy Cash on hand, beginning of year.
-#' @param months_in_period Number of months in the reporting period. Defaults to 12 for
-#'   a standard annual filing. Adjust for short-year filers.
+#' @param months_in_period Deprecated and ignored. Retained for backward
+#'   compatibility with the earlier dollar-per-month formulation; the EOY/BOY
+#'   ratio does not depend on period length. Supplying it raises a warning.
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -56,7 +58,7 @@
 #' @return Object of class `data.frame`: the original dataframe appended with four
 #'   new columns:
 #'
-#'     - `cash_burn`   - monthly burn rate in dollars (raw)
+#'     - `cash_burn`   - EOY cash / BOY cash (raw)
 #'     - `cash_burn_w` - winsorized version
 #'     - `cash_burn_z` - standardized z-score (based on winsorized values)
 #'     - `cash_burn_p` - percentile rank (1-100)
@@ -139,8 +141,9 @@ get_cash_burn_ratio <- function( df,
   if ( is.null( cash_eoy ) ) stop( "`cash_eoy` cannot be NULL." )
   if ( is.null( cash_boy ) ) stop( "`cash_boy` cannot be NULL." )
 
-  if ( !is.numeric( months_in_period ) || months_in_period <= 0 )
-    stop( "`months_in_period` must be a positive number." )
+  if ( !missing( months_in_period ) )
+    warning( "`months_in_period` is deprecated and ignored: cash_burn is now ",
+             "cash_eoy / cash_boy, which does not depend on period length." )
 
   if ( length( cash_eoy ) > 2 ) stop( "`cash_eoy` must be one or two column names." )
   if ( length( cash_boy ) > 2 ) stop( "`cash_boy` must be one or two column names." )
@@ -156,7 +159,12 @@ get_cash_burn_ratio <- function( df,
   eoy <- resolve_col( dt, cash_eoy )
   boy <- resolve_col( dt, cash_boy )
 
-  brr <- ( boy - eoy ) / months_in_period
+  nan.count <- sum( boy == 0, na.rm = TRUE ) |> format( big.mark="," )
+  message( paste0( "   :: Beginning-of-year cash equal to zero :: ", nan.count,
+                   " case(s) replaced with NaN" ) )
+  boy[ boy == 0 ] <- NaN
+
+  brr <- eoy / boy
 
   v <- apply_transformations( brr, winsorize, range )
   CASH_BURN <- data.frame( cash_burn   = v$raw,

@@ -112,6 +112,8 @@ get_overhead_ratio <- function( df,
 {
   validate_inputs( winsorize, mgmt_expenses, total_expenses,
                    "mgmt_expenses", "total_expenses" )
+  if ( is.null( fundraising_expenses ) )
+    stop( "`fundraising_expenses` cannot be NULL." )
 
   vars <- c( mgmt_expenses, total_expenses, fundraising_expenses )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
@@ -119,7 +121,7 @@ get_overhead_ratio <- function( df,
   dt   <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
   if ( sanitize ) { dt <- sanitize_financials( dt ) }
 
-  num <- resolve_col( dt, mgmt_expenses )
+  num <- resolve_col( dt, mgmt_expenses ) + resolve_col( dt, fundraising_expenses )
   den <- resolve_col( dt, total_expenses )
 
   nan.count <- sum( den == 0, na.rm = TRUE ) |> format( big.mark="," )

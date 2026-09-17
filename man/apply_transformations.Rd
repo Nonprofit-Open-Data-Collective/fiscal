@@ -19,8 +19,9 @@ apply_transformations(
 which clips at the 1st and 99th percentiles for \code{"np"} range).}
 
 \item{offset}{Sentinel offset applied to fixed bounds (default \code{0.001}).
-Observations clipped to a fixed bound are stored as \code{bound -- offset} so
-they remain identifiable in the \verb{_w} column.}
+Observations clipped to a fixed bound are stored just outside it (a lower
+bound minus \code{offset}, an upper bound plus \code{offset}) so they remain
+identifiable in the \verb{_w} column.}
 
 \item{range}{Character string describing the theoretical range of the ratio.
 Controls how the lower and upper winsorization bounds are determined:
@@ -41,8 +42,9 @@ is fixed at \code{lo - offset} and the upper bound at \code{hi + offset}.}
 }}
 
 \item{normalize_type}{Transformation type override passed to
-\code{\link[=find_best_normalization]{find_best_normalization()}}. One of \code{NULL} (auto-detect), \code{"asinh"},
-\code{"logit"}, \code{"rank_normal"}, or \code{"hurdle"}. Default \code{NULL}.}
+\code{\link[=find_best_normalization]{find_best_normalization()}}. One of \code{NULL} (auto-detect among \code{"asinh"},
+\code{"logit"}, and \code{"rank_normal"}), \code{"asinh"}, \code{"logit"}, \code{"rank_normal"},
+or \code{"hurdle"} (never auto-selected). Default \code{NULL}.}
 }
 \value{
 A named list with elements \code{raw}, \code{winsorized}, \code{z}, \code{pctile}.
@@ -51,14 +53,15 @@ A named list with elements \code{raw}, \code{winsorized}, \code{z}, \code{pctile
 \code{apply_transformations()} is the central post-computation step called by
 every \verb{get_*()} ratio function. It produces four versions of a ratio:
 \itemize{
-\item \strong{raw} (\verb{_raw}): the unmodified computed ratio.
+\item \strong{raw} (\code{raw}; the unsuffixed metric column): the unmodified computed ratio.
 \item \strong{winsorized} (\verb{_w}): outliers clipped to bounds determined by the
 \code{range} argument and the \code{winsorize} proportion, via \code{\link[=winsorize_x]{winsorize_x()}}.
 \item \strong{normalized} (\verb{_z}): a distribution-appropriate transformation of the
-winsorized values. Parameters are fitted on the stable interior (non-NA,
-non-sentinel observations) via \code{\link[=find_best_normalization]{find_best_normalization()}}, then scored
-on the full vector via \code{\link[=apply_normalization]{apply_normalization()}}, so sentinel pile-up at
-winsorization bounds does not distort the centering and spread estimates.
+winsorized values, robustly standardized. The transformation is selected
+and fitted via \code{\link[=find_best_normalization]{find_best_normalization()}} (on the stable interior of
+non-NA, non-sentinel observations; the \code{"rank_normal"} reference
+distribution also keeps the winsorized tails), then scored on the full
+vector via \code{\link[=apply_normalization]{apply_normalization()}}.
 \item \strong{percentile} (\verb{_p}): integer percentile rank (1-100) based on the raw
 values, via \code{\link[dplyr:ntile]{dplyr::ntile()}}.
 }
@@ -76,7 +79,10 @@ diagnostic metadata.
 parameters (type, scale constant, center, spread) on the stable interior
 of the winsorized distribution. \code{\link[=apply_normalization]{apply_normalization()}} then scores the
 full original vector using those fitted parameters. This two-step design
-means the fitted model can be reused on new data if needed.
+means the fitted model can be reused on new data if needed. Centering and
+scaling use median/MAD, falling back to mean/SD when the MAD is zero.
+With fewer than three non-missing values no model is fitted and \code{z} is
+returned as \code{NA}.
 
 \strong{Percentile rank (\verb{_p} column)}
 

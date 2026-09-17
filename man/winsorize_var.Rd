@@ -19,8 +19,9 @@ winsorize_var(
 which clips at the 1st and 99th percentiles for \code{"np"} range).}
 
 \item{offset}{Sentinel offset applied to fixed bounds (default \code{0.001}).
-Observations clipped to a fixed bound are stored as \code{bound -- offset} so
-they remain identifiable in the \verb{_w} column.}
+Observations clipped to a fixed bound are stored just outside it (a lower
+bound minus \code{offset}, an upper bound plus \code{offset}) so they remain
+identifiable in the \verb{_w} column.}
 
 \item{range}{Character string describing the theoretical range of the ratio.
 Controls how the lower and upper winsorization bounds are determined:
@@ -41,8 +42,9 @@ is fixed at \code{lo - offset} and the upper bound at \code{hi + offset}.}
 }}
 
 \item{normalize_type}{Transformation type override passed to
-\code{\link[=find_best_normalization]{find_best_normalization()}}. One of \code{NULL} (auto-detect), \code{"asinh"},
-\code{"logit"}, \code{"rank_normal"}, or \code{"hurdle"}. Default \code{NULL}.}
+\code{\link[=find_best_normalization]{find_best_normalization()}}. One of \code{NULL} (auto-detect among \code{"asinh"},
+\code{"logit"}, and \code{"rank_normal"}), \code{"asinh"}, \code{"logit"}, \code{"rank_normal"},
+or \code{"hurdle"} (never auto-selected). Default \code{NULL}.}
 }
 \value{
 Same as \code{\link[=apply_transformations]{apply_transformations()}}.

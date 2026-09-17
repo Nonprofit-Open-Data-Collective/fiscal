@@ -25,18 +25,20 @@
 #'
 #' **Benchmarks and rules of thumb**
 #'
-#'   - Same general benchmarks as [get_operating_reserve_ratio()]: 3-6 months
-#'     is considered adequate for most operating nonprofits.
+#'   - Same general benchmarks as [get_operating_reserve_ratio()] (which is
+#'     expressed in years rather than months): 3-6 months is considered adequate
+#'     for most operating nonprofits.
 #'   - Negative LUNA values are particularly informative: they indicate
 #'     unrestricted equity is entirely absorbed by illiquid fixed assets.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unrestricted_net_assets Unrestricted net assets, EOY.
 #' @param net_fixed_assets Net land, buildings, and equipment, EOY.
 #' @param mortgages_payable Mortgages and notes payable, EOY.
 #' @param total_expenses Total functional expenses.
+#' @inheritParams get_operating_reserve_ratio
 #' @param winsorize The winsorization value (between 0 and 1), defaults to 0.98, which
 #'   winsorizes at the 1st and 99th percentiles.
 #' @param range Character string specifying the theoretical range of the ratio,
@@ -51,6 +53,8 @@
 #'   net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
 #'   mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
 #'   total_expenses          = "F9_09_EXP_TOT_TOT",
+#'   restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+#'   total_net_assets        = "F9_10_NAFB_TOT_EOY",
 #'   winsorize = 0.98 ,
 #'   range     = "np",
 #'   sanitize  = TRUE,
@@ -85,8 +89,10 @@
 #' Adding it back avoids double-counting the encumbrance.
 #'
 #' This formulation follows Zietlow et al. (2007) and is cited by Calabrese (2013).
-#' It differs from [get_operating_reserve_ratio()] only in the addition of
-#' mortgages_payable to the numerator.
+#' It differs from [get_operating_reserve_ratio()] in the addition of
+#' mortgages_payable to the numerator and in its units: LUNA divides by monthly
+#' expenses (months), while the operating reserve ratio divides by annual expenses
+#' (a multiple of annual expenses).
 #'
 #' ## Canonical citations
 #'
@@ -105,6 +111,11 @@
 #'     Net land, buildings, and equipment (`net_fixed_assets`)
 #'   - `F9_10_LIAB_MTG_NOTE_EOY`: Mortgages and notes payable (`mortgages_payable`)
 #'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+#'   - `F9_10_NAFB_RESTRICT_EOY`: Restricted net assets, EOY (`restricted_net_assets`)
+#'   - `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`total_net_assets`)
+#'
+#' Unrestricted net assets fall back to total net assets for filers that do
+#' not follow SFAS 117 (see [resolve_unrestricted_net_assets()]).
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in
@@ -134,6 +145,8 @@ get_liquid_assets_months <- function( df,
                       net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
                       mortgages_payable       = "F9_10_LIAB_MTG_NOTE_EOY",
                       total_expenses          = "F9_09_EXP_TOT_TOT",
+                      restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+                      total_net_assets        = "F9_10_NAFB_TOT_EOY",
                       winsorize = 0.98  ,
                      range     = "np" ,
                      sanitize  = TRUE,
@@ -159,9 +172,8 @@ get_liquid_assets_months <- function( df,
   if ( length( total_expenses ) > 2 )
     stop( "`total_expenses` must be one or two column names." )
 
-  all_cols <- c( unrestricted_net_assets, net_fixed_assets,
-                 mortgages_payable, total_expenses )
-  vars <- c( unrestricted_net_assets, net_fixed_assets, mortgages_payable, total_expenses )
+  vars <- c( unrestricted_net_assets, net_fixed_assets, mortgages_payable, total_expenses,
+             restricted_net_assets, total_net_assets )
   KEEP <- intersect( c( .IDVARS, vars ), colnames( df ) )
   dt   <- dplyr::select( df, dplyr::any_of( KEEP ) )
   dt     <- coerce_numeric( dt, vars = intersect( vars, colnames( dt ) ) )
@@ -169,7 +181,8 @@ get_liquid_assets_months <- function( df,
     dt <- sanitize_financials( dt )
   }
 
-  una <- resolve_col( dt, unrestricted_net_assets )
+  una <- resolve_unrestricted_net_assets( dt, unrestricted_net_assets,
+                                          restricted_net_assets, total_net_assets )
   nfa <- resolve_col( dt, net_fixed_assets )
   mnp <- resolve_col( dt, mortgages_payable )
   exp <- resolve_col( dt, total_expenses )

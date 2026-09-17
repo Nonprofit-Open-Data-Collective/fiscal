@@ -6,7 +6,9 @@
 \usage{
 get_debt_equity_ratio( df,
   debt   = c( "F9_10_LIAB_TOT_EOY",       "F9_01_NAFB_LIAB_TOT_EOY"    ),
-  equity = c( "F9_10_NAFB_UNRESTRICT_EOY", "F9_01_NAFB_UNRESTRICT_EOY"  ),
+  equity = "F9_10_NAFB_UNRESTRICT_EOY",
+  restricted_net_assets = "F9_10_NAFB_RESTRICT_EOY",
+  total_net_assets      = "F9_10_NAFB_TOT_EOY",
   winsorize = 0.98 ,
   range     = "np",
   sanitize  = TRUE,
@@ -18,7 +20,16 @@ get_debt_equity_ratio( df,
 \item{debt}{Total liabilities, EOY. Accepts one or two column names; if two are provided
 they are coalesced with the 990 value taking priority.}
 
-\item{equity}{Unrestricted net assets, EOY. Accepts one or two column names.}
+\item{equity}{Unrestricted net assets, EOY. Accepts one or two column names;
+if two are provided they are coalesced with the first taking priority.}
+
+\item{restricted_net_assets}{Restricted net assets, EOY. Used with
+\code{total_net_assets} to detect filers that do not follow SFAS 117; see
+\code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}.}
+
+\item{total_net_assets}{Total net assets, EOY. Substituted for unrestricted
+net assets when unrestricted and restricted net assets are both zero.
+Set to \code{NULL} to disable the fallback.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -76,7 +87,7 @@ and are a common vulnerability threshold.
 always signals significant financial stress.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -103,7 +114,8 @@ Tuckman & Chang (1991) and the argument that only unrestricted resources represe
 true organizational equity available to cover obligations.
 
 An alternative uses total net assets in the denominator (restricted + unrestricted),
-which is more generous and less analytically precise. A third variant uses only
+which is more generous and less analytically precise; see
+\code{\link[=get_debt_netassets_ratio]{get_debt_netassets_ratio()}}. A third variant uses only
 long-term debt in the numerator. This implementation uses total liabilities /
 unrestricted net assets as the most commonly cited nonprofit version.
 }
@@ -121,9 +133,15 @@ nonprofits. \emph{Nonprofit Management and Leadership}, 22(1), 37-51.
 \subsection{Variables used:}{
 \itemize{
 \item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt})
+\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I line 21 (\code{debt}, fallback)
 \item \code{F9_10_NAFB_UNRESTRICT_EOY}:
 Unrestricted net assets, EOY (\code{equity})
+\item \code{F9_10_NAFB_RESTRICT_EOY}: Restricted net assets, EOY (\code{restricted_net_assets})
+\item \code{F9_10_NAFB_TOT_EOY}: Total net assets, EOY (\code{total_net_assets})
 }
+
+Unrestricted net assets fall back to total net assets for filers that do
+not follow SFAS 117 (see \code{\link[=resolve_unrestricted_net_assets]{resolve_unrestricted_net_assets()}}).
 }
 }
 \examples{

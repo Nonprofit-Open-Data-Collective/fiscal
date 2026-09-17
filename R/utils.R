@@ -94,11 +94,76 @@ impute_zero <- function( dat, vars, ez_rows ) {
 }
 
 
+#' Detect integer64 storage that has lost its class attribute
+#'
+#' A bit64 `integer64` vector is a double vector whose 8 bytes hold a 64-bit
+#' integer. If the `"integer64"` class is dropped (e.g. `unclass()`, base `[`
+#' or `c()` without bit64's methods, `as.matrix()`), R reads those bytes as
+#' doubles: positive whole-dollar amounts become subnormals (|x| < 1e-300),
+#' negative amounts become `NaN`, and `NA_integer64_` becomes `-0`.
+#' A double vector whose nonzero, non-missing values are *all* that tiny is
+#' therefore almost certainly corrupted integer64 storage.
+#'
+#' @param x A vector.
+#' @return `TRUE` or `FALSE`.
+#' @noRd
+is_unclassed_integer64 <- function( x ) {
+  if ( !is.double( x ) || is.object( x ) ) return( FALSE )
+  nz <- x[ !is.na( x ) & x != 0 ]
+  length( nz ) > 0L && all( abs( nz ) < 1e-300 )
+}
+
+#' Convert integer64 (classed or class-stripped) to a plain double vector
+#'
+#' Restores the `"integer64"` class when it has been stripped (see
+#' [is_unclassed_integer64()]) and converts with bit64's own method, so
+#' negatives and `NA` are recovered. Values beyond 2^53 lose precision, which
+#' no 990 dollar amount approaches. Other vectors are returned unchanged.
+#'
+#' @param x A vector.
+#' @return A double vector, or `x` unchanged.
+#' @noRd
+repair_integer64 <- function( x ) {
+  if ( !inherits( x, "integer64" ) && !is_unclassed_integer64( x ) ) return( x )
+  class( x ) <- "integer64"
+  bit64::as.double.integer64( x )
+}
+
+#' Convert every integer64 column in a data frame to double
+#'
+#' Classed `integer64` columns are converted silently. Class-stripped
+#' integer64 columns are repaired too, with a warning, since they signal an
+#' upstream bug that may already have corrupted other outputs.
+#'
+#' @param d A `data.frame`.
+#' @param vars Columns to check; defaults to all columns.
+#' @return `d` with the affected columns replaced by doubles.
+#' @noRd
+repair_integer64_columns <- function( d, vars = colnames( d ) ) {
+  vars     <- intersect( vars, colnames( d ) )
+  stripped <- vars[ vapply( vars, function( v ) is_unclassed_integer64( d[[ v ]] ), logical( 1 ) ) ]
+  classed  <- vars[ vapply( vars, function( v ) inherits( d[[ v ]], "integer64" ), logical( 1 ) ) ]
+
+  for ( v in c( classed, stripped ) ) d[[ v ]] <- repair_integer64( d[[ v ]] )
+
+  if ( length( stripped ) > 0L )
+    warning( length( stripped ), " column(s) held bit64 integer64 values with the ",
+             "class attribute dropped (all nonzero values < 1e-300) and were repaired: ",
+             paste( stripped, collapse = ", " ), call. = FALSE )
+  d
+}
+
+
 #' Coerce selected columns to numeric
 #'
 #' Converts specified columns in a data frame to numeric, with a guard
 #' against non-digit content. Stops if letters are detected in any column;
 #' warns if silent coercion was needed.
+#'
+#' bit64 `integer64` columns are converted to double. Columns that hold
+#' integer64 bytes with the class attribute dropped (every nonzero value is
+#' smaller than 1e-300 in absolute value) are detected and repaired, with a
+#' warning.
 #'
 #' @param d A `data.frame`.
 #' @param vars Character vector of column names to coerce.
@@ -109,19 +174,16 @@ coerce_numeric <- function( d, vars ) {
   vars_present <- intersect( vars, colnames( d ) )
   if ( length( vars_present ) == 0L ) return( d )
 
+  # bit64 integer64 (how data.table reads large efile integers), classed or
+  # with the class stripped: convert with bit64's own method so the 64-bit
+  # payload is not reinterpreted as a tiny double. 990 line items are whole
+  # dollars, so nothing is lost.
+  d <- repair_integer64_columns( d, vars_present )
+
   n_coerced <- 0L
 
   for ( v in vars_present ) {
     x <- d[[ v ]]
-
-    # bit64 integer64 (how data.table reads large efile integers): convert
-    # through bit64's own character method so the 64-bit payload is not
-    # reinterpreted as a tiny double. 990 line items are whole dollars, so
-    # nothing is lost -- and this is silent, since it is not an error condition.
-    if ( inherits( x, "integer64" ) ) {
-      d[[ v ]] <- as.numeric( bit64::as.character.integer64( x ) )
-      next
-    }
 
     # Plain numeric (double or integer): already usable.
     if ( is.numeric( x ) ) next
@@ -176,20 +238,81 @@ resolve_col <- function( dat, cols ) {
 }
 
 
+#' Resolve unrestricted net assets with a fallback for non-SFAS 117 filers
+#'
+#' @description
+#' Part X lines 27-28 (net assets without / with donor restrictions) are
+#' completed only by organizations that follow SFAS 117 (ASC 958). Other filers
+#' report equity on lines 30-32 (capital stock, paid-in surplus, retained
+#' earnings), so their unrestricted net assets read as zero even when total net
+#' assets (line 33) are large. Without donor-restriction reporting, that equity
+#' is effectively unrestricted.
+#'
+#' This helper returns unrestricted net assets, substituting total net assets
+#' for rows where unrestricted **and** restricted net assets are both zero.
+#' Rows where unrestricted net assets are `NA` (e.g. 990-EZ filers) are left
+#' `NA`.
+#'
+#' @param dat A `data.frame`.
+#' @param unrestricted Column name(s) for unrestricted net assets (line 27).
+#' @param restricted Column name(s) for restricted net assets (line 28), or
+#'   `NULL`. When `NULL` or absent from `dat`, restricted net assets are treated
+#'   as zero, so the fallback applies wherever unrestricted net assets are zero.
+#' @param total Column name(s) for total net assets (line 33), or `NULL` to
+#'   disable the fallback.
+#' @param verbose Logical. Print the number of substituted rows. Default `TRUE`.
+#' @return A numeric vector of length `nrow(dat)`.
+#' @examples
+#' d <- data.frame( F9_10_NAFB_UNRESTRICT_EOY = c( 100, 0, 0 ),
+#'                  F9_10_NAFB_RESTRICT_EOY   = c(  50, 0, 80 ),
+#'                  F9_10_NAFB_TOT_EOY        = c( 150, 900, 80 ) )
+#' resolve_unrestricted_net_assets( d )   # 100 900 0
+#' @export
+resolve_unrestricted_net_assets <- function( dat,
+                                             unrestricted = "F9_10_NAFB_UNRESTRICT_EOY",
+                                             restricted   = "F9_10_NAFB_RESTRICT_EOY",
+                                             total        = "F9_10_NAFB_TOT_EOY",
+                                             verbose      = TRUE ) {
+
+  una <- resolve_col( dat, unrestricted )
+  if ( is.null( total ) || !any( total %in% colnames( dat ) ) ) return( una )
+
+  tot <- resolve_col( dat, total )
+  res <- if ( !is.null( restricted ) && any( restricted %in% colnames( dat ) ) ) {
+    resolve_col( dat, restricted )
+  } else {
+    rep( 0, length( una ) )
+  }
+  res[ is.na( res ) ] <- 0
+
+  swap <- !is.na( una ) & una == 0 & res == 0 & !is.na( tot ) & tot != 0
+
+  if ( verbose ) {
+    message( paste0( "   :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: ",
+                     format( sum( swap ), big.mark = "," ),
+                     " case(s) use total net assets" ) )
+  }
+
+  una[ swap ] <- tot[ swap ]
+  una
+}
+
+
 #' Apply winsorization, normalization, and percentile ranking to a ratio vector
 #'
 #' @description
 #' `apply_transformations()` is the central post-computation step called by
 #' every `get_*()` ratio function. It produces four versions of a ratio:
 #'
-#' - **raw** (`_raw`): the unmodified computed ratio.
+#' - **raw** (`raw`; the unsuffixed metric column): the unmodified computed ratio.
 #' - **winsorized** (`_w`): outliers clipped to bounds determined by the
 #'   `range` argument and the `winsorize` proportion, via [winsorize_x()].
 #' - **normalized** (`_z`): a distribution-appropriate transformation of the
-#'   winsorized values. Parameters are fitted on the stable interior (non-NA,
-#'   non-sentinel observations) via [find_best_normalization()], then scored
-#'   on the full vector via [apply_normalization()], so sentinel pile-up at
-#'   winsorization bounds does not distort the centering and spread estimates.
+#'   winsorized values, robustly standardized. The transformation is selected
+#'   and fitted via [find_best_normalization()] (on the stable interior of
+#'   non-NA, non-sentinel observations; the `"rank_normal"` reference
+#'   distribution also keeps the winsorized tails), then scored on the full
+#'   vector via [apply_normalization()].
 #' - **percentile** (`_p`): integer percentile rank (1-100) based on the raw
 #'   values, via [dplyr::ntile()].
 #'
@@ -197,8 +320,9 @@ resolve_col <- function( dat, cols ) {
 #' @param winsorize Winsorization proportion between 0 and 1 (default `0.98`,
 #'   which clips at the 1st and 99th percentiles for `"np"` range).
 #' @param offset Sentinel offset applied to fixed bounds (default `0.001`).
-#'   Observations clipped to a fixed bound are stored as `bound -- offset` so
-#'   they remain identifiable in the `_w` column.
+#'   Observations clipped to a fixed bound are stored just outside it (a lower
+#'   bound minus `offset`, an upper bound plus `offset`) so they remain
+#'   identifiable in the `_w` column.
 #' @param range Character string describing the theoretical range of the ratio.
 #'   Controls how the lower and upper winsorization bounds are determined:
 #'   \describe{
@@ -217,8 +341,9 @@ resolve_col <- function( dat, cols ) {
 #'       is fixed at `lo - offset` and the upper bound at `hi + offset`.}
 #'   }
 #' @param normalize_type Transformation type override passed to
-#'   [find_best_normalization()]. One of `NULL` (auto-detect), `"asinh"`,
-#'   `"logit"`, `"rank_normal"`, or `"hurdle"`. Default `NULL`.
+#'   [find_best_normalization()]. One of `NULL` (auto-detect among `"asinh"`,
+#'   `"logit"`, and `"rank_normal"`), `"asinh"`, `"logit"`, `"rank_normal"`,
+#'   or `"hurdle"` (never auto-selected). Default `NULL`.
 #'
 #' @return A named list with elements `raw`, `winsorized`, `z`, `pctile`.
 #'
@@ -235,7 +360,10 @@ resolve_col <- function( dat, cols ) {
 #' parameters (type, scale constant, center, spread) on the stable interior
 #' of the winsorized distribution. [apply_normalization()] then scores the
 #' full original vector using those fitted parameters. This two-step design
-#' means the fitted model can be reused on new data if needed.
+#' means the fitted model can be reused on new data if needed. Centering and
+#' scaling use median/MAD, falling back to mean/SD when the MAD is zero.
+#' With fewer than three non-missing values no model is fitted and `z` is
+#' returned as `NA`.
 #'
 #' **Percentile rank (`_p` column)**
 #'
@@ -322,6 +450,47 @@ winsorize_var <- function( x, winsorize = 0.98, offset = 0.001,
 }
 
 
+#' Resolve component arguments against a pre-aggregated override column
+#'
+#' Several `get_*()` functions accept either individual component columns
+#' (with efile defaults) or a single pre-aggregated `numerator` /
+#' `denominator` column. Supplying the override replaces the components:
+#' components left at their defaults are ignored. It is an error to supply the
+#' override together with a component the caller set explicitly, or to leave
+#' both the override and every component `NULL`.
+#'
+#' @param override Value of the `numerator` or `denominator` argument.
+#' @param override_name `"numerator"` or `"denominator"`.
+#' @param components Named list of the component argument values.
+#' @param supplied Names of the arguments the caller supplied, from
+#'   `names( match.call() )`.
+#' @return `components`, with every element set to `NULL` when `override`
+#'   is used.
+#' @keywords internal
+#' @noRd
+resolve_components <- function( override, override_name, components, supplied ) {
+
+  is_null <- vapply( components, is.null, logical( 1 ) )
+
+  if ( is.null( override ) ) {
+    if ( all( is_null ) )
+      stop( "No ", override_name, " specified. Supply `", override_name,
+            "` or the component arguments (",
+            paste0( "`", names( components ), "`", collapse = ", " ), ").",
+            call. = FALSE )
+    return( components )
+  }
+
+  explicit <- names( components )[ !is_null & names( components ) %in% supplied ]
+  if ( length( explicit ) > 0 )
+    stop( "Supply either `", override_name, "` or its component arguments, not both. ",
+          "Remove ", paste0( "`", explicit, "`", collapse = ", " ),
+          " or set them to NULL.", call. = FALSE )
+
+  lapply( components, function( x ) NULL )
+}
+
+
 #' Validate numerator and denominator inputs for get_* functions
 #'
 #' Checks that `winsorize` is in `[0, 1]` and that numerator and
@@ -387,9 +556,12 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #'
 #' `sanitize_financials()` corrects this by imputing zero for NA values in
 #' financial fields, subject to an important constraint: fields that only exist on the
-#' full 990 form (Part VIII, IX, and X) should not be imputed to zero for 990EZ
-#' filers, since those fields simply don't exist on the EZ form. Fields from Part I
-#' (the summary section) appear on both forms and can be safely imputed for all filers.
+#' full 990 form (PC scope; most of the Part VIII, IX, and X detail, see
+#' [get_pc_fields()]) should not be imputed to zero for 990EZ filers, since those
+#' fields simply don't exist on the EZ form. Fields that appear on both forms (PZ
+#' scope; the Part I summary plus lines with an EZ counterpart such as total
+#' assets, see [get_pz_fields()]) can be safely imputed for all filers. Rows in
+#' which every financial field is `NA` are left untouched.
 #'
 #' Filer type is determined from the `RETURN_TYPE` column when present
 #' (`"990"` = full filer, `"990EZ"` = short-form filer). If `RETURN_TYPE`
@@ -401,6 +573,11 @@ validate_inputs <- function( winsorize, num_args, den_args,
 #' protected zero imputation over the shared concordance-derived field scopes.
 #' Supplying `pz_vars`/`pc_vars` explicitly falls back to the local imputer for
 #' backward compatibility.
+#'
+#' Before imputing, bit64 `integer64` columns are converted to double. Columns
+#' holding integer64 bytes with the class attribute dropped (every nonzero value
+#' smaller than 1e-300 in absolute value) are repaired with a warning; imputing
+#' them first would zero out negative amounts, which such columns read as `NaN`.
 #'
 #' @examples
 #' library( fiscal )
@@ -417,6 +594,10 @@ validate_inputs <- function( winsorize, num_args, den_args,
 sanitize_financials <- function( df,
                                   pz_vars = NULL,
                                   pc_vars = NULL ) {
+
+  # Convert integer64 columns first. A class-stripped integer64 column reads
+  # negatives as NaN, so zero-imputing it before repair would destroy them.
+  df <- repair_integer64_columns( df )
 
   # Default path: delegate to panel990's form-scoped normalizer so fiscal and
   # panel990 share one imputation engine and one field-scope source of truth.

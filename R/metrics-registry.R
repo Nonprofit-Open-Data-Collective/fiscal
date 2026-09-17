@@ -51,19 +51,51 @@ fiscal_metrics <- function() {
     rep("expense_structure", 9), rep("revenue_structure", 9),
     rep("asset_structure", 7)
   )
+  # Named by metric so each direction can be checked against its function's
+  # documentation. "lower" = lower is healthier; "context" = no documented
+  # benchmark direction (composition measures).
   direction <- c(
-    rep("higher", 10), rep("lower", 6), "higher", rep("higher", 6),
-    "higher", "lower", "lower", "higher", rep("context", 5),
-    rep("context", 9), "context", "higher", "higher",
-    "context", "context", "context", "lower"
+    # liquidity
+    current = "higher", quick = "higher", cash_liq = "higher",
+    cash_assets = "higher", cash_on_hand = "higher", cash_burn = "higher",
+    days_cash_ops = "higher", days_cash_inv = "higher",
+    months_cash_ops = "higher", liquid_assets_months = "higher",
+    # solvency
+    debt_assets = "lower", debt_equity = "lower", debt_netassets = "lower",
+    debt_shortterm = "lower",
+    debt_secured = "context",    # liability composition; "no standard benchmark"
+    debt_unsecured = "context",  # "not inherently negative"
+    equity = "higher",
+    # performance
+    surplus_margin = "higher", return_assets = "higher",
+    return_netassets = "higher", profit_postdepr = "higher",
+    profit_predepr = "higher", self_suff = "higher",
+    # expense structure
+    prog_exp = "higher", overhead = "lower", expenses_admin = "lower",
+    fundr_eff = "lower",         # cost per dollar raised
+    expenses_compensation = "context", expenses_grants = "context",
+    expenses_membbenefits = "context", expenses_feesforservice = "context",
+    expenses_affiliates = "context",
+    # revenue structure
+    grants_govt = "context", donations_rev = "context",
+    earned_income = "context", revenue_programs = "context",
+    revenue_fedcampaign = "context", revenue_membdues = "context",
+    revenue_fundevents = "context", revenue_reltdorgs = "context",
+    invest_income = "context",
+    # asset structure
+    netassets_comp = "context", netassets_growth = "higher",
+    op_reserve = "higher", investments_assets = "context",
+    land_assets_net = "context", land_assets_gross = "context",
+    assets_rev = "lower"
   )
   stopifnot(length(function_name) == length(metric),
-            length(metric) == length(category), length(metric) == length(direction))
+            length(metric) == length(category),
+            identical(names(direction), metric))
   data.frame(
     function_name = function_name,
     metric = metric,
     category = category,
-    direction = direction,
+    direction = unname(direction),
     raw = metric,
     winsorized = paste0(metric, "_w"),
     standardized = paste0(metric, "_z"),

@@ -83,9 +83,9 @@
 #'
 #' The commercial formula is identical: total liabilities / total assets. Nonprofit
 #' applications use the same ratio but may define "total liabilities" differently.
-#' This implementation uses the 990 Part X total liabilities (line 26B) or the Part I
-#' summary equivalent for 990EZ filers (line 26B), which includes all short- and
-#' long-term obligations reported on the balance sheet.
+#' This implementation uses total liabilities from the 990 Part X (line 26B; 990EZ
+#' Part II line 26), falling back to the 990 Part I summary field (line 21), which
+#' includes all short- and long-term obligations reported on the balance sheet.
 #'
 #' Some studies use only long-term debt in the numerator to focus on structural
 #' leverage rather than near-term obligations. The full liabilities version is used
@@ -114,10 +114,12 @@
 #'
 #' ## Variables used:
 #'
-#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`, 990)
-#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I (`debt`, 990EZ fallback)
-#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`assets`, 990)
-#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I (`assets`, 990EZ fallback)
+#'   - `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`; 990 Part X line 26,
+#'     990EZ Part II line 26)
+#'   - `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I line 21 (`debt`, fallback)
+#'   - `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`assets`; 990 Part X line 16,
+#'     990EZ Part II line 25)
+#'   - `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I line 20 (`assets`, fallback)
 #'
 #'
 #' @param sanitize Logical (default `TRUE`). If `TRUE`, NA values in

@@ -22,11 +22,13 @@ get_debt_shortterm_ratio( df,
 
 \item{net_assets}{Total net assets, EOY.}
 
-\item{numerator}{Optional. A pre-aggregated column for short-term liabilities. Cannot be
-combined with \code{accounts_payable} or \code{grants_payable}.}
+\item{numerator}{Optional. A pre-aggregated column for short-term liabilities.
+When supplied, \code{accounts_payable}, \code{grants_payable} are ignored; it is an error
+to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column for the denominator. Cannot be
-combined with \code{net_assets}.}
+\item{denominator}{Optional. A pre-aggregated column for the denominator. When
+supplied, \code{net_assets} is ignored; it is an error to also set it
+explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -82,7 +84,7 @@ equity base -- a comfortable position.
 pressure on net assets.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{

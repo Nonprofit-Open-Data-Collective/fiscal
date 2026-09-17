@@ -25,7 +25,7 @@
 #'     management -- but a large and growing ratio warrants scrutiny.
 #'   - Trend analysis is more informative than a single year's value.
 #'
-#' **Calculated For:** 990 + 990EZ filers.
+#' **Calculated For:** 990 filers only.
 #'
 #' @param df A `data.frame` containing the fields required for computing the metric.
 #' @param unsecured_notes_loans Unsecured notes and loans payable, EOY.

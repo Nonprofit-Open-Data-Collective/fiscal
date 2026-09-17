@@ -41,7 +41,8 @@ normalize_x(
 
 \item{one_tol}{Tolerance for near-one detection. Default \code{1e-8}.}
 
-\item{boundary_mass_cutoff}{Hurdle/rank_normal trigger threshold. Default
+\item{boundary_mass_cutoff}{Share of values at zero (or one) above which a
+[0, 1] variable is given \code{"rank_normal"} instead of \code{"logit"}. Default
 \code{0.10}.}
 
 \item{hurdle_trans}{Positive-part method for hurdle variables (\code{"rank"} or
@@ -65,7 +66,9 @@ The function winsorizes \code{x} according to \code{range} and \code{winsorize},
 the stable interior (non-sentinel, non-NA values) to fit transformation
 parameters, then scores all observations -- including sentinels -- using
 those fitted parameters. This prevents boundary pile-up at winsorization
-bounds from distorting the centering and spread estimates.
+bounds from distorting the centering and spread estimates (for
+\code{"rank_normal"} the reference distribution keeps the winsorized tails; see
+below).
 
 Four transformation types are supported:
 \itemize{
@@ -82,7 +85,20 @@ transformed separately (rank or logit) and rescaled to a positive interval.
 }
 
 When \code{vtype = NULL} the type is auto-detected from the stable interior using
-heuristics based on the support range and boundary mass.
+heuristics based on the support range and boundary mass (\code{"hurdle"} is only
+used when requested explicitly).
+
+Scores stay bounded at the edges of the distribution so that they preserve
+the rank correlations of the raw data:
+\itemize{
+\item \code{"rank_normal"} uses mid-ranks, so a pile-up of tied values (e.g. exact
+zeros, or program-expense ratios of exactly one) is scored at the middle
+of its block, and winsorized tails are scored at their true quantile.
+\item \code{"logit"} clamps to the \code{(1 - winsorize) / 2} quantiles of the strictly
+interior values, so values at 0 or 1 are not sent to \verb{+/- log(2n)}.
+\item When more than half the transformed values are tied, the MAD is zero and
+robust standardization falls back to mean/SD instead of returning \code{NA}.
+}
 }
 \examples{
 x <- c( NA, rnorm(200), rep(0, 20), 50, -50 )

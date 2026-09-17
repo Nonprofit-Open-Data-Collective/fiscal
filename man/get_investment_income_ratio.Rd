@@ -7,8 +7,8 @@
 get_investment_income_ratio( df,
   invest_income    = "F9_08_REV_OTH_INVEST_INCOME_TOT",
   bond_proceeds    = "F9_08_REV_OTH_INVEST_BOND_TOT",
-  rent_income      = "F9_08_REV_OTH_RENT_GRO_PERS",
-  asset_sale_income= "F9_08_REV_OTH_SALE_ASSET_OTH",
+  rent_income      = "F9_08_REV_OTH_RENT_NET_TOT",
+  asset_sale_income= "F9_08_REV_OTH_SALE_GAIN_NET_TOT",
   total_revenue    = "F9_08_REV_TOT_TOT",
   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
   range     = "np",
@@ -20,19 +20,22 @@ get_investment_income_ratio( df,
 
 \item{invest_income}{Investment income.}
 
-\item{bond_proceeds}{Tax-exempt bond proceeds.}
+\item{bond_proceeds}{Income from investment of tax-exempt bond proceeds.}
 
-\item{rent_income}{Gross rents from personal property.}
+\item{rent_income}{Net rental income or loss (Part VIII line 6d, column A).}
 
-\item{asset_sale_income}{Net gain from sales of assets other than inventory.}
+\item{asset_sale_income}{Net gain or loss from sales of assets other than inventory
+(Part VIII line 7d, column A).}
 
 \item{total_revenue}{Total revenue.}
 
-\item{numerator}{Optional. A pre-aggregated column for investment income. Cannot be
-combined with the individual component arguments.}
+\item{numerator}{Optional. A pre-aggregated column for investment income. When
+supplied, \code{invest_income}, \code{bond_proceeds}, \code{rent_income}, \code{asset_sale_income}
+are ignored; it is an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column for total revenue. Cannot be
-combined with \code{total_revenue}.}
+\item{denominator}{Optional. A pre-aggregated column for total revenue. When
+supplied, \code{total_revenue} is ignored; it is an error to also set it
+explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -107,7 +110,7 @@ income ratios face greater revenue volatility.
 \subsection{Formula variations and their sources}{
 
 (Investment income + bond income + rental income + asset sale income) / total
-revenue (Part VIII lines 3 + 4 + 6a(ii) + 7d / line 12A). Note that this combines
+revenue (Part VIII lines 3 + 4 + 6d + 7d / line 12A). Note that this combines
 recurring investment income with potentially one-time asset sale proceeds; some
 analysts separate these. The asset sale proceeds (line 7d) are particularly
 volatile and may distort the ratio in years with large asset disposals.
@@ -129,10 +132,10 @@ organizations. \emph{Journal of Public Administration Research and Theory},
 Investment income (\code{invest_income})
 \item \code{F9_08_REV_OTH_INVEST_BOND_TOT}:
 Income from bond proceeds (\code{bond_proceeds})
-\item \code{F9_08_REV_OTH_RENT_GRO_PERS}:
-Gross rental income (\code{rent_income})
-\item \code{F9_08_REV_OTH_SALE_ASSET_OTH}:
-Net gain from asset sales (\code{asset_sale_income})
+\item \code{F9_08_REV_OTH_RENT_NET_TOT}:
+Net rental income or loss, line 6d (\code{rent_income})
+\item \code{F9_08_REV_OTH_SALE_GAIN_NET_TOT}:
+Net gain or loss from asset sales, line 7d (\code{asset_sale_income})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})
 }
 }

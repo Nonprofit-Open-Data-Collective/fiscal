@@ -93,17 +93,6 @@
 #'   `expenses_grants`, `expenses_grants_w`,
 #'   `expenses_grants_z`, `expenses_grants_p`.
 #'
-#' @details
-#' **Variables used:**
-#'
-#'   - `F9_09_EXP_GRANT_US_ORG_TOT`: 
-#'     Grants to domestic orgs (`us_org_grants`)
-#'   - `F9_09_EXP_GRANT_US_INDIV_TOT`: 
-#'     Grants to domestic individuals (`us_indiv_grants`)
-#'   - `F9_09_EXP_GRANT_FRGN_TOT`: Grants to foreign entities (`foreign_grants`)
-#'   - `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
-#'
-#'
 #' @import dplyr
 #' @import stringr
 #' @import magrittr

@@ -40,9 +40,12 @@ field, not a missing value.
 
 \code{sanitize_financials()} corrects this by imputing zero for NA values in
 financial fields, subject to an important constraint: fields that only exist on the
-full 990 form (Part VIII, IX, and X) should not be imputed to zero for 990EZ
-filers, since those fields simply don't exist on the EZ form. Fields from Part I
-(the summary section) appear on both forms and can be safely imputed for all filers.
+full 990 form (PC scope; most of the Part VIII, IX, and X detail, see
+\code{\link[=get_pc_fields]{get_pc_fields()}}) should not be imputed to zero for 990EZ filers, since those
+fields simply don't exist on the EZ form. Fields that appear on both forms (PZ
+scope; the Part I summary plus lines with an EZ counterpart such as total
+assets, see \code{\link[=get_pz_fields]{get_pz_fields()}}) can be safely imputed for all filers. Rows in
+which every financial field is \code{NA} are left untouched.
 
 Filer type is determined from the \code{RETURN_TYPE} column when present
 (\code{"990"} = full filer, \code{"990EZ"} = short-form filer). If \code{RETURN_TYPE}
@@ -54,6 +57,11 @@ As of the panel990 portage, the default path delegates to
 protected zero imputation over the shared concordance-derived field scopes.
 Supplying \code{pz_vars}/\code{pc_vars} explicitly falls back to the local imputer for
 backward compatibility.
+
+Before imputing, bit64 \code{integer64} columns are converted to double. Columns
+holding integer64 bytes with the class attribute dropped (every nonzero value
+smaller than 1e-300 in absolute value) are repaired with a warning; imputing
+them first would zero out negative amounts, which such columns read as \code{NaN}.
 }
 \examples{
 library( fiscal )

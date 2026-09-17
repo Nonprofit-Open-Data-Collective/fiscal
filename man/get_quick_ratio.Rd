@@ -31,11 +31,13 @@ get_quick_ratio( df,
 
 \item{grants_payable}{Grants and similar amounts payable, EOY.}
 
-\item{numerator}{Optional. A pre-aggregated column for quick assets. Cannot be combined
-with the individual asset arguments.}
+\item{numerator}{Optional. A pre-aggregated column for quick assets. When
+supplied, \code{cash}, \code{savings}, \code{pledges_receivable}, \code{accounts_receivable} are
+ignored; it is an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column for current liabilities. Cannot be
-combined with \code{accounts_payable} or \code{grants_payable}.}
+\item{denominator}{Optional. A pre-aggregated column for current liabilities.
+When supplied, \code{accounts_payable}, \code{grants_payable} are ignored; it is an error
+to also set one of them explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -104,7 +106,7 @@ financial health.
 any single year's value.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -145,11 +147,10 @@ unsecured notes (line 24B) are excluded because they typically carry defined
 maturity dates outside a 12-month window.
 }
 
-An alternative numerator used by some analysts (Hager 2001) adds short-term investments
-held for sale (\code{F9_10_ASSET_INV_SALE_EOY}) on the grounds that these can be
-liquidated quickly. That field is excluded here because many nonprofits classify
-long-term endowment holdings under the same line, making it an unreliable current
-asset proxy.
+Inventories for sale or use (\code{F9_10_ASSET_INV_SALE_EOY}, Part X line 8) and
+prepaid expenses are excluded, as in the standard quick-ratio definition,
+because they cannot be converted to cash quickly. \code{\link[=get_current_ratio]{get_current_ratio()}}
+includes both.
 }
 
 \subsection{Why this formula was chosen}{

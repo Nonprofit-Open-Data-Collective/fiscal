@@ -9,14 +9,15 @@ get_current_ratio( df,
   savings             = "F9_10_ASSET_SAVING_EOY",
   pledges_receivable  = "F9_10_ASSET_PLEDGE_NET_EOY",
   accounts_receivable = "F9_10_ASSET_ACC_NET_EOY",
-  investment_sales    = "F9_10_ASSET_INV_SALE_EOY",
+  inventories         = "F9_10_ASSET_INV_SALE_EOY",
   prepaid_expenses    = "F9_10_ASSET_EXP_PREPAID_EOY",
   accounts_payable    = "F9_10_LIAB_ACC_PAYABLE_EOY",
   grants_payable      = "F9_10_LIAB_GRANT_PAYABLE_EOY",
   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
   range     = "zp",
   sanitize  = TRUE,
-  summarize = FALSE )
+  summarize = FALSE,
+  investment_sales = NULL )
 }
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
@@ -29,7 +30,7 @@ get_current_ratio( df,
 
 \item{accounts_receivable}{Accounts receivable, net, EOY.}
 
-\item{investment_sales}{Investments held for sale or use, EOY.}
+\item{inventories}{Inventories for sale or use, EOY (Part X line 8).}
 
 \item{prepaid_expenses}{Prepaid expenses and deferred charges, EOY.}
 
@@ -37,12 +38,13 @@ get_current_ratio( df,
 
 \item{grants_payable}{Grants and similar amounts payable, EOY.}
 
-\item{numerator}{Optional. A pre-aggregated column name for current assets, bypassing
-the individual asset arguments. Cannot be combined with those arguments.}
+\item{numerator}{Optional. A pre-aggregated column name for current assets. When
+supplied, the asset component arguments are ignored (it is an error to also
+set one of them explicitly).}
 
-\item{denominator}{Optional. A pre-aggregated column name for current liabilities,
-bypassing \code{accounts_payable} and \code{grants_payable}. Cannot be combined
-with those arguments.}
+\item{denominator}{Optional. A pre-aggregated column name for current liabilities.
+When supplied, \code{accounts_payable} and \code{grants_payable} are ignored (it is an
+error to also set one of them explicitly).}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -62,6 +64,10 @@ The returned dataframe always contains the original unmodified input columns.}
 \item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
 the results and plots density curves for all four output columns
 (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
+
+\item{investment_sales}{Deprecated alias for \code{inventories}, retained for
+backward compatibility. The field it defaulted to,
+\code{F9_10_ASSET_INV_SALE_EOY}, is inventories, not investments.}
 }
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
@@ -81,7 +87,7 @@ Measures short-term liquidity by comparing current assets to current liabilities
 \if{html}{\out{<div class="sourceCode">}}\preformatted{cr = current_assets / current_liabilities
 
 current_assets      = cash + savings + pledges_receivable + accounts_receivable
-                      + investment_sales + prepaid_expenses
+                      + inventories + prepaid_expenses
 current_liabilities = accounts_payable + grants_payable
 }\if{html}{\out{</div>}}
 
@@ -99,7 +105,7 @@ is approximately [0, 15], with most organizations clustered between 0.5 and 5.
 \item Sector medians generally fall in the [1.0, 2.5] range (Zietlow et al. 2007).
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
@@ -112,7 +118,7 @@ important as a stress-test, because grant revenue often arrives in irregular cyc
 that do not align with payroll and vendor payment schedules.
 
 Unlike the quick ratio (\code{\link[=get_quick_ratio]{get_quick_ratio()}}), the current ratio includes
-prepaid expenses and investments held for sale, making it a somewhat more generous
+prepaid expenses and inventories, making it a somewhat more generous
 (and less conservative) measure of liquidity. In practice for nonprofits, the two
 ratios often move together since prepaid expenses are rarely a large share of assets.
 }
@@ -125,14 +131,14 @@ does not use current vs. non-current labels. This implementation follows the
 operationalization in Tuckman & Chang (1991) and subsequent studies by defining:
 \itemize{
 \item \strong{Current assets}: cash + savings + pledges receivable + accounts
-receivable + investments held for sale + prepaid expenses (Part X lines 1, 2, 3,
-4, 8, 9).
+receivable + inventories for sale or use + prepaid expenses (Part X lines 1,
+2, 3, 4, 8, 9).
 \item \strong{Current liabilities}: accounts payable + grants payable (Part X
 lines 17, 18). Mortgage and note obligations are excluded as long-term.
 }
 
-Some analysts also include inventory (Part X line 11) in current assets, but that
-line is not widely populated in nonprofit 990 filings and is excluded here.
+Some analysts also include publicly traded securities (Part X line 11) in
+current assets as marketable investments; they are excluded here.
 }
 
 \subsection{Why this formula was chosen}{
@@ -164,7 +170,8 @@ for Nonprofit Organizations}. Wiley.
 \item \code{F9_10_ASSET_PLEDGE_NET_EOY}:
 Net pledges receivable, EOY (\code{pledges_receivable})
 \item \code{F9_10_ASSET_ACC_NET_EOY}: Accounts receivable, net, EOY (\code{accounts_receivable})
-\item \code{F9_10_ASSET_INV_SALE_EOY}: Investments held for sale, EOY (\code{investment_sales})
+\item \code{F9_10_ASSET_INV_SALE_EOY}: Inventories for sale or use, EOY (Part X
+line 8) (\code{inventories})
 \item \code{F9_10_ASSET_EXP_PREPAID_EOY}:
 Prepaid expenses and deferred charges, EOY (\code{prepaid_expenses})
 \item \code{F9_10_LIAB_ACC_PAYABLE_EOY}:

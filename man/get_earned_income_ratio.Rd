@@ -6,21 +6,19 @@
 \usage{
 get_earned_income_ratio( df,
   program_service_rev = "F9_08_REV_PROG_TOT_TOT",
-  membership_dues     = "F9_08_REV_CONTR_MEMBSHIP_DUE",
   royalties           = "F9_08_REV_OTH_ROY_TOT",
   other_revenue       = "F9_08_REV_MISC_OTH_TOT",
   total_revenue       = "F9_08_REV_TOT_TOT",
   numerator = NULL, denominator = NULL, winsorize = 0.98 ,
   range     = "zo",
   sanitize  = TRUE,
-  summarize = FALSE )
+  summarize = FALSE,
+  membership_dues = NULL )
 }
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
 \item{program_service_rev}{Program service revenue.}
-
-\item{membership_dues}{Membership dues and assessments.}
 
 \item{royalties}{Royalties.}
 
@@ -28,11 +26,13 @@ get_earned_income_ratio( df,
 
 \item{total_revenue}{Total revenue.}
 
-\item{numerator}{Optional. A pre-aggregated column for earned revenue. Cannot be combined
-with the individual component arguments.}
+\item{numerator}{Optional. A pre-aggregated column for earned revenue. When
+supplied, \code{program_service_rev}, \code{royalties}, \code{other_revenue} are ignored; it is
+an error to also set one of them explicitly.}
 
-\item{denominator}{Optional. A pre-aggregated column for total revenue. Cannot be combined
-with \code{total_revenue}.}
+\item{denominator}{Optional. A pre-aggregated column for total revenue. When
+supplied, \code{total_revenue} is ignored; it is an error to also set it
+explicitly.}
 
 \item{winsorize}{The winsorization value (between 0 and 1), defaults to 0.98, which
 winsorizes at the 1st and 99th percentiles.}
@@ -52,6 +52,11 @@ The returned dataframe always contains the original unmodified input columns.}
 \item{summarize}{Logical. If \code{TRUE}, prints a \code{summary()} of
 the results and plots density curves for all four output columns
 (raw, winsorized, z-score, percentile). Defaults to \code{FALSE}.}
+
+\item{membership_dues}{Deprecated and ignored. Membership dues reported on
+Part VIII line 1b are already part of total contributions (line 1h), so
+counting them as earned income double counts them against
+\code{\link[=get_donations_revenue_ratio]{get_donations_revenue_ratio()}}. Supplying it raises a warning.}
 }
 \value{
 Object of class \code{data.frame}: the original dataframe appended with four
@@ -70,8 +75,7 @@ Share of total revenue derived from earned (non-donation) income sources.
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{eidr = earned_revenue / total_revenue
 
-earned_revenue = program_service_revenue + membership_dues
-                 + royalties + other_revenue
+earned_revenue = program_service_revenue + royalties + other_revenue
 }\if{html}{\out{</div>}}
 
 \strong{Definitional Range}
@@ -87,16 +91,17 @@ to show a low ratio; a hospital is expected to show a high one.
 concentration risk.
 }
 
-\strong{Calculated For:} 990 + 990EZ filers.
+\strong{Calculated For:} 990 filers only.
 }
 \details{
 \subsection{Primary uses and key insights}{
 
 The earned income dependency ratio measures the combined share of revenue from
-program services, membership dues, royalties, and miscellaneous revenue - the
-sources that flow from the organization's own activities rather than from voluntary
-contributions. It is the revenue-side complement to \code{\link[=get_self_sufficiency_ratio]{get_self_sufficiency_ratio()}},
-which compares program revenue to total expenses.
+program services, royalties, and miscellaneous revenue - the sources that flow from
+the organization's own activities rather than from voluntary contributions. It is
+the revenue-side complement to \code{\link[=get_donations_revenue_ratio]{get_donations_revenue_ratio()}}, and a broader
+version of \code{\link[=get_self_sufficiency_ratio]{get_self_sufficiency_ratio()}}, which compares program revenue to
+total expenses.
 
 Organizations with high earned income ratios are often considered more financially
 resilient because earned revenue is tied to service delivery rather than donor
@@ -106,10 +111,17 @@ retention challenges.
 
 \subsection{Formula variations and their sources}{
 
-(Program service revenue + membership dues + royalties + other miscellaneous revenue)
-/ total revenue (Part VIII lines 2g + 1b + 5 + 11d-11e / line 12A). This broad
-definition of earned income follows several studies (Young 2007). A narrower version
-uses only program service revenue (see \code{\link[=get_revenue_programs_ratio]{get_revenue_programs_ratio()}}).
+(Program service revenue + royalties + other miscellaneous revenue) / total revenue
+(Part VIII lines 2g + 5 + 11d / line 12A). This broad definition of earned income
+follows several studies (Young 2007). A narrower version uses only program service
+revenue (see \code{\link[=get_revenue_programs_ratio]{get_revenue_programs_ratio()}}).
+
+Membership dues are excluded. On the Form 990, dues that are gifts are reported on
+Part VIII line 1b and are already included in total contributions (line 1h), which
+\code{\link[=get_donations_revenue_ratio]{get_donations_revenue_ratio()}} counts; dues paid in exchange for member services
+are reported as program service revenue (line 2) and are counted here. Earlier
+versions added line 1b to earned income, so \code{earned_income} and \code{donations_rev}
+could sum to more than 1.
 }
 
 \subsection{Canonical citations}{
@@ -125,8 +137,6 @@ of Policy Analysis and Management}, 17(2), 165-174.
 \subsection{Variables used:}{
 \itemize{
 \item \code{F9_08_REV_PROG_TOT_TOT}: Program service revenue (\code{program_service_rev})
-\item \code{F9_08_REV_CONTR_MEMBSHIP_DUE}:
-Membership dues (\code{membership_dues})
 \item \code{F9_08_REV_OTH_ROY_TOT}: Royalties (\code{royalties})
 \item \code{F9_08_REV_MISC_OTH_TOT}: Other miscellaneous revenue (\code{other_revenue})
 \item \code{F9_08_REV_TOT_TOT}: Total revenue (\code{total_revenue})

@@ -157,7 +157,7 @@ safe_kurtosis <- function( x ) {
 }
 
 
-#' Rank-based inverse normal transform (Blom approximation)
+#' Rank-based inverse normal transform (mid-ranks, `(rank - 0.5) / n`)
 #' @keywords internal
 rank_normal_stable <- function( x ) {
   ok  <- !is.na( x )
@@ -168,6 +168,40 @@ rank_normal_stable <- function( x ) {
   p       <- ( r - 0.5 ) / n
   out[ok] <- stats::qnorm( p )
   out
+}
+
+
+#' Mid-rank empirical CDF of `x` against a sorted reference sample
+#'
+#' Returns `(#{ref < x} + #{ref <= x}) / (2 n)`, so a block of tied values
+#' (e.g. a pile-up of exact zeros or ones) is placed at the middle of its
+#' block rather than at the top, matching `rank(ties.method = "average")`.
+#' For values inside the reference sample this equals `(rank - 0.5) / n`.
+#' @keywords internal
+midrank_ecdf <- function( x, ref_sorted ) {
+  n  <- length( ref_sorted )
+  lt <- findInterval( x, ref_sorted, left.open = TRUE )
+  le <- findInterval( x, ref_sorted )
+  ( lt + le ) / ( 2 * n )
+}
+
+
+#' Robust center and scale with a classical fallback
+#'
+#' Uses median/MAD when `robust = TRUE`. When more than half of the values are
+#' tied (e.g. a zero-inflated ratio) the MAD is zero, which would turn the
+#' whole standardized column into `NA`; in that case fall back to mean/SD.
+#' @keywords internal
+center_scale <- function( x, robust = TRUE ) {
+  if( robust ) {
+    center <- stats::median( x, na.rm = TRUE )
+    scale  <- stats::mad( x, na.rm = TRUE, constant = 1.4826 )
+    if( !is.na( scale ) && scale > 0 ) {
+      return( list( center = center, scale = scale, method = "robust" ) )
+    }
+  }
+  list( center = mean( x, na.rm = TRUE ), scale = stats::sd( x, na.rm = TRUE ),
+        method = if( robust ) "classical (MAD = 0 fallback)" else "classical" )
 }
 
 
@@ -312,15 +346,17 @@ winsorize_x <- function( x, range, winsorize = 0.98, offset = 0.001 ) {
 #'
 #' @description
 #' Applies heuristics based on the support range, boundary mass, and zero
-#' inflation to select among `"asinh"`, `"logit"`, `"rank_normal"`, and
-#' `"hurdle"`.
+#' inflation to select among `"asinh"`, `"logit"`, and `"rank_normal"`.
+#' Proportions with boundary mass above `boundary_mass_cutoff` (at zero or
+#' one) get `"rank_normal"`; `"hurdle"` is never auto-selected and must be
+#' requested through `vtype`.
 #'
 #' @param x Numeric vector of **stable** (non-sentinel, non-NA) winsorized
 #'   values.
 #' @param range Character range code used to clip the vector to its theoretical
 #'   support before assessment.
 #' @param boundary_mass_cutoff Proportion of values at or near zero (or one)
-#'   that triggers the `"hurdle"` or `"rank_normal"` path. Default `0.10`.
+#'   that triggers the `"rank_normal"` path. Default `0.10`.
 #' @param zero_tol Tolerance for identifying values near zero. Default `1e-8`.
 #' @param one_tol Tolerance for identifying values near one. Default `1e-8`.
 #' @return A named list with elements `type` (character) and `reason`
@@ -357,9 +393,14 @@ guess_normalize_type <- function(
   prop_in_01 <- mean( x.clipped >= 0 & x.clipped <= 1 )
 
   if( support$code == "zo" || prop_in_01 > 0.98 ) {
+    # Zero-inflated proportions use the tie-aware rank-normal transform, which
+    # places the zero mass at its mid-rank. A hurdle score (zeros at 0,
+    # positives rescaled to [1, 100]) standardizes into a detached spike in
+    # the far tail -- or into all-NA when half the values are zero -- so it
+    # is available only as an explicit `vtype = "hurdle"` override.
     if( prop_zero > boundary_mass_cutoff ) {
       return( list(
-        type   = "hurdle",
+        type   = "rank_normal",
         reason = paste0(
           "Variable is effectively in [0,1] with substantial zero mass (p0=",
           round( prop_zero, 3 ), ")."
@@ -408,7 +449,9 @@ guess_normalize_type <- function(
 #' Separating fitting from scoring allows the same fitted model to be applied
 #' to new data (e.g. a holdout year) without re-estimating parameters, and
 #' ensures that sentinel observations do not distort the center and spread
-#' estimates used for standardization.
+#' estimates used for standardization. The exception is `"rank_normal"`, whose
+#' reference distribution (and therefore its center and spread) keeps the
+#' winsorized tail observations so that they are scored at their true quantile.
 #'
 #' @param x Numeric vector to fit on.
 #' @param range Character range code (`"np"`, `"zp"`, `"zo"`, `"nz"`, or
@@ -423,7 +466,8 @@ guess_normalize_type <- function(
 #'   Default `TRUE`.
 #' @param zero_tol Tolerance for zero detection. Default `1e-8`.
 #' @param one_tol Tolerance for near-one detection. Default `1e-8`.
-#' @param boundary_mass_cutoff Hurdle/rank_normal trigger threshold. Default
+#' @param boundary_mass_cutoff Share of values at zero (or one) above which a
+#'   \[0, 1\] variable is given `"rank_normal"` instead of `"logit"`. Default
 #'   `0.10`.
 #' @param hurdle_trans Positive-part transformation for hurdle variables.
 #'   `"rank"` (default) or `"logit"`.
@@ -547,25 +591,50 @@ find_best_normalization <- function(
 
     p   <- rescale_01( x.clean.support, lo = lo, hi = hi )
     eps <- 0.5 / length( p )
-    p   <- pmin( pmax( p, eps ), 1 - eps )
+
+    # Clamp to the winsorization quantiles of the strictly interior values
+    # rather than to [eps, 1 - eps]. With eps = 0.5 / n, exact 0s and 1s land
+    # at +/- log(2n) (about +/-13 for n = 300k), so a few percent of boundary
+    # values dominate the center, the scale, and every Pearson correlation.
+    p.int <- p[p > zero_tol & p < 1 - one_tol]
+    alpha <- ( 1 - winsorize ) / 2
+    if( length( p.int ) >= 2 ) {
+      p_lo <- as.numeric( stats::quantile( p.int, probs = alpha,     names = FALSE ) )
+      p_hi <- as.numeric( stats::quantile( p.int, probs = 1 - alpha, names = FALSE ) )
+    } else {
+      p_lo <- eps
+      p_hi <- 1 - eps
+    }
+    p_lo <- max( p_lo, eps )
+    p_hi <- min( p_hi, 1 - eps )
+
+    p   <- pmin( pmax( p, p_lo ), p_hi )
     x.t <- stats::qlogis( p )
 
     fit$transform_label <- "Logit transformation."
     fit$transform_note  <- paste0(
-      "Applied qlogis() after rescaling to [0,1] with eps = ", signif( eps, 5 ), "."
+      "Applied qlogis() after rescaling to [0,1] and clamping to the interior ",
+      "quantiles [", signif( p_lo, 5 ), ", ", signif( p_hi, 5 ), "]."
     )
-    fit$params <- list( lo = lo, hi = hi, eps = eps )
+    fit$params <- list( lo = lo, hi = hi, eps = eps, p_lo = p_lo, p_hi = p_hi )
   }
 
   if( fit.type == "rank_normal" ) {
 
-    x.t <- rank_normal_stable( x.clean.support )
+    # The reference distribution keeps winsorization sentinels: ranks are not
+    # distorted by pile-up at a bound, and dropping the tails would push every
+    # clipped observation to the extreme quantile qnorm(0.5 / n) when scored.
+    x.ref <- clip_to_support( x.w[!is.na( x.w )], support )
+    x.t   <- rank_normal_stable( x.ref )
 
     fit$transform_label <- "Rank-based inverse normal transformation."
-    fit$transform_note  <- "Applied rank-based inverse normal transformation on stable values."
+    fit$transform_note  <- paste0(
+      "Applied mid-rank inverse normal transformation against the winsorized ",
+      "reference distribution."
+    )
     fit$params          <- list(
-      x_sorted = sort( x.clean.support ),
-      n        = length( x.clean.support )
+      x_sorted = sort( x.ref ),
+      n        = length( x.ref )
     )
   }
 
@@ -626,15 +695,10 @@ find_best_normalization <- function(
 
   # fit centering/scaling on transformed stable vector
   if( standardize ) {
-    if( robust ) {
-      center              <- stats::median( x.t, na.rm = TRUE )
-      scale               <- stats::mad( x.t, na.rm = TRUE, constant = 1.4826 )
-      fit$standardization <- "robust"
-    } else {
-      center              <- mean( x.t, na.rm = TRUE )
-      scale               <- stats::sd( x.t, na.rm = TRUE )
-      fit$standardization <- "classical"
-    }
+    cs                  <- center_scale( x.t, robust = robust )
+    center              <- cs$center
+    scale               <- cs$scale
+    fit$standardization <- cs$method
     if( is.na( scale ) || scale == 0 ) scale <- NA_real_
   } else {
     center              <- NA_real_
@@ -721,21 +785,24 @@ apply_normalization <- function( x, fit, verbose = FALSE ) {
   }
 
   if( fit$transform_type == "logit" ) {
-    lo  <- fit$params$lo
-    hi  <- fit$params$hi
-    eps <- fit$params$eps
-    p   <- rescale_01( x.a, lo = lo, hi = hi )
-    p   <- pmin( pmax( p, eps ), 1 - eps )
-    x.t <- stats::qlogis( p )
+    lo   <- fit$params$lo
+    hi   <- fit$params$hi
+    eps  <- fit$params$eps
+    # Fits created before interior-quantile clamping only carry `eps`.
+    p_lo <- if( !is.null( fit$params$p_lo ) ) fit$params$p_lo else eps
+    p_hi <- if( !is.null( fit$params$p_hi ) ) fit$params$p_hi else 1 - eps
+    p    <- rescale_01( x.a, lo = lo, hi = hi )
+    p    <- pmin( pmax( p, p_lo ), p_hi )
+    x.t  <- stats::qlogis( p )
   }
 
   if( fit$transform_type == "rank_normal" ) {
     x.sorted <- fit$params$x_sorted
     n        <- fit$params$n
-    Fn       <- stats::ecdf( x.sorted )
-    p        <- Fn( x.a )
+    ok       <- !is.na( x.a )
+    p        <- midrank_ecdf( x.a[ok], x.sorted )
     p        <- pmin( pmax( p, 0.5 / n ), 1 - 0.5 / n )
-    x.t[!is.na( x.a )] <- stats::qnorm( p[!is.na( x.a )] )
+    x.t[ok]  <- stats::qnorm( p )
   }
 
   if( fit$transform_type == "hurdle" ) {
@@ -822,7 +889,9 @@ apply_normalization <- function( x, fit, verbose = FALSE ) {
 #' the stable interior (non-sentinel, non-NA values) to fit transformation
 #' parameters, then scores all observations -- including sentinels -- using
 #' those fitted parameters. This prevents boundary pile-up at winsorization
-#' bounds from distorting the centering and spread estimates.
+#' bounds from distorting the centering and spread estimates (for
+#' `"rank_normal"` the reference distribution keeps the winsorized tails; see
+#' below).
 #'
 #' Four transformation types are supported:
 #'
@@ -838,7 +907,19 @@ apply_normalization <- function( x, fit, verbose = FALSE ) {
 #'   transformed separately (rank or logit) and rescaled to a positive interval.
 #'
 #' When `vtype = NULL` the type is auto-detected from the stable interior using
-#' heuristics based on the support range and boundary mass.
+#' heuristics based on the support range and boundary mass (`"hurdle"` is only
+#' used when requested explicitly).
+#'
+#' Scores stay bounded at the edges of the distribution so that they preserve
+#' the rank correlations of the raw data:
+#'
+#' - `"rank_normal"` uses mid-ranks, so a pile-up of tied values (e.g. exact
+#'   zeros, or program-expense ratios of exactly one) is scored at the middle
+#'   of its block, and winsorized tails are scored at their true quantile.
+#' - `"logit"` clamps to the `(1 - winsorize) / 2` quantiles of the strictly
+#'   interior values, so values at 0 or 1 are not sent to `+/- log(2n)`.
+#' - When more than half the transformed values are tied, the MAD is zero and
+#'   robust standardization falls back to mean/SD instead of returning `NA`.
 #'
 #' @param x A numeric vector.
 #' @param range Character range code (`"np"`, `"zp"`, `"zo"`, `"nz"`, or
@@ -851,7 +932,8 @@ apply_normalization <- function( x, fit, verbose = FALSE ) {
 #' @param robust Logical. Use median/MAD standardization. Default `TRUE`.
 #' @param zero_tol Tolerance for zero detection. Default `1e-8`.
 #' @param one_tol Tolerance for near-one detection. Default `1e-8`.
-#' @param boundary_mass_cutoff Hurdle/rank_normal trigger threshold. Default
+#' @param boundary_mass_cutoff Share of values at zero (or one) above which a
+#'   \[0, 1\] variable is given `"rank_normal"` instead of `"logit"`. Default
 #'   `0.10`.
 #' @param hurdle_trans Positive-part method for hurdle variables (`"rank"` or
 #'   `"logit"`). Default `"rank"`.

@@ -97,9 +97,9 @@ creditworthiness and organizational stability.
 
 The commercial formula is identical: total liabilities / total assets. Nonprofit
 applications use the same ratio but may define "total liabilities" differently.
-This implementation uses the 990 Part X total liabilities (line 26B) or the Part I
-summary equivalent for 990EZ filers (line 26B), which includes all short- and
-long-term obligations reported on the balance sheet.
+This implementation uses total liabilities from the 990 Part X (line 26B; 990EZ
+Part II line 26), falling back to the 990 Part I summary field (line 21), which
+includes all short- and long-term obligations reported on the balance sheet.
 
 Some studies use only long-term debt in the numerator to focus on structural
 leverage rather than near-term obligations. The full liabilities version is used
@@ -130,10 +130,12 @@ Working Paper 04-016}.
 
 \subsection{Variables used:}{
 \itemize{
-\item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}, 990)
-\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I (\code{debt}, 990EZ fallback)
-\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}, 990)
-\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I (\code{assets}, 990EZ fallback)
+\item \code{F9_10_LIAB_TOT_EOY}: Total liabilities, EOY (\code{debt}; 990 Part X line 26,
+990EZ Part II line 26)
+\item \code{F9_01_NAFB_LIAB_TOT_EOY}: Total liabilities from Part I line 21 (\code{debt}, fallback)
+\item \code{F9_10_ASSET_TOT_EOY}: Total assets, EOY (\code{assets}; 990 Part X line 16,
+990EZ Part II line 25)
+\item \code{F9_01_NAFB_ASSET_TOT_EOY}: Total assets from Part I line 20 (\code{assets}, fallback)
 }
 }
 }

@@ -79,9 +79,16 @@ test_that( "find_best_normalization: np range selects rank_normal", {
   expect_equal( fit$transform_type, "rank_normal" )
 })
 
-test_that( "find_best_normalization: zo range with zero mass selects hurdle", {
+test_that( "find_best_normalization: zo range with zero mass selects rank_normal", {
   x <- c( rep(0, 40), runif(60) )
   fit <- find_best_normalization( x, range = "zo", verbose = FALSE )
+
+  expect_equal( fit$transform_type, "rank_normal" )
+})
+
+test_that( "find_best_normalization: hurdle is available as an explicit override", {
+  x <- c( rep(0, 40), runif(60) )
+  fit <- find_best_normalization( x, range = "zo", vtype = "hurdle", verbose = FALSE )
 
   expect_equal( fit$transform_type, "hurdle" )
 })

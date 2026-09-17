@@ -16,14 +16,11 @@ get_investments_assets_ratio( df,
 \arguments{
 \item{df}{A \code{data.frame} containing the fields required for computing the metric.}
 
-\item{pub_traded_securities}{Investments in publicly traded securities, EOY.
-)}
+\item{pub_traded_securities}{Investments in publicly traded securities, EOY.}
 
-\item{total_assets}{Total assets, EOY.
-)}
+\item{total_assets}{Total assets, EOY.}
 
-\item{other_securities}{Investments in other securities, EOY.
-)}
+\item{other_securities}{Investments in other securities, EOY.}
 
 \item{winsorize}{Winsorization proportion between 0 and 1 (default \code{0.98}).}
 

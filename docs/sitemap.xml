@@ -1,6 +1,7 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/404.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/articles/fiscal-health-index.html</loc></url>
+<url><loc>https://nonprofit-open-data-collective.github.io/fiscal/articles/fiscal-health-workflow.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/articles/fiscal.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/articles/form-scope.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/articles/index.html</loc></url>
@@ -14,6 +15,7 @@
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/LICENSE.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/apply_normalization.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/apply_transformations.html</loc></url>
+<url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/center_scale.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/clip_to_support.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/coerce_numeric.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/compute_all.html</loc></url>
@@ -99,6 +101,7 @@
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/index.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/inspect_duplicates.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/merge_bmf.html</loc></url>
+<url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/midrank_ecdf.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/normalize_x.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/panel_composition.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/panel_filter_types.html</loc></url>
@@ -111,6 +114,7 @@
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/rescale_01.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/rescale_range.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/resolve_col.html</loc></url>
+<url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/resolve_unrestricted_net_assets.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/retrieve_efile_data.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/safe_kurtosis.html</loc></url>
 <url><loc>https://nonprofit-open-data-collective.github.io/fiscal/reference/safe_skewness.html</loc></url>

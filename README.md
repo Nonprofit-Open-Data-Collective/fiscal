@@ -42,8 +42,8 @@ clean data with `panel990`, then score it with `fiscal`.
 automatically via the package's `Remotes:` field.
 
 ```r
-# install.packages("remotes")
-remotes::install_github("nonprofit-open-data-collective/fiscal")
+# install.packages("pak")
+pak::pkg_install("nonprofit-open-data-collective/fiscal")
 ```
 
 ## Quick start (reproducible)
@@ -86,6 +86,7 @@ debt_assets = total_liabilities / total_assets
                          debt   = c( "F9_10_LIAB_TOT_EOY", "F9_01_NAFB_LIAB_TOT_EOY" ),
                          assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
                          winsorize = 0.98,
+                         range     = "zo",
                          sanitize  = TRUE,
                          summarize = FALSE )
 ```
@@ -95,7 +96,8 @@ debt_assets = total_liabilities / total_assets
 * `df`: A data.frame containing the required fields for computing the metric. The metric will be appended to this dataset.
 * `debt`: Column name(s) for total liabilities. (On 990: Part X, line 26B; `F9_10_LIAB_TOT_EOY`. On EZ: Part II, line 26B; `F9_01_NAFB_LIAB_TOT_EOY`.)
 * `assets`: Column name(s) for total assets, EOY. (On 990: Part X, line 16B; `F9_10_ASSET_TOT_EOY`. On EZ: Part II, line 25B; `F9_01_NAFB_ASSET_TOT_EOY`.)
-* `winsorize`: The winsorization value (between 0 and 1), defaults to 0.98 which winsorizes at the 1st and 99th percentile values.
+* `winsorize`: The winsorization value (between 0 and 1), defaults to 0.98, which winsorizes an unbounded ratio at its 1st and 99th percentile values.
+* `range`: The theoretical range of the ratio (`"zo"` = zero to one), which sets the winsorization bounds and guides the normalization used for the `_z` column. See `vignette("normalization")`.
 * `sanitize`: If `TRUE` (default), imputes zero for NA values in financial fields before computing the ratio, respecting form scope.
 * `summarize`: If `TRUE`, prints summary statistics and plots density curves for all four output columns.
 
@@ -114,7 +116,7 @@ df <- get_debt_assets_ratio( df, debt = "my_liabilities", assets = "my_assets" )
 
 # the function is pipe-enabled 
 df <- 
-  df %>% 
+  df |> 
   get_debt_assets_ratio()
   
 # compute all ratio metrics at once
@@ -149,22 +151,16 @@ For example, `get_debt_assets_ratio()` creates the following columns:
 
 * `debt_assets`   — the raw debt-to-asset ratio
 * `debt_assets_w` — the winsorized version
-* `debt_assets_z` — standardized as a z-score
+* `debt_assets_z` — normalized (distribution-aware transformation) and standardized as a z-score
 * `debt_assets_p` — expressed as a percentile rank  
 
 ```r
 df <- get_debt_assets_ratio( df = dat10k, summarize = TRUE )
 
-# [1] "Assets equal to zero: 3 cases have been replaced with NA."
+#   :: Assets equal to zero :: <n> case(s) replaced with NaN
 #
-#    debt_assets       debt_assets_w     debt_assets_z      debt_assets_p    
-#  Min.   :-0.08372   Min.   :0.09009   Min.   :-2.36716   Min.   :  1.00  
-#  1st Qu.: 0.39247   1st Qu.:0.39247   1st Qu.:-0.67281   1st Qu.: 25.00  
-#  Median : 0.50623   Median :0.50623   Median :-0.03536   Median : 50.00  
-#  Mean   : 0.51315   Mean   :0.51254   Mean   : 0.00000   Mean   : 50.35  
-#  3rd Qu.: 0.62853   3rd Qu.:0.62853   3rd Qu.: 0.64995   3rd Qu.: 75.00  
-#  Max.   : 1.24623   Max.   :1.00150   Max.   : 2.73988   Max.   :100.00  
-#  NA's   :3          NA's   :3         NA's   :3          NA's   :3
+# summary() of debt_assets, debt_assets_w, debt_assets_z, and debt_assets_p,
+# followed by density plots of the four columns
 ```
 
 ![Density curves for the four versions of the debt-to-asset ratio: raw, winsorized, z-score, and percentile rank.](man/figures/dar.png)
@@ -247,10 +243,10 @@ The package includes three functions for building and preparing multi-year panel
 
 ### get_panel()
 
-Downloads multiple years of IRS 990 efile data and stacks them into a single long-format panel. Each year is retrieved independently via `retrieve_efile_data()`, stamped with `TAX_YEAR`, and combined with `dplyr::bind_rows()` — columns that appear in some years but not others are filled with `NA`.
+Downloads multiple years of IRS 990 efile data and stacks them into a single long-format panel, stamped with `TAX_YEAR`. Retrieval is delegated to `panel990::panelize()`; Business Master File metadata is attached afterwards unless `include_bmf = FALSE`.
 
 ```r
-# Retrieve a 4-year panel with default tables (P00, P01, P08, P09, P10)
+# Retrieve a 4-year panel with default tables (P00, P01, P08, P09, P10, P11, P12, A01)
 panel <- get_panel( years = 2019:2022 )
 
 dim( panel )
@@ -268,12 +264,12 @@ IRS 990 efile data can contain multiple filings per organization per year (amend
 2. **Drop partial-year returns** — `RETURN_PARTIAL_X == "X"`
 3. **Keep most recent** — retain the filing with the latest `RETURN_TIME_STAMP`
 
-If applying a drop rule would eliminate *all* records for an organization-year, those records are rescued and passed to the next step. The function prints a report showing records dropped at each step, by year, and a frequency table of how many filings existed per organization-year before deduplication.
+If applying a drop rule would eliminate *all* records for an organization-year, those records are rescued and passed to the next step. The function is a wrapper around `panel990::panel_deduplicate()` and prints a short summary of the row counts before and after; use `inspect_duplicates()` for a detailed breakdown of duplicate filings by type.
 
 ```r
 panel_clean <- deduplicate( panel )
 
-# Suppress the report
+# Suppress the summary
 panel_clean <- deduplicate( panel, verbose = FALSE )
 ```
 
@@ -314,8 +310,9 @@ panel_smooth_custom <- panel_smooth(
   weights = "decay"
 )
 
-# Compute all fiscal health ratios on the cleaned, smoothed panel
-panel_ratios <- compute_all( panel_smooth_pz )
+# Compute all fiscal health ratios on the cleaned, smoothed panel,
+# year by year so winsorization, z-scores, and percentiles are within-year
+panel_ratios <- compute_all_panel( panel_smooth_pz )
 ```
 
 ---
@@ -334,7 +331,7 @@ The following accounting ratios are included in the package:
 
 **Ratio:** Asset Revenue Ratio
 
-**Definition:** Measures revenue generated per dollar of assets.
+**Definition:** Total assets held per dollar of annual revenue (asset intensity).
 
 **Formula:**
 ```
@@ -376,7 +373,7 @@ cash_assets = ( cash + savings ) / total_assets
 
 **Ratio:** Burn Rate Ratio
 
-**Definition:** Rate at which the organization depletes its cash reserves relative to a prior period.
+**Definition:** End-of-year cash relative to beginning-of-year cash. Values below 1.0 mean cash was drawn down; above 1.0, accumulated.
 
 **Formula:**
 ```
@@ -445,7 +442,7 @@ cash_on_hand = cash + savings
 current = current_assets / current_liabilities
 
 current_assets      = cash + savings + pledges_receivable + accounts_receivable
-                      + investment_sales + prepaid_expenses
+                      + inventories + prepaid_expenses
 current_liabilities = accounts_payable + grants_payable
 ```
 
@@ -455,7 +452,7 @@ current_liabilities = accounts_payable + grants_payable
 | `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
 | `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
 | `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
-| `investment_sales` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
+| `inventories` | `F9_10_ASSET_INV_SALE_EOY` | Inventories for sale or use (Part X line 8) |
 | `prepaid_expenses` | `F9_10_ASSET_EXP_PREPAID_EOY` | Prepaid expenses and deferred charges |
 | `accounts_payable` | `F9_10_LIAB_ACC_PAYABLE_EOY` | Accounts payable and accrued expenses |
 | `grants_payable` | `F9_10_LIAB_GRANT_PAYABLE_EOY` | Grants and similar amounts payable |
@@ -468,23 +465,24 @@ current_liabilities = accounts_payable + grants_payable
 
 **Ratio:** Days of Cash and Investments
 
-**Definition:** Days of operating coverage including investment assets net of related debt.
+**Definition:** Days of operating coverage from liquid assets plus investment securities. Adds investments to the numerator of `get_days_cash_operations()`, so the difference between the two metrics is the coverage investments provide.
 
 **Formula:**
 ```
-days_cash_inv = liquid_and_investment_assets / daily_expenses
+days_cash_inv = ( liquid_assets + investments ) / daily_expenses
 
-liquid_and_investment_assets = unrestricted_net_assets + investments
-                               - ( land_buildings - mortgages_payable )
-daily_expenses               = ( total_expenses - depreciation ) / 365
+liquid_assets  = cash + savings + pledges_receivable + accounts_receivable
+investments    = publicly_traded_securities + other_securities
+daily_expenses = ( total_expenses - depreciation ) / 365
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
-| `investments` | `F9_10_ASSET_INV_SALE_EOY` | Investments held for sale |
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
-| `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
+| `cash` | `F9_10_ASSET_CASH_EOY` | Cash on hand, EOY |
+| `savings` | `F9_10_ASSET_SAVING_EOY` | Savings and temporary cash investments |
+| `pledges_receivable` | `F9_10_ASSET_PLEDGE_NET_EOY` | Net pledges receivable |
+| `accounts_receivable` | `F9_10_ASSET_ACC_NET_EOY` | Accounts receivable, net |
+| `investments` | `F9_10_ASSET_INVEST_SEC_EOY` + `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Investments in publicly traded and other securities (Part X lines 11 + 12) |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 | `depreciation` | `F9_09_EXP_DEPREC_TOT` | Depreciation and amortization |
 
@@ -556,6 +554,8 @@ debt_equity = total_liabilities / unrestricted_net_assets
 |----------|---------------|-------------|
 | `debt` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
 | `equity` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 
 **Scope:** 990 filers only
 
@@ -565,18 +565,19 @@ debt_equity = total_liabilities / unrestricted_net_assets
 
 **Ratio:** Debt to Net Assets Ratio
 
-**Definition:** Compares total liabilities to unrestricted net assets.
+**Definition:** Compares total liabilities to total net assets (restricted and unrestricted). See `get_debt_equity_ratio()` for the unrestricted-only version.
 
 **Formula:**
 ```
-debt_netassets = total_liabilities / unrestricted_net_assets
+debt_netassets = total_liabilities / total_net_assets
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY (990) |
-| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (990EZ fallback) |
-| `net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `liabilities` | `F9_10_LIAB_TOT_EOY` | Total liabilities, EOY |
+| `liabilities` | `F9_01_NAFB_LIAB_TOT_EOY` | Total liabilities from Part I (fallback) |
+| `net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `net_assets` | `F9_01_NAFB_TOT_EOY` | Net assets from Part I (fallback) |
 
 **Scope:** 990 + 990EZ filers
 
@@ -676,13 +677,14 @@ donations_rev = ( contributions + fundraising_revenue ) / total_revenue
 ```
 earned_income = earned_revenue / total_revenue
 
-earned_revenue = program_service_rev + membership_dues + royalties + other_revenue
+earned_revenue = program_service_rev + royalties + other_revenue
 ```
+
+Membership dues on Part VIII line 1b are excluded: they are already part of total contributions (line 1h), which `get_donations_revenue_ratio()` counts.
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `program_service_rev` | `F9_08_REV_PROG_TOT_TOT` | Program service revenue |
-| `membership_dues` | `F9_08_REV_CONTR_MEMBSHIP_DUE` | Membership dues |
 | `royalties` | `F9_08_REV_OTH_ROY_TOT` | Royalties |
 | `other_revenue` | `F9_08_REV_MISC_OTH_TOT` | Other miscellaneous revenue |
 | `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
@@ -719,7 +721,7 @@ equity = net_assets / total_assets
 
 **Formula:**
 ```
-expenses_admin = administrative_expenses / total_expenses
+expenses_admin = mgmt_expenses / total_expenses
 ```
 
 | Argument | efile Variable | Description |
@@ -845,7 +847,7 @@ expenses_membbenefits = member_benefits / total_expenses
 | `member_benefits` | `F9_09_EXP_BEN_PAID_MEMB_TOT` | Benefits paid to members, total (scope: 990 + 990EZ) |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 
-**Scope:** 990 + 990EZ filers
+**Scope:** 990 filers only
 
 ---
 
@@ -905,9 +907,9 @@ investment_income = invest_income + bond_proceeds + rent_income + asset_sale_inc
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `invest_income` | `F9_08_REV_OTH_INVEST_INCOME_TOT` | Investment income |
-| `bond_proceeds` | `F9_08_REV_OTH_INVEST_BOND_TOT` | Income from bond proceeds |
-| `rent_income` | `F9_08_REV_OTH_RENT_GRO_PERS` | Gross rental income |
-| `asset_sale_income` | `F9_08_REV_OTH_SALE_ASSET_OTH` | Net gain from asset sales |
+| `bond_proceeds` | `F9_08_REV_OTH_INVEST_BOND_TOT` | Income from investment of tax-exempt bond proceeds |
+| `rent_income` | `F9_08_REV_OTH_RENT_NET_TOT` | Net rental income or loss (Part VIII line 6d) |
+| `asset_sale_income` | `F9_08_REV_OTH_SALE_GAIN_NET_TOT` | Net gain or loss from sales of assets other than inventory (Part VIII line 7d) |
 | `total_revenue` | `F9_08_REV_TOT_TOT` | Total revenue |
 
 **Scope:** 990 filers only
@@ -931,7 +933,7 @@ investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 | `other_securities` | `F9_10_ASSET_INVEST_SEC_OTH_EOY` | Other securities, EOY (scope: 990 + 990EZ) |
 | `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
 
-**Scope:** 990 + 990EZ filers
+**Scope:** 990 filers only
 
 ---
 
@@ -943,12 +945,12 @@ investments_assets = ( pub_traded_securities + other_securities ) / total_assets
 
 **Formula:**
 ```
-land_assets_gross = land_bldg_equip_deprec / total_assets
+land_assets_gross = land_buildings / total_assets
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
-| `land_buildings` | `F9_10_ASSET_LAND_BLDG_DEPREC` | Accumulated depreciation on land and buildings |
+| `land_buildings` | `F9_10_ASSET_LAND_BLDG` | Land, buildings, and equipment, cost or other basis (Part X line 10a) |
 | `total_assets` | `F9_10_ASSET_TOT_EOY` | Total assets, EOY |
 
 **Scope:** 990 filers only
@@ -992,6 +994,8 @@ monthly_expenses = total_expenses / 12
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 | `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
 | `mortgages_payable` | `F9_10_LIAB_MTG_NOTE_EOY` | Mortgages and notes payable |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
@@ -1042,6 +1046,7 @@ netassets_comp = unrestricted_net_assets / total_net_assets
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
 | `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
 
 **Scope:** 990 filers only
 
@@ -1073,18 +1078,18 @@ netassets_growth = ( net_assets_eoy - net_assets_boy ) / net_assets_boy
 
 **Ratio:** Operating Reserve Ratio
 
-**Definition:** Months of operating expenses covered by liquid unrestricted net assets.
+**Definition:** Liquid unrestricted net assets (net of fixed assets) as a multiple of total annual expenses.
 
 **Formula:**
 ```
-op_reserve = ( unrestricted_net_assets - net_fixed_assets ) / monthly_expenses
-
-monthly_expenses = total_expenses / 12
+op_reserve = ( unrestricted_net_assets - net_fixed_assets ) / total_expenses
 ```
 
 | Argument | efile Variable | Description |
 |----------|---------------|-------------|
 | `unrestricted_net_assets` | `F9_10_NAFB_UNRESTRICT_EOY` | Unrestricted net assets, EOY |
+| `restricted_net_assets` | `F9_10_NAFB_RESTRICT_EOY` | Restricted net assets, EOY (non-SFAS 117 check) |
+| `total_net_assets` | `F9_10_NAFB_TOT_EOY` | Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers) |
 | `net_fixed_assets` | `F9_10_ASSET_LAND_BLDG_NET_EOY` | Net land, buildings, and equipment |
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses |
 
@@ -1171,7 +1176,7 @@ prog_exp = program_expenses / total_expenses
 | `total_expenses` | `F9_09_EXP_TOT_TOT` | Total functional expenses (990) |
 | `total_expenses` | `F9_01_EXP_TOT_CY` | Total expenses from Part I (990EZ fallback) |
 
-**Scope:** 990 + 990EZ filers
+**Scope:** 990 filers only
 
 ---
 

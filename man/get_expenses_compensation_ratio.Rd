@@ -122,21 +122,6 @@ Other employee benefits (\code{other_employee_benefits})
 \item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
 }
 }
-
-\strong{Variables used:}
-\itemize{
-\item \code{F9_09_EXP_COMP_DTK_TOT}: Officer/director compensation (\code{officer_comp})
-\item \code{F9_09_EXP_COMP_DSQ_PERS_TOT}:
-Disqualified person compensation (\code{disqualified_comp})
-\item \code{F9_09_EXP_OTH_SAL_WAGE_TOT}:
-Other salaries and wages (\code{other_salaries})
-\item \code{F9_09_EXP_PENSION_CONTR_TOT}:
-Pension contributions (\code{pension_contributions})
-\item \code{F9_09_EXP_OTH_EMPL_BEN_TOT}:
-Other employee benefits (\code{other_employee_benefits})
-\item \code{F9_09_EXP_PAYROLL_TAX_TOT}: Payroll taxes (\code{payroll_taxes})
-\item \code{F9_09_EXP_TOT_TOT}: Total functional expenses (\code{total_expenses})
-}
 }
 \examples{
 library( fiscal )
