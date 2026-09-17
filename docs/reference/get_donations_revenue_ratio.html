@@ -227,15 +227,15 @@ Net fundraising event revenue (<code>fundraising_revenue</code>)</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_donations_revenue_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 62 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total revenue equal to zero :: 64 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"donations_rev"</span>, <span class="st">"donations_rev_w"</span>, <span class="st">"donations_rev_z"</span>, <span class="st">"donations_rev_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   donations_rev donations_rev_w donations_rev_z donations_rev_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     0.2561192       0.2561192      -0.5479794              38</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     0.8479829       0.8479829       0.3494353              64</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     0.0000000       0.0000000      -2.5073812               1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     0.9999033       0.9999033       2.7243559              88</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     0.0000000       0.0000000      -2.5073812               1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2     1.0000000       1.0000000       1.4633229              86</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4     0.7055137       0.7055137      -0.2128906              48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6           NaN             NaN             NaN              NA</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

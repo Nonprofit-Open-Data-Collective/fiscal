@@ -282,15 +282,15 @@ Net pledges receivable (<code>pledges_receivable</code>)</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_days_cash_operations</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 54 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 63 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"days_cash_ops"</span>, <span class="st">"days_cash_ops_w"</span>, <span class="st">"days_cash_ops_z"</span>, <span class="st">"days_cash_ops_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   days_cash_ops days_cash_ops_w days_cash_ops_z days_cash_ops_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     314.10683       314.10683       0.4228830              65</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     109.32711       109.32711      -0.4886144              32</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3      58.76263        58.76263      -0.7838769              18</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4      19.00314        19.00314      -1.0301554               8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     280.54830       280.54830       0.3019337              61</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2    1257.01084      1257.01084       2.0815954              92</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4      17.10234        17.10234      -0.9977032               8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5            NA              NA              NA              NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6     890.60000       890.60000       1.6570830              88</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

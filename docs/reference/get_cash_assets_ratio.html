@@ -223,15 +223,15 @@ compensation in nonprofit organizations. <em>Policy and Society</em>, 20(4), 94-
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span> <span class="va"><a href="https://nonprofit-open-data-collective.github.io/fiscal/">fiscal</a></span> <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_cash_assets_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total assets equal to zero :: 294 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Total assets equal to zero :: 346 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"cash_assets"</span>, <span class="st">"cash_assets_w"</span>, <span class="st">"cash_assets_z"</span>, <span class="st">"cash_assets_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   cash_assets cash_assets_w cash_assets_z cash_assets_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  0.49806834    0.49806834     0.3867334            72</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  0.95028090    0.95028090     1.7177634            86</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.02184183    0.02184183    -1.3204743            42</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  0.49574685    0.49574685     0.3825550            72</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  1.00000000    1.00000000     3.1234024            90</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  0.00000000    0.00000000    -2.6576147             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   0.0000000     0.0000000   -2.53957347             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.2768345     0.2768345   -0.09472221            62</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.0000000     0.0000000   -2.53957347             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.1887254     0.1887254   -0.30571477            58</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5         NaN           NaN           NaN            NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   1.0000000     1.0000000    2.95448971            89</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>

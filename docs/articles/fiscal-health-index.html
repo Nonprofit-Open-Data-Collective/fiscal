@@ -321,7 +321,7 @@ with positive revenue, expenses, and assets.</p>
 <span><span class="va">scored</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_all.html">compute_all</a></span><span class="op">(</span><span class="va">d</span>, metrics <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"ratio"</span>, <span class="st">"z"</span><span class="op">)</span>, append_to_df <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>                      verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">scored</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 6115</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 5892</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -351,10 +351,9 @@ monotone, so it preserves the rank ordering of organizations.</p>
 <p>The raw histograms are nearly empty: a few extreme values stretch
 each axis so far that almost every organization lands in a single bar.
 The normalized versions use the whole scale. Some shapes are not bell
-curves, and should not be: about a quarter of filers report no
-liabilities at all, so <code>debt_assets_z</code> has a single spike for
-that tied group, placed at its middle rank, followed by the rest of the
-distribution.</p>
+curves, and should not be: 28% of filers report no liabilities at all,
+so <code>debt_assets_z</code> has a single spike for that tied group,
+placed at its middle rank, followed by the rest of the distribution.</p>
 <p>A useful check that the transformation has not distorted the
 relationships: Pearson correlations of the <code>_z</code> columns
 should track the rank (Spearman) correlations of the raw ratios.</p>
@@ -385,7 +384,7 @@ way. We flip the sign of indicators whose registry direction is
 <span><span class="va">used</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>   <span class="co"># keep track of the rows that enter the model</span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="va">used</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 6112   12</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 5890   12</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -428,22 +427,22 @@ variance to factor.</li>
 <span><span class="va">bart</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/psych/man/cortest.bartlett.html" class="external-link">cortest.bartlett</a></span><span class="op">(</span><span class="va">R</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">kmo</span><span class="op">$</span><span class="va">MSA</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.63</span></span>
+<span><span class="co">#&gt; [1] 0.64</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">kmo</span><span class="op">$</span><span class="va">MSAi</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;          cash_assets       expenses_admin             prog_exp </span></span>
-<span><span class="co">#&gt;                 0.29                 0.48                 0.52 </span></span>
-<span><span class="co">#&gt;           assets_rev        days_cash_ops            self_suff </span></span>
-<span><span class="co">#&gt;                 0.52                 0.61                 0.61 </span></span>
-<span><span class="co">#&gt;       profit_predepr           op_reserve       surplus_margin </span></span>
-<span><span class="co">#&gt;                 0.63                 0.64                 0.64 </span></span>
-<span><span class="co">#&gt;          debt_assets liquid_assets_months        return_assets </span></span>
-<span><span class="co">#&gt;                 0.69                 0.71                 0.91</span></span>
+<span><span class="co">#&gt;          cash_assets           assets_rev       expenses_admin </span></span>
+<span><span class="co">#&gt;                 0.32                 0.48                 0.51 </span></span>
+<span><span class="co">#&gt;             prog_exp       profit_predepr        days_cash_ops </span></span>
+<span><span class="co">#&gt;                 0.52                 0.64                 0.65 </span></span>
+<span><span class="co">#&gt;           op_reserve       surplus_margin liquid_assets_months </span></span>
+<span><span class="co">#&gt;                 0.65                 0.65                 0.71 </span></span>
+<span><span class="co">#&gt;            self_suff          debt_assets        return_assets </span></span>
+<span><span class="co">#&gt;                 0.72                 0.73                 0.92</span></span>
 <span><span class="va">bart</span><span class="op">$</span><span class="va">p.value</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
-<p>The overall KMO of 0.63 is mediocre but workable, and Bartlett’s test
+<p>The overall KMO of 0.64 is mediocre but workable, and Bartlett’s test
 rejects an identity matrix. The item-level values already flag
-<code>cash_assets</code> and <code>expenses_admin</code> as sharing
-little with the other indicators.</p>
+<code>cash_assets</code> and <code>assets_rev</code> as sharing little
+with the other indicators.</p>
 </div>
 <div class="section level2">
 <h2 id="how-many-factors">5. How many factors?<a class="anchor" aria-label="anchor" href="#how-many-factors"></a>
@@ -457,13 +456,13 @@ factors that beat the random benchmark.</p>
 <span><span class="va">pa</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/psych/man/fa.parallel.html" class="external-link">fa.parallel</a></span><span class="op">(</span><span class="va">X</span>, fm <span class="op">=</span> <span class="st">"pa"</span>, fa <span class="op">=</span> <span class="st">"fa"</span>, n.iter <span class="op">=</span> <span class="fl">50</span>,</span>
 <span>                  main <span class="op">=</span> <span class="st">"Scree plot and parallel analysis"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="fiscal-health-index_files/figure-html/parallel-1.png" class="r-plt" alt="" width="672"></p>
-<pre><code><span><span class="co">#&gt; Parallel analysis suggests that the number of factors =  6  and the number of components =  NA</span></span>
+<pre><code><span><span class="co">#&gt; Parallel analysis suggests that the number of factors =  5  and the number of components =  NA</span></span>
 <span><span class="va">pa</span><span class="op">$</span><span class="va">nfact</span></span>
-<span><span class="co">#&gt; [1] 6</span></span>
+<span><span class="co">#&gt; [1] 5</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">pa</span><span class="op">$</span><span class="va">fa.values</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt;  [1]  3.15  1.57  0.65  0.26  0.14  0.02 -0.28 -0.34 -0.40 -0.42 -0.52 -0.69</span></span></code></pre>
+<span><span class="co">#&gt;  [1]  3.27  1.51  0.86  0.40  0.11 -0.03 -0.27 -0.33 -0.37 -0.50 -0.67 -0.70</span></span></code></pre>
 <p>With thousands of organizations, even trivial factors beat random
-noise, so parallel analysis recommends 6 factors. The scree plot tells a
+noise, so parallel analysis recommends 5 factors. The scree plot tells a
 simpler story: two large factors, a much smaller third, then a flat
 tail. The number of factors is a judgment that balances statistical
 evidence against interpretability, so we compare two and three.</p>
@@ -474,29 +473,38 @@ evidence against interpretability, so we compare two and three.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fa3</span><span class="op">$</span><span class="va">loadings</span>, cutoff <span class="op">=</span> <span class="fl">0.30</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Loadings:</span></span>
-<span><span class="co">#&gt;                      PA2    PA1    PA3   </span></span>
-<span><span class="co">#&gt; days_cash_ops         0.560              </span></span>
-<span><span class="co">#&gt; op_reserve            0.939              </span></span>
-<span><span class="co">#&gt; liquid_assets_months  0.913              </span></span>
-<span><span class="co">#&gt; debt_assets           0.584         0.310</span></span>
-<span><span class="co">#&gt; surplus_margin               0.977       </span></span>
-<span><span class="co">#&gt; profit_predepr               0.975       </span></span>
-<span><span class="co">#&gt; return_assets                0.778       </span></span>
-<span><span class="co">#&gt; cash_assets                         0.803</span></span>
-<span><span class="co">#&gt; assets_rev           -0.529         0.578</span></span>
+<span><span class="co">#&gt;                      PA2    PA3    PA1   </span></span>
+<span><span class="co">#&gt; days_cash_ops         0.570              </span></span>
+<span><span class="co">#&gt; op_reserve            0.953              </span></span>
+<span><span class="co">#&gt; liquid_assets_months  0.951              </span></span>
+<span><span class="co">#&gt; debt_assets           0.549              </span></span>
+<span><span class="co">#&gt; assets_rev           -0.519              </span></span>
+<span><span class="co">#&gt; surplus_margin               0.998       </span></span>
+<span><span class="co">#&gt; profit_predepr               0.941       </span></span>
+<span><span class="co">#&gt; return_assets                0.802       </span></span>
+<span><span class="co">#&gt; prog_exp                            0.766</span></span>
+<span><span class="co">#&gt; expenses_admin                      0.816</span></span>
+<span><span class="co">#&gt; cash_assets                              </span></span>
 <span><span class="co">#&gt; self_suff                                </span></span>
-<span><span class="co">#&gt; prog_exp                                 </span></span>
-<span><span class="co">#&gt; expenses_admin                           </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;                  PA2   PA1   PA3</span></span>
-<span><span class="co">#&gt; SS loadings    2.737 2.603 1.176</span></span>
-<span><span class="co">#&gt; Proportion Var 0.228 0.217 0.098</span></span>
-<span><span class="co">#&gt; Cumulative Var 0.228 0.445 0.543</span></span></code></pre></div>
-<p>The third factor is defined by <code>cash_assets</code> and the
-reversed <code>assets_rev</code>: balance sheets that are small and
-cash-heavy relative to revenue. That is <strong>asset
-intensity</strong>, a feature of the business model, not a dimension of
-fiscal health. We keep two factors.</p>
+<span><span class="co">#&gt;                  PA2   PA3   PA1</span></span>
+<span><span class="co">#&gt; SS loadings    2.784 2.630 1.396</span></span>
+<span><span class="co">#&gt; Proportion Var 0.232 0.219 0.116</span></span>
+<span><span class="co">#&gt; Cumulative Var 0.232 0.451 0.568</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">L3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">fa3</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span></span>
+<span><span class="va">main_cols</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">L3</span><span class="op">[</span><span class="st">"op_reserve"</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">L3</span><span class="op">[</span><span class="st">"surplus_margin"</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">third</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">L3</span><span class="op">)</span><span class="op">)</span>, <span class="va">main_cols</span><span class="op">)</span></span>
+<span><span class="va">third_items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">L3</span><span class="op">)</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">L3</span><span class="op">[</span>, <span class="va">third</span><span class="op">]</span><span class="op">)</span> <span class="op">&gt;=</span> <span class="fl">0.40</span><span class="op">]</span></span>
+<span><span class="va">third_items</span></span>
+<span><span class="co">#&gt; [1] "prog_exp"       "expenses_admin"</span></span></code></pre></div>
+<p>The first two factors are the same resilience and performance
+structure found with two factors. The third is defined by
+<code>prog_exp</code> and <code>expenses_admin</code>, indicators the
+content screen in section 2 already classified as business-model or
+asset-mix measures. A factor built from how an organization spends or
+structures its assets is not a dimension of fiscal health, so we keep
+two factors.</p>
 </div>
 <div class="section level2">
 <h2 id="fit-the-factor-model">6. Fit the factor model<a class="anchor" aria-label="anchor" href="#fit-the-factor-model"></a>
@@ -514,27 +522,27 @@ rotation. There is no reason to believe that resilience and operating
 performance are uncorrelated (surpluses build reserves), so we let the
 factors correlate and estimate that correlation.</li>
 </ul>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fa2</span>, digits <span class="op">=</span> <span class="fl">2</span>, cut <span class="op">=</span> <span class="fl">0.30</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Factor Analysis using method =  pa</span></span>
 <span><span class="co">#&gt; Call: fa(r = X, nfactors = 2, rotate = "oblimin", fm = "pa")</span></span>
 <span><span class="co">#&gt; Standardized loadings (pattern matrix) based upon correlation matrix</span></span>
-<span><span class="co">#&gt;                      item   PA1   PA2     h2     u2 com</span></span>
-<span><span class="co">#&gt; liquid_assets_months    3  0.96       0.9234 0.0766 1.0</span></span>
-<span><span class="co">#&gt; op_reserve              2  0.94       0.8820 0.1180 1.0</span></span>
-<span><span class="co">#&gt; assets_rev             12 -0.57       0.3032 0.6968 1.3</span></span>
-<span><span class="co">#&gt; days_cash_ops           1  0.55       0.4098 0.5902 1.2</span></span>
-<span><span class="co">#&gt; debt_assets             5  0.50       0.2645 0.7355 1.0</span></span>
-<span><span class="co">#&gt; self_suff               9             0.0534 0.9466 1.6</span></span>
-<span><span class="co">#&gt; prog_exp               10             0.0093 0.9907 1.0</span></span>
-<span><span class="co">#&gt; expenses_admin         11             0.0053 0.9947 1.5</span></span>
-<span><span class="co">#&gt; surplus_margin          6        0.99 0.9967 0.0033 1.0</span></span>
-<span><span class="co">#&gt; profit_predepr          7        0.92 0.8588 0.1412 1.0</span></span>
-<span><span class="co">#&gt; return_assets           8        0.82 0.6494 0.3506 1.0</span></span>
-<span><span class="co">#&gt; cash_assets             4             0.0118 0.9882 1.0</span></span>
+<span><span class="co">#&gt;                      item   PA1   PA2     h2    u2 com</span></span>
+<span><span class="co">#&gt; liquid_assets_months    3  0.95       0.9070 0.093 1.0</span></span>
+<span><span class="co">#&gt; op_reserve              2  0.94       0.8786 0.121 1.0</span></span>
+<span><span class="co">#&gt; days_cash_ops           1  0.58       0.4473 0.553 1.2</span></span>
+<span><span class="co">#&gt; assets_rev             12 -0.56       0.2859 0.714 1.4</span></span>
+<span><span class="co">#&gt; debt_assets             5  0.51       0.2774 0.723 1.0</span></span>
+<span><span class="co">#&gt; self_suff               9             0.0617 0.938 1.4</span></span>
+<span><span class="co">#&gt; prog_exp               10             0.0095 0.990 1.6</span></span>
+<span><span class="co">#&gt; expenses_admin         11             0.0064 0.994 1.8</span></span>
+<span><span class="co">#&gt; surplus_margin          6        0.98 0.9795 0.020 1.0</span></span>
+<span><span class="co">#&gt; profit_predepr          7        0.93 0.8776 0.122 1.0</span></span>
+<span><span class="co">#&gt; return_assets           8        0.81 0.6446 0.355 1.0</span></span>
+<span><span class="co">#&gt; cash_assets             4             0.0150 0.985 1.1</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                        PA1  PA2</span></span>
-<span><span class="co">#&gt; SS loadings           2.74 2.62</span></span>
+<span><span class="co">#&gt; SS loadings           2.77 2.62</span></span>
 <span><span class="co">#&gt; Proportion Var        0.23 0.22</span></span>
 <span><span class="co">#&gt; Cumulative Var        0.23 0.45</span></span>
 <span><span class="co">#&gt; Proportion Explained  0.51 0.49</span></span>
@@ -542,30 +550,30 @@ factors correlate and estimate that correlation.</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  With factor correlations of </span></span>
 <span><span class="co">#&gt;      PA1  PA2</span></span>
-<span><span class="co">#&gt; PA1 1.00 0.29</span></span>
-<span><span class="co">#&gt; PA2 0.29 1.00</span></span>
+<span><span class="co">#&gt; PA1 1.00 0.32</span></span>
+<span><span class="co">#&gt; PA2 0.32 1.00</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Mean item complexity =  1.1</span></span>
+<span><span class="co">#&gt; Mean item complexity =  1.2</span></span>
 <span><span class="co">#&gt; Test of the hypothesis that 2 factors are sufficient.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; df null model =  66  with the objective function =  8.08 with Chi Square =  49364.62</span></span>
-<span><span class="co">#&gt; df of  the model are 43  and the objective function was  1.83 </span></span>
+<span><span class="co">#&gt; df null model =  66  with the objective function =  8.92 with Chi Square =  52469.41</span></span>
+<span><span class="co">#&gt; df of  the model are 43  and the objective function was  2.41 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The root mean square of the residuals (RMSR) is  0.1 </span></span>
-<span><span class="co">#&gt; The df corrected root mean square of the residuals is  0.12 </span></span>
+<span><span class="co">#&gt; The root mean square of the residuals (RMSR) is  0.12 </span></span>
+<span><span class="co">#&gt; The df corrected root mean square of the residuals is  0.15 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The harmonic n.obs is  6112 with the empirical chi square  3822.72  with prob &lt;  0 </span></span>
-<span><span class="co">#&gt; The total n.obs was  6112  with Likelihood Chi Square =  11166.53  with prob &lt;  0 </span></span>
+<span><span class="co">#&gt; The harmonic n.obs is  5890 with the empirical chi square  5705.11  with prob &lt;  0 </span></span>
+<span><span class="co">#&gt; The total n.obs was  5890  with Likelihood Chi Square =  14166.02  with prob &lt;  0 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Tucker Lewis Index of factoring reliability =  0.654</span></span>
-<span><span class="co">#&gt; RMSEA index =  0.206  and the 90 % confidence intervals are  0.203 0.209</span></span>
-<span><span class="co">#&gt; BIC =  10791.66</span></span>
-<span><span class="co">#&gt; Fit based upon off diagonal values = 0.9</span></span>
+<span><span class="co">#&gt; Tucker Lewis Index of factoring reliability =  0.586</span></span>
+<span><span class="co">#&gt; RMSEA index =  0.236  and the 90 % confidence intervals are  0.233 0.239</span></span>
+<span><span class="co">#&gt; BIC =  13792.73</span></span>
+<span><span class="co">#&gt; Fit based upon off diagonal values = 0.86</span></span>
 <span><span class="co">#&gt; Measures of factor score adequacy             </span></span>
 <span><span class="co">#&gt;                                                    PA1  PA2</span></span>
-<span><span class="co">#&gt; Correlation of (regression) scores with factors   0.97 0.99</span></span>
-<span><span class="co">#&gt; Multiple R square of scores with factors          0.94 0.98</span></span>
-<span><span class="co">#&gt; Minimum correlation of possible factor scores     0.88 0.96</span></span></code></pre></div>
+<span><span class="co">#&gt; Correlation of (regression) scores with factors   0.96 0.98</span></span>
+<span><span class="co">#&gt; Multiple R square of scores with factors          0.93 0.96</span></span>
+<span><span class="co">#&gt; Minimum correlation of possible factor scores     0.86 0.92</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="interpret-the-loadings-and-refine">7. Interpret the loadings and refine<a class="anchor" aria-label="anchor" href="#interpret-the-loadings-and-refine"></a>
@@ -573,7 +581,7 @@ factors correlate and estimate that correlation.</li>
 <p>Rules of thumb: |loading| ≥ 0.30 is potentially meaningful, and ≥
 0.40 is strong. A <strong>loadings heatmap</strong> shows the whole
 structure at once, with each indicator’s communality alongside.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plot_loadings</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">f</span>, <span class="va">main</span> <span class="op">=</span> <span class="st">""</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">L</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">f</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span></span>
 <span>  <span class="va">h2</span> <span class="op">&lt;-</span> <span class="va">f</span><span class="op">$</span><span class="va">communality</span></span>
@@ -599,7 +607,7 @@ structure at once, with each indicator’s communality alongside.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/title.html" class="external-link">title</a></span><span class="op">(</span><span class="st">"Communality"</span>, line <span class="op">=</span> <span class="fl">2.5</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/graphics/layout.html" class="external-link">layout</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">plot_loadings</span><span class="op">(</span><span class="va">fa2</span>, <span class="st">"Initial two-factor model"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="fiscal-health-index_files/figure-html/loadings-initial-1.png" class="r-plt" alt="" width="672"></p>
 <p>Reading down the columns:</p>
@@ -628,13 +636,13 @@ ambiguous, so it cannot be scored in a single healthy direction.</p>
 <p><strong>Refinement.</strong> Following the rules above, drop the
 indicators with low KMO or low communality, and the indicator whose
 direction is ambiguous:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">drop</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"self_suff"</span>, <span class="st">"prog_exp"</span>, <span class="st">"expenses_admin"</span>, <span class="st">"cash_assets"</span>, <span class="st">"assets_rev"</span><span class="op">)</span></span>
 <span><span class="va">items</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sets.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">candidates</span>, <span class="va">drop</span><span class="op">)</span></span>
 <span><span class="va">X2</span> <span class="op">&lt;-</span> <span class="va">X</span><span class="op">[</span><span class="va">items</span><span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/psych/man/KMO.html" class="external-link">KMO</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">X2</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">MSA</span>, <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] 0.69</span></span>
+<span><span class="co">#&gt; [1] 0.7</span></span>
 <span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/psych/man/fa.html" class="external-link">fa</a></span><span class="op">(</span><span class="va">X2</span>, nfactors <span class="op">=</span> <span class="fl">2</span>, fm <span class="op">=</span> <span class="st">"pa"</span>, rotate <span class="op">=</span> <span class="st">"oblimin"</span>, scores <span class="op">=</span> <span class="st">"tenBerge"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">fit</span>, digits <span class="op">=</span> <span class="fl">2</span>, cut <span class="op">=</span> <span class="fl">0.30</span>, sort <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -643,48 +651,48 @@ direction is ambiguous:</p>
 <span><span class="co">#&gt;     fm = "pa")</span></span>
 <span><span class="co">#&gt; Standardized loadings (pattern matrix) based upon correlation matrix</span></span>
 <span><span class="co">#&gt;                      item   PA2   PA1   h2      u2 com</span></span>
-<span><span class="co">#&gt; surplus_margin          5  0.98       0.98  0.0195 1.0</span></span>
-<span><span class="co">#&gt; profit_predepr          6  0.97       0.93  0.0703 1.0</span></span>
-<span><span class="co">#&gt; return_assets           7  0.79       0.61  0.3899 1.0</span></span>
-<span><span class="co">#&gt; op_reserve              2        1.01 1.01 -0.0068 1.0</span></span>
-<span><span class="co">#&gt; liquid_assets_months    3        0.92 0.87  0.1307 1.0</span></span>
-<span><span class="co">#&gt; debt_assets             4        0.55 0.30  0.6975 1.0</span></span>
-<span><span class="co">#&gt; days_cash_ops           1        0.48 0.35  0.6510 1.4</span></span>
+<span><span class="co">#&gt; surplus_margin          5  0.99       0.99  0.0130 1.0</span></span>
+<span><span class="co">#&gt; profit_predepr          6  0.98       0.94  0.0573 1.0</span></span>
+<span><span class="co">#&gt; return_assets           7  0.78       0.60  0.3968 1.0</span></span>
+<span><span class="co">#&gt; op_reserve              2        1.02 1.01 -0.0071 1.0</span></span>
+<span><span class="co">#&gt; liquid_assets_months    3        0.94 0.89  0.1052 1.0</span></span>
+<span><span class="co">#&gt; debt_assets             4        0.55 0.31  0.6904 1.0</span></span>
+<span><span class="co">#&gt; days_cash_ops           1        0.49 0.37  0.6311 1.4</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                        PA2  PA1</span></span>
-<span><span class="co">#&gt; SS loadings           2.60 2.45</span></span>
-<span><span class="co">#&gt; Proportion Var        0.37 0.35</span></span>
-<span><span class="co">#&gt; Cumulative Var        0.37 0.72</span></span>
-<span><span class="co">#&gt; Proportion Explained  0.52 0.48</span></span>
-<span><span class="co">#&gt; Cumulative Proportion 0.52 1.00</span></span>
+<span><span class="co">#&gt; SS loadings           2.62 2.49</span></span>
+<span><span class="co">#&gt; Proportion Var        0.37 0.36</span></span>
+<span><span class="co">#&gt; Cumulative Var        0.37 0.73</span></span>
+<span><span class="co">#&gt; Proportion Explained  0.51 0.49</span></span>
+<span><span class="co">#&gt; Cumulative Proportion 0.51 1.00</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  With factor correlations of </span></span>
-<span><span class="co">#&gt;     PA2 PA1</span></span>
-<span><span class="co">#&gt; PA2 1.0 0.3</span></span>
-<span><span class="co">#&gt; PA1 0.3 1.0</span></span>
+<span><span class="co">#&gt;      PA2  PA1</span></span>
+<span><span class="co">#&gt; PA2 1.00 0.33</span></span>
+<span><span class="co">#&gt; PA1 0.33 1.00</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Mean item complexity =  1.1</span></span>
 <span><span class="co">#&gt; Test of the hypothesis that 2 factors are sufficient.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; df null model =  21  with the objective function =  6.27 with Chi Square =  38302.7</span></span>
+<span><span class="co">#&gt; df null model =  21  with the objective function =  6.68 with Chi Square =  39344.57</span></span>
 <span><span class="co">#&gt; df of  the model are 8  and the objective function was  0.3 </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; The root mean square of the residuals (RMSR) is  0.03 </span></span>
 <span><span class="co">#&gt; The df corrected root mean square of the residuals is  0.05 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The harmonic n.obs is  6112 with the empirical chi square  116.89  with prob &lt;  1.5e-21 </span></span>
-<span><span class="co">#&gt; The total n.obs was  6112  with Likelihood Chi Square =  1824.89  with prob &lt;  0 </span></span>
+<span><span class="co">#&gt; The harmonic n.obs is  5890 with the empirical chi square  100.87  with prob &lt;  2.8e-18 </span></span>
+<span><span class="co">#&gt; The total n.obs was  5890  with Likelihood Chi Square =  1745.66  with prob &lt;  0 </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Tucker Lewis Index of factoring reliability =  0.875</span></span>
-<span><span class="co">#&gt; RMSEA index =  0.193  and the 90 % confidence intervals are  0.185 0.2</span></span>
-<span><span class="co">#&gt; BIC =  1755.14</span></span>
+<span><span class="co">#&gt; Tucker Lewis Index of factoring reliability =  0.884</span></span>
+<span><span class="co">#&gt; RMSEA index =  0.192  and the 90 % confidence intervals are  0.185 0.2</span></span>
+<span><span class="co">#&gt; BIC =  1676.21</span></span>
 <span><span class="co">#&gt; Fit based upon off diagonal values = 1</span></span>
 <span><span class="co">#&gt; Measures of factor score adequacy             </span></span>
 <span><span class="co">#&gt;                                                    PA2 PA1</span></span>
 <span><span class="co">#&gt; Correlation of (regression) scores with factors   0.99   1</span></span>
-<span><span class="co">#&gt; Multiple R square of scores with factors          0.97   1</span></span>
-<span><span class="co">#&gt; Minimum correlation of possible factor scores     0.95   1</span></span></code></pre></div>
-<p>KMO rises to 0.69, and the root mean square of the residuals is 0.03:
+<span><span class="co">#&gt; Multiple R square of scores with factors          0.98   1</span></span>
+<span><span class="co">#&gt; Minimum correlation of possible factor scores     0.96   1</span></span></code></pre></div>
+<p>KMO rises to 0.7, and the root mean square of the residuals is 0.03:
 two factors reproduce the correlations among these indicators closely.
 (Chi-square based statistics such as RMSEA penalize any misfit heavily
 with samples this large and non-normal indicators; the goal here is an
@@ -692,7 +700,7 @@ interpretable measure, not a close-fitting confirmatory model.)</p>
 <div class="section level3">
 <h3 id="name-the-factors">Name the factors<a class="anchor" aria-label="anchor" href="#name-the-factors"></a>
 </h3>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">L</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">unclass</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span></span>
 <span><span class="va">res_col</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">L</span><span class="op">[</span><span class="st">"op_reserve"</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">perf_col</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.min.html" class="external-link">which.max</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">L</span><span class="op">[</span><span class="st">"surplus_margin"</span>, <span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -701,7 +709,7 @@ interpretable measure, not a close-fitting confirmatory model.)</p>
 <span><span class="va">factor_names</span></span>
 <span><span class="co">#&gt;           PA1           PA2 </span></span>
 <span><span class="co">#&gt;  "resilience" "performance"</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">f_named</span> <span class="op">&lt;-</span> <span class="va">fit</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">f_named</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">factor_names</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu">plot_loadings</span><span class="op">(</span><span class="va">f_named</span>, <span class="st">"Refined model"</span><span class="op">)</span></span></code></pre></div>
@@ -714,25 +722,25 @@ interpretable measure, not a close-fitting confirmatory model.)</p>
 (an <em>ultra-Heywood</em> case), which is impossible for a true
 variance share. The reason is visible in the correlation matrix:
 operating reserves and liquid unrestricted net assets are correlated
-0.92. The two formulas differ only in whether mortgage debt is added
+0.93. The two formulas differ only in whether mortgage debt is added
 back, so the resilience factor is defined almost entirely by this
 near-duplicate pair. The same is true of the surplus margin and the
-pre-depreciation margin (0.95). The solution remains usable, but the
+pre-depreciation margin (0.96). The solution remains usable, but the
 next section checks that it does not depend on the estimator, and the
 refinement notes below return to redundancy.</p>
 </div>
 <div class="section level3">
 <h3 id="factor-correlation">Factor correlation<a class="anchor" aria-label="anchor" href="#factor-correlation"></a>
 </h3>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Phi</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">Phi</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dimnames.html" class="external-link">dimnames</a></span><span class="op">(</span><span class="va">Phi</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">factor_names</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span><span class="op">]</span>, <span class="va">factor_names</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">loadings</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">Phi</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;             performance resilience</span></span>
-<span><span class="co">#&gt; performance         1.0        0.3</span></span>
-<span><span class="co">#&gt; resilience          0.3        1.0</span></span></code></pre></div>
+<span><span class="co">#&gt; performance        1.00       0.33</span></span>
+<span><span class="co">#&gt; resilience         0.33       1.00</span></span></code></pre></div>
 <p>Resilience and performance are positively but modestly correlated
-(0.3). They are related, distinct dimensions, which matters for how an
+(0.33). They are related, distinct dimensions, which matters for how an
 overall index should be built.</p>
 </div>
 </div>
@@ -741,11 +749,11 @@ overall index should be built.</p>
 </h2>
 <p>Refit with maximum likelihood and compare the loadings. Congruence
 above 0.95 means the factors are essentially the same.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_ml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/psych/man/fa.html" class="external-link">fa</a></span><span class="op">(</span><span class="va">X2</span>, nfactors <span class="op">=</span> <span class="fl">2</span>, fm <span class="op">=</span> <span class="st">"ml"</span>, rotate <span class="op">=</span> <span class="st">"oblimin"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/pkg/psych/man/factor.congruence.html" class="external-link">factor.congruence</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">fit_ml</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      ML1  ML2</span></span>
-<span><span class="co">#&gt; PA2 1.00 0.03</span></span>
+<span><span class="co">#&gt; PA2 1.00 0.04</span></span>
 <span><span class="co">#&gt; PA1 0.03 1.00</span></span></code></pre></div>
 <p>Each principal-axis factor has a maximum-likelihood twin with
 congruence near 1.00, so the two dimensions are not an artifact of the
@@ -757,21 +765,21 @@ estimation method.</p>
 <p>Factor scores give every organization a value on each dimension. With
 an oblique rotation, the ten Berge method preserves the factor
 correlations.</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">scores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="va">fit</span><span class="op">$</span><span class="va">scores</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"fh_"</span>, <span class="va">factor_names</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">scores</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt;   fh_performance fh_resilience</span></span>
-<span><span class="co">#&gt; 1          -0.43          0.43</span></span>
-<span><span class="co">#&gt; 2           0.19         -0.41</span></span>
-<span><span class="co">#&gt; 3          -0.60          1.04</span></span>
-<span><span class="co">#&gt; 4          -0.28         -0.87</span></span>
-<span><span class="co">#&gt; 5          -0.13         -0.70</span></span>
-<span><span class="co">#&gt; 8           0.80          0.86</span></span>
+<span><span class="co">#&gt;    fh_performance fh_resilience</span></span>
+<span><span class="co">#&gt; 2           -1.79          0.99</span></span>
+<span><span class="co">#&gt; 4           -0.88         -0.94</span></span>
+<span><span class="co">#&gt; 10          -1.83          0.44</span></span>
+<span><span class="co">#&gt; 12          -0.84         -1.72</span></span>
+<span><span class="co">#&gt; 15          -0.18         -1.29</span></span>
+<span><span class="co">#&gt; 16          -0.02         -0.41</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                fh_performance fh_resilience</span></span>
-<span><span class="co">#&gt; fh_performance            1.0           0.3</span></span>
-<span><span class="co">#&gt; fh_resilience             0.3           1.0</span></span></code></pre></div>
+<span><span class="co">#&gt; fh_performance           1.00          0.33</span></span>
+<span><span class="co">#&gt; fh_resilience            0.33          1.00</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="weighted-scores-versus-a-simple-index">10. Weighted scores versus a simple index<a class="anchor" aria-label="anchor" href="#weighted-scores-versus-a-simple-index"></a>
@@ -780,7 +788,7 @@ correlations.</p>
 oriented z-scores of the indicators that define each dimension?
 Cronbach’s alpha tells us whether those indicators are reliable as a
 unit-weighted scale.</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">dims</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  resilience  <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"days_cash_ops"</span>, <span class="st">"op_reserve"</span>, <span class="st">"liquid_assets_months"</span>, <span class="st">"debt_assets"</span><span class="op">)</span>,</span>
 <span>  performance <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"surplus_margin"</span>, <span class="st">"profit_predepr"</span>, <span class="st">"return_assets"</span><span class="op">)</span></span>
@@ -797,9 +805,9 @@ unit-weighted scale.</p>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">compare</span></span>
 <span><span class="co">#&gt;     dimension items cronbach_alpha r_simple_vs_score</span></span>
-<span><span class="co">#&gt; 1  resilience     4           0.83              0.91</span></span>
-<span><span class="co">#&gt; 2 performance     3           0.93              0.97</span></span></code></pre></div>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<span><span class="co">#&gt; 1  resilience     4           0.83              0.92</span></span>
+<span><span class="co">#&gt; 2 performance     3           0.94              0.97</span></span></code></pre></div>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mfrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>, mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dims</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans</a></span><span class="op">(</span><span class="va">X2</span><span class="op">[</span><span class="va">dims</span><span class="op">[[</span><span class="va">k</span><span class="op">]</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="va">scores</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"fh_"</span>, <span class="va">k</span><span class="op">)</span><span class="op">]</span><span class="op">]</span>,</span>
@@ -807,33 +815,33 @@ unit-weighted scale.</p>
 <span>       xlab <span class="op">=</span> <span class="st">"Simple index (mean z)"</span>, ylab <span class="op">=</span> <span class="st">"Factor score"</span>, main <span class="op">=</span> <span class="va">k</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="fiscal-health-index_files/figure-html/simple-plot-1.png" class="r-plt" alt="" width="672"></p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 <p>Both dimensions are reliable scales, and the factor scores correlate
 highly with the simple averages. Weighting matters most when some
 indicators are much noisier than others. The scoring weights show where
 the two approaches part ways:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">W</span> <span class="op">&lt;-</span> <span class="va">fit</span><span class="op">$</span><span class="va">weights</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="va">factor_names</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">W</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">W</span>, <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt;                      performance resilience</span></span>
 <span><span class="co">#&gt; days_cash_ops               0.00      -0.02</span></span>
-<span><span class="co">#&gt; op_reserve                 -0.10       1.05</span></span>
-<span><span class="co">#&gt; liquid_assets_months        0.08       0.00</span></span>
-<span><span class="co">#&gt; debt_assets                 0.03      -0.08</span></span>
-<span><span class="co">#&gt; surplus_margin              0.78      -0.25</span></span>
-<span><span class="co">#&gt; profit_predepr              0.23       0.27</span></span>
+<span><span class="co">#&gt; op_reserve                 -0.10       1.03</span></span>
+<span><span class="co">#&gt; liquid_assets_months        0.07       0.03</span></span>
+<span><span class="co">#&gt; debt_assets                 0.03      -0.07</span></span>
+<span><span class="co">#&gt; surplus_margin              0.80      -0.23</span></span>
+<span><span class="co">#&gt; profit_predepr              0.21       0.25</span></span>
 <span><span class="co">#&gt; return_assets              -0.01       0.03</span></span></code></pre></div>
 <p>The resilience score is essentially <code>op_reserve</code> alone,
-the Heywood indicator, and it even gives small <em>negative</em> weights
-to the margin indicators (an oblique model uses them to net out the
-correlation between the factors). The performance score leans mostly on
-<code>surplus_margin</code>. A unit-weighted average spreads the weight
-across all of a dimension’s indicators, so it is less sensitive to any
-one ratio; with near-duplicate indicators like these, that robustness is
-a good reason to prefer the simple index until the redundancy is
-resolved.</p>
+the Heywood indicator, and it even gives <code>surplus_margin</code> a
+<em>negative</em> weight (an oblique model uses the performance
+indicators to net out the correlation between the factors). The
+performance score leans mostly on <code>surplus_margin</code>. A
+unit-weighted average spreads the weight across all of a dimension’s
+indicators, so it is less sensitive to any one ratio; with
+near-duplicate indicators like these, that robustness is a good reason
+to prefer the simple index until the redundancy is resolved.</p>
 </div>
 <div class="section level2">
 <h2 id="from-dimensions-to-an-index">11. From dimensions to an index<a class="anchor" aria-label="anchor" href="#from-dimensions-to-an-index"></a>
@@ -844,12 +852,12 @@ have deep reserves and a current-year deficit (drawing down savings on
 purpose), or a healthy surplus and almost no cushion. When a single
 number is needed, the simplest defensible composite weights the
 dimensions equally.</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">index</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">scores</span>,</span>
 <span>                    fiscal_health <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colSums.html" class="external-link">rowMeans</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="va">scores</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">index</span><span class="op">$</span><span class="va">fiscal_health</span><span class="op">)</span></span>
 <span><span class="co">#&gt;     Min.  1st Qu.   Median     Mean  3rd Qu.     Max. </span></span>
-<span><span class="co">#&gt; -2.63461 -0.56389 -0.08695  0.00000  0.48252  2.68386</span></span></code></pre></div>
+<span><span class="co">#&gt; -2.69001 -0.56817 -0.09575  0.00000  0.50198  2.68829</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="validity-does-the-index-separate-organizations-known-to-differ">Validity: does the index separate organizations known to
 differ?<a class="anchor" aria-label="anchor" href="#validity-does-the-index-separate-organizations-known-to-differ"></a>
@@ -859,7 +867,7 @@ can verify directly in the raw filings (known-groups validity). The
 conditions below are <em>not</em> inputs to the index: a cash balance
 that fell by a quarter or more, a decline in total net assets, negative
 total net assets, and current liabilities exceeding current assets.</p>
-<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">scored</span><span class="op">$</span><span class="va">EIN2</span>, <span class="va">d</span><span class="op">$</span><span class="va">EIN2</span><span class="op">)</span><span class="op">)</span>   <span class="co"># compute_all() preserves row order</span></span>
 <span><span class="va">d_used</span> <span class="op">&lt;-</span> <span class="va">d</span><span class="op">[</span><span class="va">used</span>, <span class="op">]</span></span>
 <span><span class="va">s_used</span> <span class="op">&lt;-</span> <span class="va">scored</span><span class="op">[</span><span class="va">used</span>, <span class="op">]</span></span>
@@ -896,46 +904,47 @@ total net assets, and current liabilities exceeding current assets.</p>
 <tr class="odd">
 <td align="left">Q1</td>
 <td align="right">0.58</td>
-<td align="right">0.79</td>
-<td align="right">0.18</td>
+<td align="right">0.77</td>
+<td align="right">0.22</td>
 <td align="right">0.18</td>
 </tr>
 <tr class="even">
 <td align="left">Q2</td>
 <td align="right">0.29</td>
-<td align="right">0.58</td>
+<td align="right">0.63</td>
 <td align="right">0.04</td>
 <td align="right">0.05</td>
 </tr>
 <tr class="odd">
 <td align="left">Q3</td>
-<td align="right">0.24</td>
-<td align="right">0.26</td>
-<td align="right">0.00</td>
+<td align="right">0.23</td>
+<td align="right">0.31</td>
+<td align="right">0.01</td>
 <td align="right">0.04</td>
 </tr>
 <tr class="even">
 <td align="left">Q4</td>
-<td align="right">0.22</td>
+<td align="right">0.20</td>
 <td align="right">0.09</td>
 <td align="right">0.00</td>
 <td align="right">0.03</td>
 </tr>
 <tr class="odd">
 <td align="left">Q5</td>
-<td align="right">0.24</td>
+<td align="right">0.23</td>
 <td align="right">0.03</td>
 <td align="right">0.00</td>
-<td align="right">0.03</td>
+<td align="right">0.04</td>
 </tr>
 </tbody>
 </table>
 <p>Every warning sign is most common in the bottom quintile. Declining
-and negative net assets, and current liabilities exceeding current
-assets, fall steadily as the index rises. Sharp cash declines drop by
-half between the first and second quintiles and then level off: a
-falling cash balance is common even among healthy organizations that
-move cash into investments or spend down planned reserves.</p>
+net assets fall steadily as the index rises; negative net assets and
+current liabilities exceeding current assets are concentrated in the
+bottom quintile. Sharp cash declines drop by half between the first and
+second quintiles and then level off: a falling cash balance is common
+even among healthy organizations that move cash into investments or
+spend down planned reserves.</p>
 </div>
 </div>
 <div class="section level2">

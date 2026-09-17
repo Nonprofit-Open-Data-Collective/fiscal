@@ -95,8 +95,13 @@ keep <- intersect( keep, names( efile ) )
 
 set.seed( 2023 )
 
+# A usable NTEE code: letter A-Y, digit, then digit or letter. The BMF marks
+# organizations without one as "UNDEFINED", "INVALID", or the "Z99"
+# placeholder, and all of those pass a simple non-blank test on nteev2.
+is_usable_ntee <- function( x ) !is.na( x ) & grepl( "^[A-Y][0-9][0-9A-Z]$", x )
+
 pool <- efile[ efile$RETURN_TYPE %in% c( "990", "990EZ" ) &
-                 !is.na( efile$nteev2 ) & efile$nteev2 != "" &
+                 is_usable_ntee( efile$ntee_code_clean ) &
                  suppressWarnings( as.numeric( efile$F9_01_REV_TOT_CY ) ) >= 0 &
                  !is.na( efile$F9_01_REV_TOT_CY ), ]
 
@@ -109,5 +114,16 @@ dat10k <- as.data.frame( dat10k )
 is_idate <- vapply( dat10k, inherits, logical( 1 ), what = "IDate" )
 dat10k[ is_idate ] <- lapply( dat10k[ is_idate ], function( x ) as.Date( unclass( x ), origin = "1970-01-01" ) )
 rownames( dat10k ) <- NULL
+
+# Guard: no integer64 columns, classed or class-stripped, may reach the package
+# (they read as tiny doubles, and negatives as NaN, wherever the class is lost),
+# and every row must carry a usable NTEE code.
+dat10k <- repair_integer64_columns( dat10k )
+stopifnot(
+  !any( vapply( dat10k, inherits, logical( 1 ), "integer64" ) ),
+  !any( vapply( dat10k, is_unclassed_integer64, logical( 1 ) ) ),
+  median( dat10k$F9_10_ASSET_TOT_EOY, na.rm = TRUE ) > 1000,
+  all( is_usable_ntee( dat10k$ntee_code_clean ) )
+)
 
 usethis::use_data( dat10k, overwrite = TRUE, compress = "xz" )

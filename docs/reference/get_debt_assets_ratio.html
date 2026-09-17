@@ -246,15 +246,15 @@ Working Paper 04-016</em>.</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">get_debt_assets_ratio</span><span class="op">(</span> df <span class="op">=</span> <span class="va">dat10k</span> <span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Assets equal to zero :: 294 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Assets equal to zero :: 346 case(s) replaced with NaN</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span> <span class="va">d</span><span class="op">[</span> , <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> <span class="st">"debt_assets"</span>, <span class="st">"debt_assets_w"</span>, <span class="st">"debt_assets_z"</span>, <span class="st">"debt_assets_p"</span> <span class="op">)</span> <span class="op">]</span> <span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   debt_assets debt_assets_w debt_assets_z debt_assets_p</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1  0.07100170    0.07100170    -0.2536736            69</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  0.03412921    0.03412921    -0.5014824            63</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  0.15265765    0.15265765     0.1817018            75</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4  0.84668028    0.84668028     1.5432887            94</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  0.88483740    0.88483740     1.5804982            95</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6  0.00000000    0.00000000    -0.7505308             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   0.1016725     0.1016725  -0.074172138            72</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2   0.0000000     0.0000000  -0.758550952             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   0.0000000     0.0000000  -0.758550952             1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4   0.1146878     0.1146878  -0.003320409            73</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5         NaN           NaN           NaN            NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6   0.1912568     0.1912568   0.342739771            78</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
