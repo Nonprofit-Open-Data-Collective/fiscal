@@ -1,0 +1,283 @@
+---
+title: "H1-H3 on the Panel"
+subtitle: "Year-by-year replication, and matching inside organizations at one, two, and four years"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+  perms: 200
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+`matching-hypotheses-2023.Rmd` tested three financing hypotheses on one year of
+cross-sectional data:
+
+* **H1** long-term debt tracks fixed assets (supported, elasticity 0.51);
+* **H2** short-term liabilities track non-cash current assets (supported, 0.20);
+* **H3** organizations with more cash carry less long-term debt (inconclusive:
+  they are less likely to borrow at all, but the amount is unrelated).
+
+A cross-section compares a hospital to a food bank. The panel asks the question
+the theory is actually about: **when this organization's property grows, does
+its own debt grow?** H4 has already shown how far a within-organization answer
+can diverge from a cross-sectional one, and the matching-gap validation showed
+the cross-sectional benchmark mostly sorts stable types.
+
+Three additions here:
+
+1. **Year-by-year replication**, 2019-2023, on identical definitions.
+2. **First differences inside organizations** at one, two, and four years.
+   Property is lumpy and debt amortizes, so a single year catches only
+   acquisition timing; a longer difference should be steadier if matching is
+   real.
+3. **A dynamic H3**: does cash on hand predict less *new* borrowing? That is
+   the question the cross-section cannot answer, because borrowing itself puts
+   cash on the balance sheet.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+source("matching-gap.R")   # gap_lines(): the same line definitions as H1-H3
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Sample
+
+Organizations filing a full 990 with a December year-end in every year
+2019-2023, so the same organizations appear in every estimate.
+
+```{r data}
+d <- as.data.table(readRDS(params$panel_file))
+d <- d[RETURN_TYPE == "990" & substr(TAX_PERIOD_END_DATE, 6, 7) == "12" & TAX_YEAR %in% 2019:2023]
+keep <- d[, .N, by = EIN2][N == 5, EIN2]
+d <- d[EIN2 %chin% keep]
+
+year_lines <- function(y) {
+  m <- as.data.table(gap_lines(d[TAX_YEAR == y], "EOY"))
+  setnames(m, "ein", "EIN2")
+  m <- m[E > 0 & A > 0]
+  m[, year := y][]
+}
+L <- rbindlist(lapply(2019:2023, year_lines))
+kable(L[, .(organizations = .N, any_long_term_debt = mean(lt > 0), any_short_term = mean(st > 0),
+            any_fixed_assets = mean(fixed > 0)), by = year][order(year)], digits = 3,
+      format.args = list(big.mark = ","))
+```
+
+# 2. Year-by-year replication
+
+The specification is the one from the pre-registered tests: log(1 + x) plus an
+indicator for each of fixed assets, cash, and non-cash current assets, with
+4-df splines of log expenses and log(1 + other assets) as size controls.
+
+```{r cross-sections}
+robust <- function(y, W) {
+  XtXi <- solve(crossprod(W)); b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  data.table(term = colnames(W), estimate = b, se = sqrt(diag(V)))
+}
+design <- function(m) {
+  other <- pmax(m$A - m$cash - m$ncca - m$fixed, 0)
+  sE <- ns(log(m$E), df = 4); colnames(sE) <- paste0("size_E", 1:4)
+  sO <- ns(log1p(other), df = 4); colnames(sO) <- paste0("size_other", 1:4)
+  cbind(log_fixed = log1p(m$fixed), any_fixed = as.numeric(m$fixed > 0),
+        log_cash = log1p(m$cash), any_cash = as.numeric(m$cash > 0),
+        log_ncca = log1p(m$ncca), any_ncca = as.numeric(m$ncca > 0),
+        intercept = 1, sE, sO, no_other = as.numeric(other == 0))
+}
+per_year <- rbindlist(lapply(2019:2023, function(y) {
+  m <- L[year == y]; W <- design(m)
+  f1 <- robust(as.numeric(m$lt > 0), W)
+  f2 <- robust(log(m$lt[m$lt > 0]), W[m$lt > 0, , drop = FALSE])
+  f3 <- robust(log(m$st[m$st > 0]), W[m$st > 0, , drop = FALSE])
+  data.table(year = y,
+             H1_any_lt_fixed = f1[term == "log_fixed", estimate],
+             H1_amount_lt_fixed = f2[term == "log_fixed", estimate],
+             H2_amount_st_ncca = f3[term == "log_ncca", estimate],
+             cross_check_lt_ncca = f2[term == "log_ncca", estimate],
+             cross_check_st_fixed = f3[term == "log_fixed", estimate],
+             H3_any_lt_cash = f1[term == "log_cash", estimate],
+             H3_amount_lt_cash = f2[term == "log_cash", estimate])
+}))
+kable(per_year, digits = 4, caption = "Carrying coefficients by year (cross-sections)")
+```
+
+# 3. Matching inside organizations
+
+Changes are scaled by expenses in the first year of the window, so a
+coefficient reads as **cents of debt per dollar of new assets**. Rows outside
+the 1st/99th percentile of any variable in the model are dropped, which keeps
+the changes on their original scale rather than clipping them.
+
+```{r differences}
+wide <- dcast(L, EIN2 ~ year, value.var = c("fixed", "cash", "ncca", "lt", "st", "E", "A"))
+setnames(wide, gsub("_(\\d{4})$", "\\1", names(wide)))
+wide <- wide[complete.cases(wide)]
+
+window_frame <- function(y0, y1) {
+  g <- function(stem, y) wide[[paste0(stem, y)]]
+  E0 <- g("E", y0)
+  z <- data.table(
+    EIN2 = wide$EIN2,
+    d_lt = (g("lt", y1) - g("lt", y0)) / E0,
+    d_st = (g("st", y1) - g("st", y0)) / E0,
+    d_fixed = (g("fixed", y1) - g("fixed", y0)) / E0,
+    d_cash = (g("cash", y1) - g("cash", y0)) / E0,
+    d_ncca = (g("ncca", y1) - g("ncca", y0)) / E0,
+    d_logE = log(g("E", y1)) - log(E0),
+    cash_months0 = 12 * g("cash", y0) / E0,
+    assets_exp0 = g("A", y0) / E0,
+    lt0 = g("lt", y0) / E0, E0 = E0, A0 = g("A", y0))
+  keep <- rep(TRUE, nrow(z))
+  for (v in c("d_lt", "d_st", "d_fixed", "d_cash", "d_ncca", "d_logE")) {
+    q <- quantile(z[[v]], c(0.01, 0.99), na.rm = TRUE)
+    keep <- keep & z[[v]] >= q[[1]] & z[[v]] <= q[[2]]
+  }
+  z[keep]
+}
+
+fit_window <- function(z, label) {
+  X <- cbind(intercept = 1, d_fixed = z$d_fixed, d_cash = z$d_cash, d_ncca = z$d_ncca,
+             d_logE = z$d_logE, ns(log(z$E0), df = 4), ns(log1p(z$A0), df = 4))
+  colnames(X)[6:13] <- c(paste0("size_E", 1:4), paste0("size_A", 1:4))
+  lt <- robust(z$d_lt, X); st <- robust(z$d_st, X)
+  rbind(
+    data.table(window = label, n = nrow(z), outcome = "new long-term debt", predictor = "new fixed assets",
+               estimate = lt[term == "d_fixed", estimate], se = lt[term == "d_fixed", se]),
+    data.table(window = label, n = nrow(z), outcome = "new long-term debt", predictor = "new current assets",
+               estimate = lt[term == "d_ncca", estimate], se = lt[term == "d_ncca", se]),
+    data.table(window = label, n = nrow(z), outcome = "new short-term liabilities", predictor = "new current assets",
+               estimate = st[term == "d_ncca", estimate], se = st[term == "d_ncca", se]),
+    data.table(window = label, n = nrow(z), outcome = "new short-term liabilities", predictor = "new fixed assets",
+               estimate = st[term == "d_fixed", estimate], se = st[term == "d_fixed", se]))
+}
+
+w1 <- window_frame(2022, 2023); w2 <- window_frame(2021, 2023); w4 <- window_frame(2019, 2023)
+diffs <- rbind(fit_window(w1, "1 year (2022-2023)"), fit_window(w2, "2 years (2021-2023)"),
+               fit_window(w4, "4 years (2019-2023)"))
+kable(dcast(diffs, outcome + predictor ~ window, value.var = "estimate"), digits = 4,
+      caption = "Cents of new debt per dollar of new assets")
+kable(diffs[predictor == "new fixed assets" & outcome == "new long-term debt"], digits = 4,
+      caption = "H1 within organizations, with standard errors")
+```
+
+**The cross-prediction.** Matching implies that new property draws long-term
+debt more than it draws payables, and that new receivables and inventory do the
+reverse.
+
+```{r cross-prediction}
+kable(dcast(diffs, window ~ outcome + predictor, value.var = "estimate"), digits = 4)
+```
+
+# 4. A dynamic H3
+
+Does an organization that starts a window with more cash borrow less over it?
+The cross-section could not separate this from the fact that borrowing itself
+puts cash on the balance sheet; here cash is measured before the borrowing.
+
+Starting cash months are heavy-tailed, so they enter winsorized at 1/99 and
+standardized: the coefficient is per standard deviation of starting cash.
+
+```{r dynamic-h3}
+wz <- function(x) { q <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
+                    as.numeric(scale(pmin(pmax(x, q[[1]]), q[[2]]))) }
+h3 <- rbindlist(lapply(list(`1 year (2022-2023)` = w1, `2 years (2021-2023)` = w2,
+                            `4 years (2019-2023)` = w4), function(z) {
+  X <- cbind(intercept = 1, cash_start = wz(z$cash_months0), d_fixed = z$d_fixed, d_ncca = z$d_ncca,
+             d_logE = z$d_logE, lt0 = wz(z$lt0), ns(log(z$E0), df = 4),
+             ns(log(pmax(z$assets_exp0, 0.01)), df = 4))
+  colnames(X)[7:14] <- c(paste0("size_E", 1:4), paste0("asset_intensity", 1:4))
+  f <- robust(z$d_lt, X)
+  cbind(f[term == "cash_start", .(estimate, se)],
+        median_cash_months = median(z$cash_months0),
+        sd_cash_months = sd(pmin(pmax(z$cash_months0, quantile(z$cash_months0, 0.01)),
+                                 quantile(z$cash_months0, 0.99))))
+}), idcol = "window")
+kable(h3, digits = 5,
+      caption = "New long-term debt (as a share of starting expenses) per SD of starting cash")
+```
+
+# 5. Placebo: shuffled asset growth
+
+The within-organization estimates have no construction null of their own, so
+the headline coefficient is compared with refits in which new fixed assets are
+shuffled among organizations of similar starting size and asset intensity.
+
+```{r placebo}
+size_cells <- function(E, A, bins = 20) {
+  eb <- cut(rank(E, ties.method = "first"), bins, labels = FALSE)
+  ab <- ave(A / E, eb, FUN = function(z) cut(rank(z, ties.method = "first"), bins, labels = FALSE))
+  (eb - 1) * bins + ab
+}
+permute_within <- function(cells) {
+  n <- length(cells); p <- integer(n)
+  p[order(cells, seq_len(n))] <- order(cells, runif(n))
+  p
+}
+placebo <- function(z, label, B = params$perms) {
+  O <- cbind(intercept = 1, d_cash = z$d_cash, d_ncca = z$d_ncca, d_logE = z$d_logE,
+             ns(log(z$E0), df = 4), ns(log1p(z$A0), df = 4))
+  q <- qr(O); ry <- qr.resid(q, z$d_lt)
+  cells <- size_cells(z$E0, z$A0)
+  coef_for <- function(v) { rx <- qr.resid(q, v); sum(rx * ry) / sum(rx * rx) }
+  obs <- coef_for(z$d_fixed)
+  perms <- vapply(seq_len(B), function(i) coef_for(z$d_fixed[permute_within(cells)]), 0)
+  data.table(window = label, observed = obs, perm_lo = quantile(perms, 0.005),
+             perm_hi = quantile(perms, 0.995), clears = obs > quantile(perms, 0.995))
+}
+plac <- rbind(placebo(w1, "1 year (2022-2023)"), placebo(w2, "2 years (2021-2023)"),
+              placebo(w4, "4 years (2019-2023)"))
+kable(plac, digits = 4, row.names = FALSE,
+      caption = "H1 within organizations against shuffled asset growth")
+```
+
+# 6. Findings
+
+```{r findings, include = FALSE}
+h1w <- diffs[outcome == "new long-term debt" & predictor == "new fixed assets"]
+```
+
+* **Year by year.** The cross-sectional coefficients appear in section 2;
+  stability across 2019-2023 is the test of whether the pandemic changed the
+  relationship.
+* **Within organizations.** A dollar of new property comes with
+  `r fmt(h1w$estimate[1])` of new long-term debt over one year,
+  `r fmt(h1w$estimate[2])` over two, and `r fmt(h1w$estimate[3])` over four.
+* **Dynamic H3.** The coefficient on starting cash months appears in section 4;
+  a negative value means cash-rich organizations borrow less afterwards.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(per_year = per_year, diffs = diffs, h3 = h3, placebo = plac,
+               n = list(w1 = nrow(w1), w2 = nrow(w2), w4 = nrow(w4), orgs = length(keep)),
+               coverage = L[, .(organizations = .N, any_lt = mean(lt > 0), any_st = mean(st > 0),
+                                any_fixed = mean(fixed > 0)), by = year][order(year)]),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

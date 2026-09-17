@@ -1,0 +1,396 @@
+---
+title: "Matching-Gap Indicator, Tax Year 2023"
+subtitle: "Debt beyond what an organization's asset mix supports"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  data_dir: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "efile")
+  efile_file: "efile-2023-bmf-dedup.rds"
+  out_file: "matching-gap-2023.rds"
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, knitr.kable.NA = "")
+```
+
+# Purpose
+
+`matching-hypotheses-2023.Rmd` confirmed two financing relationships that
+survive both arithmetic and size structure:
+
+* **H1:** long-term debt tracks fixed assets (elasticity 0.51);
+* **H2:** short-term liabilities track non-cash current assets (elasticity
+  0.20).
+
+This document turns them into an indicator. For each organization, the H1 and
+H2 models predict how much debt its asset mix and size support. The **matching
+gap** is actual debt minus that benchmark, as a share of total assets. A
+positive gap means more debt than similar organizations with the same assets
+carry.
+
+The construction and the validation expectations below were written into the
+memo before the indicator was computed.
+
+```{r packages}
+library(knitr)
+source("matching-gap.R")
+set.seed(params$seed)
+fmt <- function(x, d = 2) formatC(x, format = "f", digits = d, big.mark = ",")
+```
+
+# 1. Plan (as written in advance)
+
+**Construction.**
+
+1. Refit the H1 and H2 two-part models on end-of-year lines: logistic for any
+   debt, OLS on log amount with Duan's smearing factor. Same predictors and
+   size controls as the hypothesis tests.
+2. Predicted debt = P(any) x E(amount | any), for long-term debt and for
+   short-term liabilities.
+3. `gap_long` and `gap_short` = (actual - predicted) / total assets;
+   `gap_total` = their sum.
+
+**Validation, one year ahead within the filing.** Compute the gaps from
+beginning-of-year lines using the end-of-year coefficients. Outcomes over the
+year: an operating deficit, a decline in unrestricted net assets, and cash
+falling by more than one month of expenses.
+
+**Expected.** Each gap raises the probability of each outcome, net of
+beginning-of-year `debt_assets` and size, with a positive coefficient whose
+robust 99% interval excludes zero, and an AUC gain over `debt_assets` alone.
+`gap_short` should predict the cash drawdown most strongly.
+
+# 2. Data
+
+```{r data}
+efile <- readRDS(file.path(params$data_dir, params$efile_file))
+eoy <- gap_lines(efile, "EOY")
+boy <- gap_lines(efile, "BOY")
+rm(efile); invisible(gc())
+stopifnot(nrow(eoy) == nrow(boy))
+
+fit_rows <- eoy$E > 0 & eoy$A > 0
+val_rows <- eoy$E > 0 & eoy$A > 0 & boy$A > 0
+data.frame(full_990_filers = nrow(eoy), benchmark_sample = sum(fit_rows),
+           validation_sample = sum(val_rows))
+```
+
+# 3. Benchmarks
+
+```{r benchmark}
+mg <- matching_gap(eoy[fit_rows, ])
+gaps <- mg$gaps
+data.frame(model = c("long-term debt", "short-term liabilities"),
+           filers = sapply(mg$fits, `[[`, "n"),
+           with_positive_amount = sapply(mg$fits, `[[`, "n_positive"),
+           logistic_converged = sapply(mg$fits, `[[`, "converged"),
+           smearing_factor = sapply(mg$fits, `[[`, "smear"), row.names = NULL)
+```
+
+**Calibration.** Predicted dollars should match actual dollars on average,
+overall and across the range of predictions.
+
+```{r calibration}
+m_fit <- eoy[fit_rows, ]
+calib <- function(actual, pred) {
+  dec <- cut(rank(pred, ties.method = "first"), 10, labels = FALSE)
+  data.frame(decile = 1:10,
+             mean_predicted = tapply(pred, dec, mean),
+             mean_actual = tapply(actual, dec, mean),
+             median_predicted = tapply(pred, dec, median),
+             median_actual = tapply(actual, dec, median))
+}
+kable(data.frame(line = c("long-term debt", "short-term liabilities"),
+                 total_actual = c(sum(m_fit$lt), sum(m_fit$st)),
+                 total_predicted = c(sum(gaps$pred_long), sum(gaps$pred_short)),
+                 ratio = c(sum(gaps$pred_long) / sum(m_fit$lt), sum(gaps$pred_short) / sum(m_fit$st))),
+      digits = 3, format.args = list(big.mark = ","))
+kable(calib(m_fit$lt, gaps$pred_long), digits = 0, format.args = list(big.mark = ","),
+      caption = "Long-term debt by decile of prediction (dollars)")
+kable(calib(m_fit$st, gaps$pred_short), digits = 0, format.args = list(big.mark = ","),
+      caption = "Short-term liabilities by decile of prediction (dollars)")
+```
+
+# 4. The indicator
+
+```{r distribution}
+qs <- c(0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)
+kable(t(sapply(gaps[c("gap_long", "gap_short", "gap_total", "debt_assets")], quantile, qs)),
+      digits = 3, caption = "Quantiles, end of year 2023")
+kable(data.frame(
+  indicator = c("gap_long", "gap_short", "gap_total"),
+  share_positive = sapply(gaps[c("gap_long", "gap_short", "gap_total")], function(x) mean(x > 0)),
+  spearman_with_debt_assets = sapply(gaps[c("gap_long", "gap_short", "gap_total")],
+                                     function(x) cor(x, gaps$debt_assets, method = "spearman")),
+  row.names = NULL), digits = 3)
+```
+
+Most organizations have no long-term debt, so `gap_long` is slightly negative
+for them (they carry less than the average organization with the same assets)
+and strongly positive for the minority who borrow beyond their property.
+
+```{r save-indicator}
+if (nzchar(params$out_file)) {
+  out_path <- file.path(params$data_dir, params$out_file)
+  saveRDS(gaps, out_path)
+  out_path
+}
+```
+
+# 5. Validation, one year ahead
+
+```{r validation-data}
+b <- boy[val_rows, ]
+e <- eoy[val_rows, ]
+gb <- apply_gap(b, mg$fits, mg$basis)
+size_b <- gap_design(b, mg$basis)$X[, c(paste0("size_E", 1:4), paste0("size_other", 1:4), "no_other")]
+
+wz <- function(x) {
+  q <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
+  as.numeric(scale(pmin(pmax(x, q[[1]]), q[[2]])))
+}
+v <- data.frame(
+  deficit     = as.numeric(e$R < e$E),
+  una_decline = as.numeric(e$una < b$una),
+  cash_drop   = as.numeric(e$cash - b$cash < -e$E / 12),
+  debt_assets = wz(gb$debt_assets),
+  gap_long    = wz(gb$gap_long),
+  gap_short   = wz(gb$gap_short),
+  gap_total   = wz(gb$gap_total))
+kable(data.frame(outcome = c("deficit", "una_decline", "cash_drop"),
+                 rate = colMeans(v[c("deficit", "una_decline", "cash_drop")]), row.names = NULL),
+      digits = 3, caption = "Outcome base rates")
+kable(round(cor(v[c("debt_assets", "gap_long", "gap_short", "gap_total")]), 2),
+      caption = "Correlations among beginning-of-year predictors (winsorized, standardized)")
+```
+
+Each model is a linear probability model with size splines and HC1 standard
+errors. Coefficients are per standard deviation of the predictor.
+
+```{r validation-models}
+lpm <- function(y, W) {
+  XtXi <- solve(crossprod(W))
+  bhat <- drop(XtXi %*% crossprod(W, y))
+  fitted <- drop(W %*% bhat)
+  res <- y - fitted
+  V <- XtXi %*% crossprod(W * res) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  list(coef = data.frame(term = colnames(W), estimate = bhat, se = sqrt(diag(V)), row.names = NULL),
+       fitted = fitted)
+}
+auc <- function(score, y) {
+  r <- rank(score)
+  n1 <- as.numeric(sum(y == 1)); n0 <- as.numeric(sum(y == 0))   # doubles: n1 * n0 overflows integers
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+
+specs <- list(
+  `debt_assets only`             = c("debt_assets"),
+  `debt_assets + gap_long + gap_short` = c("debt_assets", "gap_long", "gap_short"),
+  `debt_assets + gap_total`      = c("debt_assets", "gap_total"))
+
+validation <- do.call(rbind, lapply(c("deficit", "una_decline", "cash_drop"), function(o) {
+  do.call(rbind, lapply(names(specs), function(s) {
+    W <- cbind(size_b, as.matrix(v[specs[[s]]]))
+    f <- lpm(v[[o]], W)
+    cf <- f$coef[f$coef$term %in% c("debt_assets", "gap_long", "gap_short", "gap_total"), ]
+    cbind(outcome = o, model = s, auc = auc(f$fitted, v[[o]]), cf,
+          lower_99 = cf$estimate - qnorm(0.995) * cf$se, upper_99 = cf$estimate + qnorm(0.995) * cf$se)
+  }))
+}))
+kable(validation, digits = 4, row.names = FALSE)
+
+auc_gain <- do.call(rbind, lapply(split(validation, validation$outcome), function(x) {
+  a <- tapply(x$auc, x$model, `[`, 1)
+  data.frame(outcome = x$outcome[1], auc_debt_assets = a[["debt_assets only"]],
+             auc_with_gaps = a[["debt_assets + gap_long + gap_short"]],
+             gain_components = a[["debt_assets + gap_long + gap_short"]] - a[["debt_assets only"]],
+             gain_total = a[["debt_assets + gap_total"]] - a[["debt_assets only"]])
+}))
+kable(auc_gain, digits = 4, row.names = FALSE, caption = "AUC with and without the gaps")
+```
+
+**Does the gap separate risk within a leverage level?** Outcome rates by
+`gap_total` quintile, within terciles of `debt_assets`.
+
+```{r quintiles}
+tercile <- cut(rank(gb$debt_assets, ties.method = "first"), 3, labels = c("low", "middle", "high"))
+quint <- ave(gb$gap_total, tercile, FUN = function(x) cut(rank(x, ties.method = "first"), 5, labels = FALSE))
+rates <- aggregate(v[c("deficit", "una_decline", "cash_drop")],
+                   by = list(debt_assets_tercile = tercile, gap_total_quintile = quint), FUN = mean)
+kable(rates[order(rates$debt_assets_tercile, rates$gap_total_quintile), ], digits = 3, row.names = FALSE)
+```
+
+# 6. Verdicts against the plan
+
+```{r verdicts}
+with_gaps <- validation[validation$model == "debt_assets + gap_long + gap_short" &
+                        validation$term %in% c("gap_long", "gap_short"), ]
+verdicts <- data.frame(
+  outcome = with_gaps$outcome, gap = with_gaps$term,
+  estimate_per_sd = with_gaps$estimate, lower_99 = with_gaps$lower_99,
+  meets_expectation = with_gaps$estimate > 0 & with_gaps$lower_99 > 0, row.names = NULL)
+verdicts <- merge(verdicts, auc_gain[c("outcome", "gain_components")], by = "outcome")
+kable(verdicts, digits = 4, row.names = FALSE)
+
+short_cash <- with_gaps$estimate[with_gaps$outcome == "cash_drop" & with_gaps$term == "gap_short"]
+short_strongest <- short_cash > max(with_gaps$estimate[with_gaps$term == "gap_short" & with_gaps$outcome != "cash_drop"])
+```
+
+`gap_short` `r if (short_strongest) "does" else "does not"` predict the cash
+drawdown more strongly than it predicts the other two outcomes, as expected.
+
+These are one-year associations within a filing. Organizations may carry debt
+beyond their assets for reasons the benchmark cannot see: construction
+projects in progress, leases recorded as liabilities, or deferred revenue from
+multi-year contracts, which is a short-term liability but not a sign of strain.
+
+# 7. Checks added after the first run
+
+Sections 3-6 follow the plan. The first run exposed two problems the plan did
+not anticipate, so this section adds checks. They are labeled as additions and
+do not replace the planned results above.
+
+1. **The two-part benchmark is badly calibrated.** Predicted totals are more
+   than twice actual totals, and the top prediction decile overshoots. Log
+   residuals are so dispersed that Duan's constant smearing factor is near 4,
+   and it misallocates across the range. The standard alternative is **Poisson
+   pseudo-maximum likelihood (PPML)** on dollars with zeros included. It
+   estimates E[debt | assets] directly, with no retransformation.
+2. **The cash-drawdown outcome has a floor.** Cash cannot fall by a month of
+   expenses unless an organization starts the year with at least that much.
+   Organizations with very negative gaps tend to hold few assets relative to
+   expenses, and therefore little cash, so part of the gap-drawdown association
+   could be mechanical. The added check controls for beginning-of-year months
+   of cash and assets per dollar of expenses.
+
+```{r ppml}
+mg_p <- matching_gap(eoy[fit_rows, ], "ppml")
+gaps_p <- mg_p$gaps
+data.frame(model = c("long-term debt", "short-term liabilities"),
+           converged = sapply(mg_p$fits, `[[`, "converged"), row.names = NULL)
+kable(data.frame(line = c("long-term debt", "short-term liabilities"),
+                 total_actual = c(sum(m_fit$lt), sum(m_fit$st)),
+                 total_predicted = c(sum(gaps_p$pred_long), sum(gaps_p$pred_short)),
+                 ratio = c(sum(gaps_p$pred_long) / sum(m_fit$lt), sum(gaps_p$pred_short) / sum(m_fit$st))),
+      digits = 3, format.args = list(big.mark = ","), caption = "PPML calibration, totals")
+kable(calib(m_fit$lt, gaps_p$pred_long), digits = 0, format.args = list(big.mark = ","),
+      caption = "PPML: long-term debt by decile of prediction")
+kable(calib(m_fit$st, gaps_p$pred_short), digits = 0, format.args = list(big.mark = ","),
+      caption = "PPML: short-term liabilities by decile of prediction")
+kable(t(sapply(gaps_p[c("gap_long", "gap_short", "gap_total")], quantile, qs)), digits = 3,
+      caption = "PPML gaps, quantiles")
+```
+
+```{r validation-grid}
+floor_controls <- cbind(size_b,
+                        ns(log1p(12 * b$cash / b$E), df = 4),
+                        ns(log(b$A / b$E), df = 4))
+colnames(floor_controls) <- c(colnames(size_b), paste0("cash_months", 1:4), paste0("asset_intensity", 1:4))
+gb_p <- apply_gap(b, mg_p$fits, mg_p$basis)
+
+run_validation <- function(g, controls) {
+  vv <- data.frame(v[c("deficit", "una_decline", "cash_drop")],
+                   debt_assets = wz(g$debt_assets), gap_long = wz(g$gap_long),
+                   gap_short = wz(g$gap_short), gap_total = wz(g$gap_total))
+  do.call(rbind, lapply(c("deficit", "una_decline", "cash_drop"), function(o) {
+    y <- vv[[o]]
+    base <- lpm(y, cbind(controls, debt_assets = vv$debt_assets))
+    comp <- lpm(y, cbind(controls, as.matrix(vv[c("debt_assets", "gap_long", "gap_short")])))
+    tot  <- lpm(y, cbind(controls, as.matrix(vv[c("debt_assets", "gap_total")])))
+    pick <- function(f, t) f$coef[f$coef$term == t, ]
+    lo <- function(r) r$estimate - qnorm(0.995) * r$se
+    data.frame(outcome = o,
+               gap_long = pick(comp, "gap_long")$estimate, gap_long_lower99 = lo(pick(comp, "gap_long")),
+               gap_short = pick(comp, "gap_short")$estimate, gap_short_lower99 = lo(pick(comp, "gap_short")),
+               gap_total = pick(tot, "gap_total")$estimate, gap_total_lower99 = lo(pick(tot, "gap_total")),
+               auc_debt_assets = auc(base$fitted, y),
+               auc_gain_components = auc(comp$fitted, y) - auc(base$fitted, y),
+               auc_gain_total = auc(tot$fitted, y) - auc(base$fitted, y))
+  }))
+}
+
+grid <- rbind(
+  cbind(benchmark = "two-part (planned)", controls = "planned", run_validation(gb, size_b)),
+  cbind(benchmark = "two-part (planned)", controls = "+ cash months, asset intensity", run_validation(gb, floor_controls)),
+  cbind(benchmark = "PPML", controls = "planned", run_validation(gb_p, size_b)),
+  cbind(benchmark = "PPML", controls = "+ cash months, asset intensity", run_validation(gb_p, floor_controls)))
+kable(grid, digits = 4, row.names = FALSE,
+      caption = "Gap coefficients (per SD) and AUC gains, by benchmark and controls")
+```
+
+# 8. What the checks show
+
+```{r findings-values, include = FALSE}
+gr <- function(bm, ct, o, col) grid[grid$benchmark == bm & grid$controls == ct & grid$outcome == o, col]
+P <- "planned"; F <- "+ cash months, asset intensity"; TP <- "two-part (planned)"; PP <- "PPML"
+```
+
+* **Cash drawdown.** With the planned controls, `gap_total` (two-part) raises
+  the drawdown probability by `r fmt(gr(TP, P, "cash_drop", "gap_total"), 3)` per
+  SD and adds `r fmt(gr(TP, P, "cash_drop", "auc_gain_total"), 3)` AUC. With
+  beginning-of-year cash months and asset intensity controlled, the coefficient
+  is `r fmt(gr(TP, F, "cash_drop", "gap_total"), 3)` and the AUC gain
+  `r fmt(gr(TP, F, "cash_drop", "auc_gain_total"), 4)`. The PPML version gives
+  `r fmt(gr(PP, F, "cash_drop", "gap_total"), 3)`. The planned association was
+  the cash floor.
+* **Deficits and net-asset declines.** `gap_long` stays positive under every
+  benchmark and control set. With PPML and the added controls it is
+  (`r fmt(gr(PP, F, "deficit", "gap_long"), 3)` for deficits,
+  `r fmt(gr(PP, F, "una_decline", "gap_long"), 3)` for declines, per SD). The
+  largest AUC gain in those rows is
+  `r fmt(max(grid$auc_gain_components[grid$outcome != "cash_drop"]), 4)`.
+* **Short-term gap.** `gap_short` is negative for deficits and net-asset
+  declines in every row: short-term liabilities beyond what current assets
+  support go with better operating results, not worse.
+* **Calibration.** PPML matches total dollars by construction and tracks the
+  top decile closely, but over-predicts the middle deciles, where most
+  organizations carry no long-term debt.
+
+```{r save-indicator-final}
+if (nzchar(params$out_file)) {
+  out <- cbind(gaps, setNames(gaps_p[c("pred_long", "pred_short", "gap_long", "gap_short", "gap_total")],
+                              paste0(c("pred_long", "pred_short", "gap_long", "gap_short", "gap_total"), "_ppml")))
+  saveRDS(out, file.path(params$data_dir, params$out_file))
+}
+```
+
+```{r save-results, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(fits = mg$fits, calibration_long = calib(m_fit$lt, gaps$pred_long),
+               calibration_short = calib(m_fit$st, gaps$pred_short),
+               quantiles = t(sapply(gaps[c("gap_long", "gap_short", "gap_total", "debt_assets")], quantile, qs)),
+               share_positive = sapply(gaps[c("gap_long", "gap_short", "gap_total")], function(x) mean(x > 0)),
+               spearman = sapply(gaps[c("gap_long", "gap_short", "gap_total")],
+                                 function(x) cor(x, gaps$debt_assets, method = "spearman")),
+               totals = c(lt = sum(m_fit$lt), lt_pred = sum(gaps$pred_long),
+                          st = sum(m_fit$st), st_pred = sum(gaps$pred_short)),
+               base_rates = colMeans(v[c("deficit", "una_decline", "cash_drop")]),
+               predictor_cor = cor(v[c("debt_assets", "gap_long", "gap_short", "gap_total")]),
+               validation = validation, auc_gain = auc_gain, rates = rates, verdicts = verdicts,
+               short_strongest = short_strongest, n_fit = sum(fit_rows), n_val = sum(val_rows),
+               ppml = list(converged = sapply(mg_p$fits, `[[`, "converged"),
+                           totals = c(lt_pred = sum(gaps_p$pred_long), st_pred = sum(gaps_p$pred_short)),
+                           calibration_long = calib(m_fit$lt, gaps_p$pred_long),
+                           calibration_short = calib(m_fit$st, gaps_p$pred_short),
+                           quantiles = t(sapply(gaps_p[c("gap_long", "gap_short", "gap_total")], quantile, qs)),
+                           spearman = sapply(gaps_p[c("gap_long", "gap_short", "gap_total")],
+                                             function(x) cor(x, gaps_p$debt_assets, method = "spearman"))),
+               grid = grid),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

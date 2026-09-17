@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>H4: Does Earned Revenue Replace Fundraising?</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">H4: Does Earned Revenue Replace
+Fundraising?</h1>
+<h3 class="subtitle">Pre-specified cross-section, plus the COVID
+earned-revenue shock</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#pre-specification-test-a" id="toc-pre-specification-test-a">1. Pre-specification (test A)</a></li>
+<li><a href="#data" id="toc-data">2. Data</a></li>
+<li><a href="#test-a-the-pre-specified-cross-section" id="toc-test-a-the-pre-specified-cross-section">3. Test A: the
+pre-specified cross-section</a></li>
+<li><a href="#test-b-the-covid-earned-revenue-shock-exploratory" id="toc-test-b-the-covid-earned-revenue-shock-exploratory">4. Test B:
+the COVID earned-revenue shock (exploratory)</a></li>
+<li><a href="#findings" id="toc-findings">5. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p>H4 from the ratio-correlation memo: <strong>organizations that earn
+their revenue spend less on raising it.</strong> The correlation that
+motivated it is <code>self_suff</code> x <code>fundr_exp</code> = -0.21,
+which is -0.24 beyond the conditional construction null, one of the few
+relationships in the 14-ratio set that survives that benchmark.</p>
+<p>Two tests:</p>
+<ul>
+<li><strong>A. Pre-specified cross-section.</strong> Fundraising expense
+on program service revenue, holding contributions and size. Written in
+the memo before estimation and repeated below unchanged.</li>
+<li><strong>B. The COVID shock (exploratory).</strong> Program service
+revenue fell from 16.5% of revenue in 2019 to 10.6% in 2020 and
+recovered by 2023. If earned revenue and fundraising are substitutes,
+organizations that lost the most earned revenue should have raised
+fundraising effort afterwards. This design was not pre-specified; it is
+labeled exploratory throughout.</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">library</span>(splines)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>})</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span></code></pre></div>
+</div>
+<div id="pre-specification-test-a" class="section level1">
+<h1>1. Pre-specification (test A)</h1>
+<table>
+<colgroup>
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+<col width="25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Outcome</th>
+<th>Coefficient that carries the test</th>
+<th>Support if</th>
+<th>Reject if</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Any fundraising expense; log fundraising expense</td>
+<td>log program service revenue, holding log contributions and size</td>
+<td>&lt; 0 in both parts, with the contributions coefficient &gt; 0</td>
+<td>&gt;= 0</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Sample.</strong> Pooled tax years 2022 and 2023, December
+year-ends, organizations that filed a full 990 every year
+2019-2023.</li>
+<li><strong>Models.</strong> Linear probability model for any
+fundraising expense; OLS on log fundraising expense among filers
+reporting a positive amount. Predictors enter as log(1 + x) plus an
+indicator for x &gt; 0. Size controls: 4-df natural splines of log
+expenses and log(1 + total assets).</li>
+<li><strong>Evidence rule.</strong> Same as H1-H3: the estimate must
+have the predicted sign and lie beyond the 0.5th or 99.5th percentile of
+200 refits in which the program-revenue block is shuffled within cells
+of expenses x assets per dollar of expenses.</li>
+</ul>
+</div>
+<div id="data" class="section level1">
+<h1>2. Data</h1>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">readRDS</span>(params<span class="sc">$</span>panel_file))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>num <span class="ot">&lt;-</span> <span class="cf">function</span>(x) { x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(x); x[<span class="fu">is.na</span>(x)] <span class="ot">&lt;-</span> <span class="dv">0</span>; x }</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>forms <span class="ot">&lt;-</span> d[, .(<span class="at">n990 =</span> <span class="fu">sum</span>(RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span>), <span class="at">nez =</span> <span class="fu">sum</span>(RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990EZ&quot;</span>)), by <span class="ot">=</span> EIN2]</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>x <span class="ot">&lt;-</span> d[EIN2 <span class="sc">%chin%</span> forms[n990 <span class="sc">&gt;=</span> <span class="dv">5</span> <span class="sc">&amp;</span> nez <span class="sc">==</span> <span class="dv">0</span>, EIN2] <span class="sc">&amp;</span> RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span> <span class="sc">&amp;</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>       <span class="fu">substr</span>(TAX_PERIOD_END_DATE, <span class="dv">6</span>, <span class="dv">7</span>) <span class="sc">==</span> <span class="st">&quot;12&quot;</span>]</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">rm</span>(d); <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>v <span class="ot">&lt;-</span> <span class="fu">data.table</span>(</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">EIN2 =</span> x<span class="sc">$</span>EIN2, <span class="at">year =</span> x<span class="sc">$</span>TAX_YEAR,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">subsector =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(x<span class="sc">$</span>nteev2_subsector) <span class="sc">|</span> x<span class="sc">$</span>nteev2_subsector <span class="sc">==</span> <span class="st">&quot;&quot;</span>, <span class="st">&quot;unknown&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>                     <span class="fu">as.character</span>(x<span class="sc">$</span>nteev2_subsector)),</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="at">E =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_TOT), <span class="at">A =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_10_ASSET_TOT_EOY), <span class="at">R =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_TOT_TOT),</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="at">fundr =</span> <span class="fu">pmax</span>(<span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_FUNDR), <span class="dv">0</span>),</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  <span class="at">prog  =</span> <span class="fu">pmax</span>(<span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_PROG_TOT_TOT), <span class="dv">0</span>),</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  <span class="at">contr =</span> <span class="fu">pmax</span>(<span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_CONTR_TOT), <span class="dv">0</span>))</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="fu">rm</span>(x); <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>v <span class="ot">&lt;-</span> v[E <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> A <span class="sc">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="fu">kable</span>(v[, .(<span class="at">org_years =</span> .N, <span class="at">any_fundraising =</span> <span class="fu">mean</span>(fundr <span class="sc">&gt;</span> <span class="dv">0</span>), <span class="at">any_program_revenue =</span> <span class="fu">mean</span>(prog <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>            <span class="at">median_program_share =</span> <span class="fu">median</span>(prog <span class="sc">/</span> <span class="fu">pmax</span>(R, <span class="dv">1</span>))), <span class="at">by =</span> year][<span class="fu">order</span>(year)], <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="8%" />
+<col width="13%" />
+<col width="21%" />
+<col width="27%" />
+<col width="28%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">year</th>
+<th align="right">org_years</th>
+<th align="right">any_fundraising</th>
+<th align="right">any_program_revenue</th>
+<th align="right">median_program_share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">2,019</td>
+<td align="right">127,251</td>
+<td align="right">0.334</td>
+<td align="right">0.641</td>
+<td align="right">0.163</td>
+</tr>
+<tr class="even">
+<td align="right">2,020</td>
+<td align="right">127,126</td>
+<td align="right">0.327</td>
+<td align="right">0.632</td>
+<td align="right">0.103</td>
+</tr>
+<tr class="odd">
+<td align="right">2,021</td>
+<td align="right">127,179</td>
+<td align="right">0.330</td>
+<td align="right">0.635</td>
+<td align="right">0.117</td>
+</tr>
+<tr class="even">
+<td align="right">2,022</td>
+<td align="right">127,171</td>
+<td align="right">0.332</td>
+<td align="right">0.639</td>
+<td align="right">0.148</td>
+</tr>
+<tr class="odd">
+<td align="right">2,023</td>
+<td align="right">126,500</td>
+<td align="right">0.335</td>
+<td align="right">0.642</td>
+<td align="right">0.152</td>
+</tr>
+<tr class="even">
+<td align="right">2,024</td>
+<td align="right">111,815</td>
+<td align="right">0.331</td>
+<td align="right">0.642</td>
+<td align="right">0.150</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="test-a-the-pre-specified-cross-section" class="section level1">
+<h1>3. Test A: the pre-specified cross-section</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>size_cells <span class="ot">&lt;-</span> <span class="cf">function</span>(E, A, <span class="at">bins =</span> <span class="dv">20</span>) {</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  eb <span class="ot">&lt;-</span> <span class="fu">cut</span>(<span class="fu">rank</span>(E, <span class="at">ties.method =</span> <span class="st">&quot;first&quot;</span>), bins, <span class="at">labels =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  ab <span class="ot">&lt;-</span> <span class="fu">ave</span>(A <span class="sc">/</span> E, eb, <span class="at">FUN =</span> <span class="cf">function</span>(z) <span class="fu">cut</span>(<span class="fu">rank</span>(z, <span class="at">ties.method =</span> <span class="st">&quot;first&quot;</span>), bins, <span class="at">labels =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  (eb <span class="sc">-</span> <span class="dv">1</span>) <span class="sc">*</span> bins <span class="sc">+</span> ab</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>}</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>permute_within <span class="ot">&lt;-</span> <span class="cf">function</span>(cells) {</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  n <span class="ot">&lt;-</span> <span class="fu">length</span>(cells); p <span class="ot">&lt;-</span> <span class="fu">integer</span>(n)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  p[<span class="fu">order</span>(cells, <span class="fu">seq_len</span>(n))] <span class="ot">&lt;-</span> <span class="fu">order</span>(cells, <span class="fu">runif</span>(n))</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  p</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>}</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>robust_fit <span class="ot">&lt;-</span> <span class="cf">function</span>(y, W) {</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  XtXi <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(W))</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>  b <span class="ot">&lt;-</span> <span class="fu">drop</span>(XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W, y))</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>  e <span class="ot">&lt;-</span> <span class="fu">drop</span>(y <span class="sc">-</span> W <span class="sc">%*%</span> b)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>  V <span class="ot">&lt;-</span> XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W <span class="sc">*</span> e) <span class="sc">%*%</span> XtXi <span class="sc">*</span> <span class="fu">nrow</span>(W) <span class="sc">/</span> (<span class="fu">nrow</span>(W) <span class="sc">-</span> <span class="fu">ncol</span>(W))</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">term =</span> <span class="fu">colnames</span>(W), <span class="at">estimate =</span> b, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(V)), <span class="at">row.names =</span> <span class="cn">NULL</span>)</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>}</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co"># Coefficient on the first column of a block, everything else held fixed (FWL).</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>perm_block <span class="ot">&lt;-</span> <span class="cf">function</span>(block, others, models, cells, B) {</span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  prep <span class="ot">&lt;-</span> <span class="fu">lapply</span>(models, <span class="cf">function</span>(md) {</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>    q <span class="ot">&lt;-</span> <span class="fu">qr</span>(others[md<span class="sc">$</span>rows, , <span class="at">drop =</span> <span class="cn">FALSE</span>]); <span class="fu">list</span>(<span class="at">q =</span> q, <span class="at">ry =</span> <span class="fu">qr.resid</span>(q, md<span class="sc">$</span>y))</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  })</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  coef_for <span class="ot">&lt;-</span> <span class="cf">function</span>(Bf) <span class="fu">sapply</span>(<span class="fu">names</span>(models), <span class="cf">function</span>(nm) {</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>    R <span class="ot">&lt;-</span> <span class="fu">qr.resid</span>(prep[[nm]]<span class="sc">$</span>q, Bf[models[[nm]]<span class="sc">$</span>rows, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>    <span class="fu">solve</span>(<span class="fu">crossprod</span>(R), <span class="fu">crossprod</span>(R, prep[[nm]]<span class="sc">$</span>ry))[<span class="dv">1</span>]</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>  })</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">observed =</span> <span class="fu">coef_for</span>(block),</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>       <span class="at">perms =</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(<span class="fu">seq_len</span>(B), <span class="cf">function</span>(i)</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>         <span class="fu">coef_for</span>(block[<span class="fu">permute_within</span>(cells), , <span class="at">drop =</span> <span class="cn">FALSE</span>]))))</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>a <span class="ot">&lt;-</span> v[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>]</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>blocks <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">program =</span> <span class="fu">cbind</span>(<span class="at">log_program =</span> <span class="fu">log1p</span>(a<span class="sc">$</span>prog), <span class="at">any_program =</span> <span class="fu">as.numeric</span>(a<span class="sc">$</span>prog <span class="sc">&gt;</span> <span class="dv">0</span>)),</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">contributions =</span> <span class="fu">cbind</span>(<span class="at">log_contributions =</span> <span class="fu">log1p</span>(a<span class="sc">$</span>contr), <span class="at">any_contributions =</span> <span class="fu">as.numeric</span>(a<span class="sc">$</span>contr <span class="sc">&gt;</span> <span class="dv">0</span>)))</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>sE <span class="ot">&lt;-</span> <span class="fu">ns</span>(<span class="fu">log</span>(a<span class="sc">$</span>E), <span class="at">df =</span> <span class="dv">4</span>); <span class="fu">colnames</span>(sE) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;size_E&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>sA <span class="ot">&lt;-</span> <span class="fu">ns</span>(<span class="fu">log1p</span>(a<span class="sc">$</span>A), <span class="at">df =</span> <span class="dv">4</span>); <span class="fu">colnames</span>(sA) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;size_A&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, sE, sA, <span class="at">year2023 =</span> <span class="fu">as.numeric</span>(a<span class="sc">$</span>year <span class="sc">==</span> <span class="dv">2023</span>))</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>W <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="fu">do.call</span>(cbind, blocks), Z)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>models <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">any_fundraising =</span> <span class="fu">list</span>(<span class="at">rows =</span> <span class="fu">rep</span>(<span class="cn">TRUE</span>, <span class="fu">nrow</span>(a)), <span class="at">y =</span> <span class="fu">as.numeric</span>(a<span class="sc">$</span>fundr <span class="sc">&gt;</span> <span class="dv">0</span>)),</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>               <span class="at">log_fundraising =</span> <span class="fu">list</span>(<span class="at">rows =</span> a<span class="sc">$</span>fundr <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="at">y =</span> <span class="fu">log</span>(a<span class="sc">$</span>fundr[a<span class="sc">$</span>fundr <span class="sc">&gt;</span> <span class="dv">0</span>])))</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>coefs <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(models), <span class="cf">function</span>(nm) {</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">robust_fit</span>(models[[nm]]<span class="sc">$</span>y, W[models[[nm]]<span class="sc">$</span>rows, , <span class="at">drop =</span> <span class="cn">FALSE</span>])</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">model =</span> nm, <span class="at">n =</span> <span class="fu">sum</span>(models[[nm]]<span class="sc">$</span>rows),</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>             f[f<span class="sc">$</span>term <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;log_program&quot;</span>, <span class="st">&quot;log_contributions&quot;</span>), ])</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>}))</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>cells <span class="ot">&lt;-</span> <span class="fu">size_cells</span>(a<span class="sc">$</span>E, a<span class="sc">$</span>A)</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>pp <span class="ot">&lt;-</span> <span class="fu">perm_block</span>(blocks<span class="sc">$</span>program, <span class="fu">cbind</span>(blocks<span class="sc">$</span>contributions, Z), models, cells, params<span class="sc">$</span>perms)</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>pc <span class="ot">&lt;-</span> <span class="fu">perm_block</span>(blocks<span class="sc">$</span>contributions, <span class="fu">cbind</span>(blocks<span class="sc">$</span>program, Z), models, cells, params<span class="sc">$</span>perms)</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>qs <span class="ot">&lt;-</span> <span class="cf">function</span>(m, nm) <span class="fu">quantile</span>(m[, nm], <span class="fu">c</span>(<span class="fl">0.005</span>, <span class="fl">0.995</span>))</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>coefs[, perm_lo <span class="sc">:=</span> <span class="fu">c</span>(<span class="fu">qs</span>(pp<span class="sc">$</span>perms, <span class="st">&quot;any_fundraising&quot;</span>)[<span class="dv">1</span>], <span class="fu">qs</span>(pc<span class="sc">$</span>perms, <span class="st">&quot;any_fundraising&quot;</span>)[<span class="dv">1</span>],</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>                     <span class="fu">qs</span>(pp<span class="sc">$</span>perms, <span class="st">&quot;log_fundraising&quot;</span>)[<span class="dv">1</span>], <span class="fu">qs</span>(pc<span class="sc">$</span>perms, <span class="st">&quot;log_fundraising&quot;</span>)[<span class="dv">1</span>])]</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>coefs[, perm_hi <span class="sc">:=</span> <span class="fu">c</span>(<span class="fu">qs</span>(pp<span class="sc">$</span>perms, <span class="st">&quot;any_fundraising&quot;</span>)[<span class="dv">2</span>], <span class="fu">qs</span>(pc<span class="sc">$</span>perms, <span class="st">&quot;any_fundraising&quot;</span>)[<span class="dv">2</span>],</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>                     <span class="fu">qs</span>(pp<span class="sc">$</span>perms, <span class="st">&quot;log_fundraising&quot;</span>)[<span class="dv">2</span>], <span class="fu">qs</span>(pc<span class="sc">$</span>perms, <span class="st">&quot;log_fundraising&quot;</span>)[<span class="dv">2</span>])]</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>coefs[, meets_rule <span class="sc">:=</span> <span class="fu">ifelse</span>(term <span class="sc">==</span> <span class="st">&quot;log_program&quot;</span>, estimate <span class="sc">&lt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> estimate <span class="sc">&lt;</span> perm_lo,</span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>                             estimate <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> estimate <span class="sc">&gt;</span> perm_hi)]</span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a><span class="fu">kable</span>(coefs, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Test A: program revenue and contributions in both parts&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Test A: program revenue and contributions in both
+parts</caption>
+<colgroup>
+<col width="19%" />
+<col width="8%" />
+<col width="21%" />
+<col width="10%" />
+<col width="7%" />
+<col width="9%" />
+<col width="9%" />
+<col width="13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">model</th>
+<th align="right">n</th>
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">se</th>
+<th align="right">perm_lo</th>
+<th align="right">perm_hi</th>
+<th align="left">meets_rule</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">any_fundraising</td>
+<td align="right">253671</td>
+<td align="left">log_program</td>
+<td align="right">-0.0366</td>
+<td align="right">7e-04</td>
+<td align="right">-0.0020</td>
+<td align="right">0.0009</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">any_fundraising</td>
+<td align="right">253671</td>
+<td align="left">log_contributions</td>
+<td align="right">0.0693</td>
+<td align="right">5e-04</td>
+<td align="right">-0.0002</td>
+<td align="right">0.0028</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td align="left">log_fundraising</td>
+<td align="right">84588</td>
+<td align="left">log_program</td>
+<td align="right">-0.0621</td>
+<td align="right">4e-03</td>
+<td align="right">-0.0067</td>
+<td align="right">0.0078</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td align="left">log_fundraising</td>
+<td align="right">84588</td>
+<td align="left">log_contributions</td>
+<td align="right">0.2800</td>
+<td align="right">7e-03</td>
+<td align="right">-0.0083</td>
+<td align="right">0.0079</td>
+<td align="left">TRUE</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>verdict_a <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">all</span>(coefs[term <span class="sc">==</span> <span class="st">&quot;log_program&quot;</span>, meets_rule])) <span class="st">&quot;supported&quot;</span> <span class="cf">else</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>             <span class="cf">if</span> (<span class="fu">any</span>(coefs[term <span class="sc">==</span> <span class="st">&quot;log_program&quot;</span>, estimate] <span class="sc">&gt;=</span> <span class="dv">0</span>)) <span class="st">&quot;rejected&quot;</span> <span class="cf">else</span> <span class="st">&quot;inconclusive&quot;</span></span></code></pre></div>
+<p>The pre-specified verdict for H4 is <strong>supported</strong>.</p>
+<p><strong>Within organizations.</strong> The cross-section compares
+different organizations. The panel also asks whether one organization’s
+fundraising moves when its own earned revenue moves, using 2019, 2022,
+and 2023 and removing each organization’s mean.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>fe <span class="ot">&lt;-</span> v[year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2019</span>, <span class="dv">2022</span>, <span class="dv">2023</span>)]</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>dm <span class="ot">&lt;-</span> <span class="cf">function</span>(z, g) z <span class="sc">-</span> <span class="fu">ave</span>(z, g, <span class="at">FUN =</span> mean)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>g <span class="ot">&lt;-</span> fe<span class="sc">$</span>EIN2</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>Wfe <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">log_program =</span> <span class="fu">dm</span>(<span class="fu">log1p</span>(fe<span class="sc">$</span>prog), g), <span class="at">log_contributions =</span> <span class="fu">dm</span>(<span class="fu">log1p</span>(fe<span class="sc">$</span>contr), g),</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>             <span class="at">log_expenses =</span> <span class="fu">dm</span>(<span class="fu">log</span>(fe<span class="sc">$</span>E), g), <span class="at">log_assets =</span> <span class="fu">dm</span>(<span class="fu">log1p</span>(fe<span class="sc">$</span>A), g),</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>             <span class="at">y2022 =</span> <span class="fu">dm</span>(<span class="fu">as.numeric</span>(fe<span class="sc">$</span>year <span class="sc">==</span> <span class="dv">2022</span>), g), <span class="at">y2023 =</span> <span class="fu">dm</span>(<span class="fu">as.numeric</span>(fe<span class="sc">$</span>year <span class="sc">==</span> <span class="dv">2023</span>), g))</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>fe_fit <span class="ot">&lt;-</span> <span class="fu">robust_fit</span>(<span class="fu">dm</span>(<span class="fu">log1p</span>(fe<span class="sc">$</span>fundr), g), Wfe)</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a><span class="fu">kable</span>(fe_fit[fe_fit<span class="sc">$</span>term <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;log_program&quot;</span>, <span class="st">&quot;log_contributions&quot;</span>), ], <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Within-organization (2019, 2022, 2023)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Within-organization (2019, 2022, 2023)</caption>
+<thead>
+<tr class="header">
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">log_program</td>
+<td align="right">0.0143</td>
+<td align="right">0.0022</td>
+</tr>
+<tr class="even">
+<td align="left">log_contributions</td>
+<td align="right">0.0245</td>
+<td align="right">0.0013</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="test-b-the-covid-earned-revenue-shock-exploratory" class="section level1">
+<h1>4. Test B: the COVID earned-revenue shock (exploratory)</h1>
+<p>If the two are substitutes, an organization that lost earned revenue
+in the pandemic should have leaned harder on fundraising afterwards. The
+shock is the change in program revenue from 2019 to 2021; the response
+is the change in fundraising expense from 2019 to 2023. Both are log
+changes. Subsector fixed effects absorb the fact that the shock hit
+arts, education, and health differently, and the 2019 levels of
+fundraising and contributions allow for mean reversion.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>w <span class="ot">&lt;-</span> <span class="fu">dcast</span>(v[year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2019</span>, <span class="dv">2021</span>, <span class="dv">2023</span>)], EIN2 <span class="sc">+</span> subsector <span class="sc">~</span> year,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>           <span class="at">value.var =</span> <span class="fu">c</span>(<span class="st">&quot;fundr&quot;</span>, <span class="st">&quot;prog&quot;</span>, <span class="st">&quot;contr&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;A&quot;</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">setnames</span>(w, <span class="fu">gsub</span>(<span class="st">&quot;_(</span><span class="sc">\\</span><span class="st">d{4})$&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1&quot;</span>, <span class="fu">names</span>(w)))</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co"># Organizations that moved their fiscal year end drop out of the December</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a><span class="co"># filter in some years, leaving gaps in the reshape; those rows cannot be used.</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>need <span class="ot">&lt;-</span> <span class="fu">setdiff</span>(<span class="fu">names</span>(w), <span class="fu">c</span>(<span class="st">&quot;EIN2&quot;</span>, <span class="st">&quot;subsector&quot;</span>))</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>complete <span class="ot">&lt;-</span> <span class="fu">complete.cases</span>(w[, ..need])</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">format</span>(<span class="fu">sum</span>(<span class="sc">!</span>complete), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>), <span class="st">&quot;of&quot;</span>, <span class="fu">format</span>(<span class="fu">nrow</span>(w), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="st">&quot;organizations dropped for a missing December filing in 2019, 2021, or 2023</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## 5,244 of 129,412 organizations dropped for a missing December filing in 2019, 2021, or 2023</code></pre>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>w <span class="ot">&lt;-</span> w[complete][prog2019 <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> E2019 <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> A2019 <span class="sc">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>w[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">shock =</span> <span class="fu">log1p</span>(prog2021) <span class="sc">-</span> <span class="fu">log1p</span>(prog2019),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>         <span class="at">d_fundraising =</span> <span class="fu">log1p</span>(fundr2023) <span class="sc">-</span> <span class="fu">log1p</span>(fundr2019),</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>         <span class="at">d_contributions =</span> <span class="fu">log1p</span>(contr2023) <span class="sc">-</span> <span class="fu">log1p</span>(contr2019))]</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="fu">kable</span>(w[, .(<span class="at">organizations =</span> .N, <span class="at">median_shock =</span> <span class="fu">median</span>(shock),</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>            <span class="at">pct_lost_earned_revenue =</span> <span class="fu">mean</span>(shock <span class="sc">&lt;</span> <span class="dv">0</span>),</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>            <span class="at">median_change_fundraising =</span> <span class="fu">median</span>(d_fundraising))], <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="18%" />
+<col width="16%" />
+<col width="31%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">organizations</th>
+<th align="right">median_shock</th>
+<th align="right">pct_lost_earned_revenue</th>
+<th align="right">median_change_fundraising</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">79,895</td>
+<td align="right">-0.033</td>
+<td align="right">0.547</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>sub <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> subsector, <span class="at">data =</span> <span class="fu">as.data.frame</span>(w))[, <span class="sc">-</span><span class="dv">1</span>, drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>Zs <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, <span class="fu">ns</span>(<span class="fu">log</span>(w<span class="sc">$</span>E2019), <span class="at">df =</span> <span class="dv">4</span>), <span class="fu">ns</span>(<span class="fu">log1p</span>(w<span class="sc">$</span>A2019), <span class="at">df =</span> <span class="dv">4</span>),</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>            <span class="at">log_fundraising_2019 =</span> <span class="fu">log1p</span>(w<span class="sc">$</span>fundr2019), <span class="at">any_fundraising_2019 =</span> <span class="fu">as.numeric</span>(w<span class="sc">$</span>fundr2019 <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>            <span class="at">log_contributions_2019 =</span> <span class="fu">log1p</span>(w<span class="sc">$</span>contr2019), sub)</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="fu">colnames</span>(Zs) <span class="ot">&lt;-</span> <span class="fu">make.unique</span>(<span class="fu">colnames</span>(Zs))</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>shock_fit <span class="ot">&lt;-</span> <span class="cf">function</span>(y) {</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">robust_fit</span>(y, <span class="fu">cbind</span>(<span class="at">shock =</span> w<span class="sc">$</span>shock, Zs))</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>  f[f<span class="sc">$</span>term <span class="sc">==</span> <span class="st">&quot;shock&quot;</span>, ]</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>}</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>shock_res <span class="ot">&lt;-</span> <span class="fu">rbind</span>(</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="at">outcome =</span> <span class="st">&quot;change in fundraising expense, 2019-2023&quot;</span>, <span class="fu">shock_fit</span>(w<span class="sc">$</span>d_fundraising)),</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="at">outcome =</span> <span class="st">&quot;change in contributions, 2019-2023&quot;</span>, <span class="fu">shock_fit</span>(w<span class="sc">$</span>d_contributions)))</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>shock_res<span class="sc">$</span>per_sd <span class="ot">&lt;-</span> shock_res<span class="sc">$</span>estimate <span class="sc">*</span> <span class="fu">sd</span>(w<span class="sc">$</span>shock)</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="fu">kable</span>(shock_res, <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Exploratory: response to the 2019-2021 earned-revenue shock&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Exploratory: response to the 2019-2021 earned-revenue
+shock</caption>
+<colgroup>
+<col width="57%" />
+<col width="8%" />
+<col width="12%" />
+<col width="9%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">se</th>
+<th align="right">per_sd</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">change in fundraising expense, 2019-2023</td>
+<td align="left">shock</td>
+<td align="right">0.0054</td>
+<td align="right">0.0050</td>
+<td align="right">0.0125</td>
+</tr>
+<tr class="even">
+<td align="left">change in contributions, 2019-2023</td>
+<td align="left">shock</td>
+<td align="right">-0.0657</td>
+<td align="right">0.0059</td>
+<td align="right">-0.1525</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># Extensive margin: did organizations with no fundraising in 2019 start by 2023?</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>started <span class="ot">&lt;-</span> w[fundr2019 <span class="sc">==</span> <span class="dv">0</span>]</span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>start_fit <span class="ot">&lt;-</span> <span class="fu">robust_fit</span>(<span class="fu">as.numeric</span>(started<span class="sc">$</span>fundr2023 <span class="sc">&gt;</span> <span class="dv">0</span>),</span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>                        <span class="fu">cbind</span>(<span class="at">shock =</span> started<span class="sc">$</span>shock,</span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>                              <span class="at">intercept =</span> <span class="dv">1</span>, <span class="fu">ns</span>(<span class="fu">log</span>(started<span class="sc">$</span>E2019), <span class="at">df =</span> <span class="dv">4</span>),</span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a>                              <span class="fu">model.matrix</span>(<span class="sc">~</span> subsector, <span class="at">data =</span> <span class="fu">as.data.frame</span>(started))[, <span class="sc">-</span><span class="dv">1</span>, <span class="at">drop =</span> <span class="cn">FALSE</span>]))</span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="fu">kable</span>(start_fit[start_fit<span class="sc">$</span>term <span class="sc">==</span> <span class="st">&quot;shock&quot;</span>, ], <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>      <span class="at">caption =</span> <span class="fu">paste0</span>(<span class="st">&quot;Started fundraising by 2023, among the &quot;</span>,</span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>                       <span class="fu">format</span>(<span class="fu">nrow</span>(started), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>), <span class="st">&quot; with none in 2019&quot;</span>))</span></code></pre></div>
+<table>
+<caption>Started fundraising by 2023, among the 54,638 with none in
+2019</caption>
+<thead>
+<tr class="header">
+<th align="left">term</th>
+<th align="right">estimate</th>
+<th align="right">se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">shock</td>
+<td align="right">-0.003</td>
+<td align="right">6e-04</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="findings" class="section level1">
+<h1>5. Findings</h1>
+<ul>
+<li><strong>Cross-section.</strong> The program-revenue coefficient is
+-0.0366 for having any fundraising expense and -0.0621 for the amount,
+against shuffle bounds of -0.0020 and -0.0067. The contributions
+coefficients are 0.0693 and 0.2800. The pre-specified verdict is
+<strong>supported</strong>.</li>
+<li><strong>Within organizations.</strong> A 1-unit change in log
+program revenue goes with a 0.0143 change in log fundraising
+expense.</li>
+<li><strong>The shock.</strong> A one-standard-deviation loss of earned
+revenue between 2019 and 2021 is followed by a -0.012 change in log
+fundraising expense by 2023 (coefficient 0.0054, SE 0.0050); a negative
+coefficient means substitution.</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] splines   stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] digest_0.6.39   R6_2.6.1        fastmap_1.2.0   bit_4.6.0       xfun_0.57       cachem_1.1.0    htmltools_0.5.9
+##  [8] rmarkdown_2.31  lifecycle_1.0.5 cli_3.6.5       sass_0.4.10     jquerylib_0.1.4 compiler_4.5.3  tools_4.5.3    
+## [15] evaluate_1.0.5  bslib_0.10.0    yaml_2.3.12     otel_0.2.0      rlang_1.1.7     jsonlite_2.0.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

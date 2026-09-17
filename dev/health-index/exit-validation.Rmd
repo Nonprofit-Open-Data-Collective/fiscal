@@ -1,0 +1,231 @@
+---
+title: "Does the Index Predict Failure?"
+subtitle: "Multi-year filing gaps among 2019 full-990 filers"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-cohort-2019.rds")
+  presence_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "presence-cohort-2019.rds")
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+Every validation so far used a panel that required a filing in all of
+2019-2023, which removed exactly the organizations a failure test needs. This
+document uses the cohort panel built by `dev/panel/panel_build_exits.R`: all
+280,158 organizations that filed a full 990 for tax year 2019, followed through
+2024 whether or not they kept filing. A gap is the outcome.
+
+**What a filing gap is and is not.** Disappearing from the e-file record can
+mean dissolution, a merger, or shrinking below the 990 threshold and moving to
+the 990-N postcard, which is not in these files. It can also mean a late
+filing. The outcomes below are therefore "stopped filing a 990 or 990EZ", not
+"failed", and the 2024 file is still incomplete. Reading a gap as failure is
+safest for larger organizations, which rarely drop to 990-N.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+source("dimension-scores.R")
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Filing patterns after 2019
+
+```{r presence}
+pres <- as.data.table(readRDS(params$presence_file))
+yrs <- paste0("form", 2019:2024)
+kable(pres[, .N, by = years_filed][order(years_filed)],
+      caption = "Years filed, 2019-2024", format.args = list(big.mark = ","))
+
+pres[, `:=`(
+  gap_2022_2023 = as.numeric(is.na(form2022) & is.na(form2023)),
+  gap_from_2021 = as.numeric(is.na(form2021) & is.na(form2022) & is.na(form2023)),
+  absent_2023   = as.numeric(is.na(form2023)),
+  absent_2024   = as.numeric(is.na(form2024)),
+  downshift_ez  = as.numeric(!is.na(form2023) & form2023 == "990EZ"))]
+kable(pres[, .(organizations = .N,
+               `gap in 2022 and 2023` = mean(gap_2022_2023),
+               `gap from 2021 on` = mean(gap_from_2021),
+               `absent in 2023` = mean(absent_2023),
+               `absent in 2024` = mean(absent_2024),
+               `filed 990EZ in 2023` = mean(downshift_ez))], digits = 4,
+      format.args = list(big.mark = ","))
+```
+
+The headline outcome is **a two-year gap covering 2022 and 2023**, with 2024
+used as a check: an organization that filed again in 2024 was late, not gone.
+
+```{r gap-confirmed}
+pres[, gap_confirmed := as.numeric(gap_2022_2023 == 1 & is.na(form2024))]
+kable(pres[, .(`two-year gap` = sum(gap_2022_2023),
+               `of those, also absent in 2024` = sum(gap_confirmed),
+               `share confirmed` = mean(gap_confirmed[gap_2022_2023 == 1]))],
+      digits = 3, format.args = list(big.mark = ","))
+```
+
+# 2. 2019 scores for the cohort
+
+```{r scores}
+panel <- readRDS(params$panel_file)
+d <- as.data.table(panel990::panel_data(panel))
+rm(panel); invisible(gc())
+d19 <- d[TAX_YEAR == 2019 & RETURN_TYPE == "990"]
+s19 <- dimension_scores(d19, seed = params$seed)
+
+WEIGHTS <- list(equal = c(reserves = 1/3, performance = 1/3, leverage = 1/3),
+                incremental = c(reserves = 0.415, performance = 0.585, leverage = 0),
+                performance_dominant = c(reserves = 0.121, performance = 0.879, leverage = 0))
+for (nm in names(WEIGHTS)) s19[[paste0("index_", nm)]] <- composite_index(s19, WEIGHTS[[nm]])
+
+sub <- d19[, .(EIN2 = as.character(EIN2),
+               subsector = ifelse(is.na(nteev2_subsector) | nteev2_subsector == "", "unknown",
+                                  as.character(nteev2_subsector)),
+               period_end = TAX_PERIOD_END_DATE)]
+m <- merge(merge(s19, sub, by = "EIN2"), pres, by = "EIN2")
+m[, size_bin := cut(E, c(-Inf, 1e5, 1e6, 1e7, Inf),
+                    labels = c("under $100k", "$100k-$1m", "$1m-$10m", "$10m+"))]
+kable(m[, .(organizations = .N, gap_rate = mean(gap_2022_2023),
+            confirmed_gap_rate = mean(gap_confirmed)), by = size_bin][order(size_bin)],
+      digits = 4, format.args = list(big.mark = ","))
+```
+
+Gap rates fall steeply with size, which is the first reason to control for size
+before reading anything into a score.
+
+# 3. Does the index predict the gap?
+
+```{r models}
+ols <- function(y, W) {
+  XtXi <- solve(crossprod(W)); b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  list(coef = data.table(term = colnames(W), estimate = b, se = sqrt(diag(V))),
+       fitted = drop(W %*% b))
+}
+auc <- function(score, y) {
+  r <- rank(score); n1 <- as.numeric(sum(y == 1)); n0 <- as.numeric(sum(y == 0))
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+ctrl <- cbind(intercept = 1, ns(log(pmax(m$E, 1)), df = 4))
+
+OUT <- c(gap_2022_2023 = "gap_2022_2023", gap_confirmed = "gap_confirmed",
+         gap_from_2021 = "gap_from_2021", downshift_ez = "downshift_ez")
+race <- rbindlist(lapply(names(OUT), function(nm) {
+  y <- m[[OUT[[nm]]]]
+  fit <- function(cols) {
+    W <- if (length(cols)) cbind(ctrl, as.matrix(m[, ..cols])) else ctrl
+    f <- ols(y, W); list(auc = auc(f$fitted, y), coef = f$coef)
+  }
+  all3 <- fit(c("reserves", "performance", "leverage"))
+  cf <- all3$coef
+  data.table(outcome = nm, rate = mean(y),
+             auc_size_only = fit(character())$auc,
+             auc_reserves = fit("reserves")$auc,
+             auc_performance = fit("performance")$auc,
+             auc_leverage = fit("leverage")$auc,
+             auc_all_three = all3$auc,
+             beta_reserves = cf[term == "reserves", estimate],
+             beta_performance = cf[term == "performance", estimate],
+             beta_leverage = cf[term == "leverage", estimate])
+}))
+kable(race, digits = 4, caption = "Dimension scores in 2019 predicting later filing gaps")
+```
+
+```{r index-versions}
+idx <- paste0("index_", names(WEIGHTS))
+ver <- rbindlist(lapply(names(OUT), function(nm) {
+  y <- m[[OUT[[nm]]]]
+  data.table(outcome = nm, rate = mean(y),
+             equal = auc(-m$index_equal, y),
+             incremental = auc(-m$index_incremental, y),
+             performance_dominant = auc(-m$index_performance_dominant, y),
+             size_only = auc(ols(y, ctrl)$fitted, y))
+}))
+kable(ver, digits = 4, caption = "Index versions (low score = trouble), raw AUC")
+```
+
+**Triage view.** Gap rates by decile of each index, for the confirmed two-year
+gap.
+
+```{r deciles}
+dec <- rbindlist(lapply(names(WEIGHTS), function(nm) {
+  col <- paste0("index_", nm)
+  m[, d := cut(get(col), breaks = seq(0, 100, 10), labels = 1:10, include.lowest = TRUE)]
+  cbind(scheme = nm, m[, .(organizations = .N, confirmed_gap = mean(gap_confirmed)), by = d][order(d)])
+}))
+kable(dcast(dec, d ~ scheme, value.var = "confirmed_gap"), digits = 4,
+      caption = "Confirmed two-year gap rate by index decile")
+```
+
+**Large organizations only.** Dropping to the 990-N postcard is implausible
+above $1m of expenses, so a gap there is closer to real failure.
+
+```{r large}
+big <- m[E >= 1e6]
+ctrl_big <- cbind(intercept = 1, ns(log(big$E), df = 4))
+big_res <- rbindlist(lapply(c("gap_2022_2023", "gap_confirmed"), function(nm) {
+  y <- big[[nm]]
+  f_all <- ols(y, cbind(ctrl_big, as.matrix(big[, .(reserves, performance, leverage)])))
+  data.table(outcome = nm, organizations = nrow(big), rate = mean(y),
+             auc_size_only = auc(ols(y, ctrl_big)$fitted, y),
+             auc_all_three = auc(f_all$fitted, y),
+             auc_index_incremental = auc(-big$index_incremental, y),
+             beta_reserves = f_all$coef[term == "reserves", estimate],
+             beta_performance = f_all$coef[term == "performance", estimate],
+             beta_leverage = f_all$coef[term == "leverage", estimate])
+}))
+kable(big_res, digits = 4, caption = "Organizations with $1m or more of expenses in 2019")
+```
+
+# 4. Findings
+
+```{r findings, include = FALSE}
+r_conf <- race[outcome == "gap_confirmed"]
+v_conf <- ver[outcome == "gap_confirmed"]
+```
+
+* **Base rate.** `r fmt(100 * r_conf$rate, 2)`% of 2019 full-990 filers had no
+  filing in 2022, 2023, or 2024.
+* **Dimensions.** Size alone gives AUC `r fmt(r_conf$auc_size_only, 3)`; adding
+  all three dimensions gives `r fmt(r_conf$auc_all_three, 3)`.
+* **Index versions.** Raw AUC is `r fmt(v_conf$equal, 3)` for equal weights and
+  `r fmt(v_conf$incremental, 3)` for incremental weights.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(patterns = pres[, .N, by = years_filed][order(years_filed)],
+               rates = pres[, .(n = .N, gap_2022_2023 = mean(gap_2022_2023),
+                                gap_confirmed = mean(gap_confirmed),
+                                absent_2024 = mean(absent_2024),
+                                downshift_ez = mean(downshift_ez))],
+               by_size = m[, .(n = .N, gap = mean(gap_2022_2023), confirmed = mean(gap_confirmed)),
+                           by = size_bin][order(size_bin)],
+               race = race, versions = ver, deciles = dec, large = big_res, n = nrow(m)),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

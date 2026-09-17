@@ -11,7 +11,7 @@ output:
     self_contained: true
     css: walkthrough.css
 params:
-  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  data_dir: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "efile")
   pkg_dir: "../.."
   seed: 2023
 ---

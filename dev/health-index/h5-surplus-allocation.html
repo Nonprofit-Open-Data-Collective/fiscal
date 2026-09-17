@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>H5: Where Does a Surplus Go?</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">H5: Where Does a Surplus Go?</h1>
+<h3 class="subtitle">Allocation of the annual surplus across the balance
+sheet, 2019-2023</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#data-and-components" id="toc-data-and-components">1. Data
+and components</a></li>
+<li><a href="#does-the-identity-hold-in-the-data" id="toc-does-the-identity-hold-in-the-data">2. Does the identity hold in
+the data?</a></li>
+<li><a href="#the-allocation-regressions" id="toc-the-allocation-regressions">3. The allocation
+regressions</a></li>
+<li><a href="#contrasts-and-robustness" id="toc-contrasts-and-robustness">4. Contrasts and robustness</a></li>
+<li><a href="#where-the-surplus-comes-from" id="toc-where-the-surplus-comes-from">5. Where the surplus comes
+from</a></li>
+<li><a href="#findings" id="toc-findings">6. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p>H5 from the ratio-correlation memo: <strong>a surplus has to go
+somewhere</strong>. Every dollar of revenue not spent ends the year as
+more cash, more receivables, more property, more investments, or less
+debt. This document estimates that split.</p>
+<p>The accounting identity is the check on the estimates. Writing the
+year’s change in each balance-sheet block as a share of the same
+denominator, the asset-side coefficients minus the liability-side
+coefficients must equal the coefficient for the change in net assets,
+and that in turn should be close to 1 if the surplus is what drives net
+assets.</p>
+<p>Unlike H1-H3, this hypothesis makes no prediction about which
+component wins. The split itself is the estimate.</p>
+<p><strong>Window.</strong> Pooled tax years 2022 and 2023, December
+year-ends, organizations that filed a full 990 in every year 2019-2023.
+Tax years 2020 and 2021 are excluded from the main estimate: relief
+funding pushed the median surplus margin to 0.113 in 2021 against 0.027
+in 2023, and median cash from 5.1 to 7.6 months. 2019 and 2021 are
+estimated separately as contrasts.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>})</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span></code></pre></div>
+</div>
+<div id="data-and-components" class="section level1">
+<h1>1. Data and components</h1>
+<p>Each block is the end-of-year balance minus the beginning-of-year
+balance, both from the same filing’s Part X, so the two dates share one
+accounting basis.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Block</th>
+<th>Part X lines</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Cash</td>
+<td>cash + savings</td>
+</tr>
+<tr class="even">
+<td>Other current assets</td>
+<td>pledges, accounts receivable, inventories, prepaid</td>
+</tr>
+<tr class="odd">
+<td>Fixed assets</td>
+<td>land, buildings, equipment (net)</td>
+</tr>
+<tr class="even">
+<td>Other assets</td>
+<td>total assets minus the three above (investments, intangibles, notes
+receivable)</td>
+</tr>
+<tr class="odd">
+<td>Long-term debt</td>
+<td>tax-exempt bonds + mortgages + unsecured notes</td>
+</tr>
+<tr class="even">
+<td>Short-term liabilities</td>
+<td>accounts payable + grants payable + deferred revenue</td>
+</tr>
+<tr class="odd">
+<td>Other liabilities</td>
+<td>total liabilities minus the two above</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">readRDS</span>(params<span class="sc">$</span>panel_file))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>num <span class="ot">&lt;-</span> <span class="cf">function</span>(x) { x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(x); x[<span class="fu">is.na</span>(x)] <span class="ot">&lt;-</span> <span class="dv">0</span>; x }</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>forms <span class="ot">&lt;-</span> d[, .(<span class="at">n990 =</span> <span class="fu">sum</span>(RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span>), <span class="at">nez =</span> <span class="fu">sum</span>(RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990EZ&quot;</span>)), by <span class="ot">=</span> EIN2]</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>stable990 <span class="ot">&lt;-</span> forms[n990 <span class="sc">&gt;=</span> <span class="dv">5</span> <span class="sc">&amp;</span> nez <span class="sc">==</span> <span class="dv">0</span>, EIN2]</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>x <span class="ot">&lt;-</span> d[EIN2 <span class="sc">%chin%</span> stable990 <span class="sc">&amp;</span> RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span> <span class="sc">&amp;</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>       <span class="fu">substr</span>(TAX_PERIOD_END_DATE, <span class="dv">6</span>, <span class="dv">7</span>) <span class="sc">==</span> <span class="st">&quot;12&quot;</span>]</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="fu">rm</span>(d); <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>blk <span class="ot">&lt;-</span> <span class="cf">function</span>(when) {</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="cf">function</span>(f) <span class="fu">num</span>(x[[<span class="fu">paste0</span>(f, <span class="st">&quot;_&quot;</span>, when)]])</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>  <span class="fu">data.table</span>(</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>    <span class="at">cash   =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_CASH&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_SAVING&quot;</span>),</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>    <span class="at">oca    =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_PLEDGE_NET&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_ACC_NET&quot;</span>) <span class="sc">+</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>             <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_INV_SALE&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_EXP_PREPAID&quot;</span>),</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>    <span class="at">fixed  =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_LAND_BLDG_NET&quot;</span>),</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>    <span class="at">assets =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_ASSET_TOT&quot;</span>),</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>    <span class="at">lt     =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_TAX_EXEMPT_BOND&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_MTG_NOTE&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_NOTE_UNSEC&quot;</span>),</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>    <span class="at">st     =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_ACC_PAYABLE&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_GRANT_PAYABLE&quot;</span>) <span class="sc">+</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_REV_DEFERRED&quot;</span>),</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>    <span class="at">liab   =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_LIAB_TOT&quot;</span>),</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>    <span class="at">na     =</span> <span class="fu">s</span>(<span class="st">&quot;F9_10_NAFB_TOT&quot;</span>))</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>}</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>b <span class="ot">&lt;-</span> <span class="fu">blk</span>(<span class="st">&quot;BOY&quot;</span>); e <span class="ot">&lt;-</span> <span class="fu">blk</span>(<span class="st">&quot;EOY&quot;</span>)</span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>b[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">other_assets =</span> assets <span class="sc">-</span> cash <span class="sc">-</span> oca <span class="sc">-</span> fixed, <span class="at">other_liab =</span> liab <span class="sc">-</span> lt <span class="sc">-</span> st)]</span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>e[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">other_assets =</span> assets <span class="sc">-</span> cash <span class="sc">-</span> oca <span class="sc">-</span> fixed, <span class="at">other_liab =</span> liab <span class="sc">-</span> lt <span class="sc">-</span> st)]</span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>dat <span class="ot">&lt;-</span> <span class="fu">data.table</span>(</span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>  <span class="at">EIN2 =</span> x<span class="sc">$</span>EIN2, <span class="at">year =</span> x<span class="sc">$</span>TAX_YEAR,</span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a>  <span class="at">E =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_TOT), <span class="at">R =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_TOT_TOT),</span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>  <span class="at">assets_boy =</span> b<span class="sc">$</span>assets,</span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a>  <span class="co"># revenue lines (Part VIII) and functional expenses (Part IX), for section 6</span></span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a>  <span class="at">contributions =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_CONTR_TOT),</span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a>  <span class="at">program_revenue =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_PROG_TOT_TOT),</span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a>  <span class="at">investment_income =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_OTH_INVEST_INCOME_TOT) <span class="sc">+</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_OTH_INVEST_BOND_TOT),</span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a>  <span class="at">gains_on_sales =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_08_REV_OTH_SALE_GAIN_NET_TOT),</span>
+<span id="cb2-37"><a href="#cb2-37" tabindex="-1"></a>  <span class="at">program_expenses =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_PROG),</span>
+<span id="cb2-38"><a href="#cb2-38" tabindex="-1"></a>  <span class="at">admin_expenses =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_MGMT),</span>
+<span id="cb2-39"><a href="#cb2-39" tabindex="-1"></a>  <span class="at">fundraising_expenses =</span> <span class="fu">num</span>(x<span class="sc">$</span>F9_09_EXP_TOT_FUNDR))</span>
+<span id="cb2-40"><a href="#cb2-40" tabindex="-1"></a>dat[, surplus <span class="sc">:=</span> R <span class="sc">-</span> E]</span>
+<span id="cb2-41"><a href="#cb2-41" tabindex="-1"></a>dat[, other_revenue <span class="sc">:=</span> R <span class="sc">-</span> contributions <span class="sc">-</span> program_revenue <span class="sc">-</span> investment_income <span class="sc">-</span> gains_on_sales]</span>
+<span id="cb2-42"><a href="#cb2-42" tabindex="-1"></a>dat[, unallocated_expenses <span class="sc">:=</span> E <span class="sc">-</span> program_expenses <span class="sc">-</span> admin_expenses <span class="sc">-</span> fundraising_expenses]</span>
+<span id="cb2-43"><a href="#cb2-43" tabindex="-1"></a><span class="cf">for</span> (v <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;cash&quot;</span>, <span class="st">&quot;oca&quot;</span>, <span class="st">&quot;fixed&quot;</span>, <span class="st">&quot;other_assets&quot;</span>, <span class="st">&quot;lt&quot;</span>, <span class="st">&quot;st&quot;</span>, <span class="st">&quot;other_liab&quot;</span>, <span class="st">&quot;assets&quot;</span>, <span class="st">&quot;liab&quot;</span>, <span class="st">&quot;na&quot;</span>)) {</span>
+<span id="cb2-44"><a href="#cb2-44" tabindex="-1"></a>  dat[[<span class="fu">paste0</span>(<span class="st">&quot;d_&quot;</span>, v)]] <span class="ot">&lt;-</span> e[[v]] <span class="sc">-</span> b[[v]]</span>
+<span id="cb2-45"><a href="#cb2-45" tabindex="-1"></a>}</span>
+<span id="cb2-46"><a href="#cb2-46" tabindex="-1"></a><span class="fu">setnames</span>(dat, <span class="st">&quot;d_oca&quot;</span>, <span class="st">&quot;d_other_current&quot;</span>)</span>
+<span id="cb2-47"><a href="#cb2-47" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" tabindex="-1"></a>dat <span class="ot">&lt;-</span> dat[E <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> assets_boy <span class="sc">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb2-49"><a href="#cb2-49" tabindex="-1"></a><span class="fu">kable</span>(dat[, .(<span class="at">org_years =</span> .N, <span class="at">organizations =</span> <span class="fu">uniqueN</span>(EIN2)), <span class="at">by =</span> year][<span class="fu">order</span>(year)],</span>
+<span id="cb2-50"><a href="#cb2-50" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">year</th>
+<th align="right">org_years</th>
+<th align="right">organizations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">2,019</td>
+<td align="right">125,827</td>
+<td align="right">125,827</td>
+</tr>
+<tr class="even">
+<td align="right">2,020</td>
+<td align="right">127,091</td>
+<td align="right">127,091</td>
+</tr>
+<tr class="odd">
+<td align="right">2,021</td>
+<td align="right">127,189</td>
+<td align="right">127,189</td>
+</tr>
+<tr class="even">
+<td align="right">2,022</td>
+<td align="right">127,208</td>
+<td align="right">127,208</td>
+</tr>
+<tr class="odd">
+<td align="right">2,023</td>
+<td align="right">127,184</td>
+<td align="right">127,184</td>
+</tr>
+<tr class="even">
+<td align="right">2,024</td>
+<td align="right">112,292</td>
+<td align="right">112,292</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="does-the-identity-hold-in-the-data" class="section level1">
+<h1>2. Does the identity hold in the data?</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>dat[, resid_assets <span class="sc">:=</span> d_assets <span class="sc">-</span> (d_cash <span class="sc">+</span> d_other_current <span class="sc">+</span> d_fixed <span class="sc">+</span> d_other_assets)]</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>dat[, resid_liab   <span class="sc">:=</span> d_liab <span class="sc">-</span> (d_lt <span class="sc">+</span> d_st <span class="sc">+</span> d_other_liab)]</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>dat[, resid_na     <span class="sc">:=</span> d_na <span class="sc">-</span> (d_assets <span class="sc">-</span> d_liab)]</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">kable</span>(dat[, .(</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="st">`</span><span class="at">assets = sum of blocks</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(resid_assets) <span class="sc">&lt;</span> <span class="dv">1</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="st">`</span><span class="at">liabilities = sum of blocks</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(resid_liab) <span class="sc">&lt;</span> <span class="dv">1</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="st">`</span><span class="at">net assets = assets - liabilities</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(resid_na) <span class="sc">&lt;</span> <span class="dv">1</span>)), <span class="at">by =</span> year][<span class="fu">order</span>(year)],</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Share of filings where the blocks add up exactly&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Share of filings where the blocks add up exactly</caption>
+<colgroup>
+<col width="5%" />
+<col width="25%" />
+<col width="31%" />
+<col width="37%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">year</th>
+<th align="right">assets = sum of blocks</th>
+<th align="right">liabilities = sum of blocks</th>
+<th align="right">net assets = assets - liabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">2019</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9994</td>
+</tr>
+<tr class="even">
+<td align="right">2020</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9995</td>
+</tr>
+<tr class="odd">
+<td align="right">2021</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9996</td>
+</tr>
+<tr class="even">
+<td align="right">2022</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9997</td>
+</tr>
+<tr class="odd">
+<td align="right">2023</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9995</td>
+</tr>
+<tr class="even">
+<td align="right">2024</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.9990</td>
+</tr>
+</tbody>
+</table>
+<p>A surplus is not the only thing that moves net assets: unrealized
+investment gains, prior-period adjustments, and donated capital also
+land there. The regression below estimates how much of the surplus is
+traceable, not whether net assets equal the surplus.</p>
+</div>
+<div id="the-allocation-regressions" class="section level1">
+<h1>3. The allocation regressions</h1>
+<p>Every quantity is divided by the year’s total expenses, so a
+coefficient reads as “cents of each surplus dollar”.</p>
+<p><strong>Outliers are handled by dropping rows, not by clipping
+values.</strong> Winsorizing each component separately would break the
+very identity this test relies on: the clipped parts no longer sum to
+the clipped total, and the coefficients stop adding up. (A first version
+of this document did exactly that, and the identity check caught it.)
+Instead, organization-years outside the 1st/99th percentile of the
+surplus ratio or of the change in total assets are dropped, within year.
+Whatever survives keeps its raw values, so the blocks still add up and
+OLS coefficients add up with them.</p>
+<p>Standard errors are HC1. Each row is one organization-year, and the
+pooled window holds two years per organization, so the robustness
+section repeats the estimate with organization fixed effects.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>SCALED <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;surplus&quot;</span>, <span class="st">&quot;d_cash&quot;</span>, <span class="st">&quot;d_other_current&quot;</span>, <span class="st">&quot;d_fixed&quot;</span>, <span class="st">&quot;d_other_assets&quot;</span>,</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>            <span class="st">&quot;d_lt&quot;</span>, <span class="st">&quot;d_st&quot;</span>, <span class="st">&quot;d_other_liab&quot;</span>, <span class="st">&quot;d_assets&quot;</span>, <span class="st">&quot;d_liab&quot;</span>, <span class="st">&quot;d_na&quot;</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>            <span class="st">&quot;contributions&quot;</span>, <span class="st">&quot;program_revenue&quot;</span>, <span class="st">&quot;investment_income&quot;</span>, <span class="st">&quot;gains_on_sales&quot;</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>            <span class="st">&quot;other_revenue&quot;</span>, <span class="st">&quot;program_expenses&quot;</span>, <span class="st">&quot;admin_expenses&quot;</span>, <span class="st">&quot;fundraising_expenses&quot;</span>,</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>            <span class="st">&quot;unallocated_expenses&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>scale_vars <span class="ot">&lt;-</span> <span class="cf">function</span>(z, <span class="at">trim =</span> <span class="cn">TRUE</span>) {</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">copy</span>(z)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  <span class="cf">for</span> (v <span class="cf">in</span> SCALED) out[[v]] <span class="ot">&lt;-</span> out[[v]] <span class="sc">/</span> out<span class="sc">$</span>E</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span>trim) <span class="fu">return</span>(out)</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  <span class="co"># `:=` by group assigns back to the right rows; a grouped select would return</span></span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  <span class="co"># the flags in group order and misalign them when years are interleaved.</span></span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  out[, keep <span class="sc">:=</span> {</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>    qs <span class="ot">&lt;-</span> <span class="fu">quantile</span>(surplus, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    qa <span class="ot">&lt;-</span> <span class="fu">quantile</span>(d_assets, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>    surplus <span class="sc">&gt;=</span> qs[[<span class="dv">1</span>]] <span class="sc">&amp;</span> surplus <span class="sc">&lt;=</span> qs[[<span class="dv">2</span>]] <span class="sc">&amp;</span> d_assets <span class="sc">&gt;=</span> qa[[<span class="dv">1</span>]] <span class="sc">&amp;</span> d_assets <span class="sc">&lt;=</span> qa[[<span class="dv">2</span>]]</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  }, by <span class="ot">=</span> year]</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  out <span class="ot">&lt;-</span> out[keep <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>  out[, keep <span class="sc">:=</span> <span class="cn">NULL</span>]</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>  out[]</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>}</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a></span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>ols <span class="ot">&lt;-</span> <span class="cf">function</span>(y, W) {</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>  XtXi <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(W))</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  bhat <span class="ot">&lt;-</span> <span class="fu">drop</span>(XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W, y))</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>  res <span class="ot">&lt;-</span> <span class="fu">drop</span>(y <span class="sc">-</span> W <span class="sc">%*%</span> bhat)</span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  V <span class="ot">&lt;-</span> XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W <span class="sc">*</span> res) <span class="sc">%*%</span> XtXi <span class="sc">*</span> <span class="fu">nrow</span>(W) <span class="sc">/</span> (<span class="fu">nrow</span>(W) <span class="sc">-</span> <span class="fu">ncol</span>(W))</span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">b =</span> bhat, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(V)))</span>
+<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>}</span>
+<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a></span>
+<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a>BLOCKS <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">cash =</span> <span class="st">&quot;d_cash&quot;</span>, <span class="at">other_current_assets =</span> <span class="st">&quot;d_other_current&quot;</span>, <span class="at">fixed_assets =</span> <span class="st">&quot;d_fixed&quot;</span>,</span>
+<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>            <span class="at">other_assets =</span> <span class="st">&quot;d_other_assets&quot;</span>, <span class="at">long_term_debt =</span> <span class="st">&quot;d_lt&quot;</span>,</span>
+<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>            <span class="at">short_term_liabilities =</span> <span class="st">&quot;d_st&quot;</span>, <span class="at">other_liabilities =</span> <span class="st">&quot;d_other_liab&quot;</span>)</span>
+<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a></span>
+<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>allocate <span class="ot">&lt;-</span> <span class="cf">function</span>(z, label, <span class="at">trim =</span> <span class="cn">TRUE</span>) {</span>
+<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">scale_vars</span>(z, <span class="at">trim =</span> trim)</span>
+<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>  W <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, <span class="at">surplus =</span> s<span class="sc">$</span>surplus)</span>
+<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(BLOCKS), <span class="cf">function</span>(nm) {</span>
+<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a>    f <span class="ot">&lt;-</span> <span class="fu">ols</span>(s[[BLOCKS[[nm]]]], W)</span>
+<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">window =</span> label, <span class="at">block =</span> nm, <span class="at">cents_per_surplus_dollar =</span> f<span class="sc">$</span>b[[<span class="st">&quot;surplus&quot;</span>]],</span>
+<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a>               <span class="at">se =</span> f<span class="sc">$</span>se[[<span class="st">&quot;surplus&quot;</span>]])</span>
+<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a>  }))</span>
+<span id="cb4-43"><a href="#cb4-43" tabindex="-1"></a>  side <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">cash =</span> <span class="dv">1</span>, <span class="at">other_current_assets =</span> <span class="dv">1</span>, <span class="at">fixed_assets =</span> <span class="dv">1</span>, <span class="at">other_assets =</span> <span class="dv">1</span>,</span>
+<span id="cb4-44"><a href="#cb4-44" tabindex="-1"></a>            <span class="at">long_term_debt =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">short_term_liabilities =</span> <span class="sc">-</span><span class="dv">1</span>, <span class="at">other_liabilities =</span> <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb4-45"><a href="#cb4-45" tabindex="-1"></a>  out[, side <span class="sc">:=</span> <span class="fu">ifelse</span>(side[block] <span class="sc">&gt;</span> <span class="dv">0</span>, <span class="st">&quot;asset&quot;</span>, <span class="st">&quot;liability&quot;</span>)]</span>
+<span id="cb4-46"><a href="#cb4-46" tabindex="-1"></a>  <span class="fu">attr</span>(out, <span class="st">&quot;identity&quot;</span>) <span class="ot">&lt;-</span> <span class="fu">data.table</span>(</span>
+<span id="cb4-47"><a href="#cb4-47" tabindex="-1"></a>    <span class="at">window =</span> label,</span>
+<span id="cb4-48"><a href="#cb4-48" tabindex="-1"></a>    <span class="at">assets_minus_liabilities =</span> <span class="fu">sum</span>(out<span class="sc">$</span>cents_per_surplus_dollar <span class="sc">*</span> side[out<span class="sc">$</span>block]),</span>
+<span id="cb4-49"><a href="#cb4-49" tabindex="-1"></a>    <span class="at">net_assets_direct =</span> <span class="fu">ols</span>(s<span class="sc">$</span>d_na, W)<span class="sc">$</span>b[[<span class="st">&quot;surplus&quot;</span>]],</span>
+<span id="cb4-50"><a href="#cb4-50" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">nrow</span>(s))</span>
+<span id="cb4-51"><a href="#cb4-51" tabindex="-1"></a>  out</span>
+<span id="cb4-52"><a href="#cb4-52" tabindex="-1"></a>}</span>
+<span id="cb4-53"><a href="#cb4-53" tabindex="-1"></a></span>
+<span id="cb4-54"><a href="#cb4-54" tabindex="-1"></a>main <span class="ot">&lt;-</span> <span class="fu">allocate</span>(dat[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>], <span class="st">&quot;2022-2023&quot;</span>)</span>
+<span id="cb4-55"><a href="#cb4-55" tabindex="-1"></a><span class="fu">kable</span>(main[, .(block, side, <span class="at">cents_per_surplus_dollar =</span> <span class="fu">round</span>(cents_per_surplus_dollar, <span class="dv">3</span>),</span>
+<span id="cb4-56"><a href="#cb4-56" tabindex="-1"></a>               <span class="at">se =</span> <span class="fu">round</span>(se, <span class="dv">4</span>))],</span>
+<span id="cb4-57"><a href="#cb4-57" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Where each dollar of surplus lands, 2022-2023&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Where each dollar of surplus lands, 2022-2023</caption>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="left">side</th>
+<th align="right">cents_per_surplus_dollar</th>
+<th align="right">se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">cash</td>
+<td align="left">asset</td>
+<td align="right">0.371</td>
+<td align="right">0.0273</td>
+</tr>
+<tr class="even">
+<td align="left">other_current_assets</td>
+<td align="left">asset</td>
+<td align="right">0.037</td>
+<td align="right">0.0046</td>
+</tr>
+<tr class="odd">
+<td align="left">fixed_assets</td>
+<td align="left">asset</td>
+<td align="right">0.139</td>
+<td align="right">0.0147</td>
+</tr>
+<tr class="even">
+<td align="left">other_assets</td>
+<td align="left">asset</td>
+<td align="right">0.320</td>
+<td align="right">0.0309</td>
+</tr>
+<tr class="odd">
+<td align="left">long_term_debt</td>
+<td align="left">liability</td>
+<td align="right">-0.021</td>
+<td align="right">0.0030</td>
+</tr>
+<tr class="even">
+<td align="left">short_term_liabilities</td>
+<td align="left">liability</td>
+<td align="right">-0.010</td>
+<td align="right">0.0017</td>
+</tr>
+<tr class="odd">
+<td align="left">other_liabilities</td>
+<td align="left">liability</td>
+<td align="right">-0.087</td>
+<td align="right">0.0693</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">attr</span>(main, <span class="st">&quot;identity&quot;</span>), <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Identity check: asset coefficients minus liability coefficients vs. the direct net-assets regression&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Identity check: asset coefficients minus liability coefficients
+vs. the direct net-assets regression</caption>
+<thead>
+<tr class="header">
+<th align="left">window</th>
+<th align="right">assets_minus_liabilities</th>
+<th align="right">net_assets_direct</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">2022-2023</td>
+<td align="right">0.985</td>
+<td align="right">0.985</td>
+<td align="right">247124</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>untrimmed <span class="ot">&lt;-</span> <span class="fu">allocate</span>(dat[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>], <span class="st">&quot;2022-2023, no trimming&quot;</span>, <span class="at">trim =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">merge</span>(main[, .(block, <span class="at">trimmed =</span> cents_per_surplus_dollar)],</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>            untrimmed[, .(block, <span class="at">untrimmed =</span> cents_per_surplus_dollar)], <span class="at">by =</span> <span class="st">&quot;block&quot;</span>),</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Trimmed vs. untrimmed&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Trimmed vs. untrimmed</caption>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="right">trimmed</th>
+<th align="right">untrimmed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">cash</td>
+<td align="right">0.371</td>
+<td align="right">0.969</td>
+</tr>
+<tr class="even">
+<td align="left">fixed_assets</td>
+<td align="right">0.139</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="left">long_term_debt</td>
+<td align="right">-0.021</td>
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="left">other_assets</td>
+<td align="right">0.320</td>
+<td align="right">0.019</td>
+</tr>
+<tr class="odd">
+<td align="left">other_current_assets</td>
+<td align="right">0.037</td>
+<td align="right">0.014</td>
+</tr>
+<tr class="even">
+<td align="left">other_liabilities</td>
+<td align="right">-0.087</td>
+<td align="right">-0.001</td>
+</tr>
+<tr class="odd">
+<td align="left">short_term_liabilities</td>
+<td align="right">-0.010</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">rbind</span>(<span class="fu">attr</span>(main, <span class="st">&quot;identity&quot;</span>), <span class="fu">attr</span>(untrimmed, <span class="st">&quot;identity&quot;</span>)), <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Identity check, both samples&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Identity check, both samples</caption>
+<colgroup>
+<col width="31%" />
+<col width="34%" />
+<col width="24%" />
+<col width="9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">window</th>
+<th align="right">assets_minus_liabilities</th>
+<th align="right">net_assets_direct</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">2022-2023</td>
+<td align="right">0.985</td>
+<td align="right">0.985</td>
+<td align="right">247124</td>
+</tr>
+<tr class="even">
+<td align="left">2022-2023, no trimming</td>
+<td align="right">1.003</td>
+<td align="right">1.003</td>
+<td align="right">254392</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="contrasts-and-robustness" class="section level1">
+<h1>4. Contrasts and robustness</h1>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>windows <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="st">`</span><span class="at">2019 (pre-COVID)</span><span class="st">`</span> <span class="ot">=</span> dat[year <span class="sc">==</span> <span class="dv">2019</span>],</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>                <span class="st">`</span><span class="at">2021 (relief year)</span><span class="st">`</span> <span class="ot">=</span> dat[year <span class="sc">==</span> <span class="dv">2021</span>],</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>                <span class="st">`</span><span class="at">2022</span><span class="st">`</span> <span class="ot">=</span> dat[year <span class="sc">==</span> <span class="dv">2022</span>], <span class="st">`</span><span class="at">2023</span><span class="st">`</span> <span class="ot">=</span> dat[year <span class="sc">==</span> <span class="dv">2023</span>])</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>contrasts <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(windows), <span class="cf">function</span>(nm) <span class="fu">allocate</span>(windows[[nm]], nm)))</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">dcast</span>(<span class="fu">rbind</span>(contrasts, main), block <span class="sc">+</span> side <span class="sc">~</span> window, <span class="at">value.var =</span> <span class="st">&quot;cents_per_surplus_dollar&quot;</span>),</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Allocation by year&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Allocation by year</caption>
+<colgroup>
+<col width="24%" />
+<col width="10%" />
+<col width="18%" />
+<col width="20%" />
+<col width="7%" />
+<col width="10%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="left">side</th>
+<th align="right">2019 (pre-COVID)</th>
+<th align="right">2021 (relief year)</th>
+<th align="right">2022</th>
+<th align="right">2022-2023</th>
+<th align="right">2023</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">cash</td>
+<td align="left">asset</td>
+<td align="right">0.342</td>
+<td align="right">0.390</td>
+<td align="right">0.380</td>
+<td align="right">0.371</td>
+<td align="right">0.361</td>
+</tr>
+<tr class="even">
+<td align="left">fixed_assets</td>
+<td align="left">asset</td>
+<td align="right">0.214</td>
+<td align="right">0.100</td>
+<td align="right">0.128</td>
+<td align="right">0.139</td>
+<td align="right">0.151</td>
+</tr>
+<tr class="odd">
+<td align="left">long_term_debt</td>
+<td align="left">liability</td>
+<td align="right">-0.012</td>
+<td align="right">-0.011</td>
+<td align="right">-0.031</td>
+<td align="right">-0.021</td>
+<td align="right">-0.011</td>
+</tr>
+<tr class="even">
+<td align="left">other_assets</td>
+<td align="left">asset</td>
+<td align="right">0.525</td>
+<td align="right">0.495</td>
+<td align="right">0.165</td>
+<td align="right">0.320</td>
+<td align="right">0.479</td>
+</tr>
+<tr class="odd">
+<td align="left">other_current_assets</td>
+<td align="left">asset</td>
+<td align="right">0.024</td>
+<td align="right">0.033</td>
+<td align="right">0.032</td>
+<td align="right">0.037</td>
+<td align="right">0.043</td>
+</tr>
+<tr class="even">
+<td align="left">other_liabilities</td>
+<td align="left">liability</td>
+<td align="right">-0.008</td>
+<td align="right">-0.013</td>
+<td align="right">-0.026</td>
+<td align="right">-0.087</td>
+<td align="right">-0.150</td>
+</tr>
+<tr class="odd">
+<td align="left">short_term_liabilities</td>
+<td align="left">liability</td>
+<td align="right">-0.002</td>
+<td align="right">0.000</td>
+<td align="right">-0.011</td>
+<td align="right">-0.010</td>
+<td align="right">-0.008</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>ident <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">c</span>(<span class="fu">list</span>(main), <span class="fu">lapply</span>(<span class="fu">names</span>(windows), <span class="cf">function</span>(nm) <span class="fu">allocate</span>(windows[[nm]], nm))),</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>                          <span class="cf">function</span>(z) <span class="fu">attr</span>(z, <span class="st">&quot;identity&quot;</span>)))</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="fu">kable</span>(ident, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Identity check by window&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Identity check by window</caption>
+<colgroup>
+<col width="27%" />
+<col width="36%" />
+<col width="26%" />
+<col width="10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">window</th>
+<th align="right">assets_minus_liabilities</th>
+<th align="right">net_assets_direct</th>
+<th align="right">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">2022-2023</td>
+<td align="right">0.985</td>
+<td align="right">0.985</td>
+<td align="right">247124</td>
+</tr>
+<tr class="even">
+<td align="left">2019 (pre-COVID)</td>
+<td align="right">1.126</td>
+<td align="right">1.126</td>
+<td align="right">122061</td>
+</tr>
+<tr class="odd">
+<td align="left">2021 (relief year)</td>
+<td align="right">1.042</td>
+<td align="right">1.042</td>
+<td align="right">123406</td>
+</tr>
+<tr class="even">
+<td align="left">2022</td>
+<td align="right">0.774</td>
+<td align="right">0.774</td>
+<td align="right">123822</td>
+</tr>
+<tr class="odd">
+<td align="left">2023</td>
+<td align="right">1.202</td>
+<td align="right">1.202</td>
+<td align="right">123302</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Surpluses versus deficits.</strong> A deficit has to be
+funded from the same blocks. Splitting the predictor at zero asks
+whether the two are mirror images.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>s <span class="ot">&lt;-</span> <span class="fu">scale_vars</span>(dat[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>])</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>s[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">surplus_pos =</span> <span class="fu">pmax</span>(surplus, <span class="dv">0</span>), <span class="at">surplus_neg =</span> <span class="fu">pmin</span>(surplus, <span class="dv">0</span>))]</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>W <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, <span class="at">surplus_pos =</span> s<span class="sc">$</span>surplus_pos, <span class="at">surplus_neg =</span> s<span class="sc">$</span>surplus_neg)</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>asym <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(BLOCKS), <span class="cf">function</span>(nm) {</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">ols</span>(s[[BLOCKS[[nm]]]], W)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">block =</span> nm, <span class="at">surplus_cents =</span> f<span class="sc">$</span>b[[<span class="st">&quot;surplus_pos&quot;</span>]], <span class="at">surplus_se =</span> f<span class="sc">$</span>se[[<span class="st">&quot;surplus_pos&quot;</span>]],</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>             <span class="at">deficit_cents =</span> f<span class="sc">$</span>b[[<span class="st">&quot;surplus_neg&quot;</span>]], <span class="at">deficit_se =</span> f<span class="sc">$</span>se[[<span class="st">&quot;surplus_neg&quot;</span>]])</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>}))</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="fu">kable</span>(asym, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Allocation of surpluses vs. funding of deficits, 2022-2023&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Allocation of surpluses vs. funding of deficits,
+2022-2023</caption>
+<colgroup>
+<col width="31%" />
+<col width="19%" />
+<col width="15%" />
+<col width="19%" />
+<col width="15%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="right">surplus_cents</th>
+<th align="right">surplus_se</th>
+<th align="right">deficit_cents</th>
+<th align="right">deficit_se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">cash</td>
+<td align="right">0.342</td>
+<td align="right">0.032</td>
+<td align="right">0.575</td>
+<td align="right">0.055</td>
+</tr>
+<tr class="even">
+<td align="left">other_current_assets</td>
+<td align="right">0.034</td>
+<td align="right">0.005</td>
+<td align="right">0.060</td>
+<td align="right">0.007</td>
+</tr>
+<tr class="odd">
+<td align="left">fixed_assets</td>
+<td align="right">0.146</td>
+<td align="right">0.018</td>
+<td align="right">0.089</td>
+<td align="right">0.012</td>
+</tr>
+<tr class="even">
+<td align="left">other_assets</td>
+<td align="right">0.327</td>
+<td align="right">0.036</td>
+<td align="right">0.273</td>
+<td align="right">0.056</td>
+</tr>
+<tr class="odd">
+<td align="left">long_term_debt</td>
+<td align="right">-0.025</td>
+<td align="right">0.004</td>
+<td align="right">0.005</td>
+<td align="right">0.005</td>
+</tr>
+<tr class="even">
+<td align="left">short_term_liabilities</td>
+<td align="right">-0.009</td>
+<td align="right">0.002</td>
+<td align="right">-0.010</td>
+<td align="right">0.004</td>
+</tr>
+<tr class="odd">
+<td align="left">other_liabilities</td>
+<td align="right">-0.102</td>
+<td align="right">0.084</td>
+<td align="right">0.020</td>
+<td align="right">0.035</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;share of organization-years with a deficit:&quot;</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>    <span class="fu">fmt</span>(<span class="fu">mean</span>(dat[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>, surplus <span class="sc">&lt;</span> <span class="dv">0</span>]), <span class="dv">3</span>), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## share of organization-years with a deficit: 0.421</code></pre>
+<p><strong>Organization fixed effects.</strong> The pooled estimate
+mixes differences between organizations with differences within one
+organization across years. Demeaning by organization over 2019, 2022,
+and 2023 keeps only the within variation.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>fe_dat <span class="ot">&lt;-</span> <span class="fu">scale_vars</span>(dat[year <span class="sc">%in%</span> <span class="fu">c</span>(<span class="dv">2019</span>, <span class="dv">2022</span>, <span class="dv">2023</span>)])</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>demean <span class="ot">&lt;-</span> <span class="cf">function</span>(v, g) v <span class="sc">-</span> <span class="fu">ave</span>(v, g, <span class="at">FUN =</span> mean)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>g <span class="ot">&lt;-</span> fe_dat<span class="sc">$</span>EIN2</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a>W <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">surplus =</span> <span class="fu">demean</span>(fe_dat<span class="sc">$</span>surplus, g))</span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>fe <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(BLOCKS), <span class="cf">function</span>(nm) {</span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>  f <span class="ot">&lt;-</span> <span class="fu">ols</span>(<span class="fu">demean</span>(fe_dat[[BLOCKS[[nm]]]], g), W)</span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">block =</span> nm, <span class="at">within_org_cents =</span> f<span class="sc">$</span>b[[<span class="st">&quot;surplus&quot;</span>]], <span class="at">se =</span> f<span class="sc">$</span>se[[<span class="st">&quot;surplus&quot;</span>]])</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>}))</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">merge</span>(fe, main[, .(block, <span class="at">pooled_cents =</span> cents_per_surplus_dollar)], <span class="at">by =</span> <span class="st">&quot;block&quot;</span>),</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Within-organization vs. pooled allocation&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Within-organization vs. pooled allocation</caption>
+<thead>
+<tr class="header">
+<th align="left">block</th>
+<th align="right">within_org_cents</th>
+<th align="right">se</th>
+<th align="right">pooled_cents</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">cash</td>
+<td align="right">0.434</td>
+<td align="right">0.015</td>
+<td align="right">0.371</td>
+</tr>
+<tr class="even">
+<td align="left">fixed_assets</td>
+<td align="right">0.154</td>
+<td align="right">0.011</td>
+<td align="right">0.139</td>
+</tr>
+<tr class="odd">
+<td align="left">long_term_debt</td>
+<td align="right">-0.018</td>
+<td align="right">0.002</td>
+<td align="right">-0.021</td>
+</tr>
+<tr class="even">
+<td align="left">other_assets</td>
+<td align="right">0.321</td>
+<td align="right">0.018</td>
+<td align="right">0.320</td>
+</tr>
+<tr class="odd">
+<td align="left">other_current_assets</td>
+<td align="right">0.046</td>
+<td align="right">0.004</td>
+<td align="right">0.037</td>
+</tr>
+<tr class="even">
+<td align="left">other_liabilities</td>
+<td align="right">-0.081</td>
+<td align="right">0.048</td>
+<td align="right">-0.087</td>
+</tr>
+<tr class="odd">
+<td align="left">short_term_liabilities</td>
+<td align="right">-0.011</td>
+<td align="right">0.001</td>
+<td align="right">-0.010</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="where-the-surplus-comes-from" class="section level1">
+<h1>5. Where the surplus comes from</h1>
+<p>The allocation above answers where a surplus goes. The same sample
+answers where it comes from, in the same units. Because the surplus is
+revenue minus expenses, and both are sums of reported lines, the
+covariance of each line with the surplus, divided by the variance of the
+surplus, gives shares that add to exactly 1. A share of 0.64 for
+contributions means that of a one-dollar difference in surplus, 64 cents
+co-move with contributions.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>si <span class="ot">&lt;-</span> <span class="fu">scale_vars</span>(dat[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>])</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>vs <span class="ot">&lt;-</span> <span class="fu">var</span>(si<span class="sc">$</span>surplus)</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>share <span class="ot">&lt;-</span> <span class="cf">function</span>(v, <span class="at">sign =</span> <span class="dv">1</span>) sign <span class="sc">*</span> <span class="fu">cov</span>(si[[v]], si<span class="sc">$</span>surplus) <span class="sc">/</span> vs</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>inflow <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">contributions =</span> <span class="fu">share</span>(<span class="st">&quot;contributions&quot;</span>), <span class="at">program_revenue =</span> <span class="fu">share</span>(<span class="st">&quot;program_revenue&quot;</span>),</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>            <span class="at">investment_income =</span> <span class="fu">share</span>(<span class="st">&quot;investment_income&quot;</span>), <span class="at">gains_on_sales =</span> <span class="fu">share</span>(<span class="st">&quot;gains_on_sales&quot;</span>),</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>            <span class="at">other_revenue =</span> <span class="fu">share</span>(<span class="st">&quot;other_revenue&quot;</span>),</span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>            <span class="at">program_expenses =</span> <span class="fu">share</span>(<span class="st">&quot;program_expenses&quot;</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>            <span class="at">admin_expenses =</span> <span class="fu">share</span>(<span class="st">&quot;admin_expenses&quot;</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>            <span class="at">fundraising_expenses =</span> <span class="fu">share</span>(<span class="st">&quot;fundraising_expenses&quot;</span>, <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>            <span class="at">unallocated_expenses =</span> <span class="fu">share</span>(<span class="st">&quot;unallocated_expenses&quot;</span>, <span class="sc">-</span><span class="dv">1</span>))</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">data.frame</span>(<span class="at">line =</span> <span class="fu">names</span>(inflow), <span class="at">side =</span> <span class="fu">c</span>(<span class="fu">rep</span>(<span class="st">&quot;revenue&quot;</span>, <span class="dv">5</span>), <span class="fu">rep</span>(<span class="st">&quot;expense&quot;</span>, <span class="dv">4</span>)),</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>                 <span class="at">share_of_surplus_variation =</span> <span class="fu">round</span>(inflow, <span class="dv">3</span>), <span class="at">row.names =</span> <span class="cn">NULL</span>),</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Shares add to 1 by construction&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Shares add to 1 by construction</caption>
+<thead>
+<tr class="header">
+<th align="left">line</th>
+<th align="left">side</th>
+<th align="right">share_of_surplus_variation</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">contributions</td>
+<td align="left">revenue</td>
+<td align="right">0.641</td>
+</tr>
+<tr class="even">
+<td align="left">program_revenue</td>
+<td align="left">revenue</td>
+<td align="right">0.062</td>
+</tr>
+<tr class="odd">
+<td align="left">investment_income</td>
+<td align="left">revenue</td>
+<td align="right">0.112</td>
+</tr>
+<tr class="even">
+<td align="left">gains_on_sales</td>
+<td align="left">revenue</td>
+<td align="right">0.086</td>
+</tr>
+<tr class="odd">
+<td align="left">other_revenue</td>
+<td align="left">revenue</td>
+<td align="right">0.099</td>
+</tr>
+<tr class="even">
+<td align="left">program_expenses</td>
+<td align="left">expense</td>
+<td align="right">0.008</td>
+</tr>
+<tr class="odd">
+<td align="left">admin_expenses</td>
+<td align="left">expense</td>
+<td align="right">-0.014</td>
+</tr>
+<tr class="even">
+<td align="left">fundraising_expenses</td>
+<td align="left">expense</td>
+<td align="right">-0.005</td>
+</tr>
+<tr class="odd">
+<td align="left">unallocated_expenses</td>
+<td align="left">expense</td>
+<td align="right">0.011</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;revenue lines:&quot;</span>, <span class="fu">fmt</span>(<span class="fu">sum</span>(inflow[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>])), <span class="st">&quot; expense lines:&quot;</span>, <span class="fu">fmt</span>(<span class="fu">sum</span>(inflow[<span class="dv">6</span><span class="sc">:</span><span class="dv">9</span>])),</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>    <span class="st">&quot; total:&quot;</span>, <span class="fu">fmt</span>(<span class="fu">sum</span>(inflow)), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## revenue lines: 1.000  expense lines: 0.000  total: 1.000</code></pre>
+<p>Surpluses are revenue events. The five revenue lines account for the
+whole of the variation, and the four expense lines net to about zero:
+organizations with unusually good years are not the ones that spent
+unusually little.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>pal <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">ink =</span> <span class="st">&quot;#1f2429&quot;</span>, <span class="at">ink_mid =</span> <span class="st">&quot;#4d565f&quot;</span>, <span class="at">ink_soft =</span> <span class="st">&quot;#6d7681&quot;</span>,</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>         <span class="at">accent =</span> <span class="st">&quot;#bd5416&quot;</span>, <span class="at">accent_ink =</span> <span class="st">&quot;#8f3f10&quot;</span>, <span class="at">navy =</span> <span class="st">&quot;#153243&quot;</span>, <span class="at">pumpkin =</span> <span class="st">&quot;#dc965a&quot;</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>a <span class="ot">&lt;-</span> <span class="fu">setNames</span>(main<span class="sc">$</span>cents_per_surplus_dollar, main<span class="sc">$</span>block)</span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>sources <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">Contributions =</span> inflow[[<span class="st">&quot;contributions&quot;</span>]],</span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>             <span class="st">`</span><span class="at">Investment income</span><span class="st">`</span> <span class="ot">=</span> inflow[[<span class="st">&quot;investment_income&quot;</span>]],</span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>             <span class="st">`</span><span class="at">Other revenue</span><span class="st">`</span> <span class="ot">=</span> inflow[[<span class="st">&quot;other_revenue&quot;</span>]],</span>
+<span id="cb17-7"><a href="#cb17-7" tabindex="-1"></a>             <span class="st">`</span><span class="at">Gains on asset sales</span><span class="st">`</span> <span class="ot">=</span> inflow[[<span class="st">&quot;gains_on_sales&quot;</span>]],</span>
+<span id="cb17-8"><a href="#cb17-8" tabindex="-1"></a>             <span class="st">`</span><span class="at">Program revenue</span><span class="st">`</span> <span class="ot">=</span> inflow[[<span class="st">&quot;program_revenue&quot;</span>]])</span>
+<span id="cb17-9"><a href="#cb17-9" tabindex="-1"></a>uses <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">Cash =</span> a[[<span class="st">&quot;cash&quot;</span>]], <span class="st">`</span><span class="at">Investments, other assets</span><span class="st">`</span> <span class="ot">=</span> a[[<span class="st">&quot;other_assets&quot;</span>]],</span>
+<span id="cb17-10"><a href="#cb17-10" tabindex="-1"></a>          <span class="st">`</span><span class="at">Property and equipment</span><span class="st">`</span> <span class="ot">=</span> a[[<span class="st">&quot;fixed_assets&quot;</span>]],</span>
+<span id="cb17-11"><a href="#cb17-11" tabindex="-1"></a>          <span class="st">`</span><span class="at">Debt paid down</span><span class="st">`</span> <span class="ot">=</span> <span class="sc">-</span>(a[[<span class="st">&quot;long_term_debt&quot;</span>]] <span class="sc">+</span> a[[<span class="st">&quot;short_term_liabilities&quot;</span>]] <span class="sc">+</span></span>
+<span id="cb17-12"><a href="#cb17-12" tabindex="-1"></a>                               a[[<span class="st">&quot;other_liabilities&quot;</span>]]),</span>
+<span id="cb17-13"><a href="#cb17-13" tabindex="-1"></a>          <span class="st">`</span><span class="at">Receivables, prepaid</span><span class="st">`</span> <span class="ot">=</span> a[[<span class="st">&quot;other_current_assets&quot;</span>]])</span>
+<span id="cb17-14"><a href="#cb17-14" tabindex="-1"></a></span>
+<span id="cb17-15"><a href="#cb17-15" tabindex="-1"></a>flow_figure <span class="ot">&lt;-</span> <span class="cf">function</span>(sources, uses, expense_net, subtitle) {</span>
+<span id="cb17-16"><a href="#cb17-16" tabindex="-1"></a>  op <span class="ot">&lt;-</span> <span class="fu">par</span>(<span class="at">mar =</span> <span class="fu">c</span>(<span class="fl">0.4</span>, <span class="fl">0.4</span>, <span class="fl">2.6</span>, <span class="fl">0.4</span>), <span class="at">bg =</span> <span class="st">&quot;white&quot;</span>, <span class="at">family =</span> <span class="st">&quot;sans&quot;</span>)</span>
+<span id="cb17-17"><a href="#cb17-17" tabindex="-1"></a>  <span class="fu">on.exit</span>(<span class="fu">par</span>(op))</span>
+<span id="cb17-18"><a href="#cb17-18" tabindex="-1"></a>  <span class="fu">plot.new</span>(); <span class="fu">plot.window</span>(<span class="at">xlim =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">ylim =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="fl">0.14</span>, <span class="fl">1.30</span>))</span>
+<span id="cb17-19"><a href="#cb17-19" tabindex="-1"></a>  gap <span class="ot">&lt;-</span> <span class="fl">0.045</span>; centre <span class="ot">&lt;-</span> <span class="fl">0.56</span></span>
+<span id="cb17-20"><a href="#cb17-20" tabindex="-1"></a>  stack <span class="ot">&lt;-</span> <span class="cf">function</span>(v) {</span>
+<span id="cb17-21"><a href="#cb17-21" tabindex="-1"></a>    y <span class="ot">&lt;-</span> centre <span class="sc">+</span> (<span class="fu">sum</span>(v) <span class="sc">+</span> gap <span class="sc">*</span> (<span class="fu">length</span>(v) <span class="sc">-</span> <span class="dv">1</span>)) <span class="sc">/</span> <span class="dv">2</span></span>
+<span id="cb17-22"><a href="#cb17-22" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">lapply</span>(v, <span class="cf">function</span>(h) { r <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">top =</span> y, <span class="at">bot =</span> y <span class="sc">-</span> h); y <span class="ot">&lt;&lt;-</span> y <span class="sc">-</span> h <span class="sc">-</span> gap; r })</span>
+<span id="cb17-23"><a href="#cb17-23" tabindex="-1"></a>    <span class="fu">names</span>(out) <span class="ot">&lt;-</span> <span class="fu">names</span>(v); out</span>
+<span id="cb17-24"><a href="#cb17-24" tabindex="-1"></a>  }</span>
+<span id="cb17-25"><a href="#cb17-25" tabindex="-1"></a>  ribbon <span class="ot">&lt;-</span> <span class="cf">function</span>(x0, x1, t0, b0, t1, b1, col, alpha) {</span>
+<span id="cb17-26"><a href="#cb17-26" tabindex="-1"></a>    t <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">1</span>, <span class="at">length.out =</span> <span class="dv">80</span>); s <span class="ot">&lt;-</span> t <span class="sc">*</span> t <span class="sc">*</span> (<span class="dv">3</span> <span class="sc">-</span> <span class="dv">2</span> <span class="sc">*</span> t); xs <span class="ot">&lt;-</span> x0 <span class="sc">+</span> (x1 <span class="sc">-</span> x0) <span class="sc">*</span> t</span>
+<span id="cb17-27"><a href="#cb17-27" tabindex="-1"></a>    <span class="fu">polygon</span>(<span class="fu">c</span>(xs, <span class="fu">rev</span>(xs)), <span class="fu">c</span>(t0 <span class="sc">+</span> (t1 <span class="sc">-</span> t0) <span class="sc">*</span> s, <span class="fu">rev</span>(b0 <span class="sc">+</span> (b1 <span class="sc">-</span> b0) <span class="sc">*</span> s)),</span>
+<span id="cb17-28"><a href="#cb17-28" tabindex="-1"></a>            <span class="at">col =</span> <span class="fu">adjustcolor</span>(col, alpha), <span class="at">border =</span> <span class="cn">NA</span>)</span>
+<span id="cb17-29"><a href="#cb17-29" tabindex="-1"></a>  }</span>
+<span id="cb17-30"><a href="#cb17-30" tabindex="-1"></a>  xs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.275</span>, <span class="fl">0.325</span>); xt <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.495</span>, <span class="fl">0.545</span>); xu <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.715</span>, <span class="fl">0.765</span>)</span>
+<span id="cb17-31"><a href="#cb17-31" tabindex="-1"></a>  src <span class="ot">&lt;-</span> <span class="fu">stack</span>(sources); use <span class="ot">&lt;-</span> <span class="fu">stack</span>(uses)</span>
+<span id="cb17-32"><a href="#cb17-32" tabindex="-1"></a>  top <span class="ot">&lt;-</span> centre <span class="sc">+</span> <span class="fl">0.5</span></span>
+<span id="cb17-33"><a href="#cb17-33" tabindex="-1"></a>  cur <span class="ot">&lt;-</span> top</span>
+<span id="cb17-34"><a href="#cb17-34" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(src)) {</span>
+<span id="cb17-35"><a href="#cb17-35" tabindex="-1"></a>    <span class="fu">ribbon</span>(xs[<span class="dv">2</span>], xt[<span class="dv">1</span>], src[[i]][[<span class="st">&quot;top&quot;</span>]], src[[i]][[<span class="st">&quot;bot&quot;</span>]], cur, cur <span class="sc">-</span> sources[[i]],</span>
+<span id="cb17-36"><a href="#cb17-36" tabindex="-1"></a>           pal[[<span class="st">&quot;navy&quot;</span>]], <span class="fl">0.34</span>); cur <span class="ot">&lt;-</span> cur <span class="sc">-</span> sources[[i]]</span>
+<span id="cb17-37"><a href="#cb17-37" tabindex="-1"></a>  }</span>
+<span id="cb17-38"><a href="#cb17-38" tabindex="-1"></a>  cur <span class="ot">&lt;-</span> top</span>
+<span id="cb17-39"><a href="#cb17-39" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(use)) {</span>
+<span id="cb17-40"><a href="#cb17-40" tabindex="-1"></a>    <span class="fu">ribbon</span>(xt[<span class="dv">2</span>], xu[<span class="dv">1</span>], cur, cur <span class="sc">-</span> uses[[i]], use[[i]][[<span class="st">&quot;top&quot;</span>]], use[[i]][[<span class="st">&quot;bot&quot;</span>]],</span>
+<span id="cb17-41"><a href="#cb17-41" tabindex="-1"></a>           <span class="cf">if</span> (<span class="fu">names</span>(uses)[i] <span class="sc">==</span> <span class="st">&quot;Debt paid down&quot;</span>) pal[[<span class="st">&quot;ink_mid&quot;</span>]] <span class="cf">else</span> pal[[<span class="st">&quot;accent&quot;</span>]], <span class="fl">0.40</span>)</span>
+<span id="cb17-42"><a href="#cb17-42" tabindex="-1"></a>    cur <span class="ot">&lt;-</span> cur <span class="sc">-</span> uses[[i]]</span>
+<span id="cb17-43"><a href="#cb17-43" tabindex="-1"></a>  }</span>
+<span id="cb17-44"><a href="#cb17-44" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(src)) {</span>
+<span id="cb17-45"><a href="#cb17-45" tabindex="-1"></a>    <span class="fu">rect</span>(xs[<span class="dv">1</span>], src[[i]][[<span class="st">&quot;bot&quot;</span>]], xs[<span class="dv">2</span>], src[[i]][[<span class="st">&quot;top&quot;</span>]], <span class="at">col =</span> pal[[<span class="st">&quot;navy&quot;</span>]], <span class="at">border =</span> <span class="cn">NA</span>)</span>
+<span id="cb17-46"><a href="#cb17-46" tabindex="-1"></a>    <span class="fu">text</span>(xs[<span class="dv">1</span>] <span class="sc">-</span> <span class="fl">0.014</span>, <span class="fu">mean</span>(src[[i]]), <span class="fu">sprintf</span>(<span class="st">&quot;%s  %.2f&quot;</span>, <span class="fu">names</span>(sources)[i], sources[[i]]),</span>
+<span id="cb17-47"><a href="#cb17-47" tabindex="-1"></a>         <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.5</span>), <span class="at">cex =</span> <span class="fl">0.68</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink&quot;</span>]])</span>
+<span id="cb17-48"><a href="#cb17-48" tabindex="-1"></a>  }</span>
+<span id="cb17-49"><a href="#cb17-49" tabindex="-1"></a>  <span class="fu">rect</span>(xt[<span class="dv">1</span>], centre <span class="sc">-</span> <span class="fl">0.5</span>, xt[<span class="dv">2</span>], top, <span class="at">col =</span> pal[[<span class="st">&quot;accent&quot;</span>]], <span class="at">border =</span> <span class="cn">NA</span>)</span>
+<span id="cb17-50"><a href="#cb17-50" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fu">mean</span>(xt), top <span class="sc">+</span> <span class="fl">0.045</span>, <span class="st">&quot;$1 of surplus&quot;</span>, <span class="at">adj =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="dv">0</span>), <span class="at">cex =</span> <span class="fl">0.78</span>, <span class="at">font =</span> <span class="dv">2</span>,</span>
+<span id="cb17-51"><a href="#cb17-51" tabindex="-1"></a>       <span class="at">col =</span> pal[[<span class="st">&quot;accent_ink&quot;</span>]])</span>
+<span id="cb17-52"><a href="#cb17-52" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(use)) {</span>
+<span id="cb17-53"><a href="#cb17-53" tabindex="-1"></a>    <span class="fu">rect</span>(xu[<span class="dv">1</span>], use[[i]][[<span class="st">&quot;bot&quot;</span>]], xu[<span class="dv">2</span>], use[[i]][[<span class="st">&quot;top&quot;</span>]],</span>
+<span id="cb17-54"><a href="#cb17-54" tabindex="-1"></a>         <span class="at">col =</span> <span class="cf">if</span> (<span class="fu">names</span>(uses)[i] <span class="sc">==</span> <span class="st">&quot;Debt paid down&quot;</span>) pal[[<span class="st">&quot;ink_mid&quot;</span>]] <span class="cf">else</span> pal[[<span class="st">&quot;pumpkin&quot;</span>]],</span>
+<span id="cb17-55"><a href="#cb17-55" tabindex="-1"></a>         <span class="at">border =</span> <span class="cn">NA</span>)</span>
+<span id="cb17-56"><a href="#cb17-56" tabindex="-1"></a>    <span class="fu">text</span>(xu[<span class="dv">2</span>] <span class="sc">+</span> <span class="fl">0.014</span>, <span class="fu">mean</span>(use[[i]]), <span class="fu">sprintf</span>(<span class="st">&quot;%s  %.2f&quot;</span>, <span class="fu">names</span>(uses)[i], uses[[i]]),</span>
+<span id="cb17-57"><a href="#cb17-57" tabindex="-1"></a>         <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>), <span class="at">cex =</span> <span class="fl">0.68</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink&quot;</span>]])</span>
+<span id="cb17-58"><a href="#cb17-58" tabindex="-1"></a>  }</span>
+<span id="cb17-59"><a href="#cb17-59" tabindex="-1"></a>  <span class="fu">text</span>(xs[<span class="dv">1</span>] <span class="sc">-</span> <span class="fl">0.014</span>, centre <span class="sc">-</span> <span class="fl">0.72</span>, <span class="st">&quot;revenue lines that move the surplus&quot;</span>, <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fl">0.5</span>),</span>
+<span id="cb17-60"><a href="#cb17-60" tabindex="-1"></a>       <span class="at">cex =</span> <span class="fl">0.6</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink_soft&quot;</span>]], <span class="at">font =</span> <span class="dv">3</span>)</span>
+<span id="cb17-61"><a href="#cb17-61" tabindex="-1"></a>  <span class="fu">text</span>(<span class="fu">mean</span>(xt), centre <span class="sc">-</span> <span class="fl">0.72</span>, <span class="fu">sprintf</span>(<span class="st">&quot;expense lines net %+.2f&quot;</span>, expense_net),</span>
+<span id="cb17-62"><a href="#cb17-62" tabindex="-1"></a>       <span class="at">adj =</span> <span class="fu">c</span>(<span class="fl">0.5</span>, <span class="fl">0.5</span>), <span class="at">cex =</span> <span class="fl">0.6</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink_soft&quot;</span>]], <span class="at">font =</span> <span class="dv">3</span>)</span>
+<span id="cb17-63"><a href="#cb17-63" tabindex="-1"></a>  <span class="fu">text</span>(xu[<span class="dv">2</span>] <span class="sc">+</span> <span class="fl">0.014</span>, centre <span class="sc">-</span> <span class="fl">0.72</span>, <span class="st">&quot;where the dollar lands&quot;</span>, <span class="at">adj =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="fl">0.5</span>),</span>
+<span id="cb17-64"><a href="#cb17-64" tabindex="-1"></a>       <span class="at">cex =</span> <span class="fl">0.6</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink_soft&quot;</span>]], <span class="at">font =</span> <span class="dv">3</span>)</span>
+<span id="cb17-65"><a href="#cb17-65" tabindex="-1"></a>  <span class="fu">mtext</span>(<span class="st">&quot;Where a surplus comes from, and where it goes&quot;</span>, <span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="fl">1.1</span>, <span class="at">adj =</span> <span class="dv">0</span>,</span>
+<span id="cb17-66"><a href="#cb17-66" tabindex="-1"></a>        <span class="at">cex =</span> <span class="fl">1.0</span>, <span class="at">font =</span> <span class="dv">2</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink&quot;</span>]])</span>
+<span id="cb17-67"><a href="#cb17-67" tabindex="-1"></a>  <span class="fu">mtext</span>(subtitle, <span class="at">side =</span> <span class="dv">3</span>, <span class="at">line =</span> <span class="fl">0.1</span>, <span class="at">adj =</span> <span class="dv">0</span>, <span class="at">cex =</span> <span class="fl">0.66</span>, <span class="at">col =</span> pal[[<span class="st">&quot;ink_soft&quot;</span>]])</span>
+<span id="cb17-68"><a href="#cb17-68" tabindex="-1"></a>}</span>
+<span id="cb17-69"><a href="#cb17-69" tabindex="-1"></a></span>
+<span id="cb17-70"><a href="#cb17-70" tabindex="-1"></a><span class="fu">flow_figure</span>(sources, uses, <span class="fu">sum</span>(inflow[<span class="dv">6</span><span class="sc">:</span><span class="dv">9</span>]),</span>
+<span id="cb17-71"><a href="#cb17-71" tabindex="-1"></a>            <span class="fu">paste0</span>(<span class="st">&quot;cents per dollar of surplus  |  full-990 filers, December year-ends, 2022-2023  |  n = &quot;</span>,</span>
+<span id="cb17-72"><a href="#cb17-72" tabindex="-1"></a>                   <span class="fu">format</span>(<span class="fu">nrow</span>(si), <span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>)))</span></code></pre></div>
+<p><img role="img" aria-label src="data:image/png;base64,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" alt width="844.8" /></p>
+<p>The two sides are not symmetric. Surpluses arrive mostly as
+contributions and investment returns, and they leave mostly as cash and
+investments. Property absorbs a seventh, and debt repayment a smaller
+share still.</p>
+</div>
+<div id="findings" class="section level1">
+<h1>6. Findings</h1>
+<ul>
+<li><strong>Traceable share.</strong> The asset-side minus
+liability-side coefficients sum to 0.985, against 0.985 from regressing
+the change in net assets directly on the surplus. The identity holds in
+the estimates.</li>
+<li><strong>Cash.</strong> 0.371 of each surplus dollar ends the year as
+cash.</li>
+<li><strong>Property.</strong> 0.139 goes into land, buildings, and
+equipment.</li>
+<li><strong>Other assets.</strong> 0.320, mostly investments.</li>
+<li><strong>Debt.</strong> Long-term debt changes by -0.021 and
+short-term liabilities by -0.010 per surplus dollar; negative
+coefficients mean surpluses coincide with paying debt down.</li>
+</ul>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] digest_0.6.39   R6_2.6.1        fastmap_1.2.0   bit_4.6.0       xfun_0.57       cachem_1.1.0    htmltools_0.5.9
+##  [8] rmarkdown_2.31  lifecycle_1.0.5 cli_3.6.5       sass_0.4.10     jquerylib_0.1.4 compiler_4.5.3  tools_4.5.3    
+## [15] evaluate_1.0.5  bslib_0.10.0    yaml_2.3.12     otel_0.2.0      rlang_1.1.7     jsonlite_2.0.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

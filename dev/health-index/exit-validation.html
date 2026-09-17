@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Does the Index Predict Failure?</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Does the Index Predict Failure?</h1>
+<h3 class="subtitle">Multi-year filing gaps among 2019 full-990
+filers</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#filing-patterns-after-2019" id="toc-filing-patterns-after-2019">1. Filing patterns after
+2019</a></li>
+<li><a href="#scores-for-the-cohort" id="toc-scores-for-the-cohort">2.
+2019 scores for the cohort</a></li>
+<li><a href="#does-the-index-predict-the-gap" id="toc-does-the-index-predict-the-gap">3. Does the index predict the
+gap?</a></li>
+<li><a href="#findings" id="toc-findings">4. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p>Every validation so far used a panel that required a filing in all of
+2019-2023, which removed exactly the organizations a failure test needs.
+This document uses the cohort panel built by
+<code>dev/panel/panel_build_exits.R</code>: all 280,158 organizations
+that filed a full 990 for tax year 2019, followed through 2024 whether
+or not they kept filing. A gap is the outcome.</p>
+<p><strong>What a filing gap is and is not.</strong> Disappearing from
+the e-file record can mean dissolution, a merger, or shrinking below the
+990 threshold and moving to the 990-N postcard, which is not in these
+files. It can also mean a late filing. The outcomes below are therefore
+“stopped filing a 990 or 990EZ”, not “failed”, and the 2024 file is
+still incomplete. Reading a gap as failure is safest for larger
+organizations, which rarely drop to 990-N.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">library</span>(splines)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>})</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;dimension-scores.R&quot;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span></code></pre></div>
+</div>
+<div id="filing-patterns-after-2019" class="section level1">
+<h1>1. Filing patterns after 2019</h1>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>pres <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">readRDS</span>(params<span class="sc">$</span>presence_file))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>yrs <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;form&quot;</span>, <span class="dv">2019</span><span class="sc">:</span><span class="dv">2024</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">kable</span>(pres[, .N, <span class="at">by =</span> years_filed][<span class="fu">order</span>(years_filed)],</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Years filed, 2019-2024&quot;</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<caption>Years filed, 2019-2024</caption>
+<thead>
+<tr class="header">
+<th align="right">years_filed</th>
+<th align="right">N</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+<td align="right">5,276</td>
+</tr>
+<tr class="even">
+<td align="right">2</td>
+<td align="right">5,607</td>
+</tr>
+<tr class="odd">
+<td align="right">3</td>
+<td align="right">5,866</td>
+</tr>
+<tr class="even">
+<td align="right">4</td>
+<td align="right">9,580</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="right">73,563</td>
+</tr>
+<tr class="even">
+<td align="right">6</td>
+<td align="right">180,266</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>pres[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="at">gap_2022_2023 =</span> <span class="fu">as.numeric</span>(<span class="fu">is.na</span>(form2022) <span class="sc">&amp;</span> <span class="fu">is.na</span>(form2023)),</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">gap_from_2021 =</span> <span class="fu">as.numeric</span>(<span class="fu">is.na</span>(form2021) <span class="sc">&amp;</span> <span class="fu">is.na</span>(form2022) <span class="sc">&amp;</span> <span class="fu">is.na</span>(form2023)),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">absent_2023   =</span> <span class="fu">as.numeric</span>(<span class="fu">is.na</span>(form2023)),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">absent_2024   =</span> <span class="fu">as.numeric</span>(<span class="fu">is.na</span>(form2024)),</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">downshift_ez  =</span> <span class="fu">as.numeric</span>(<span class="sc">!</span><span class="fu">is.na</span>(form2023) <span class="sc">&amp;</span> form2023 <span class="sc">==</span> <span class="st">&quot;990EZ&quot;</span>))]</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="fu">kable</span>(pres[, .(<span class="at">organizations =</span> .N,</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>               <span class="st">`</span><span class="at">gap in 2022 and 2023</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(gap_2022_2023),</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>               <span class="st">`</span><span class="at">gap from 2021 on</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(gap_from_2021),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>               <span class="st">`</span><span class="at">absent in 2023</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(absent_2023),</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>               <span class="st">`</span><span class="at">absent in 2024</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(absent_2024),</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>               <span class="st">`</span><span class="at">filed 990EZ in 2023</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(downshift_ez))], <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="13%" />
+<col width="20%" />
+<col width="16%" />
+<col width="14%" />
+<col width="14%" />
+<col width="19%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">organizations</th>
+<th align="right">gap in 2022 and 2023</th>
+<th align="right">gap from 2021 on</th>
+<th align="right">absent in 2023</th>
+<th align="right">absent in 2024</th>
+<th align="right">filed 990EZ in 2023</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">280,158</td>
+<td align="right">0.0574</td>
+<td align="right">0.0382</td>
+<td align="right">0.0896</td>
+<td align="right">0.3367</td>
+<td align="right">0.0274</td>
+</tr>
+</tbody>
+</table>
+<p>The headline outcome is <strong>a two-year gap covering 2022 and
+2023</strong>, with 2024 used as a check: an organization that filed
+again in 2024 was late, not gone.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>pres[, gap_confirmed <span class="sc">:=</span> <span class="fu">as.numeric</span>(gap_2022_2023 <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> <span class="fu">is.na</span>(form2024))]</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="fu">kable</span>(pres[, .(<span class="st">`</span><span class="at">two-year gap</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sum</span>(gap_2022_2023),</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>               <span class="st">`</span><span class="at">of those, also absent in 2024</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">sum</span>(gap_confirmed),</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>               <span class="st">`</span><span class="at">share confirmed</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(gap_confirmed[gap_2022_2023 <span class="sc">==</span> <span class="dv">1</span>]))],</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">two-year gap</th>
+<th align="right">of those, also absent in 2024</th>
+<th align="right">share confirmed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">16,090</td>
+<td align="right">15,589</td>
+<td align="right">0.969</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="scores-for-the-cohort" class="section level1">
+<h1>2. 2019 scores for the cohort</h1>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>panel <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(params<span class="sc">$</span>panel_file)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(panel990<span class="sc">::</span><span class="fu">panel_data</span>(panel))</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="fu">rm</span>(panel); <span class="fu">invisible</span>(<span class="fu">gc</span>())</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>d19 <span class="ot">&lt;-</span> d[TAX_YEAR <span class="sc">==</span> <span class="dv">2019</span> <span class="sc">&amp;</span> RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span>]</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>s19 <span class="ot">&lt;-</span> <span class="fu">dimension_scores</span>(d19, <span class="at">seed =</span> params<span class="sc">$</span>seed)</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>WEIGHTS <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">equal =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="at">performance =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="at">leverage =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>                <span class="at">incremental =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="fl">0.415</span>, <span class="at">performance =</span> <span class="fl">0.585</span>, <span class="at">leverage =</span> <span class="dv">0</span>),</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>                <span class="at">performance_dominant =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="fl">0.121</span>, <span class="at">performance =</span> <span class="fl">0.879</span>, <span class="at">leverage =</span> <span class="dv">0</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="cf">for</span> (nm <span class="cf">in</span> <span class="fu">names</span>(WEIGHTS)) s19[[<span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, nm)]] <span class="ot">&lt;-</span> <span class="fu">composite_index</span>(s19, WEIGHTS[[nm]])</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>sub <span class="ot">&lt;-</span> d19[, .(<span class="at">EIN2 =</span> <span class="fu">as.character</span>(EIN2),</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>               <span class="at">subsector =</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(nteev2_subsector) <span class="sc">|</span> nteev2_subsector <span class="sc">==</span> <span class="st">&quot;&quot;</span>, <span class="st">&quot;unknown&quot;</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>                                  <span class="fu">as.character</span>(nteev2_subsector)),</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>               <span class="at">period_end =</span> TAX_PERIOD_END_DATE)]</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">merge</span>(<span class="fu">merge</span>(s19, sub, <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>), pres, <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>)</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>m[, size_bin <span class="sc">:=</span> <span class="fu">cut</span>(E, <span class="fu">c</span>(<span class="sc">-</span><span class="cn">Inf</span>, <span class="fl">1e5</span>, <span class="fl">1e6</span>, <span class="fl">1e7</span>, <span class="cn">Inf</span>),</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>                    <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;under $100k&quot;</span>, <span class="st">&quot;$100k-$1m&quot;</span>, <span class="st">&quot;$1m-$10m&quot;</span>, <span class="st">&quot;$10m+&quot;</span>))]</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="fu">kable</span>(m[, .(<span class="at">organizations =</span> .N, <span class="at">gap_rate =</span> <span class="fu">mean</span>(gap_2022_2023),</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>            <span class="at">confirmed_gap_rate =</span> <span class="fu">mean</span>(gap_confirmed)), <span class="at">by =</span> size_bin][<span class="fu">order</span>(size_bin)],</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">size_bin</th>
+<th align="right">organizations</th>
+<th align="right">gap_rate</th>
+<th align="right">confirmed_gap_rate</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">under $100k</td>
+<td align="right">40,903</td>
+<td align="right">0.1286</td>
+<td align="right">0.1242</td>
+</tr>
+<tr class="even">
+<td align="left">$100k-$1m</td>
+<td align="right">145,294</td>
+<td align="right">0.0523</td>
+<td align="right">0.0504</td>
+</tr>
+<tr class="odd">
+<td align="left">$1m-$10m</td>
+<td align="right">69,112</td>
+<td align="right">0.0296</td>
+<td align="right">0.0291</td>
+</tr>
+<tr class="even">
+<td align="left">$10m+</td>
+<td align="right">22,441</td>
+<td align="right">0.0200</td>
+<td align="right">0.0198</td>
+</tr>
+</tbody>
+</table>
+<p>Gap rates fall steeply with size, which is the first reason to
+control for size before reading anything into a score.</p>
+</div>
+<div id="does-the-index-predict-the-gap" class="section level1">
+<h1>3. Does the index predict the gap?</h1>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>ols <span class="ot">&lt;-</span> <span class="cf">function</span>(y, W) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  XtXi <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(W)); b <span class="ot">&lt;-</span> <span class="fu">drop</span>(XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W, y))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  e <span class="ot">&lt;-</span> <span class="fu">drop</span>(y <span class="sc">-</span> W <span class="sc">%*%</span> b)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  V <span class="ot">&lt;-</span> XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W <span class="sc">*</span> e) <span class="sc">%*%</span> XtXi <span class="sc">*</span> <span class="fu">nrow</span>(W) <span class="sc">/</span> (<span class="fu">nrow</span>(W) <span class="sc">-</span> <span class="fu">ncol</span>(W))</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">coef =</span> <span class="fu">data.table</span>(<span class="at">term =</span> <span class="fu">colnames</span>(W), <span class="at">estimate =</span> b, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(V))),</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>       <span class="at">fitted =</span> <span class="fu">drop</span>(W <span class="sc">%*%</span> b))</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>}</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="cf">function</span>(score, y) {</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">rank</span>(score); n1 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">1</span>)); n0 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">0</span>))</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  (<span class="fu">sum</span>(r[y <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> n1 <span class="sc">*</span> (n1 <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">/</span> (n1 <span class="sc">*</span> n0)</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>}</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>ctrl <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, <span class="fu">ns</span>(<span class="fu">log</span>(<span class="fu">pmax</span>(m<span class="sc">$</span>E, <span class="dv">1</span>)), <span class="at">df =</span> <span class="dv">4</span>))</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>OUT <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">gap_2022_2023 =</span> <span class="st">&quot;gap_2022_2023&quot;</span>, <span class="at">gap_confirmed =</span> <span class="st">&quot;gap_confirmed&quot;</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>         <span class="at">gap_from_2021 =</span> <span class="st">&quot;gap_from_2021&quot;</span>, <span class="at">downshift_ez =</span> <span class="st">&quot;downshift_ez&quot;</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>race <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(OUT), <span class="cf">function</span>(nm) {</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  y <span class="ot">&lt;-</span> m[[OUT[[nm]]]]</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  fit <span class="ot">&lt;-</span> <span class="cf">function</span>(cols) {</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>    W <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">length</span>(cols)) <span class="fu">cbind</span>(ctrl, <span class="fu">as.matrix</span>(m[, ..cols])) <span class="cf">else</span> ctrl</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>    f <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, W); <span class="fu">list</span>(<span class="at">auc =</span> <span class="fu">auc</span>(f<span class="sc">$</span>fitted, y), <span class="at">coef =</span> f<span class="sc">$</span>coef)</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>  }</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>  all3 <span class="ot">&lt;-</span> <span class="fu">fit</span>(<span class="fu">c</span>(<span class="st">&quot;reserves&quot;</span>, <span class="st">&quot;performance&quot;</span>, <span class="st">&quot;leverage&quot;</span>))</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>  cf <span class="ot">&lt;-</span> all3<span class="sc">$</span>coef</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">rate =</span> <span class="fu">mean</span>(y),</span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>             <span class="at">auc_size_only =</span> <span class="fu">fit</span>(<span class="fu">character</span>())<span class="sc">$</span>auc,</span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>             <span class="at">auc_reserves =</span> <span class="fu">fit</span>(<span class="st">&quot;reserves&quot;</span>)<span class="sc">$</span>auc,</span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>             <span class="at">auc_performance =</span> <span class="fu">fit</span>(<span class="st">&quot;performance&quot;</span>)<span class="sc">$</span>auc,</span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>             <span class="at">auc_leverage =</span> <span class="fu">fit</span>(<span class="st">&quot;leverage&quot;</span>)<span class="sc">$</span>auc,</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>             <span class="at">auc_all_three =</span> all3<span class="sc">$</span>auc,</span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>             <span class="at">beta_reserves =</span> cf[term <span class="sc">==</span> <span class="st">&quot;reserves&quot;</span>, estimate],</span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>             <span class="at">beta_performance =</span> cf[term <span class="sc">==</span> <span class="st">&quot;performance&quot;</span>, estimate],</span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>             <span class="at">beta_leverage =</span> cf[term <span class="sc">==</span> <span class="st">&quot;leverage&quot;</span>, estimate])</span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>}))</span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a><span class="fu">kable</span>(race, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Dimension scores in 2019 predicting later filing gaps&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Dimension scores in 2019 predicting later filing gaps</caption>
+<colgroup>
+<col width="10%" />
+<col width="5%" />
+<col width="10%" />
+<col width="9%" />
+<col width="11%" />
+<col width="9%" />
+<col width="10%" />
+<col width="10%" />
+<col width="12%" />
+<col width="10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">rate</th>
+<th align="right">auc_size_only</th>
+<th align="right">auc_reserves</th>
+<th align="right">auc_performance</th>
+<th align="right">auc_leverage</th>
+<th align="right">auc_all_three</th>
+<th align="right">beta_reserves</th>
+<th align="right">beta_performance</th>
+<th align="right">beta_leverage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gap_2022_2023</td>
+<td align="right">0.0553</td>
+<td align="right">0.6644</td>
+<td align="right">0.7079</td>
+<td align="right">0.6891</td>
+<td align="right">0.6660</td>
+<td align="right">0.7148</td>
+<td align="right">-0.0322</td>
+<td align="right">-0.0240</td>
+<td align="right">0.0094</td>
+</tr>
+<tr class="even">
+<td align="left">gap_confirmed</td>
+<td align="right">0.0535</td>
+<td align="right">0.6624</td>
+<td align="right">0.7078</td>
+<td align="right">0.6889</td>
+<td align="right">0.6638</td>
+<td align="right">0.7148</td>
+<td align="right">-0.0316</td>
+<td align="right">-0.0239</td>
+<td align="right">0.0093</td>
+</tr>
+<tr class="odd">
+<td align="left">gap_from_2021</td>
+<td align="right">0.0364</td>
+<td align="right">0.6750</td>
+<td align="right">0.7268</td>
+<td align="right">0.7072</td>
+<td align="right">0.6733</td>
+<td align="right">0.7341</td>
+<td align="right">-0.0269</td>
+<td align="right">-0.0202</td>
+<td align="right">0.0108</td>
+</tr>
+<tr class="even">
+<td align="left">downshift_ez</td>
+<td align="right">0.0272</td>
+<td align="right">0.7655</td>
+<td align="right">0.7921</td>
+<td align="right">0.7677</td>
+<td align="right">0.7662</td>
+<td align="right">0.7938</td>
+<td align="right">-0.0160</td>
+<td align="right">-0.0007</td>
+<td align="right">0.0048</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>idx <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, <span class="fu">names</span>(WEIGHTS))</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>ver <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(OUT), <span class="cf">function</span>(nm) {</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  y <span class="ot">&lt;-</span> m[[OUT[[nm]]]]</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">rate =</span> <span class="fu">mean</span>(y),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>             <span class="at">equal =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_equal, y),</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>             <span class="at">incremental =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_incremental, y),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>             <span class="at">performance_dominant =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_performance_dominant, y),</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>             <span class="at">size_only =</span> <span class="fu">auc</span>(<span class="fu">ols</span>(y, ctrl)<span class="sc">$</span>fitted, y))</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>}))</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="fu">kable</span>(ver, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Index versions (low score = trouble), raw AUC&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Index versions (low score = trouble), raw AUC</caption>
+<colgroup>
+<col width="19%" />
+<col width="9%" />
+<col width="9%" />
+<col width="16%" />
+<col width="29%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">rate</th>
+<th align="right">equal</th>
+<th align="right">incremental</th>
+<th align="right">performance_dominant</th>
+<th align="right">size_only</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gap_2022_2023</td>
+<td align="right">0.0553</td>
+<td align="right">0.5497</td>
+<td align="right">0.5839</td>
+<td align="right">0.5945</td>
+<td align="right">0.6644</td>
+</tr>
+<tr class="even">
+<td align="left">gap_confirmed</td>
+<td align="right">0.0535</td>
+<td align="right">0.5530</td>
+<td align="right">0.5872</td>
+<td align="right">0.5977</td>
+<td align="right">0.6624</td>
+</tr>
+<tr class="odd">
+<td align="left">gap_from_2021</td>
+<td align="right">0.0364</td>
+<td align="right">0.5627</td>
+<td align="right">0.6016</td>
+<td align="right">0.6120</td>
+<td align="right">0.6750</td>
+</tr>
+<tr class="even">
+<td align="left">downshift_ez</td>
+<td align="right">0.0272</td>
+<td align="right">0.4455</td>
+<td align="right">0.4932</td>
+<td align="right">0.5039</td>
+<td align="right">0.7655</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Triage view.</strong> Gap rates by decile of each index, for
+the confirmed two-year gap.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>dec <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(WEIGHTS), <span class="cf">function</span>(nm) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  col <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, nm)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  m[, d <span class="sc">:=</span> <span class="fu">cut</span>(<span class="fu">get</span>(col), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">10</span>), <span class="at">labels =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">include.lowest =</span> <span class="cn">TRUE</span>)]</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="fu">cbind</span>(<span class="at">scheme =</span> nm, m[, .(<span class="at">organizations =</span> .N, <span class="at">confirmed_gap =</span> <span class="fu">mean</span>(gap_confirmed)), <span class="at">by =</span> d][<span class="fu">order</span>(d)])</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>}))</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">dcast</span>(dec, d <span class="sc">~</span> scheme, <span class="at">value.var =</span> <span class="st">&quot;confirmed_gap&quot;</span>), <span class="at">digits =</span> <span class="dv">4</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Confirmed two-year gap rate by index decile&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Confirmed two-year gap rate by index decile</caption>
+<thead>
+<tr class="header">
+<th align="left">d</th>
+<th align="right">equal</th>
+<th align="right">incremental</th>
+<th align="right">performance_dominant</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="right">0.1084</td>
+<td align="right">0.1572</td>
+<td align="right">0.1651</td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="right">0.0634</td>
+<td align="right">0.0572</td>
+<td align="right">0.0586</td>
+</tr>
+<tr class="odd">
+<td align="left">3</td>
+<td align="right">0.0447</td>
+<td align="right">0.0376</td>
+<td align="right">0.0392</td>
+</tr>
+<tr class="even">
+<td align="left">4</td>
+<td align="right">0.0450</td>
+<td align="right">0.0318</td>
+<td align="right">0.0359</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="right">0.0425</td>
+<td align="right">0.0308</td>
+<td align="right">0.0273</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="right">0.0379</td>
+<td align="right">0.0333</td>
+<td align="right">0.0276</td>
+</tr>
+<tr class="odd">
+<td align="left">7</td>
+<td align="right">0.0396</td>
+<td align="right">0.0328</td>
+<td align="right">0.0290</td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="right">0.0382</td>
+<td align="right">0.0369</td>
+<td align="right">0.0338</td>
+</tr>
+<tr class="odd">
+<td align="left">9</td>
+<td align="right">0.0463</td>
+<td align="right">0.0453</td>
+<td align="right">0.0410</td>
+</tr>
+<tr class="even">
+<td align="left">10</td>
+<td align="right">0.0691</td>
+<td align="right">0.0723</td>
+<td align="right">0.0776</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Large organizations only.</strong> Dropping to the 990-N
+postcard is implausible above $1m of expenses, so a gap there is closer
+to real failure.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>big <span class="ot">&lt;-</span> m[E <span class="sc">&gt;=</span> <span class="fl">1e6</span>]</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>ctrl_big <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>, <span class="fu">ns</span>(<span class="fu">log</span>(big<span class="sc">$</span>E), <span class="at">df =</span> <span class="dv">4</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>big_res <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">c</span>(<span class="st">&quot;gap_2022_2023&quot;</span>, <span class="st">&quot;gap_confirmed&quot;</span>), <span class="cf">function</span>(nm) {</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  y <span class="ot">&lt;-</span> big[[nm]]</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  f_all <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(ctrl_big, <span class="fu">as.matrix</span>(big[, .(reserves, performance, leverage)])))</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">organizations =</span> <span class="fu">nrow</span>(big), <span class="at">rate =</span> <span class="fu">mean</span>(y),</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>             <span class="at">auc_size_only =</span> <span class="fu">auc</span>(<span class="fu">ols</span>(y, ctrl_big)<span class="sc">$</span>fitted, y),</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>             <span class="at">auc_all_three =</span> <span class="fu">auc</span>(f_all<span class="sc">$</span>fitted, y),</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>             <span class="at">auc_index_incremental =</span> <span class="fu">auc</span>(<span class="sc">-</span>big<span class="sc">$</span>index_incremental, y),</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>             <span class="at">beta_reserves =</span> f_all<span class="sc">$</span>coef[term <span class="sc">==</span> <span class="st">&quot;reserves&quot;</span>, estimate],</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>             <span class="at">beta_performance =</span> f_all<span class="sc">$</span>coef[term <span class="sc">==</span> <span class="st">&quot;performance&quot;</span>, estimate],</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>             <span class="at">beta_leverage =</span> f_all<span class="sc">$</span>coef[term <span class="sc">==</span> <span class="st">&quot;leverage&quot;</span>, estimate])</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>}))</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="fu">kable</span>(big_res, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Organizations with $1m or more of expenses in 2019&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Organizations with $1m or more of expenses in 2019</caption>
+<colgroup>
+<col width="10%" />
+<col width="10%" />
+<col width="5%" />
+<col width="10%" />
+<col width="10%" />
+<col width="16%" />
+<col width="10%" />
+<col width="13%" />
+<col width="10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">organizations</th>
+<th align="right">rate</th>
+<th align="right">auc_size_only</th>
+<th align="right">auc_all_three</th>
+<th align="right">auc_index_incremental</th>
+<th align="right">beta_reserves</th>
+<th align="right">beta_performance</th>
+<th align="right">beta_leverage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gap_2022_2023</td>
+<td align="right">91553</td>
+<td align="right">0.0272</td>
+<td align="right">0.5559</td>
+<td align="right">0.6388</td>
+<td align="right">0.6417</td>
+<td align="right">-0.0176</td>
+<td align="right">-0.0220</td>
+<td align="right">0.0073</td>
+</tr>
+<tr class="even">
+<td align="left">gap_confirmed</td>
+<td align="right">91553</td>
+<td align="right">0.0268</td>
+<td align="right">0.5541</td>
+<td align="right">0.6385</td>
+<td align="right">0.6422</td>
+<td align="right">-0.0176</td>
+<td align="right">-0.0219</td>
+<td align="right">0.0074</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="findings" class="section level1">
+<h1>4. Findings</h1>
+<ul>
+<li><strong>Base rate.</strong> 5.35% of 2019 full-990 filers had no
+filing in 2022, 2023, or 2024.</li>
+<li><strong>Dimensions.</strong> Size alone gives AUC 0.662; adding all
+three dimensions gives 0.715.</li>
+<li><strong>Index versions.</strong> Raw AUC is 0.553 for equal weights
+and 0.587 for incremental weights.</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] splines   stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] nlme_3.1-168        cli_3.6.5           rlang_1.1.7         xfun_0.57           otel_0.2.0          jsonlite_2.0.0     
+##  [7] bit_4.6.0           htmltools_0.5.9     sass_0.4.10         rmarkdown_2.31      grid_4.5.3          evaluate_1.0.5     
+## [13] psych_2.6.5         jquerylib_0.1.4     fastmap_1.2.0       yaml_2.3.12         lifecycle_1.0.5     panel990_0.0.0.9000
+## [19] compiler_4.5.3      lattice_0.22-9      digest_0.6.39       R6_2.6.1            mnormt_2.1.2        parallel_4.5.3     
+## [25] bslib_0.10.0        tools_4.5.3         cachem_1.1.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
