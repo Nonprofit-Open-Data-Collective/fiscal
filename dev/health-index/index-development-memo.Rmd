@@ -1,0 +1,1354 @@
+---
+title: "Developing a Fiscal Health Index for Nonprofits"
+subtitle: "What each stage had to solve, what the evidence says, and where the index stands"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  pkg_dir: "../.."
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5, fig.retina = 2)
+options(width = 120, knitr.kable.NA = "", scipen = 6)
+```
+
+<!-- Web fonts load at view time; data-external keeps them out of the self-contained file -->
+<link rel="stylesheet" data-external="1" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Code+Pro:wght@400;600&display=swap">
+
+```{r packages}
+library(knitr)
+library(psych)
+if (file.exists(file.path(params$pkg_dir, "DESCRIPTION"))) {
+  pkgload::load_all(params$pkg_dir, quiet = TRUE)
+} else {
+  library(fiscal)
+}
+source("build-ratio-frame.R")
+set.seed(params$seed)
+
+pal <- c(ink = "#1f2429", ink_mid = "#4d565f", ink_soft = "#6d7681", rule = "#dcdfe4",
+         accent = "#bd5416", accent_ink = "#8f3f10", navy = "#153243", pumpkin = "#dc965a",
+         surface = "#f3f4f6")
+fmt <- function(x, d = 2) formatC(x, format = "f", digits = d, big.mark = ",")
+pct <- function(x, d = 0) paste0(formatC(100 * x, format = "f", digits = d), "%")
+n_fmt <- function(x) format(x, big.mark = ",")
+```
+
+```{r inputs}
+# 1. The frozen 2023 measurement model and the scores it produced for every filer.
+model_file <- file.path(params$data_dir, "fiscal-health-model-2023.rds")
+if (!file.exists(model_file))
+  stop("Render fiscal-health-model-2023.Rmd first; it writes ", basename(model_file), ".")
+model  <- readRDS(model_file)
+scores <- model$scores
+
+# 2. Saved output of vignette("ratio-correlation-artifacts") on the bundled 2021
+#    sample. Regenerate with:
+#    rmarkdown::render("vignettes/ratio-correlation-artifacts.Rmd",
+#      params = list(reps = 30, save_results = "<data_dir>/ratio-correlation-results-dat10k.rds"))
+art_file <- file.path(params$data_dir, "ratio-correlation-results-dat10k.rds")
+if (!file.exists(art_file))
+  stop("Missing ", basename(art_file), "; see the comment in this chunk for how to build it.")
+art <- readRDS(art_file)
+
+# 3. The bundled 2021 sample, used for the before/after transformation panels.
+data(dat10k, package = "fiscal")
+built10k <- build_ratio_frame(dat10k, seed = params$seed)
+ratio14 <- c("current", "months_cash", "liquid_months", "cash_assets", "debt_assets",
+             "payables_una", "surplus_margin", "return_assets", "na_growth", "self_suff",
+             "admin_exp", "fundr_exp", "land_assets", "assets_rev")
+```
+
+## How to read this memo
+
+This is a summary of the fiscal health index built in `dev/health-index/`. It
+reports what each stage of development had to solve and what the evidence
+supports. It does not reproduce the model-selection work: the choice between
+three, four, and five dimensions, the triage of individual indicators, and the
+per-ratio transformation diagnostics live in the source documents.
+
+| Stage | Source document |
+|---|---|
+| Construction strategy | `index-construction.rmd` |
+| First (two-dimension) index | `fiscal-health-index-2023.Rmd` |
+| Measurement model: coverage rules and normalization | `vignette("variance-preserving-normalization")` |
+| Dimension discovery | `dimension-discovery-2023.Rmd` |
+| Frozen model, scoring, peer groups | `fiscal-health-model-2023.Rmd` |
+| Construction-induced correlation | `vignette("ratio-correlation-artifacts")` |
+| H1–H3 asset-liability matching | `matching-hypotheses-2023.Rmd` |
+| Matching-gap indicator and its panel test | `matching-gap-2023.Rmd`, `matching-gap-panel.Rmd` |
+| H4 revenue model | `h4-revenue-model.Rmd` |
+| H5 surplus allocation | `h5-surplus-allocation.Rmd` |
+
+Figures and tables marked *recomputed* are generated here from the saved
+`r n_fmt(model$reference$n)`-organization 2023 model and from the bundled
+`dat10k` 2021 sample. Everything else is quoted from the document named in the
+caption, with numbers taken from its rendered output.
+
+## 1. The measurement problem
+
+Form 990 supports several dozen financial ratios. Most published nonprofit
+"financial health" work picks a handful of them by argument and averages them.
+The goal here was different: let the data say how many distinct things the
+ratios measure, and build the index out of *those*.
+
+That reframes the work as measurement rather than indicator selection, and it
+sets up the three-way classification that runs through every stage:
+
+<div class="concepts">
+
+**The construction strategy** (`index-construction.rmd`)
+
+- **Dimension.** Two or more indicators that move together closely enough to
+  read as one financial construct, are interpretable, and reproduce across
+  samples. Scored as a composite.
+- **Standalone indicator.** A ratio kept in the measurement system but not
+  forced into a dimension, because it shares little variance with the rest and
+  describes something real on its own (a revenue model, an expense allocation).
+- **Noise.** Weak connectedness, no distinct conceptual contribution, unstable.
+  Dropped from the measurement system.
+
+The software discovers structure. People decide what to keep, which way each
+indicator points, and what the dimensions mean.
+
+</div>
+
+Two early decisions shaped everything after them.
+
+**PCA as a clustering tool, not a latent-variable claim.** Accounting ratios
+are not survey items written to tap one trait. A confirmatory factor model
+treats each indicator as a noisy reflection of a latent construct; a debt ratio
+is not a noisy reading of "leverage", it is one of the things leverage *is*.
+The index therefore uses PCA (with oblique rotation, so dimensions may
+correlate) to find blocks, then scores each block as a **formative** composite,
+and reports common-factor analysis as a check that the blocks are not artifacts
+of unique variance. The formative/reflective distinction is the one drawn by
+Bollen & Lennox (1991) and Diamantopoulos & Winklhofer (2001); the
+equal-weight, transparent-aggregation default follows the OECD/JRC composite
+indicator handbook (Nardo et al. 2008).
+
+**The measurement model comes before the factor model.** A correlation matrix
+is the only thing PCA sees. Which organizations have a defined value for each
+ratio, and how extreme values are tamed, decide what is in that matrix. Those
+decisions were made explicitly and written down before any factoring, which is
+what makes the difference between the first and second models below legible
+rather than mysterious.
+
+## 2. First working model: two dimensions
+
+The first end-to-end index ran the package pipeline
+(`fiscal_diagnostics()` → `fiscal_triage()` → `fiscal_dimensions()` →
+`fiscal_health_fit()` → `fiscal_health_score()` → `fiscal_weights()` →
+`fiscal_health_index()`) on 2023 full-990 filers.
+
+### 2.1 Getting the inputs to mean what they claim
+
+Three input problems had to be fixed before any ratio was trustworthy. Each one
+would have shown up as structure in the correlation matrix.
+
+| Problem | Effect if left alone | Fix |
+|---|---|---|
+| Part X lines 27–28 (net assets without/with donor restrictions) apply only to filers following SFAS 117 / ASC 958. Others report equity on lines 30–32. | About 1 in 4 filers read as having **zero** unrestricted net assets, so every reserve metric understated their reserves. | When both class lines are zero, use total net assets as unrestricted. |
+| `get_overhead_ratio()` omitted fundraising from its numerator, making it identical to the administrative-expense ratio. | A duplicate indicator, and a measure that is by construction the complement of the program-expense ratio. | Corrected numerator; overhead dropped as a closure complement. |
+| `get_cash_assets_ratio()` omitted savings and temporary cash investments. | Understated liquidity for organizations that hold cash in savings. | Pass the documented numerator explicitly. |
+
+### 2.2 Screening: the five criteria
+
+Of the 48 metrics in the package registry, 12 passed a screen requiring
+that an indicator be **directional** (more is clearly better or worse),
+**scale-free**, **defined for nearly everyone**, **monotone in health**, and
+**not an algebraic identity** of another indicator. The exclusions that matter
+most, because they were later reversed:
+
+* **Signed denominators.** Debt-to-equity, debt-to-net-assets, and net-asset
+  growth all have a denominator that can be zero or negative. An insolvent
+  organization with negative net assets gets a *negative* debt-to-net-assets
+  ratio and ranks as the least leveraged. Non-monotone, so excluded.
+* **Structural missingness.** The current, quick, and cash-liquidity ratios are
+  undefined for the roughly 40% of filers with no payables. Estimating on
+  complete cases would have quietly dropped the simplest balance sheets.
+* **Algebraic identities.** `equity = 1 - debt_assets`,
+  `months_cash_ops = days_cash_ops × 12/365`. Identities make the correlation
+  matrix singular, which breaks KMO and factor estimation and inflates a
+  construct's apparent weight.
+
+### 2.3 What the transformation had to preserve
+
+The package's `_z` columns winsorize and then apply a fitted normalizing
+transform. For correlation-based modeling, the Pearson correlations *after*
+transformation have to track the monotone association in the raw data — that is
+the only thing the model can read. Several `_z` pairs shrank strong raw
+associations toward zero, and several `_z` columns were far from standardized
+with heavy tails. The first model therefore used rank-normal (van der Waerden)
+scores, which are bounded, symmetric, outlier-insensitive, and whose Pearson
+correlations reproduce raw Spearman correlations almost exactly.
+
+### 2.4 The result, and the reason it was not the answer
+
+Triage then removed the redundant and weakly connected members, leaving five
+indicators in dimension estimation. Parallel analysis retained **two**
+dimensions, with clean simple structure and agreement from common-factor
+analysis:
+
+| Dimension | Indicators | Reading |
+|---|---|---|
+| **Reserves & Solvency** | liquid months (+), days of cash (+), debt/assets (−) | Balance-sheet stocks: resilience |
+| **Operating Performance** | surplus margin (+), return on assets (+) | Income-statement flows: sustainability |
+
+The structure was stable — congruence 1.00 across random halves, ≥ 0.94 across
+a tenfold difference in organization size — and the composite behaved sensibly
+(every distress signal fell monotonically from the bottom quintile to the top).
+
+**The intellectual contribution of this stage was recognizing what produced the
+answer.** Two dimensions was a defensible reading of five indicators, but the
+five indicators were the ones that survived a screen built on the *textbook*
+form of each ratio. Leverage ratios were excluded because their denominators
+can be negative; liquidity ratios because they are undefined without payables;
+asset-composition ratios because their healthy direction is ambiguous. A
+published four-dimension result on a similar ratio family (the Urban Institute
+AA/NH/PI study: growth potential, leverage, solvency, organizational slack) had
+kept those ratios in. The difference was not the factor model. It was which
+ratios were measured, and how.
+
+## 3. The measurement model: coverage rules and variance-preserving normalization
+
+Rather than drop a ratio because its textbook form fails on part of the sample,
+the second stage asked, for each failure mode, whether the affected
+organizations are *better than*, *worse than*, or *typical of* the rest — and
+then repaired the ratio.
+
+### 3.1 Undefined is not missing at random
+
+> **The rule: rule when the direction is known, impute when it is not.**
+
+| Failure mode | Example | Direction known? | Treatment |
+|---|---|---|---|
+| Denominator ≤ 0 and the ratio's meaning implies the worst state | leverage on negative unrestricted net assets | yes | **Bounded reformulation:** `L / (L + max(UNA, 0))`, monotone with the textbook ratio wherever that is valid, and at the worst end when it is not |
+| Growth from a non-positive base | net-asset, revenue, asset growth | yes | **Symmetric growth:** `Δ / mean(|new|, |old|)`, bounded in [−2, 2], defined whenever either year is nonzero, 0 when both are |
+| Margin on near-zero or non-positive revenue | surplus margin | yes | **Symmetric margin:** `(R − E) / max(R, E)` |
+| Denominator = 0 because the component does not exist | current ratio with no current liabilities (~40%) | no — ask the data | **Conditional stochastic imputation** from anchor ratios, on the normal-score scale |
+| Component not reported | functional expenses of non-501(c)(3) filers | no — missing, not zero | Conditional imputation; never zero |
+
+Three findings from that exercise changed the design:
+
+* **Borrowed benchmarks are wrong on the 990.** A fixed cap like "current ratio
+  = 3", carried over from corporate finance, sits well below the median of the
+  observed distribution. Bottom-coding a denominator at \$1 converts the ratio
+  into a dollar amount for the affected cases.
+* **Median imputation is only right if the group is typical.** For every
+  undefined group examined, it was not, and median fills weakened the
+  correlations the index depends on.
+* **Closure is a design constraint, not a nuisance.** Program, administrative,
+  and fundraising shares sum to 1. Keeping all three guarantees a component,
+  whatever organizations actually do. One member of each such family is
+  dropped by construction.
+
+### 3.2 Winsorize, then asinh, then z — and freeze it
+
+Four versions of the data were compared as inputs to a correlation model: raw
+(rules applied), winsorized, winsorized + normalized, and rank-normal. The
+recommended default is **percentile winsorizing (1/99), then `asinh` with a
+robust median scale for ratios that remain skewed, then a z-score**. The
+inverse hyperbolic sine is used as a log-like transform that tolerates zero and
+negative values (Johnson 1949; Burbidge, Magee & Robb 1988).
+
+It was chosen over rank-normal for two reasons. It keeps interval spacing
+inside the body of each distribution — a 2-month and a 20-month reserve differ
+by more than their ranks — and every one of its parameters (bounds, skew
+direction, `asinh` scale, mean, SD) can be **stored and reapplied**, so a later
+year is placed on the reference year's scale instead of being re-ranked within
+itself. Rank-normal remains the robustness check.
+
+```{r transform-panels, fig.width = 9.2, fig.height = 3.6}
+# Recomputed: dat10k (2021 bundled sample), 14 rules-applied ratios.
+raw <- built10k$frame[ratio14]
+wn  <- as.data.frame(lapply(raw, winsor_normalize))
+
+R_raw_p <- cor(raw)
+R_raw_s <- cor(raw, method = "spearman")
+R_wn_p  <- cor(wn)
+
+# Order rows/columns by the dimension each ratio was eventually assigned to.
+dim_of <- c(debt_assets = 1, payables_una = 1,
+            surplus_margin = 2, return_assets = 2, na_growth = 2,
+            months_cash = 3, liquid_months = 3, assets_rev = 3, current = 3,
+            cash_assets = 4, land_assets = 4,
+            self_suff = 5, admin_exp = 5, fundr_exp = 5)
+ord <- names(sort(dim_of[ratio14]))
+brk <- cumsum(table(dim_of[ord]))
+
+heat <- function(R, main) {
+  R <- R[ord, ord]
+  p <- ncol(R)
+  cols <- colorRampPalette(c(pal[["navy"]], "#7c96a6", "#ffffff",
+                             pal[["pumpkin"]], pal[["accent"]]))(101)
+  par(mar = c(0.4, 6.6, 3.1, 0.4))
+  image(1:p, 1:p, t(R[p:1, ]), col = cols, zlim = c(-1, 1), axes = FALSE,
+        xlab = "", ylab = "")
+  axis(2, at = p:1, labels = ord, las = 1, tick = FALSE, cex.axis = 0.64,
+       col.axis = pal[["ink"]], line = -0.5)
+  abline(v = brk[-length(brk)] + 0.5, col = pal[["ink"]], lwd = 1.4)
+  abline(h = p - brk[-length(brk)] + 0.5, col = pal[["ink"]], lwd = 1.4)
+  box(col = pal[["rule"]])
+  mtext(main, side = 3, line = 0.9, adj = 0, cex = 0.82, font = 2, col = pal[["ink"]])
+}
+op <- par(mfrow = c(1, 3), bg = "white")
+heat(R_raw_s, "A. Rank (Spearman), raw ratios\nthe structure we want to recover")
+heat(R_raw_p, "B. Pearson, raw ratios\ntails flatten the correlations")
+heat(R_wn_p,  "C. Pearson, after the transform\ntracks panel A")
+par(op)
+```
+
+Orange is positive, blue negative, on a −1 to +1 scale; rule lines mark the
+dimensions the ratios were eventually assigned to. Panel A is the target: the
+monotone association actually present in the raw ratios. Panel B is what a
+correlation model sees if the ratios go in untreated — a handful of extreme
+values flatten most of the matrix, including the blocks that later become
+dimensions. Panel C is the recommended transform, which recovers panel A.
+
+```{r fidelity}
+fid <- function(R) {
+  u <- upper.tri(R)
+  c(`mean |r|` = mean(abs(R[u])),
+    `mean |r − rank r|` = mean(abs(R[u] - R_raw_s[u])),
+    `max |r − rank r|`  = max(abs(R[u] - R_raw_s[u])))
+}
+wins_only <- as.data.frame(lapply(raw, function(x) as.numeric(scale(winsor(x)))))
+rk        <- as.data.frame(lapply(raw, rank_normal))
+kable(t(sapply(list(`Raw ratios (Pearson)` = R_raw_p,
+                    `Winsorized only` = cor(wins_only),
+                    `Winsorized + asinh + z` = R_wn_p,
+                    `Rank-normal` = cor(rk)), fid)),
+      digits = 3,
+      caption = "Recomputed. Fidelity to the rank benchmark, 91 pairs, dat10k 2021 (n = 5,995)")
+```
+
+Winsorizing alone is not enough: skew survives it and the correlations stay
+visibly distorted. Winsorize + `asinh` + z gets most of the way to rank-normal
+fidelity while keeping spacing and remaining reusable.
+
+**What this bought.** Coverage rose to every full-990 filer with positive
+expenses, including organizations with no assets, no revenue, or no payables.
+Thirteen ratios entered dimension estimation instead of five.
+
+## 4. Four dimensions, three of them directional
+
+```{r loadings-table}
+# Quoted from dimension-discovery-2023.Rmd, Section 6 (four-component oblimin
+# loadings with growth measures, all 2023 filers).
+L <- matrix(c(
+  -0.40,  0.03,  0.41,  0.27,
+   0.07,  0.14,  0.85,  0.24,
+  -0.22,  0.06,  0.76,  0.05,
+  -0.09, -0.02, -0.08,  0.88,
+   0.88, -0.01,  0.00, -0.07,
+   0.92,  0.00,  0.01,  0.06,
+   0.01,  0.71,  0.18,  0.06,
+  -0.06,  0.88, -0.01, -0.07,
+  -0.05,  0.87, -0.03, -0.05,
+  -0.04,  0.08, -0.16, -0.80,
+  -0.02, -0.14,  0.77, -0.47,
+   0.05,  0.59, -0.14,  0.04,
+   0.08,  0.87,  0.02, -0.02),
+  ncol = 4, byrow = TRUE,
+  dimnames = list(c("current", "months_cash", "liquid_months", "cash_assets",
+                    "debt_assets", "payables_una", "surplus_margin", "return_assets",
+                    "na_growth", "land_assets", "assets_rev", "rev_growth",
+                    "asset_growth"),
+                  c("leverage", "performance & growth", "reserves", "asset structure")))
+Phi <- matrix(c(1.00, -0.16, -0.29, -0.18,
+               -0.16,  1.00,  0.12,  0.14,
+               -0.29,  0.12,  1.00, -0.02,
+               -0.18,  0.14, -0.02,  1.00), 4, 4,
+             dimnames = list(colnames(L), colnames(L)))
+Ld <- L; Ld[abs(Ld) < 0.30] <- NA
+kable(Ld, digits = 2,
+      caption = "Quoted from dimension-discovery-2023.Rmd. PCA (oblimin) loadings below 0.30 blanked; all 2023 full-990 filers")
+kable(Phi, digits = 2, caption = "Component correlations")
+```
+
+The retention criteria disagreed, as they usually do: PCA parallel analysis and
+the Kaiser rule both kept four, factor-analytic parallel analysis five, and
+Velicer's MAP — which under-extracts when dimensions have only two to four
+indicators — one. Four was retained because it is the largest solution in which
+**every** dimension is an interpretable multi-indicator cluster. Three merges
+leverage into reserves; five breaks asset structure into near-singletons while
+splitting reserves into short-term liquidity and accumulated reserves, a split
+worth testing on panel data but not worth trading a coherent dimension for.
+
+### 4.1 The index
+
+```{r dimension-map, fig.width = 9, fig.height = 5.6}
+box_txt <- function(x0, y0, x1, y1, fill, border = NA, lwd = 1) {
+  rect(x0, y0, x1, y1, col = fill, border = border, lwd = lwd)
+}
+dims <- list(
+  list(lab = "Leverage", wt = "weight 1/3", dir = "lower is healthier",
+       items = c("debt / assets  (−)", "payables / short-term capital  (−)"),
+       col = pal[["navy"]]),
+  list(lab = "Performance & growth", wt = "weight 1/3", dir = "higher is healthier",
+       items = c("surplus margin  (+)", "return on assets  (+)", "net-asset growth  (+)",
+                 "asset growth  (+)", "revenue growth  (+)"),
+       col = pal[["navy"]]),
+  list(lab = "Liquidity & reserves", wt = "weight 1/3", dir = "higher is healthier",
+       items = c("months of cash  (+)", "months of liquid net assets  (+)",
+                 "assets / revenue  (+)", "current ratio  (+)"),
+       col = pal[["navy"]]),
+  list(lab = "Asset structure", wt = "weight 0  ·  context dimension",
+       dir = "no healthy direction",
+       items = c("cash / assets  (liquid)", "land & buildings / assets  (fixed)"),
+       col = pal[["ink_mid"]]),
+  list(lab = "Standalone descriptors", wt = "not scored into the index",
+       dir = "business model, not condition",
+       items = c("self-sufficiency", "administrative share", "fundraising share"),
+       col = pal[["ink_soft"]]))
+
+op <- par(mar = c(0.3, 0.3, 2.4, 0.3), bg = "white", family = "sans")
+plot.new(); plot.window(xlim = c(0, 1), ylim = c(0, 1))
+heights <- c(0.155, 0.235, 0.205, 0.135, 0.155)
+gap <- 0.028
+tot <- sum(heights) + gap * (length(heights) - 1)
+y <- 0.985
+ys <- list()
+for (i in seq_along(dims)) {
+  ys[[i]] <- c(top = y, bot = y - heights[i] / tot * 0.97)
+  y <- ys[[i]][["bot"]] - gap
+}
+# composite node, connected to the three weighted dimensions
+cy <- mean(c(ys[[1]][["top"]], ys[[3]][["bot"]]))
+box_txt(0.015, cy - 0.105, 0.175, cy + 0.105, pal[["accent"]])
+text(0.095, cy + 0.045, "Fiscal", adj = c(0.5, 0.5), col = "white", cex = 0.92, font = 2)
+text(0.095, cy - 0.005, "Health Index", adj = c(0.5, 0.5), col = "white", cex = 0.92, font = 2)
+text(0.095, cy - 0.062, "equal weights", adj = c(0.5, 0.5), col = "#f6dcc9", cex = 0.62)
+for (i in 1:3) {
+  ym <- mean(ys[[i]])
+  t <- seq(0, 1, length.out = 60); s <- t * t * (3 - 2 * t)
+  lines(0.175 + 0.075 * t, cy + (ym - cy) * s, col = pal[["accent"]], lwd = 2.2)
+}
+for (i in seq_along(dims)) {
+  d <- dims[[i]]; yy <- ys[[i]]
+  box_txt(0.25, yy[["bot"]], 0.50, yy[["top"]], d$col)
+  text(0.263, yy[["top"]] - 0.040, d$lab, adj = c(0, 0.5), col = "white", cex = 0.85, font = 2)
+  text(0.263, yy[["top"]] - 0.079, d$wt, adj = c(0, 0.5),
+       col = if (i <= 3) pal[["pumpkin"]] else "#e7eaec", cex = 0.62)
+  text(0.263, yy[["top"]] - 0.112, d$dir, adj = c(0, 0.5), col = "#c9d0d5", cex = 0.6, font = 3)
+  box_txt(0.50, yy[["bot"]], 0.985, yy[["top"]], pal[["surface"]])
+  n <- length(d$items)
+  iy <- seq(yy[["top"]] - 0.032, yy[["bot"]] + 0.032, length.out = n)
+  for (j in seq_len(n))
+    text(0.52, iy[j], d$items[j], adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+}
+mtext("The fiscal health index: three directional dimensions, one context dimension",
+      side = 3, line = 1.0, adj = 0, cex = 1.0, font = 2, col = pal[["ink"]])
+mtext("13 ratios in dimension estimation; 3 descriptors reported but unweighted; tax year 2023",
+      side = 3, line = 0.1, adj = 0, cex = 0.66, col = pal[["ink_soft"]])
+par(op)
+```
+
+Three contributions are embedded in that picture.
+
+**Leverage is its own dimension.** Once negative-equity denominators are
+handled with a bounded reformulation, debt-to-assets and the payables share
+form a clean two-indicator block that correlates only −0.29 with reserves.
+Organizations can hold large reserves *and* significant mortgage debt, or
+neither. Averaging the two, as the first model did, discards that.
+
+**Growth belongs to performance, and needs no panel.** One 2023 return reports
+both years: Part I lists prior- and current-year revenue, Part X
+beginning- and end-of-year assets. Measured symmetrically, asset growth loads
+0.87 and revenue growth 0.59 on performance and nowhere above 0.14 elsewhere.
+Single-return growth agrees with true 2022–2023 panel growth almost exactly,
+and it covers every filer rather than only the ~86% with a matched prior return.
+
+**Asset structure is a *context* dimension.** Cash share and property share
+form a stable, reproducible component — and it has no healthy direction. A
+hospital or a housing provider is not less healthy than a cash-based advocacy
+group; it runs a different business model. Rather than force a direction or
+discard a real dimension, the model scores it, reports it, and gives it **zero
+weight**. It is meant to be used as a stratifier or control. Naming this
+category is the single most useful conceptual move in the dimension work: it
+separates "what kind of organization is this" from "how is it doing".
+
+**Organizational slack did not reappear.** The AA/NH/PI study's slack dimension
+paired the administrative-expense ratio with the program-efficiency ratio.
+Those two are complements by construction, so they form a component regardless
+of organizational behavior. With the complement removed, no slack dimension
+appears — and the three expense/revenue-model ratios have near-zero
+communality, which is why they are reported as standalone descriptors.
+
+### 4.2 Stability
+
+```{r stability}
+# Quoted from dimension-discovery-2023.Rmd, Section 4 (Tucker congruence).
+stab <- data.frame(
+  comparison = c("Random half A vs. half B", "Expenses < $500k vs. full sample",
+                 "$500k–$5M vs. full sample", ">= $5M vs. full sample",
+                 "Rank-normal vs. winsorized + normalized",
+                 "Winsorize 5/95 vs. 1/99", "Winsorized only (no asinh)",
+                 "2021 sample (dat10k) vs. 2023"),
+  n = c("160,806", "171,273", "111,728", "38,611", "321,612", "321,612", "321,612", "6,207"),
+  performance = c(1.00, 1.00, 1.00, 0.99, 1.00, 1.00, 0.99, 1.00),
+  reserves = c(1.00, 1.00, 0.99, 0.95, 0.99, 1.00, 0.99, 1.00),
+  leverage = c(1.00, 0.99, 0.99, 0.96, 0.99, 1.00, 0.94, 1.00),
+  `asset structure` = c(1.00, 1.00, 1.00, 0.97, 0.99, 1.00, 0.99, 1.00),
+  check.names = FALSE)
+kable(stab, digits = 2, row.names = FALSE,
+      caption = "Quoted from dimension-discovery-2023.Rmd. Tucker congruence; 0.95+ means effectively the same factor")
+```
+
+The four dimensions reproduce essentially perfectly across random halves, the
+two smaller size bands, both winsorizing levels, rank-normal scoring, and an
+independent 2021 sample. Two soft spots are worth carrying forward. Among
+organizations with expenses over \$5M, the reserve–leverage boundary shifts:
+their current ratio and liquid months load substantially on leverage, because
+liquid unrestricted net assets are largely what is left after debt-financed
+property. And winsorizing *without* normalizing blurs leverage the most
+(congruence 0.94), which is direct evidence that residual skew, not
+organizational behavior, was weakening the debt-ratio correlations.
+
+### 4.3 Scoring the frozen model
+
+Each dimension is scored as the **standardized mean of its oriented
+indicators**, and the composite is an equal-weight average of the three
+directional dimensions. Standardized means correlate at least 0.97 with
+factor-weighted scores and 1.00 with PCA-weighted ones, and they do not make the
+scale depend on one year's estimates — factor weights would concentrate
+performance on return on assets and net-asset growth, and reserves on months of
+cash. No cross-section can calibrate weights against an outcome, so equal
+weights across dimensions are the defensible default rather than an estimate.
+
+```{r reliability}
+rel <- data.frame(
+  dimension = c("leverage", "performance & growth", "reserves", "asset structure (context)"),
+  indicators = c(2, 5, 4, 2),
+  alpha = c(0.807, 0.844, 0.760, 0.677),
+  weakest_member = c("—", "rev_growth (item-rest 0.43)", "current (0.43)", "—"))
+kable(rel, digits = 3, row.names = FALSE,
+      caption = "Quoted from fiscal-health-model-2023.Rmd. Cronbach's alpha on oriented indicators")
+```
+
+Every indicator correlates positively with the rest of its dimension once
+oriented, which confirms the directions are internally consistent. The alphas
+should be read with care rather than as evidence of a latent trait: the
+performance alpha is partly mechanical (three of its five indicators are built
+from the same annual surplus), and the leverage and reserve alphas are held
+down by mixing assets with liabilities. These are formative summaries of a
+coherent block of ratios.
+
+The fitted object stores every parameter — winsorizing bounds, transform type
+and scale, centers, scales, directions, dimension coefficients, weights, and
+peer-group percentile cut points — so scoring new data re-estimates nothing.
+
+## 5. The correlation problem: bounded ratios with shared parts
+
+The four-dimension model works, reproduces, and behaves sensibly. That raised
+the question that most of the analytic effort went into: **are those dimensions
+findings about nonprofits, or arithmetic?**
+
+Fourteen ratios are built from about twenty Form 990 lines. Many share a line.
+Shares of one total are negatively correlated by definition. This is the oldest
+known hazard in ratio analysis — Pearson (1897) on spurious correlation among
+indices with a common divisor, Chayes (1949) on correlation among percentages
+of a constant sum, Atchley, Gaskins & Anderson (1976) on the statistical
+properties of ratios, Firebaugh & Gibbs (1985) and Kronmal (1993) on ratio
+variables in regression, and the compositional-data tradition of Aitchison
+(1982, 1986).
+
+### 5.1 How two ratios can be linked
+
+```{r link-types}
+audit <- art$audit
+ex <- data.frame(
+  `Link type` = c("closure", "shared numerator", "reciprocal", "identity",
+                  "shared denominator", "none"),
+  Example = c("cash/assets & land/assets (parts of assets)",
+              "surplus margin & return on assets (both carry R − E)",
+              "current ratio & debt/assets (current assets sit inside assets; payables inside liabilities)",
+              "debt/assets & net-asset growth (NA = A − L)",
+              "months of cash & admin share (both divide by expenses)",
+              "debt/assets & self-sufficiency"),
+  `Forced sign` = c("−", "sign of the numerators", "−", "varies", "+ for positive numerators", "0"),
+  check.names = FALSE)
+kable(ex, row.names = FALSE,
+      caption = "All 91 pairs of the 14-ratio set were classified from the formulas alone, before looking at data")
+
+bt <- art$by_type
+bt <- bt[order(-bt$share_of_obs), ]
+kable(data.frame(
+  `Link type` = bt$type, Pairs = bt$pairs,
+  `Mean |r| observed` = bt$mean_abs_obs,
+  `Mean |r| construction null` = pmax(bt$mean_abs_null_flow, bt$mean_abs_null_stock),
+  `Null share of observed` = bt$share_of_obs, check.names = FALSE),
+  digits = 3, row.names = FALSE,
+  caption = "Recomputed from the saved vignette run. dat10k 2021 (n = 5,995), 30 null replications")
+```
+
+### 5.2 The construction null
+
+The benchmark is a **construction null**: each 990 line is divided by a size
+reference, shuffled across organizations independently of every other line,
+multiplied back, and the totals rebuilt from their parts, so every accounting
+identity survives. The ratios are then rebuilt with exactly the same rules,
+imputation, and transformations as the real data. Every substantive
+relationship between organizations is destroyed; all the arithmetic is kept.
+This is a domain-specific replacement for Horn's (1965) random-data reference
+in parallel analysis, in the spirit of null-model testing (Gotelli & Graves
+1996): the right question is not "could random numbers do this?" but "could the
+formulas do this?"
+
+Because denominator coupling is an artifact only to the extent that the
+denominator varies independently of size, the null is run under more than one
+size reference: a **flow anchor** (total expenses), a **stock anchor** (total
+assets), and — after the first two proved to be the weak link — a
+**conditional** null in which organizations are grouped into cells of similar
+expenses and similar assets per dollar of expenses, each keeps its own
+expenses, and lines are shuffled only within cells. The conditional null
+preserves the arithmetic *and* every relationship that runs through size and
+asset intensity. A correlation that exceeds it cannot be explained by either.
+
+### 5.3 The answer: mostly arithmetic
+
+```{r eigen-plot, fig.width = 8.4, fig.height = 4.2}
+e <- art$eig
+p <- length(e$obs)
+op <- par(mar = c(4.2, 4.4, 3.0, 0.8), bg = "white")
+plot(1:p, e$obs, type = "n", bty = "n", xlab = "Component", ylab = "Eigenvalue",
+     ylim = c(0, max(e$obs) * 1.05), col.axis = pal[["ink_mid"]], col.lab = pal[["ink_mid"]])
+abline(h = axTicks(2), col = pal[["rule"]], lwd = 0.8)
+lines(1:p, e$rand, type = "b", pch = 19, cex = 0.7, lwd = 2, col = pal[["ink_soft"]], lty = 3)
+lines(1:p, e$flow, type = "b", pch = 19, cex = 0.7, lwd = 2, col = pal[["pumpkin"]])
+lines(1:p, e$stock, type = "b", pch = 19, cex = 0.7, lwd = 2, col = pal[["accent"]])
+lines(1:p, e$obs, type = "b", pch = 19, cex = 0.85, lwd = 2.6, col = pal[["navy"]])
+legend("topright", bty = "n", cex = 0.72, lwd = 2, seg.len = 1.6,
+       col = c(pal[["navy"]], pal[["ink_soft"]], pal[["pumpkin"]], pal[["accent"]]),
+       lty = c(1, 3, 1, 1),
+       legend = c("observed", "random normal (95th pct)",
+                  "construction null, flow anchor (95th pct)",
+                  "construction null, stock anchor (95th pct)"))
+mtext("Against random data, five components. Against the arithmetic, one.",
+      side = 3, line = 1.1, adj = 0, cex = 0.95, font = 2, col = pal[["ink"]])
+mtext(paste0("Recomputed: dat10k 2021, 14 ratios, n = ", n_fmt(art$n),
+             ", ", art$reps, " null replications"),
+      side = 3, line = 0.15, adj = 0, cex = 0.66, col = pal[["ink_soft"]])
+par(op)
+```
+
+```{r null-scatter, fig.width = 8.4, fig.height = 4.6}
+tc <- c(closure = "#8A3A2C", shared_den = "#2C5A4C", reciprocal = "#C07A2C",
+        shared_num = "#4A6FA5", identity = "#7A5C99", none = "#9AA59E")
+op <- par(mar = c(4.2, 4.4, 3.0, 0.8), bg = "white")
+lim <- c(-0.75, 0.85)
+plot(audit$r_null_joint, audit$r_obs, type = "n", xlim = lim, ylim = lim,
+     bty = "n", xlab = "correlation under the conditional construction null",
+     ylab = "observed correlation", col.axis = pal[["ink_mid"]], col.lab = pal[["ink_mid"]])
+abline(h = 0, v = 0, col = pal[["rule"]])
+abline(0, 1, lty = 2, col = pal[["ink_soft"]])
+points(audit$r_null_joint, audit$r_obs, pch = 19, cex = 1.1,
+       col = tc[audit$type])
+legend("topleft", legend = names(tc), col = tc, pch = 19, cex = 0.7, bty = "n",
+       inset = c(0, 0.02))
+mtext("Most pairs sit on the 45-degree line: the arithmetic already explains them",
+      side = 3, line = 1.1, adj = 0, cex = 0.95, font = 2, col = pal[["ink"]])
+mtext("Recomputed. Each point is one of the 91 ratio pairs; distance from the line is what the data add",
+      side = 3, line = 0.15, adj = 0, cex = 0.66, col = pal[["ink_soft"]])
+par(op)
+```
+
+* The sign predicted from the formulas alone matched the null for
+  `r pct(art$sign_hit)` of the `r art$n_signed` pairs whose null correlation
+  reaches 0.05, and `r pct(art$none_ok)` of unlinked pairs stayed below 0.05.
+  The taxonomy is not a post-hoc story.
+* For shared-numerator, identity, and reciprocal pairs the null reproduces
+  **all or more than all** of the observed absolute correlation. Only
+  shared-denominator pairs (`r pct(art$by_type["shared_den", "share_of_obs"])`)
+  and unlinked pairs (`r pct(art$by_type["none", "share_of_obs"])`) carry mostly
+  non-arithmetic correlation.
+* Parallel analysis against random normal data retains
+  `r art$retain[["random_normal"]]` components. Against the construction null it
+  retains `r art$retain[["null_flow"]]`.
+* PCA on the null matrix reproduces the observed dimensions. Under the
+  conditional null the congruence is
+  `r fmt(art$joint$summary$performance[3])` for performance,
+  `r fmt(art$joint$summary$reserves[3])` for reserves,
+  `r fmt(art$joint$summary$leverage[3])` for leverage, and
+  `r fmt(art$joint$summary$asset_structure[3])` for asset structure.
+
+The mechanism is not subtle once named. Surplus margin, return on assets, and
+net-asset growth are **one number — the annual surplus — on three scales**.
+Months of cash, months of liquid net assets, and assets-per-revenue all inherit
+the ratio of assets to expenses. The dimensions are, to a first approximation,
+shared-ingredient groupings.
+
+### 5.4 Candidate fixes, and what happened to each
+
+```{r fix-scorecard}
+fx <- function(a, f, col) art$fix_null[art$fix_null$anchor == a & art$fix_null$fix == f, col]
+fixes <- data.frame(
+  Fix = c("**F1** Subtract the null, pair by pair (R_obs − (R_null − I))",
+          "**F2** Residualize every ratio on splines of log expenses and log assets",
+          "**F3** Residualize each ratio on the scale in its own denominator",
+          "**S2** Redesign the variable set by link type",
+          "**M** Fit Σ = ΛΛ' + Ψ + C, with C fixed at the null"),
+  `Drawn from` = c("the naive reading of a null model",
+                   "Kronmal (1993): condition on the denominator, do not divide by it",
+                   "Kronmal (1993), applied per ratio",
+                   "Aitchison (1982) log-ratio / bounded contrasts for closure; one indicator per shared-ingredient family",
+                   "Jöreskog (1969) fixed parameters; correlated-uniqueness method factors (Kenny & Kashy 1992)"),
+  Outcome = c(
+    sprintf("**Fails.** Smallest eigenvalue %s: not a valid correlation matrix. After projection to the nearest valid one, the components are uninterpretable.",
+            fmt(art$min_eig[["F1_flow"]])),
+    sprintf("**Partial, and destructive.** Mean |null r| falls %s → %s and shared-denominator artifact nearly disappears, but closure and shared-numerator artifact are untouched. The cost is the variable: size splines already explain %s of the variance in assets-per-revenue, so residualizing erases it.",
+            fmt(fx("flow", "F0", "mean_abs_null_r"), 3), fmt(fx("flow", "F2", "mean_abs_null_r"), 3),
+            pct(art$size_r2[["assets_rev"]])),
+    sprintf("**Safe but weak.** Matrix stays valid and structure intact; mean |null r| only %s → %s.",
+            fmt(fx("flow", "F0", "mean_abs_null_r"), 3), fmt(fx("flow", "F3", "mean_abs_null_r"), 3)),
+    sprintf("**Mixed.** Construction correlation is no lower overall (mean |null r| %s redesigned vs. %s as built), because putting every balance-sheet quantity over total assets converts stock-over-flow coupling into closure. But 3 components now survive the null instead of 1.",
+            fmt(art$S2$summary$mean_abs_null_stock[2], 3), fmt(art$S2$summary$mean_abs_null_stock[1], 3)),
+    sprintf("**Works — if the null is right.** With planted factors and the matching conditional null, detection margin %s (%s recovery when factors are planted vs. %s when nothing is). Ordinary factor analysis: %s. With a mis-specified global null: %s.",
+            fmt(art$joint$recovery$detection_margin[2]),
+            fmt(art$joint$recovery$planted[2]), fmt(art$joint$recovery$nothing_planted[2]),
+            fmt(art$joint$recovery$detection_margin[1]), fmt(art$joint$recovery$detection_margin[3]))),
+  check.names = FALSE)
+kable(fixes, row.names = FALSE,
+      caption = "Recomputed. Five candidate repairs, tested against the construction null and against planted factors")
+```
+
+The planted-factor test is what separates the last row from the rest. Three
+known factors were planted in the 990 *lines* through a Gaussian copula — each
+line keeps its exact distribution but co-moves with the others that share its
+factor — and then the ratios were rebuilt. A second scenario plants nothing.
+Only the *gap* between recovery-when-planted and recovery-when-nothing-is-planted
+is evidence that a method reads organizational structure rather than
+arithmetic. Ordinary factor analysis scores
+`r fmt(art$joint$recovery$planted[1])` against the planted structure when
+factors are planted and `r fmt(art$joint$recovery$nothing_planted[1])` when
+they are not: a margin of `r fmt(art$joint$recovery$detection_margin[1])`. It
+was reading the formulas nearly as well as it read the truth.
+
+### 5.5 What actually worked
+
+**No pre-processing transformation removes the artifact across all 91 pairs.**
+The artifact lives in different places for different link types, so a single
+per-variable transform cannot reach all of them, and the ones that reach
+furthest do it by deleting the variable's variance.
+
+Three things did work:
+
+1. **The null as a benchmark rather than a correction.** Retention decisions,
+   loading interpretation, and reported correlations are all read against the
+   construction null instead of against random data. This is the one step that
+   applies to all 91 pairs, and it is now the standard the index is held to.
+2. **Designing the variable set to avoid the worst link types.** Closure pairs
+   become one bounded contrast; a shared-ingredient family enters once. The
+   redesigned set does not have less construction correlation overall, but its
+   structure survives the null.
+3. **Putting the arithmetic into the model instead of removing it from the
+   data.** Fixing the null's off-diagonal as a known residual covariance block
+   leaves the observed matrix intact and asks the factors to explain only what
+   the arithmetic does not. It recovers planted factors where ordinary factor
+   analysis cannot — **but only when the null is specified correctly.** With a
+   global flow or stock anchor the margin collapses, and the model starts
+   producing single-variable "factors" that absorb the misfit between the real
+   and assumed construction. That dependence is the method's cost, and it is
+   why the conditional null exists.
+
+**The consequence for the index, stated plainly:** the four dimensions are
+sound as *descriptive summaries* of how nonprofit financial ratios are put
+together, and they are the right way to aggregate the ratios into a score. They
+are not evidence of four latent financial constructs. The claim the evidence
+supports is weaker and more useful: these are the blocks the 990 gives you, they
+are stable, and they carry real information about condition — but the block
+structure itself is largely definitional.
+
+### 5.6 What survives the null, and the H1–H5 agenda
+
+```{r beyond-null}
+g <- art$joint$real_gaps[["as built (14 ratios)"]]
+g <- head(g, 7)
+g$hypothesis <- c("H1 / H1a long-term matching", "H4 earned revenue vs. fundraising",
+                  "H3 pecking order", "H1 long-term matching",
+                  "— the reserve scale itself", "H5 surplus allocation",
+                  "— leverage vs. performance")
+kable(data.frame(`Ratio pair` = paste(g$v1, "×", g$v2),
+                 `Observed r` = g$r_obs, `Conditional null r` = g$r_null_joint,
+                 `Beyond null` = g$beyond, `Motivated` = g$hypothesis, check.names = FALSE),
+      digits = 2, row.names = FALSE,
+      caption = "Recomputed. The correlations a factor model of this set would be entitled to interpret")
+```
+
+A handful of pairs stand clearly off the 45-degree line. Those became the
+hypotheses in Section 6.3 — not as correlations between ratios, but as
+regressions on the underlying dollar lines, each pre-specified with a support
+and rejection rule before estimation. **This is the productive use of the null
+result:** it converts "the index has four dimensions" into a short list of
+testable claims about nonprofit financing behavior.
+
+## 6. Is the index meaningful?
+
+### 6.1 Sanity checks
+
+```{r score-dist, fig.width = 9.2, fig.height = 3.2}
+sc <- c("fh_leverage", "fh_performance_growth", "fh_reserves", "fh_asset_structure",
+        "fiscal_health")
+labs <- c("Leverage\n(higher = less debt)", "Performance & growth", "Liquidity & reserves",
+          "Asset structure (context)", "Fiscal Health Index")
+op <- par(mfrow = c(1, 5), mar = c(3.1, 0.8, 3.0, 0.8), bg = "white")
+for (i in seq_along(sc)) {
+  h <- hist(scores[[sc[i]]], breaks = 70, plot = FALSE)
+  barplot(h$counts, space = 0, border = NA, yaxt = "n",
+          col = if (sc[i] == "fiscal_health") pal[["accent"]] else pal[["navy"]])
+  axis(1, at = seq(0, length(h$counts), length.out = 5),
+       labels = round(seq(min(h$breaks), max(h$breaks), length.out = 5), 1),
+       cex.axis = 0.7, col = pal[["rule"]], col.axis = pal[["ink_mid"]])
+  mtext(labs[i], side = 3, line = 0.4, cex = 0.66, font = 2, col = pal[["ink"]])
+}
+par(op)
+```
+
+```{r score-stats}
+kable(t(sapply(scores[sc], function(v)
+  c(mean = mean(v), sd = sd(v), quantile(v, c(.05, .25, .5, .75, .95))))),
+  digits = 2,
+  caption = paste0("Recomputed from the saved 2023 model (n = ", n_fmt(nrow(scores)), ")"))
+kable(round(cor(scores[sc]), 2), caption = "Score correlations")
+```
+
+The distributions raise one real feature and one real limitation.
+
+* **The leverage ceiling is genuine.** Its 75th and 95th percentiles are
+  identical because `r pct(mean(scores$fh_leverage == max(scores$fh_leverage)), 1)`
+  of filers sit at the single best possible value: no liabilities and no
+  payables. Having no debt *is* the least-leveraged state, so the tie is not a
+  measurement artifact — but it does mean the leverage score cannot discriminate
+  within its top quarter.
+* **Dimension scores carry information the composite hides.** The three
+  directional dimensions correlate only 0.14–0.43 with one another. Sorting
+  organizations by whether each dimension is above or below its median,
+  `r pct(1 - 0.202 - 0.203)` of organizations have a *mixed* profile —
+  well-reserved but running a deficit, or earning surpluses on a thin balance
+  sheet. A single composite puts those in the same place, which is why the
+  index reports all four scores alongside it.
+
+```{r face-validity}
+fv <- data.frame(
+  Quintile = 1:5, n = c("64,323", "64,323", "64,322", "64,322", "64,322"),
+  Deficit = c("70.9%", "51.5%", "39.7%", "25.2%", "12.7%"),
+  `Negative net assets` = c("23.9%", "1.2%", "0.2%", "0.1%", "0.0%"),
+  `Negative liquid reserves` = c("33.6%", "8.9%", "3.2%", "1.5%", "0.8%"),
+  `< 1 month cash` = c("25.3%", "11.2%", "7.2%", "4.4%", "3.5%"),
+  `Revenue down > 20%` = c("20.8%", "16.5%", "15.7%", "15.6%", "13.7%"),
+  `Liabilities > 50% of assets` = c("53.1%", "14.0%", "4.7%", "2.2%", "1.1%"),
+  `Median expenses` = c("1,090,873", "877,187", "495,802", "322,006", "139,302"),
+  check.names = FALSE)
+kable(fv, row.names = FALSE, align = "r",
+      caption = "Quoted from fiscal-health-model-2023.Rmd. Raw 2023 conditions by index quintile")
+```
+
+Every distress signal falls monotonically from the bottom quintile to the top,
+and balance-sheet distress is concentrated in the bottom fifth. This check is
+partly circular — these conditions feed the index — so what it establishes is
+narrower than it looks: orientation, transformation, and weighting behave as
+intended on the raw scale, including at the extremes that the transform
+compresses. Two honest caveats fall out of it:
+
+* **Revenue declines barely sort.** A 20% revenue drop is only slightly more
+  common in the bottom quintile than the top. Revenue growth is one of five
+  performance indicators and the weakest-loading one, and a single year's
+  revenue decline is a noisy distress signal by itself.
+* **The top quintile is the *smallest* organizations.** Median expenses fall
+  from \$1.09M to \$139k across quintiles. Small organizations more often carry
+  no debt and hold reserves that are large relative to their spending. The index
+  measures condition *relative to scale*, not institutional strength.
+
+**Reusability.** Fitting the normalizer and the model on a random half of 2023
+filers and scoring the other half reproduces the full-sample scores essentially
+exactly, with matching means and standard deviations. The stored parameters, not
+the scoring sample, define the scale.
+
+### 6.2 Variance across subsectors and organization size
+
+```{r peer-r2}
+r2 <- data.frame(
+  Score = c("Leverage", "Performance & growth", "Liquidity & reserves",
+            "Asset structure", "Fiscal Health Index"),
+  `Size band` = c(0.146, 0.004, 0.101, 0.046, 0.127),
+  `Peer sector` = c(0.070, 0.003, 0.044, 0.091, 0.040),
+  `Sector + size` = c(0.194, 0.007, 0.139, 0.136, 0.153),
+  check.names = FALSE)
+kable(r2, digits = 3, row.names = FALSE,
+      caption = "Quoted from fiscal-health-model-2023.Rmd. Share of score variance (R-squared) explained by peer definitions")
+```
+
+Three results here matter for how the index should be used.
+
+**Most variation is within peer groups.** Sector and size together explain
+`r pct(0.153)` of composite variance, so national scores remain meaningful.
+
+**Size matters more than sector, and it acts through the balance sheet.** Size
+band alone explains `r pct(0.127)` of composite variance against `r pct(0.040)`
+for sector, and it works almost entirely through leverage and reserves.
+Performance & growth is nearly flat across both — `r pct(0.007)` explained.
+That asymmetry is itself a finding: *how an organization finances itself* is
+strongly structured by what it is and how big it is; *whether it ran a surplus
+this year* is not.
+
+**Between-group differences are large enough to need peer benchmarks.** Median
+national percentile runs from 21 (hospitals) to 70 (public safety & relief,
+mutual & membership benefit).
+
+```{r sector-heat, fig.width = 9, fig.height = 6.4}
+agg <- aggregate(scores[c("fh_leverage", "fh_performance_growth", "fh_reserves",
+                          "fh_asset_structure", "fiscal_health")],
+                 by = list(sector = scores$peer_sector), FUN = median)
+cnt <- as.data.frame(table(scores$peer_sector), stringsAsFactors = FALSE)
+agg$n <- cnt$Freq[match(agg$sector, cnt$Var1)]
+agg <- agg[agg$n >= 1000, ]
+agg <- agg[order(agg$fiscal_health), ]
+M <- as.matrix(agg[, c("fh_leverage", "fh_performance_growth", "fh_reserves",
+                        "fh_asset_structure", "fiscal_health")])
+rownames(M) <- paste0(agg$sector, "  (", trimws(n_fmt(agg$n)), ")")
+colnames(M) <- c("Leverage", "Performance\n& growth", "Reserves", "Asset\nstructure", "INDEX")
+cl <- max(abs(M))
+cols <- colorRampPalette(c(pal[["navy"]], "#7c96a6", "#f2f3f4",
+                           pal[["pumpkin"]], pal[["accent"]]))(101)
+op <- par(mar = c(0.6, 17.2, 4.6, 0.6), bg = "white")
+image(1:ncol(M), 1:nrow(M), t(M[, , drop = FALSE]), col = cols, zlim = c(-cl, cl),
+      axes = FALSE, xlab = "", ylab = "")
+axis(2, at = 1:nrow(M), labels = rownames(M), las = 1, tick = FALSE,
+     cex.axis = 0.62, col.axis = pal[["ink"]], line = -0.6)
+for (j in 1:ncol(M))
+  text(j, nrow(M) + 0.9, colnames(M)[j], adj = c(0.5, 0), cex = 0.66,
+       col = pal[["ink_mid"]], font = if (j == 5) 2 else 1, xpd = NA)
+for (i in 1:nrow(M)) for (j in 1:ncol(M))
+  text(j, i, formatC(M[i, j], format = "f", digits = 2), cex = 0.56,
+       col = if (abs(M[i, j]) > 0.55 * cl) "white" else pal[["ink"]])
+abline(v = 4.5, col = "white", lwd = 3)
+box(col = pal[["rule"]])
+mtext("Median scores by peer sector, best to worst", side = 3, line = 3.3, adj = 0,
+      cex = 0.92, font = 2, col = pal[["ink"]])
+mtext("Recomputed. Peer sectors with 1,000+ full-990 filers; orange = better than the national median",
+      side = 3, line = 2.5, adj = 0, cex = 0.64, col = pal[["ink_soft"]])
+par(op)
+```
+
+The heat map shows why asset structure is reported as context. Hospitals,
+higher education, and housing providers sit at the bottom of the index on
+leverage and reserves while having *strongly negative* asset-structure scores
+(fixed-asset-heavy). Their low health scores are substantially a statement about
+their business model. Read down the performance & growth column: it is near zero
+for almost every sector. The composite's sector spread is a balance-sheet
+spread.
+
+```{r peer-shift}
+kable(data.frame(
+  Check = c("Spearman rho, peer vs. national composite percentile",
+            "Median absolute shift, national to peer (points)",
+            "Organizations shifting 20+ percentile points",
+            "Organizations shifting 40+ percentile points"),
+  Value = c("0.878", "10", "13.9%", "1.5%"), check.names = FALSE),
+  row.names = FALSE, align = "lr",
+  caption = "Quoted from fiscal-health-model-2023.Rmd. Effect of peer-group benchmarking")
+```
+
+Peer percentiles (NTEE v2 subsector, split into NTEE major groups where a
+subsector spans several, with IRS subsection as a fallback, crossed with three
+expense bands, minimum 250 per group) re-base the score without reordering it
+wholesale. The recommendation is to report both: a low peer percentile flags an
+organization weak *even by its field's norms*, while a low national percentile
+with a typical peer percentile says the weakness is the field's financial model.
+
+### 6.3 H1–H5: does the index's structure reflect real behavior?
+
+Five hypotheses were drawn from the pairs that survived the conditional null
+(Section 5.6). Each was pre-specified — outcome, carrying coefficient, support
+rule, rejection rule — before estimation, and tested on 990 **dollar lines**
+rather than on ratios, with size controls and an evidence rule requiring the
+estimate to lie beyond the 0.5th/99.5th percentile of 200 refits in which the
+predictor is shuffled within cells of expenses × asset intensity.
+
+```{r h-verdicts}
+h <- data.frame(
+  Hypothesis = c("**H1** Fixed assets are financed with long-term debt",
+                 "**H1a** Matching is stronger in capital-intensive subsectors",
+                 "**H2** Non-cash current assets are financed with short-term liabilities",
+                 "**H3** Organizations with more cash carry less long-term debt",
+                 "**H4** Organizations that earn revenue spend less on raising it",
+                 "**H5** Where does a surplus go?"),
+  `2023 verdict` = c("**supported**", "**rejected**", "**supported**", "inconclusive",
+                     "**supported**", "estimated (no directional prediction)"),
+  `Replication` = c("2021: supported", "2021: rejected", "2021: supported",
+                    "2021: inconclusive", "panel: weak/contrary", "2019, 2021, 2022, 2023"),
+  `Key estimate` = c(
+    "elasticity of long-term debt to fixed assets 0.51; 0.45 larger than in the short-term equation",
+    "interaction with hospitals, universities, housing −0.13 (wrong sign)",
+    "elasticity 0.20; 0.20 larger than in the long-term equation",
+    "−0.026 on having any long-term debt (passes), but +0.002 on the amount (fails)",
+    "log program revenue: −0.037 on any fundraising, −0.062 on the amount, with contributions +0.069 / +0.280",
+    "37 cents of each surplus dollar ends as cash, 32 as investments and other assets, 14 as property, 12 as liabilities paid down"),
+  check.names = FALSE)
+kable(h, row.names = FALSE,
+      caption = "Quoted from matching-hypotheses-2023.Rmd, h4-revenue-model.Rmd, h5-surplus-allocation.Rmd")
+```
+
+**H1 and H2 (supported, and replicated).** Long-term debt tracks fixed assets;
+short-term liabilities track non-cash current assets; each is stronger in its
+own equation than in the other's. Both replicate in the independent 2021
+sample. This is the clearest substantive finding in the programme: the
+leverage-reserves separation the four-dimension model insists on corresponds to
+a real financing pattern, not only to how the ratios divide.
+
+**H1a (rejected).** Matching is not stronger in capital-intensive subsectors —
+the interaction has the wrong sign in both years. Hospitals, universities, and
+housing providers match *less* tightly, plausibly because they use tax-exempt
+bonds and multi-project financing that is not tied to a single asset.
+
+**H3 (inconclusive, both years).** More cash goes with a lower probability of
+holding long-term debt, but among borrowers it has no relationship with the
+amount. A pecking-order reading and a collateral reading are both consistent
+with that.
+
+**H4 (supported in cross-section; not within organizations).** Organizations
+with more program service revenue are less likely to report fundraising expense
+and report less of it, while contributions push both up sharply — a clean
+substitution pattern. But the same organizations, followed over time, do not
+behave that way: within-organization, a 1-unit rise in log program revenue goes
+with a **+0.014** change in log fundraising expense, and organizations that lost
+the most earned revenue in the pandemic did **not** raise fundraising effort by
+2023 (coefficient 0.0054, SE 0.0050, i.e. the wrong sign and indistinguishable
+from zero). **Between-organization substitution is a difference in business
+model, not a behavioural margin organizations move along.** That distinction is
+easy to miss and changes the policy reading entirely.
+
+**H5 (the allocation itself).** H5 makes no directional prediction; the estimate
+*is* the finding, and the accounting identity is the check on it.
+
+```{r h5-flow, fig.width = 8.8, fig.height = 5.3}
+# Quoted from h5-surplus-allocation.Rmd: pooled 2022-2023, December year-ends,
+# full-990 filers present 2019-2023 (n = 247,124). Cents per surplus dollar.
+sources <- c(Contributions = 0.641, `Investment income` = 0.112,
+             `Other revenue` = 0.099, `Gains on asset sales` = 0.086,
+             `Program revenue` = 0.062)
+uses <- c(Cash = 0.371, `Investments, other assets` = 0.320,
+          `Property and equipment` = 0.139,
+          `Debt paid down` = 0.021 + 0.010 + 0.087,
+          `Receivables, prepaid` = 0.037)
+expense_net <- 0.008 - 0.014 - 0.005 + 0.011
+
+flow_figure <- function(sources, uses, expense_net, subtitle) {
+  op <- par(mar = c(0.4, 0.4, 2.6, 0.4), bg = "white", family = "sans")
+  on.exit(par(op))
+  plot.new(); plot.window(xlim = c(0, 1), ylim = c(-0.14, 1.30))
+  gap <- 0.045; centre <- 0.56
+  stack <- function(v) {
+    y <- centre + (sum(v) + gap * (length(v) - 1)) / 2
+    out <- lapply(v, function(h) { r <- c(top = y, bot = y - h); y <<- y - h - gap; r })
+    names(out) <- names(v); out
+  }
+  ribbon <- function(x0, x1, t0, b0, t1, b1, col, alpha) {
+    t <- seq(0, 1, length.out = 80); s <- t * t * (3 - 2 * t); xs <- x0 + (x1 - x0) * t
+    polygon(c(xs, rev(xs)), c(t0 + (t1 - t0) * s, rev(b0 + (b1 - b0) * s)),
+            col = adjustcolor(col, alpha), border = NA)
+  }
+  xs <- c(0.275, 0.325); xt <- c(0.495, 0.545); xu <- c(0.715, 0.765)
+  src <- stack(sources); use <- stack(uses)
+  top <- centre + 0.5
+  cur <- top
+  for (i in seq_along(src)) {
+    ribbon(xs[2], xt[1], src[[i]][["top"]], src[[i]][["bot"]], cur, cur - sources[[i]],
+           pal[["navy"]], 0.34); cur <- cur - sources[[i]]
+  }
+  cur <- top
+  for (i in seq_along(use)) {
+    ribbon(xt[2], xu[1], cur, cur - uses[[i]], use[[i]][["top"]], use[[i]][["bot"]],
+           if (names(uses)[i] == "Debt paid down") pal[["ink_mid"]] else pal[["accent"]], 0.40)
+    cur <- cur - uses[[i]]
+  }
+  for (i in seq_along(src)) {
+    rect(xs[1], src[[i]][["bot"]], xs[2], src[[i]][["top"]], col = pal[["navy"]], border = NA)
+    text(xs[1] - 0.014, mean(src[[i]]), sprintf("%s  %.2f", names(sources)[i], sources[[i]]),
+         adj = c(1, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  rect(xt[1], centre - 0.5, xt[2], top, col = pal[["accent"]], border = NA)
+  text(mean(xt), top + 0.045, "$1 of surplus", adj = c(0.5, 0), cex = 0.78, font = 2,
+       col = pal[["accent_ink"]])
+  for (i in seq_along(use)) {
+    rect(xu[1], use[[i]][["bot"]], xu[2], use[[i]][["top"]],
+         col = if (names(uses)[i] == "Debt paid down") pal[["ink_mid"]] else pal[["pumpkin"]],
+         border = NA)
+    text(xu[2] + 0.014, mean(use[[i]]), sprintf("%s  %.2f", names(uses)[i], uses[[i]]),
+         adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  text(xs[1] - 0.014, centre - 0.72, "revenue lines that move the surplus", adj = c(1, 0.5),
+       cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  text(mean(xt), centre - 0.72, sprintf("expense lines net %+.2f", expense_net),
+       adj = c(0.5, 0.5), cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  text(xu[2] + 0.014, centre - 0.72, "where the dollar lands", adj = c(0, 0.5),
+       cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  mtext("Where a surplus comes from, and where it goes", side = 3, line = 1.1, adj = 0,
+        cex = 1.0, font = 2, col = pal[["ink"]])
+  mtext(subtitle, side = 3, line = 0.1, adj = 0, cex = 0.66, col = pal[["ink_soft"]])
+}
+flow_figure(sources, uses, expense_net,
+            "cents per dollar of surplus  |  full-990 filers, December year-ends, 2022-2023  |  n = 247,124  |  quoted from h5-surplus-allocation.Rmd")
+```
+
+The identity is the quality control, and it holds: asset-side coefficients
+minus liability-side coefficients sum to 0.985, matching the 0.985 from
+regressing the change in net assets directly on the surplus. Almost every
+surplus dollar is traceable.
+
+Three things fall out of the split:
+
+* **Surpluses are revenue events.** The five revenue lines account for the
+  whole of the variation in the surplus (contributions alone 0.64); the four
+  expense lines net to about zero. Organizations with unusually good years are
+  not the ones that spent unusually little.
+* **The two sides are asymmetric.** Surpluses arrive as contributions and
+  investment returns and leave as cash and investments. Property absorbs a
+  seventh. Liabilities absorb 12 cents, but only 3 of those are identified
+  long- and short-term debt; the remaining 9 sit in "other liabilities", whose
+  coefficient is the least precisely estimated in the table.
+* **Deficits are not the mirror image.** A deficit is funded disproportionately
+  out of cash (57.5 cents per deficit dollar vs. 34.2 out of a surplus) and
+  barely at all by borrowing. The asymmetry is itself a resilience finding: cash
+  is the shock absorber, which is direct support for weighting liquid reserves
+  as heavily as the index does.
+
+Robustness: the split is stable under organization fixed effects (cash 0.434
+within-organization vs. 0.371 pooled) and across 2019, 2021, 2022, and 2023,
+with property's share falling from 0.214 pre-COVID to 0.139 in 2022–23. An
+early version of this analysis winsorized each component separately, which
+broke the identity — the identity check caught it, and outliers are now handled
+by dropping organization-years rather than clipping values.
+
+### 6.4 A negative result worth keeping: the matching-gap indicator
+
+Because H1 and H2 held, they were turned into a candidate **indicator**: fit
+the two benchmarks, predict how much debt an organization's asset mix and size
+support, and define the *matching gap* as actual minus predicted debt over
+assets. A positive gap means more debt than similar organizations with the same
+assets carry. Validation expectations were, again, written in advance.
+
+```{r gap}
+kable(data.frame(
+  Test = c("One year ahead, within the 2023 filing (planned controls)",
+           "Same, controlling for starting cash months and asset intensity",
+           "Poisson (PPML) benchmark instead of the two-part model",
+           "2019 gap predicting 2020–2023 (deficits, net-asset decline, stopped filing)",
+           "Persistence: 2019 gap vs. 2023 gap (Spearman)"),
+  Result = c(
+    "Cash drawdown: +0.057 per SD, **+0.041 AUC** over debt/assets alone. Deficits and net-asset declines: AUC gain ≤ 0.001.",
+    "Cash-drawdown coefficient 0.001, AUC gain 0.0000. **The planned association was a floor effect** — cash cannot fall by a month of expenses unless you start with that much.",
+    "Matches total dollars by construction, where the two-part model over-predicted by 2.3×. With the added controls, the largest AUC gain for deficits or net-asset declines is 0.003.",
+    "Largest AUC gain from adding the gap to a model with debt/assets, size, cash months and asset intensity: **0.0005**.",
+    "0.64 (assets-scaled), 0.71 (expense-scaled) — a standing financing posture, not a passing strain."),
+  check.names = FALSE),
+  row.names = FALSE,
+  caption = "Quoted from matching-gap-2023.Rmd and matching-gap-panel.Rmd")
+```
+
+The matching gap **does not predict distress** beyond what debt-to-assets,
+size, starting liquidity, and asset intensity already say. Three methodological
+lessons are worth more than the indicator would have been:
+
+1. **A confirmed correlation is not a useful indicator.** H1 and H2 replicate
+   and survive the construction null, and the gap built from them still adds
+   nothing.
+2. **The first strong result was mechanical.** Pre-specifying the validation
+   did not protect against it; only asking *why* the association existed did.
+   Floor effects of this kind are the main risk in any "fell by more than X"
+   outcome, and they should be controlled for by design.
+3. **Retransformation bias is not a detail.** The planned two-part
+   (logit + log-OLS with Duan smearing) benchmark over-predicted total debt by
+   a factor of 2.3. PPML on dollars with zeros included matches totals by
+   construction and is the right default for this kind of benchmark.
+
+There is one hint worth following: **the relationship is not monotone.** Among
+the most leveraged third of organizations in the panel, both the highest-gap
+quintile (32% with three or more deficit years over 2020–2023) and the
+lowest-gap quintile (21%) fare worse than the middle (17%). Organizations far
+above the benchmark are over-borrowed; those far below it tend to hold thin
+balance sheets relative to their spending. A linear term averages the two away,
+and an absolute-deviation specification does slightly better — though still with
+AUC gains under 0.003.
+
+## 7. Where index development stands
+
+### Clear strengths
+
+* **The measurement model is explicit, complete, and reusable.** Every ratio
+  has a documented rule for each way it can fail; nothing is dropped for
+  convenience; the transformation's parameters are stored, so 2024 can be
+  scored on the 2023 scale. Coverage is every full-990 filer with positive
+  expenses (`r n_fmt(model$reference$n)` organizations).
+* **The dimension structure is as stable as this kind of result gets.**
+  Congruence ≥ 0.94 across random halves, three size bands, two winsorizing
+  levels, two transformation families, and an independent tax year.
+* **Every substantive decision is on the record with its reasoning**, including
+  the ones later reversed. The path from two dimensions to four is legible
+  because the screening rules were written down.
+* **The index behaves sensibly.** Distress signals fall monotonically across
+  quintiles; half-sample fits reproduce full-sample scores; the leverage tie at
+  the top is a real feature of the sector, not a bug.
+* **Its main weakness has been quantified rather than assumed.** The
+  construction null puts a number on how much of the structure is arithmetic,
+  and the answer is "most of it". Very few composite indices in this literature
+  have been tested this way.
+* **Three substantive findings hold up.** Long- and short-term asset-liability
+  matching (H1, H2) replicate in an independent year, and the allocation of a
+  surplus dollar (H5) is stable across 2019, 2021, 2022 and 2023 while holding
+  the accounting identity to within 1.5%.
+
+### Limitations
+
+* **No predictive validity yet.** The decisive test is whether a low 2023 score
+  precedes deficits, insolvency, or stopping filing. Everything so far is
+  face validity plus cross-sectional association. The one predictive test that
+  *was* run — the matching gap over 2019–2023 — came back null.
+* **Equal weights are a default, not an estimate.** Nothing in a cross-section
+  can calibrate them.
+* **The dimensions are not established as latent constructs.** Section 5 is
+  explicit: arithmetic alone reproduces them with congruence 0.94–0.99. They
+  are the right way to *aggregate* the 990's ratios; they are not four
+  discovered facts about nonprofit finance.
+* **The index is monotone without limit.** More reserves and larger surpluses
+  always score better. There is no excess-reserves penalty or target range,
+  which means multi-year capital campaigns and large endowments score as
+  maximal health.
+* **Scores are structured by size and business model.** Size band explains 13%
+  of composite variance, sector 4%, and the top quintile is the smallest
+  organizations. Peer percentiles mitigate this but do not remove it, and
+  roughly a third of full-990 filers have no usable NTEE code.
+* **Out of scope: 990-EZ and 990-N filers**, i.e. most nonprofits by count.
+* **The pipeline is still half in dev scripts.** `build-ratio-frame.R` and the
+  frozen-normalization helpers are not in the package, so the model cannot yet
+  be refit or applied without them. Several package fixes identified along the
+  way are still outstanding, including the `_z` zero-MAD failure on
+  zero-inflated shares.
+
+### Reasonable next steps
+
+Ordered by what would most change the standing of the index.
+
+**1. Predictive validation on the panel (highest value).** The 2019–2024 panel
+is already built for H4 and H5. Score 2019 with the frozen model and predict
+2020–2024 outcomes: three-or-more deficit years, net assets falling, cash
+exhaustion, and stopping filing. This is the single test that would move the
+index from "coherent measurement system" to "validated instrument", and the
+negative matching-gap result shows the machinery is ready to deliver an honest
+answer either way. Report AUC gains over a size-plus-leverage baseline, since
+that is the benchmark the matching gap failed to beat.
+
+**2. Calibrate weights against those outcomes.** `fiscal_weights()` already
+accepts custom weights. Once an outcome exists, compare equal weights with
+outcome-calibrated weights and report the difference — if it is small, equal
+weights gain a real defence rather than a default's.
+
+**3. Multi-year stability of the dimensions.** Growth can now be measured
+inside a single return, so discovery can be rerun for 2019–2022 without a
+panel. Two specific things to check: whether the five-component split (revenue
+growth pairing with surplus margin, separate from balance-sheet growth)
+recurs, and whether the reserve–leverage boundary among large organizations
+moves with the credit cycle.
+
+**4. Port the measurement model into the package.** Rules, conditional
+imputation, growth, and `fit/apply_winsor_normalize()` belong in exported
+functions; fix the `_z` path so the package's own columns match the model.
+Without this, nobody outside this folder can refit the index.
+
+**5. Non-linear and target-range scoring, as an option.** The non-monotone
+matching-gap result and the unbounded reserve scoring point the same way. A
+target-range treatment of reserves is a substantive policy choice, so it should
+be an argument rather than a default — but it should exist.
+
+**6. Better peers where they are worst.** Education and unclassified 501(c)(3)s
+are the two largest sectors that cannot be split at the major-group level.
+Education could split by NTEE division; unclassified 501(c)(3)s could use the
+IRS public-charity/foundation code, or mission-text classification.
+
+**7. On experiments, the priority is fewer and sharper, not more.** Two of the
+five hypotheses produced usable knowledge (H1/H2, H5), one produced a
+methodological lesson (the matching gap), and one produced a genuinely
+interesting split between cross-sectional and within-organization behaviour
+(H4). The next round should pick up exactly that split: the questions worth
+asking are the ones where between- and within-organization answers can
+disagree, because that is where a *health index* — which is read
+cross-sectionally but interpreted as if it described an organization's
+trajectory — is most likely to mislead. A natural candidate: does the reserves
+dimension behave as a buffer *within* organizations, i.e. do high-reserve
+organizations absorb revenue shocks with fewer expense cuts? That is a direct
+test of the construct's meaning, not just of its correlates.
+
+## References
+
+Aitchison, J. (1982). The statistical analysis of compositional data.
+*Journal of the Royal Statistical Society B*, 44(2), 139–177. — and (1986),
+*The Statistical Analysis of Compositional Data*. Chapman & Hall.
+
+Atchley, W. R., Gaskins, C. T., & Anderson, D. (1976). Statistical properties
+of ratios. I. Empirical results. *Systematic Zoology*, 25(2), 137–148.
+
+Bollen, K., & Lennox, R. (1991). Conventional wisdom on measurement: A
+structural equation perspective. *Psychological Bulletin*, 110(2), 305–314.
+
+Burbidge, J. B., Magee, L., & Robb, A. L. (1988). Alternative transformations
+to handle extreme values of the dependent variable. *Journal of the American
+Statistical Association*, 83(401), 123–127.
+
+Chayes, F. (1949). On ratio correlation in petrography. *Journal of Geology*,
+57(3), 239–254.
+
+Diamantopoulos, A., & Winklhofer, H. M. (2001). Index construction with
+formative indicators. *Journal of Marketing Research*, 38(2), 269–277.
+
+Firebaugh, G., & Gibbs, J. P. (1985). User's guide to ratio variables.
+*American Sociological Review*, 50(5), 713–722.
+
+Gotelli, N. J., & Graves, G. R. (1996). *Null Models in Ecology*. Smithsonian
+Institution Press.
+
+Horn, J. L. (1965). A rationale and test for the number of factors in factor
+analysis. *Psychometrika*, 30(2), 179–185.
+
+Johnson, N. L. (1949). Systems of frequency curves generated by methods of
+translation. *Biometrika*, 36(1/2), 149–176.
+
+Jöreskog, K. G. (1969). A general approach to confirmatory maximum likelihood
+factor analysis. *Psychometrika*, 34(2), 183–202.
+
+Kenny, D. A., & Kashy, D. A. (1992). Analysis of the multitrait–multimethod
+matrix by confirmatory factor analysis. *Psychological Bulletin*, 112(1),
+165–172.
+
+Kronmal, R. A. (1993). Spurious correlation and the fallacy of the ratio
+standard revisited. *Journal of the Royal Statistical Society A*, 156(3),
+379–392.
+
+Lorenzo-Seva, U., & ten Berge, J. M. F. (2006). Tucker's congruence
+coefficient as a meaningful index of factor similarity. *Methodology*, 2(2),
+57–64.
+
+Nardo, M., Saisana, M., Saltelli, A., Tarantola, S., Hoffman, A., &
+Giovannini, E. (2008). *Handbook on Constructing Composite Indicators:
+Methodology and User Guide*. OECD / JRC.
+
+Pearson, K. (1897). On a form of spurious correlation which may arise when
+indices are used in the measurement of organs. *Proceedings of the Royal
+Society of London*, 60, 489–498.
+
+Velicer, W. F. (1976). Determining the number of components from the matrix of
+partial correlations. *Psychometrika*, 41(3), 321–327.
+
+```{r session}
+sessionInfo()
+```
