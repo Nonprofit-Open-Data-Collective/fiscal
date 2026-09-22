@@ -130,97 +130,18 @@ exactly. The seventh is a residual, so the partition holds by construction.
 | Investments | 3 + 4 (investment and tax-exempt bond income) + 7d (net gain on asset sales) |
 | Other revenue | total minus the six above (royalties, net rent, net inventory sales, miscellaneous) |
 
-```{r cpi}
-# CPI-U, annual average, 1982-84 = 100 (BLS; cross-checked against the
-# Minneapolis Fed's published series). Tax years here are December year-ends,
-# so an annual average is the right deflator.
-CPI <- c(`2016` = 240.007, `2017` = 245.120, `2018` = 251.107, `2019` = 255.657,
-         `2020` = 258.811, `2021` = 270.970, `2022` = 292.655, `2023` = 304.702,
-         `2024` = 313.689)
-deflator <- function(y) unname(CPI[as.character(params$ref_year)] / CPI[as.character(y)])
-kable(data.table(tax_year = names(CPI), cpi_u = unname(CPI),
-                 multiplier_to_ref = round(deflator(names(CPI)), 4)),
+```{r prep}
+# Loading, deflating and baseline construction are shared with
+# h5-windfall-allocation.Rmd, which measures the other tail of the same
+# distribution. If the two documents built their baselines separately they could
+# drift apart and stop being comparable, so the construction lives in one file.
+source("baseline-prep.R", local = knitr::knit_global())
+
+kable(cpi_table,
       caption = paste0("Deflator applied to every dollar quantity (constant ",
                        params$ref_year, " dollars)"))
-```
-
-```{r data}
-num <- function(x) { x <- as.numeric(x); x[is.na(x)] <- 0; x }
-
-main <- as.data.table(readRDS(params$panel_file))
-base <- as.data.table(readRDS(params$baseline_file))
-
-# Membership is defined on the 2019-2023 window exactly as in v1, so the
-# population is the same one H1-H5 use. The 2016-2018 years are extra history,
-# never a filter: an organization that did not e-file then keeps its place and
-# simply has no baseline for the early shock years.
-forms <- main[, .(n990 = sum(RETURN_TYPE == "990"), nez = sum(RETURN_TYPE == "990EZ")), by = EIN2]
-stable990 <- forms[n990 >= 5 & nez == 0, EIN2]
-
-KEEP   <- c("EIN2", "TAX_YEAR", "RETURN_TYPE", "TAX_PERIOD_END_DATE",
-            grep("^F9_(08|09|10)_", names(main), value = TRUE))
-common <- intersect(KEEP, intersect(names(main), names(base)))
-x <- rbind(main[, ..common], base[, ..common])
-rm(main, base); invisible(gc())
-
-x <- x[EIN2 %chin% stable990 & RETURN_TYPE == "990" &
-       substr(TAX_PERIOD_END_DATE, 6, 7) == "12"]
-x[, TAX_YEAR := as.integer(TAX_YEAR)]
-
-kable(x[, .(filings = .N, organizations = uniqueN(EIN2)), by = TAX_YEAR][order(TAX_YEAR)],
-      format.args = list(big.mark = ","),
+kable(filings_by_year, format.args = list(big.mark = ","),
       caption = "Full-990 December filings available by tax year, after the extension back to 2016")
-```
-
-```{r blocks-components}
-blk <- function(when) {
-  s <- function(f) num(x[[paste0(f, "_", when)]])
-  data.table(
-    cash   = s("F9_10_ASSET_CASH") + s("F9_10_ASSET_SAVING"),
-    oca    = s("F9_10_ASSET_PLEDGE_NET") + s("F9_10_ASSET_ACC_NET") +
-             s("F9_10_ASSET_INV_SALE") + s("F9_10_ASSET_EXP_PREPAID"),
-    fixed  = s("F9_10_ASSET_LAND_BLDG_NET"),
-    assets = s("F9_10_ASSET_TOT"),
-    lt     = s("F9_10_LIAB_TAX_EXEMPT_BOND") + s("F9_10_LIAB_MTG_NOTE") + s("F9_10_LIAB_NOTE_UNSEC"),
-    st     = s("F9_10_LIAB_ACC_PAYABLE") + s("F9_10_LIAB_GRANT_PAYABLE") + s("F9_10_LIAB_REV_DEFERRED"),
-    liab   = s("F9_10_LIAB_TOT"),
-    na     = s("F9_10_NAFB_TOT"))
-}
-b <- blk("BOY"); e <- blk("EOY")
-b[, `:=`(other_assets = assets - cash - oca - fixed, other_liab = liab - lt - st)]
-e[, `:=`(other_assets = assets - cash - oca - fixed, other_liab = liab - lt - st)]
-
-gov       <- num(x$F9_08_REV_CONTR_GOVT_GRANT)
-dues      <- num(x$F9_08_REV_CONTR_MEMBSHIP_DUE)
-evtc      <- num(x$F9_08_REV_CONTR_FUNDR_EVNT)
-events    <- evtc + num(x$F9_08_REV_OTH_EVNT_NET_TOT) + num(x$F9_08_REV_OTH_GAMING_NET_TOT)
-contr_oth <- num(x$F9_08_REV_CONTR_TOT) - gov - dues - evtc
-program   <- num(x$F9_08_REV_PROG_TOT_TOT)
-invest    <- num(x$F9_08_REV_OTH_INVEST_INCOME_TOT) + num(x$F9_08_REV_OTH_INVEST_BOND_TOT) +
-             num(x$F9_08_REV_OTH_SALE_GAIN_NET_TOT)
-
-dat <- data.table(
-  EIN2 = x$EIN2, year = x$TAX_YEAR,
-  R = num(x$F9_08_REV_TOT_TOT), E = num(x$F9_09_EXP_TOT_TOT),
-  gov = gov, dues = dues, events = events, contr_oth = contr_oth,
-  program = program, invest = invest,
-  program_expenses     = num(x$F9_09_EXP_TOT_PROG),
-  admin_expenses       = num(x$F9_09_EXP_TOT_MGMT),
-  fundraising_expenses = num(x$F9_09_EXP_TOT_FUNDR))
-dat[, other := R - gov - dues - events - contr_oth - program - invest]
-dat[, unallocated_expenses := E - program_expenses - admin_expenses - fundraising_expenses]
-
-for (v in c("cash", "oca", "fixed", "other_assets", "lt", "st", "other_liab", "assets", "liab", "na")) {
-  dat[[paste0("d_",   v)]] <- e[[v]] - b[[v]]   # movement during the year
-  dat[[paste0("boy_", v)]] <- b[[v]]            # the stock it was drawn from
-}
-setnames(dat, c("d_oca", "boy_oca"), c("d_other_current", "boy_other_current"))
-rm(b, e, x); invisible(gc())
-
-# Constant dollars, applied to every dollar quantity at once and before any
-# baseline is formed.
-DOLLARS <- setdiff(names(dat), c("EIN2", "year"))
-dat[, (DOLLARS) := lapply(.SD, function(v) v * deflator(year)), .SDcols = DOLLARS]
 ```
 
 **The baseline is a trailing mean, not a centred one.** `panel990::panel_smooth()`
@@ -230,50 +151,7 @@ baseline. The baseline here is built only from tax years strictly before the
 shock, and only when all `r params$base_window` of them are present as
 consecutive full-990 filings.
 
-```{r baselines}
-BASED <- c("R", "E", "gov", "dues", "events", "contr_oth", "program", "invest", "other",
-           "program_expenses", "admin_expenses", "fundraising_expenses", "unallocated_expenses",
-           "d_cash", "d_other_current", "d_fixed", "d_other_assets",
-           "d_lt", "d_st", "d_other_liab", "d_assets", "d_na")
-
-stopifnot(anyDuplicated(dat, by = c("EIN2", "year")) == 0L)
-setorder(dat, EIN2, year)
-for (k in seq_len(BW)) {
-  dat[, paste0("y", k) := shift(year, k), by = EIN2]
-  dat[, paste0("l", k, "_", BASED) := shift(.SD, k), by = EIN2, .SDcols = BASED]
-}
-# All BW prior tax years must be present and consecutive.
-ok <- rep(TRUE, nrow(dat))
-for (k in seq_len(BW)) {
-  yk <- dat[[paste0("y", k)]]
-  ok <- ok & !is.na(yk) & yk == dat$year - k
-}
-dat[, has_base := ok]
-for (v in BASED) {
-  acc <- dat[[paste0("l1_", v)]]
-  if (BW > 1) for (k in 2:BW) acc <- acc + dat[[paste0("l", k, "_", v)]]
-  dat[[paste0("base_", v)]] <- acc / BW
-}
-
-p <- dat[has_base == TRUE & base_R > 0 & base_E > 0 & boy_assets > 0]
-p[, gap := (R - base_R) / base_R]       # negative when revenue is below baseline
-
-# Alternative baselines, used only in the sensitivity table in section 10.
-# Nominal values are recovered by undoing the deflator year by year, so the
-# nominal comparison uses exactly the same filings as the real one.
-p[, R_nom      := R / deflator(year)]
-p[, base_R_nom := (l1_R / deflator(year - 1L) + l2_R / deflator(year - 2L) +
-                   l3_R / deflator(year - 3L)) / 3]
-p[, base_R2    := (l1_R + l2_R) / 2]
-p[, gap_nom := ifelse(base_R_nom > 0, (R_nom - base_R_nom) / base_R_nom, NA_real_)]
-p[, gap2    := ifelse(base_R2    > 0, (R - base_R2)        / base_R2,    NA_real_)]
-p[, gap_t1  := ifelse(l1_R       > 0, (R - l1_R)           / l1_R,       NA_real_)]  # the v1 measure
-
-p[, shock    := gap <= -params$shock_threshold]
-p[, shock_t1 := !is.na(gap_t1) & gap_t1 <= -params$shock_threshold]
-p[, prior_windfall := (l1_R - base_R) / base_R]
-p[, months_cash_boy := boy_cash / (base_E / 12)]
-
+```{r baseline-coverage}
 kable(p[, .(org_years = .N, organizations = uniqueN(EIN2)), by = year][order(year)],
       format.args = list(big.mark = ","),
       caption = "Organization-years with a complete three-year baseline")
@@ -283,8 +161,7 @@ kable(p[, .(org_years = .N, organizations = uniqueN(EIN2)), by = year][order(yea
 
 ```{r gap-distribution}
 qs <- c(0.001, 0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.99)
-g  <- p$gap
-iqr_sd <- function(v) unname(diff(quantile(v, c(0.25, 0.75))) / 1.349)
+g  <- p$gap   # iqr_sd(), size_band and max_abs_blk all come from baseline-prep.R
 dist <- data.table(
   statistic = c("mean", "standard deviation", "median", "robust SD (IQR/1.349)",
                 paste0("p", qs * 100)),
@@ -302,8 +179,6 @@ about the loss side. Every spread statistic below is therefore the robust one,
 ignores the tail.
 
 ```{r gap-by-size}
-p[, size_band := cut(base_R, c(-Inf, 1e5, 5e5, 2e6, 1e7, Inf),
-                     labels = c("under $100k", "$100k-500k", "$500k-2m", "$2m-10m", "$10m+"))]
 by_size <- p[, .(organization_years = .N,
                  median = median(gap),
                  robust_sd = iqr_sd(gap),
@@ -484,9 +359,6 @@ section 10 readable at all — the 2019 investments channel goes from -14.0 to
 -0.12 once the handful of extreme rows are gone.
 
 ```{r sample}
-p[, max_abs_blk := pmax(abs(s_bs_cash), abs(s_bs_oca), abs(s_bs_fixed), abs(s_bs_othass),
-                        abs(s_bs_lt), abs(s_bs_st), abs(s_bs_othli))]
-
 trim_sample <- function(z, trim = TRUE, bound = params$max_shock) {
   if (!is.null(bound)) z <- z[gap >= -bound]
   if (!trim) return(z[])
@@ -530,13 +402,7 @@ because they can disagree.
   Standard errors are HC1.
 
 ```{r estimands}
-ols <- function(y, W) {
-  XtXi <- solve(crossprod(W))
-  bhat <- drop(XtXi %*% crossprod(W, y))
-  res  <- drop(y - W %*% bhat)
-  V <- XtXi %*% crossprod(W * res) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
-  list(b = bhat, se = sqrt(diag(V)))
-}
+# ols() is defined in baseline-prep.R (HC1 standard errors).
 share_of_avg <- function(s, nm) mean(s[[paste0("s_", nm)]]) / mean(s$s_loss)
 pct_capacity <- function(s, nm) {
   cap <- sum(s[[paste0("cap_", nm)]])
@@ -682,6 +548,16 @@ roughly comparable cents per dollar, but cash gives up
 `r pct(bs[channel == "Cash", pct_of_capacity])` of the stock it started with
 against `r pct(bs[channel == "Investments, other assets", pct_of_capacity])` for
 investments. Cash is doing far more of the work relative to what there is of it.
+
+**The two columns weight organizations differently.** `cents_per_dollar` is a
+ratio of means of *scaled* channels, so organizations enter roughly alike
+regardless of size; `pct_of_capacity` is a ratio of raw dollar totals and is
+therefore dominated by the largest organizations in the sample. On this table
+they agree in sign everywhere except other liabilities, where both figures are
+near zero, but the distinction matters when reading any single row: the
+cents-per-dollar column is the behavioural estimate and the capacity column is
+the sector aggregate. The companion document `h5-windfall-allocation.Rmd` has a
+case where the two genuinely disagree in sign.
 
 **One caveat on the investments block, which the year-by-year table in section
 10 makes unavoidable.** Part X reports assets at fair value, so the movement in

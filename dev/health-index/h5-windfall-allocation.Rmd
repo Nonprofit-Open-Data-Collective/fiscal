@@ -1,0 +1,930 @@
+---
+title: "H5 (revisited): Where Does a Windfall Go?"
+subtitle: "Allocation of revenue that arrives above a three-year inflation-adjusted baseline, 2019-2024"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  baseline_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2016-2018.rds")
+  results_file: ""
+  seed: 2023
+  shock_threshold: 0.20
+  base_window: 3
+  ref_year: 2023
+  max_gain: 1.0
+  comp_share: 0.3333333
+  comp_material: 0.10
+  conc_high: 0.90
+  conc_low: 0.60
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+The original H5 (`h5-surplus-allocation.Rmd`) asked where a **surplus** goes: it
+regressed each balance-sheet block's movement on the level of the surplus and
+read the coefficients as cents per surplus dollar. That document stands. This
+one asks a different and, for the index, more useful question:
+
+**When an organization has an unusually good year, what does it do with the
+money?**
+
+The difference matters because a surplus is already the residual of a decision.
+By the time a dollar shows up as surplus, the organization has decided not to
+spend it. Starting from the revenue windfall instead puts the spend-or-keep
+decision *inside* the estimate, which is where the interesting behaviour is.
+Every dollar of revenue arriving above what an organization normally raises is
+either spent in the same year or it is not; if it is not, it lands on the
+balance sheet as cash, receivables, property, investments, or debt paid down.
+
+This is the mirror of H6. The two documents share one data preparation
+(`baseline-prep.R`), one population, one deflator and one baseline, so the
+upside and downside estimates are directly comparable — section 11 puts them in
+one table.
+
+## What is inherited from the H6 rework
+
+1. **Windfalls are measured against a trailing three-year average, not year
+   *t-1*.** Against *t-1*, an organization recovering from one bad year looks
+   identical to one receiving a windfall. Section 2 shows that
+   almost a third of the year-over-year "windfalls" are exactly that.
+2. **Everything is in constant `r params$ref_year` dollars** (CPI-U), applied
+   before any baseline is formed.
+3. **Every channel is reported twice**: cents per dollar of windfall, and the
+   same dollars as a share of what that channel started with. Putting 25 cents
+   into cash and 25 cents into property is the same number twice, but it may
+   double the cash and add 2% to the buildings.
+
+**A windfall** is an organization-year in which total real revenue comes in at
+least `r sprintf("%.0f%%", params$shock_threshold * 100)` **above** the
+organization's own inflation-adjusted average of the `r params$base_window`
+prior tax years — the exact mirror of H6's shock.
+
+**Scaling.** Everything is divided by **baseline expenses**, the trailing
+three-year real average. Current-year expenses are an outcome here (spending
+the windfall is one of the things being measured), so they cannot be the
+denominator.
+
+**Sign convention.** Throughout this document a positive number is a **use of
+the windfall**: spending above the normal level, an asset that grew by more
+than it normally does, or debt that grew by less than it normally does. On the
+revenue side a positive number is a **source**: a line that came in above its
+own baseline.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+})
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+pct <- function(x, d = 1) paste0(formatC(100 * x, format = "f", digits = d), "%")
+BW  <- as.integer(params$base_window)
+```
+
+# 1. Data and the baseline
+
+Blocks and revenue components are defined exactly as in H6; the tables in that
+document's section 1 apply here unchanged.
+
+```{r prep}
+source("baseline-prep.R", local = knitr::knit_global())
+kable(filings_by_year, format.args = list(big.mark = ","),
+      caption = "Full-990 December filings available by tax year")
+kable(p[, .(org_years = .N, organizations = uniqueN(EIN2)), by = year][order(year)],
+      format.args = list(big.mark = ","),
+      caption = "Organization-years with a complete three-year baseline")
+```
+
+# 2. What a windfall looks like
+
+```{r windfall-distribution}
+g <- p$gap
+qs <- c(0.01, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99, 0.999)
+dist <- data.table(statistic = c("median", "robust SD (IQR/1.349)", paste0("p", qs * 100)),
+                   gap = round(c(median(g), iqr_sd(g), quantile(g, qs)), 4))
+kable(dist, caption = "Revenue relative to a three-year inflation-adjusted baseline (0 = exactly on baseline)")
+
+z20 <- (params$shock_threshold - median(g)) / iqr_sd(g)
+by_size <- p[, .(organization_years = .N, median = median(gap), robust_sd = iqr_sd(gap),
+                 p90 = quantile(gap, 0.90),
+                 sd_of_a_20pct_windfall = (params$shock_threshold - median(gap)) / iqr_sd(gap),
+                 share_windfall = mean(windfall)),
+             by = size_band][order(size_band)]
+kable(by_size, digits = 3, format.args = list(big.mark = ","),
+      caption = "The 20% rule on the upside, by baseline revenue band")
+```
+
+A 20% windfall sits `r fmt(z20, 2)` robust standard deviations above the median
+and occurs in `r pct(mean(p$windfall), 1)` of organization-years — marginally
+*more* common than a 20% shortfall (`r pct(mean(p$shock), 1)`). As on the
+downside, the same fixed percentage is a much weaker filter for small
+organizations than for large ones.
+
+**The upside tail is far fatter than the downside tail, and this is the one
+place where the two sides cannot be treated symmetrically.** A shortfall is
+bounded: revenue cannot fall more than 100% below baseline without going
+negative, and only `r pct(mean(p$gap < -1), 2)` of organization-years do. There
+is no corresponding ceiling.
+
+```{r upper-tail}
+b <- c(0.5, 1, 2, 5, 10, 50)
+tail_tab <- data.table(
+  bound = b,
+  organization_years_above = vapply(b, function(v) sum(p$gap > v), 0L),
+  share_of_all = vapply(b, function(v) mean(p$gap > v), 0),
+  share_of_windfalls = vapply(b, function(v) sum(p$gap > v) / sum(p$windfall), 0))
+kable(tail_tab, digits = 5,
+      caption = "How many organization-years come in further than a given multiple above baseline")
+cat("maximum gap observed:", fmt(max(p$gap), 1), "\n")
+```
+
+**Where to put the ceiling.** The mirror of H6's `-1.0` bound in robust standard
+deviations is about `r fmt(median(g) + 3.5 * iqr_sd(g), 2)`, so the main
+estimate caps the windfall at `r fmt(params$max_gain, 2)` — revenue at most
+double its baseline. This is a much bigger exclusion than on the loss side:
+it removes `r pct(sum(p$gap > params$max_gain) / sum(p$windfall), 1)` of
+windfalls, against `r pct(sum(p$gap < -1) / sum(p$shock), 1)` of shocks at the
+matching bound. That asymmetry is not a nuisance to be tuned away — it says
+that organizations which more than double their revenue relative to baseline
+are not having a good year, they are changing scale, and averaging them in with
+ordinary windfalls would let a few hundred capital campaigns set the allocation
+for everyone. Section 12 reports the estimate at other ceilings.
+
+## Was the year-over-year rule picking up recoveries?
+
+H6 found that a quarter of the organization-years the *t-1* rule called a shock
+were really the reversion leg of a windfall. The same error runs the other way
+here: an organization that had one bad year and returns to normal shows a large
+year-over-year *gain* while nothing good has happened.
+
+```{r recovery}
+rec <- p[windfall_t1 == TRUE,
+  .(n = .N,
+    median_prior_year_vs_baseline = median(prior_windfall),
+    share_prior_year_20pct_below_baseline = mean(prior_windfall < -0.20),
+    median_current_vs_baseline = median(gap)),
+  by = .(also_a_baseline_windfall = windfall)][order(-also_a_baseline_windfall)]
+kable(rec, digits = 3,
+      caption = "Organization-years the prior-year rule calls a windfall, split by whether the baseline rule agrees")
+
+ov <- p[, .(t1_rule = sum(windfall_t1), baseline_rule = sum(windfall),
+            both = sum(windfall & windfall_t1),
+            t1_only = sum(windfall_t1 & !windfall),
+            baseline_only = sum(windfall & !windfall_t1))]
+kable(ov, format.args = list(big.mark = ","),
+      caption = "Overlap of the two windfall definitions, all years")
+```
+
+`r pct(ov$t1_only / ov$t1_rule)` of the year-over-year "windfalls" are rejected
+by the baseline rule — a **larger** contamination than the
+the 25% H6 found on the loss side — and the rejected group is unmistakable:
+their prior year sat a median
+`r pct(rec[also_a_baseline_windfall == FALSE, median_prior_year_vs_baseline])`
+below their own baseline, and their current year is
+`r pct(rec[also_a_baseline_windfall == FALSE, median_current_vs_baseline])`
+from it. They recovered; they did not gain.
+
+# 3. Channels, sample and trimming
+
+```{r channels}
+# sign = +1 : actual minus baseline. sign = -1 : baseline minus actual.
+# Either way a POSITIVE number is a use of the windfall (or, on the revenue
+# rows, a source of it).
+CH <- rbindlist(list(
+  data.table(name="gov",       label="Government grants",         actual="gov",       base="base_gov",       capacity="base_gov",       sign=1, group="revenue"),
+  data.table(name="dues",      label="Membership dues",           actual="dues",      base="base_dues",      capacity="base_dues",      sign=1, group="revenue"),
+  data.table(name="events",    label="Fundraising events",        actual="events",    base="base_events",    capacity="base_events",    sign=1, group="revenue"),
+  data.table(name="contr_oth", label="Other contributions",       actual="contr_oth", base="base_contr_oth", capacity="base_contr_oth", sign=1, group="revenue"),
+  data.table(name="program",   label="Program revenue",           actual="program",   base="base_program",   capacity="base_program",   sign=1, group="revenue"),
+  data.table(name="invest",    label="Investments",               actual="invest",    base="base_invest",    capacity="base_invest",    sign=1, group="revenue"),
+  data.table(name="other",     label="Other revenue",             actual="other",     base="base_other",     capacity="base_other",     sign=1, group="revenue"),
+  data.table(name="spend",     label="Extra spending",            actual="E",         base="base_E",         capacity="base_E",         sign=1, group="absorption"),
+  data.table(name="sp_prog",   label="Program services",          actual="program_expenses",     base="base_program_expenses",     capacity="base_program_expenses",     sign=1, group="expense"),
+  data.table(name="sp_admin",  label="Management and general",    actual="admin_expenses",       base="base_admin_expenses",       capacity="base_admin_expenses",       sign=1, group="expense"),
+  data.table(name="sp_fund",   label="Fundraising",               actual="fundraising_expenses", base="base_fundraising_expenses", capacity="base_fundraising_expenses", sign=1, group="expense"),
+  data.table(name="sp_unall",  label="Unallocated",               actual="unallocated_expenses", base="base_unallocated_expenses", capacity="base_unallocated_expenses", sign=1, group="expense"),
+  data.table(name="bs_cash",   label="Cash",                      actual="d_cash",          base="base_d_cash",          capacity="boy_cash",          sign=1,  group="block"),
+  data.table(name="bs_oca",    label="Receivables, prepaid",      actual="d_other_current", base="base_d_other_current", capacity="boy_other_current", sign=1,  group="block"),
+  data.table(name="bs_fixed",  label="Property and equipment",    actual="d_fixed",         base="base_d_fixed",         capacity="boy_fixed",         sign=1,  group="block"),
+  data.table(name="bs_othass", label="Investments, other assets", actual="d_other_assets",  base="base_d_other_assets",  capacity="boy_other_assets",  sign=1,  group="block"),
+  data.table(name="bs_lt",     label="Long-term debt paid down",  actual="d_lt",            base="base_d_lt",            capacity="boy_lt",            sign=-1, group="block"),
+  data.table(name="bs_st",     label="Short-term liabilities paid down", actual="d_st",     base="base_d_st",            capacity="boy_st",            sign=-1, group="block"),
+  data.table(name="bs_othli",  label="Other liabilities paid down",     actual="d_other_liab", base="base_d_other_liab", capacity="boy_other_liab",   sign=-1, group="block")
+))
+CAP_PHRASE <- c(spend = "its normal budget", bs_cash = "the cash it held",
+                bs_oca = "the receivables it held", bs_fixed = "the property it held",
+                bs_othass = "the investments it held",
+                bs_lt = "the long-term debt it owed", bs_st = "the short-term liabilities it owed",
+                bs_othli = "the other liabilities it owed")
+
+build_channels <- function(z) {
+  z <- copy(z)
+  z[, dol_gain := R - base_R][, s_gain := dol_gain / base_E]
+  for (i in seq_len(nrow(CH))) {
+    r <- CH[i]
+    d <- if (r$sign == 1) z[[r$actual]] - z[[r$base]] else z[[r$base]] - z[[r$actual]]
+    z[[paste0("dol_", r$name)]] <- d
+    z[[paste0("s_",   r$name)]] <- d / z$base_E
+    z[[paste0("cap_", r$name)]] <- z[[r$capacity]]
+  }
+  z[, dol_keep := dol_gain - dol_spend][, s_keep := dol_keep / base_E]   # the residual: kept
+  z[, dol_na := d_na - base_d_na][, s_na := dol_na / base_E]
+  z[]
+}
+p <- build_channels(p)
+
+kable(data.table(
+  check = c("revenue components sum to the windfall",
+            "expense lines sum to the extra spending",
+            "balance-sheet blocks sum to the extra net assets"),
+  max_abs_error_dollars = c(
+    p[, max(abs(dol_gov + dol_dues + dol_events + dol_contr_oth + dol_program + dol_invest + dol_other - dol_gain))],
+    p[, max(abs(dol_sp_prog + dol_sp_admin + dol_sp_fund + dol_sp_unall - dol_spend))],
+    p[, max(abs(dol_bs_cash + dol_bs_oca + dol_bs_fixed + dol_bs_othass + dol_bs_lt + dol_bs_st + dol_bs_othli - dol_na))])),
+  digits = 6, caption = "Adding-up checks, before any trimming (constant dollars)")
+```
+
+Outliers are handled by **dropping organization-years, not clipping values**,
+for the reason H5 and H6 both give: clipping each component separately breaks
+the adding-up the design rests on. Three rules apply, within year — the 1st/99th
+percentile of the scaled windfall, the 1st/99th of the net balance-sheet
+movement, and the top 1% of the largest single block movement (blocks offset
+each other, so an extreme swing between two of them passes the first two
+filters while carrying enormous leverage).
+
+```{r sample}
+trim_sample <- function(z, trim = TRUE, bound = params$max_gain) {
+  if (!is.null(bound)) z <- z[gap <= bound]
+  if (!trim) return(z[])
+  z[, keep := {
+    qg <- quantile(s_gain, c(0.01, 0.99), na.rm = TRUE)
+    qa <- quantile(s_na,   c(0.01, 0.99), na.rm = TRUE)
+    qb <- quantile(max_abs_blk, 0.99, na.rm = TRUE)
+    s_gain >= qg[[1]] & s_gain <= qg[[2]] & s_na >= qa[[1]] & s_na <= qa[[2]] &
+      max_abs_blk <= qb
+  }, by = year]
+  z <- z[keep == TRUE]; z[, keep := NULL]; z[]
+}
+windfalls <- function(years) trim_sample(p[year %in% years & windfall == TRUE])
+main_w <- windfalls(2022:2023)
+cat("windfall organization-years, 2022-2023:", format(nrow(main_w), big.mark = ","),
+    " organizations:", format(uniqueN(main_w$EIN2), big.mark = ","), "\n")
+```
+
+```{r estimands}
+share_of_avg <- function(s, nm) mean(s[[paste0("s_", nm)]]) / mean(s$s_gain)
+pct_capacity <- function(s, nm) {
+  cap <- sum(s[[paste0("cap_", nm)]])
+  if (!is.finite(cap) || cap <= 0) return(NA_real_)
+  sum(s[[paste0("dol_", nm)]]) / cap
+}
+marginal <- function(s, nm) {
+  f <- ols(s[[paste0("s_", nm)]], cbind(intercept = 1, gain = s$s_gain))
+  c(b = f$b[["gain"]], se = f$se[["gain"]])
+}
+channel_table <- function(s, names_vec) {
+  rbindlist(lapply(names_vec, function(nm) {
+    m <- marginal(s, nm)
+    data.table(channel = CH[name == nm, label],
+               cents_per_dollar = share_of_avg(s, nm),
+               pct_of_capacity  = pct_capacity(s, nm),
+               marginal = m[["b"]], se = m[["se"]])
+  }))
+}
+```
+
+# 4. Where the windfall came from
+
+```{r sources}
+src <- channel_table(main_w, CH[group == "revenue", name])
+kable(src, digits = 3,
+      caption = "Which revenue lines came in above baseline, 2022-2023 windfalls")
+cat("sum of shares:", fmt(sum(src$cents_per_dollar)), "\n")
+```
+
+# 5. First-line allocation: spent or kept
+
+The identity `revenue - expenses = surplus` means a windfall must show up either
+as spending above the organization's own baseline, or as a surplus above its
+baseline. The two sum to exactly 1.
+
+* **Extra spending** = actual expenses minus baseline expenses. Positive means
+  the organization spent **more** than its own three-year norm — the windfall
+  was used this year.
+* **Kept** = the remainder, which lands on the balance sheet.
+
+```{r allocation}
+sp <- share_of_avg(main_w, "spend")
+kp <- mean(main_w$s_keep) / mean(main_w$s_gain)
+mS <- marginal(main_w, "spend")
+alloc <- data.table(
+  channel = c("Extra spending (above its own baseline)",
+              "Kept (carried onto the balance sheet)"),
+  cents_per_dollar = c(sp, kp),
+  pct_of_capacity  = c(pct_capacity(main_w, "spend"), NA_real_),
+  marginal = c(mS[["b"]], 1 - mS[["b"]]),
+  se = c(mS[["se"]], mS[["se"]]))
+kable(alloc, digits = 3,
+      caption = "Of each dollar of windfall, how much is spent in the same year vs. kept")
+cat("identity check, shares sum to:", fmt(sp + kp), "\n")
+```
+
+## What the extra spending buys
+
+```{r spend-split}
+spl <- channel_table(main_w, CH[group == "expense", name])
+kable(spl, digits = 3,
+      caption = "Where the extra spending goes (positive = that line came in above its baseline)")
+cat("sums to the extra-spending share:", fmt(sum(spl$cents_per_dollar)), " vs. ", fmt(sp), "\n")
+```
+
+# 6. Where the balance sheet puts it
+
+Each block enters as its movement during the windfall year measured against its
+own baseline movement. An organization that normally adds $40k to cash a year
+and this year added $140k has parked $100k of the windfall there.
+
+```{r blocks}
+bs <- channel_table(main_w, CH[group == "block", name])
+kable(bs, digits = 3,
+      caption = "Where the kept portion lands (positive = a use of the windfall)")
+ident <- data.table(
+  blocks_net = sum(bs$cents_per_dollar),
+  net_assets_direct = mean(main_w$s_na) / mean(main_w$s_gain),
+  kept = kp, n = nrow(main_w))
+kable(ident, digits = 3,
+      caption = "Identity check: blocks vs. the direct net-assets movement vs. the kept share")
+```
+
+The first two columns must agree; they are the same quantity computed two ways.
+The third need not — net assets also move with unrealized investment gains and
+donated capital, which do not pass through the surplus.
+
+**The two columns weight organizations differently, and on this table they can
+disagree in sign.** `cents_per_dollar` is a ratio of means of *scaled* channels,
+so each organization enters in proportion to its own baseline expenses — a
+small organization and a large one count roughly alike. `pct_of_capacity` is a
+ratio of raw dollar totals, so it is dominated by the largest organizations in
+the sample. Cash shows the effect plainly: the cents-per-dollar figure is
+positive (`r fmt(bs[channel == "Cash", cents_per_dollar])`) while the aggregate
+capacity figure is slightly negative
+(`r fmt(bs[channel == "Cash", pct_of_capacity])`). Both are correct. Read
+together they say that the typical organization puts a little of a windfall into
+cash, while the large organizations that hold most of the sector's cash were
+running their balances down over 2022-2023 faster than their own baseline
+growth — the tail end of the COVID cash build-up. Where the two columns
+disagree, the cents-per-dollar figure is the behavioural one and the capacity
+figure is the sector aggregate.
+
+The same caveat H6 records applies to the investments row: Part X is fair value,
+so that block mixes deliberate investment of the windfall with market
+revaluation that would have happened anyway. Read cash, receivables, property
+and debt as behaviour; read investments as behaviour plus the market.
+
+# 7. Is the windfall concentrated in one revenue stream?
+
+This is the question the rework was asked for. A windfall can arrive as one
+large grant or as a generally good year across every line, and there is no
+reason to expect those to be treated the same way.
+
+**Measure.** For each windfall organization-year, take the seven component
+deviations from baseline, keep the positive ones, and compute the largest one's
+share of their total. A value near 1 means essentially all of the good news came
+from a single stream.
+
+```{r concentration}
+COMPS <- CH[group == "revenue"]
+dev_mat <- vapply(COMPS$name, function(nm) p[[paste0("dol_", nm)]], numeric(nrow(p)))
+pos_mat <- pmax(dev_mat, 0)
+pos_tot <- rowSums(pos_mat)
+# max.col rather than apply(): the same answer on 670k rows in a fraction of the time
+top_idx <- max.col(pos_mat, ties.method = "first")
+top_val <- pos_mat[cbind(seq_len(nrow(pos_mat)), top_idx)]
+p[, top_share := ifelse(pos_tot > 0, top_val / pos_tot, NA_real_)]
+p[, top_component := COMPS$label[top_idx]]
+p[, concentration := factor(
+  ifelse(is.na(top_share), NA_character_,
+  ifelse(top_share >= params$conc_high, "single stream",
+  ifelse(top_share >= params$conc_low,  "mostly one stream", "spread across lines"))),
+  levels = c("single stream", "mostly one stream", "spread across lines"))]
+
+main_w <- trim_sample(p[year %in% 2022:2023 & windfall == TRUE])   # refresh with the new columns
+kable(data.table(statistic = c("p10", "p25", "median", "p75", "p90"),
+                 top_component_share = round(quantile(main_w$top_share, c(.1,.25,.5,.75,.9),
+                                                      na.rm = TRUE), 3)),
+      caption = "Share of the windfall coming from its single largest contributing line")
+
+conc <- rbindlist(lapply(levels(main_w$concentration), function(lv) {
+  s <- main_w[concentration == lv]
+  if (nrow(s) < 200) return(NULL)
+  data.table(concentration = lv, n = nrow(s),
+             median_top_share = median(s$top_share),
+             windfall_vs_baseline_revenue = mean(s$dol_gain) / mean(s$base_R),
+             spent = share_of_avg(s, "spend"),
+             kept = mean(s$s_keep) / mean(s$s_gain),
+             program_spending = share_of_avg(s, "sp_prog"),
+             cash = share_of_avg(s, "bs_cash"),
+             cash_pct_cap = pct_capacity(s, "bs_cash"),
+             investments = share_of_avg(s, "bs_othass"),
+             property = share_of_avg(s, "bs_fixed"),
+             debt_paid_down = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(conc, digits = 3,
+      caption = "Allocation by how concentrated the windfall is (cents per dollar of windfall)")
+```
+
+**Windfalls are overwhelmingly concentrated.** The median windfall takes
+`r pct(median(main_w$top_share, na.rm = TRUE), 0)` of its good news from a single
+revenue line, and
+`r pct(mean(main_w$concentration == "single stream", na.rm = TRUE), 0)` of
+windfall organization-years clear the `r pct(params$conc_high, 0)` bar. "A
+generally good year across the board" is the exception, not the rule — which is
+itself a reason to prefer the component view in section 8 over the pooled
+estimate.
+
+**But concentration barely moves the spend-or-keep decision.** The spending
+share is
+`r fmt(conc[concentration == "single stream", spent])`,
+`r fmt(conc[concentration == "mostly one stream", spent])` and
+`r fmt(conc[concentration == "spread across lines", spent])` across the three
+groups — flat, and not even monotonic. Whatever governs how much of a windfall
+gets spent, it is not how concentrated the windfall is.
+
+Where concentration does show up is in **which** balance-sheet block takes the
+kept portion. Single-stream windfalls put
+`r fmt(conc[concentration == "single stream", cash])` per dollar into cash
+against `r fmt(conc[concentration == "spread across lines", cash])` for spread
+ones, while spread windfalls put more into property
+(`r fmt(conc[concentration == "spread across lines", property])` against
+`r fmt(conc[concentration == "single stream", property])`). That ordering is
+consistent with a one-off grant being parked until it is clear what it is for,
+while a broad-based good year is treated as durable enough to commit to
+buildings — but the differences are small next to the component differences in
+section 8, and the concentration measure is partly a proxy for which line the
+money arrived in, so this should not be over-read.
+
+```{r concentration-mix}
+kable(dcast(main_w[!is.na(concentration), .N, by = .(top_component, concentration)],
+            top_component ~ concentration, value.var = "N", fill = 0L),
+      format.args = list(big.mark = ","),
+      caption = "Which line is the largest contributor, by concentration")
+```
+
+# 8. Windfalls concentrated in a single revenue stream
+
+Section 7 asks whether concentration matters. This section asks which stream.
+
+**Definition.** A component windfall is an organization-year in which one
+component comes in at least `r pct(params$comp_share, 0)` **above** its own
+three-year baseline, *and* that rise is worth at least
+`r pct(params$comp_material, 0)` of the organization's baseline total revenue.
+
+**Denominator.** As in H6's mirror section, each component is scaled by **its
+own rise**, not by the total windfall. When one line jumps, total revenue does
+not necessarily rise by as much — other lines can fall at the same time, and
+crowding-out of that kind is one of the things worth measuring. The three
+shares below sum to exactly 1:
+
+* **Offset by other revenue falling** — the share of the rise cancelled by other
+  lines coming in below their own baselines.
+* **Spent** — the share matched by spending above baseline.
+* **Kept** — the remainder, onto the balance sheet.
+
+```{r component-flags}
+comp_flag <- function(z, nm) {
+  base_c <- z[[paste0("base_", nm)]]
+  rise   <- z[[paste0("dol_", nm)]]           # actual minus baseline, in dollars
+  ok <- is.finite(base_c) & is.finite(rise) & base_c > 0
+  ok & (rise / base_c) >= params$comp_share & (rise / z$base_R) >= params$comp_material
+}
+pool  <- p[year %in% 2022:2023]
+flags <- vapply(COMPS$name, function(nm) comp_flag(pool, nm), logical(nrow(pool)))
+pool[, nflags := rowSums(flags)]
+kable(pool[, .(organization_years = .N), by = .(component_windfalls = nflags)][order(component_windfalls)],
+      format.args = list(big.mark = ","),
+      caption = "How many revenue components are in windfall in the same organization-year")
+```
+
+```{r component-allocation}
+comp_alloc <- rbindlist(lapply(seq_len(nrow(COMPS)), function(i) {
+  nm <- COMPS$name[i]
+  s  <- trim_sample(pool[flags[, nm]])
+  if (nrow(s) < 200) return(data.table(component = COMPS$label[i], n = nrow(s)))
+  rise <- mean(s[[paste0("dol_", nm)]])
+  data.table(
+    component = COMPS$label[i], n = nrow(s), orgs = uniqueN(s$EIN2),
+    median_line_rise = median(s[[paste0("dol_", nm)]] / s[[paste0("base_", nm)]]),
+    offset_by_other_revenue = 1 - mean(s$dol_gain) / rise,
+    spent = mean(s$dol_spend) / rise,
+    kept  = mean(s$dol_keep)  / rise,
+    program_spending = mean(s$dol_sp_prog) / rise,
+    cash  = mean(s$dol_bs_cash) / rise,
+    cash_pct_cap = pct_capacity(s, "bs_cash"),
+    investments = mean(s$dol_bs_othass) / rise,
+    property = mean(s$dol_bs_fixed) / rise,
+    debt_paid_down = (mean(s$dol_bs_lt) + mean(s$dol_bs_st)) / rise)
+}), fill = TRUE)
+kable(comp_alloc, digits = 3,
+      caption = "How a windfall in each revenue component is allocated (per dollar of that line's rise)")
+cat("offset + spent + kept = ",
+    paste(fmt(comp_alloc$offset_by_other_revenue + comp_alloc$spent + comp_alloc$kept),
+          collapse = ", "), "\n")
+```
+
+The spread across components is much wider than anything in the aggregate, and
+it maps onto H6's loss-side result line for line.
+
+* **Program revenue is spent, almost entirely.**
+  `r fmt(comp_alloc[component == "Program revenue", spent])` of a dollar of extra
+  program revenue is matched by spending above baseline and only
+  `r fmt(comp_alloc[component == "Program revenue", kept])` is kept. H6 found the
+  mirror: `r "0.85"` of a *lost* program dollar was matched by cutting. Program
+  revenue and program cost move together in both directions, which is what you
+  would expect if they are two sides of one activity rather than a financing
+  decision.
+* **Contributed income is where discretion lives.** Other contributions keep
+  `r fmt(comp_alloc[component == "Other contributions", kept])` per dollar and
+  government grants `r fmt(comp_alloc[component == "Government grants", kept])`,
+  against near zero for program revenue.
+* **Half of some windfalls never reach the bottom line.** Other revenue is
+  `r pct(comp_alloc[component == "Other revenue", offset_by_other_revenue], 0)`
+  offset by other lines falling, fundraising events
+  `r pct(comp_alloc[component == "Fundraising events", offset_by_other_revenue], 0)`,
+  membership dues
+  `r pct(comp_alloc[component == "Membership dues", offset_by_other_revenue], 0)`.
+  These lines tend to move when something else is moving the other way, so the
+  "windfall" is substantially a substitution.
+* **The investments row is mechanical and should not be read as behaviour.** A
+  windfall in the investments line is mostly realized gains on asset sales, and
+  selling an appreciated asset is exactly what makes the investments *block* on
+  the balance sheet fall. That is why its balance-sheet coefficient is large and
+  negative (`r fmt(comp_alloc[component == "Investments", investments])` per
+  dollar): the money did not go into investments, it came out of them and
+  reappeared as revenue. The same accounting runs through the
+  `r fmt(comp_alloc[component == "Investments", debt_paid_down])` debt figure.
+
+# 9. Do reserves change what happens to a windfall?
+
+H6 found that reserves buffer a shock. The upside question is whether an
+organization that already holds a lot of cash banks a windfall or spends it.
+
+```{r reserves}
+main_w[, reserve_group := factor(c("low", "middle", "high")[
+  pmin(3L, 1L + floor(3 * (frank(months_cash_boy, ties.method = "first") - 1) / .N))],
+  levels = c("low", "middle", "high"))]
+res <- rbindlist(lapply(levels(main_w$reserve_group), function(gp) {
+  s <- main_w[reserve_group == gp]
+  data.table(reserves = gp, n = nrow(s),
+             median_months_cash = median(s$months_cash_boy),
+             spent = share_of_avg(s, "spend"),
+             program_spending = share_of_avg(s, "sp_prog"),
+             kept = mean(s$s_keep) / mean(s$s_gain),
+             cash = share_of_avg(s, "bs_cash"),
+             cash_pct_cap = pct_capacity(s, "bs_cash"),
+             property = share_of_avg(s, "bs_fixed"),
+             debt_paid_down = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(res, digits = 3,
+      caption = "Allocation by beginning-of-year reserves (cents per dollar of windfall)")
+```
+
+# 10. Continuity with the original H5
+
+The original H5 regressed each block's movement on the level of the surplus,
+scaled by the year's expenses, over all organization-years. Re-running that
+specification on this sample — with baseline expenses as the denominator, so the
+scaling matches the rest of this document — shows how the two framings relate.
+
+```{r h5-continuity}
+h5 <- trim_sample(p[year %in% 2022:2023], bound = NULL)
+h5[, s_surplus := (R - E) / base_E]
+W5 <- cbind(intercept = 1, surplus = h5$s_surplus)
+BLK <- CH[group == "block"]
+h5_tab <- rbindlist(lapply(seq_len(nrow(BLK)), function(i) {
+  # the original H5 measured the block MOVEMENT, not its deviation from baseline
+  y <- h5[[BLK$actual[i]]] / h5$base_E
+  f <- ols(y, W5)
+  data.table(block = BLK$label[i], cents_per_surplus_dollar = f$b[["surplus"]], se = f$se[["surplus"]])
+}))
+kable(h5_tab, digits = 3,
+      caption = "H5-style regression: block movement on the surplus level, 2022-2023")
+cat("asset blocks minus liability blocks:",
+    fmt(sum(h5_tab$cents_per_surplus_dollar[1:4]) - sum(h5_tab$cents_per_surplus_dollar[5:7])),
+    " | direct net-assets regression:", fmt(ols(h5$d_na / h5$base_E, W5)$b[["surplus"]]), "\n")
+```
+
+The two framings answer different questions and should not be expected to
+agree. The H5 coefficient says where a dollar of *surplus* sits at year end; the
+windfall estimate says what happens to a dollar of *revenue* that arrived above
+normal, most of which never becomes surplus at all.
+
+# 11. The two tails side by side
+
+Because the sign convention is symmetric — every channel is a deviation from the
+organization's own baseline, divided by the deviation in revenue — the same code
+run on the shortfall sample reproduces H6 exactly. That is a check on both
+documents as much as a comparison.
+
+```{r two-tails}
+# The -1 floor is applied before the percentile trim, exactly as H6 applies it,
+# so this reproduces that document's sample rather than a near neighbour of it.
+short_s <- trim_sample(p[year %in% 2022:2023 & shock == TRUE & gap >= -1], bound = NULL)
+two <- data.table(
+  channel = c("Expenses", "Surplus / kept", "Cash", "Investments, other assets",
+              "Property and equipment", "Debt"),
+  per_dollar_of_windfall = c(
+    sp, kp, share_of_avg(main_w, "bs_cash"), share_of_avg(main_w, "bs_othass"),
+    share_of_avg(main_w, "bs_fixed"),
+    share_of_avg(main_w, "bs_lt") + share_of_avg(main_w, "bs_st")),
+  per_dollar_of_shortfall = c(
+    share_of_avg(short_s, "spend"), mean(short_s$s_keep) / mean(short_s$s_gain),
+    share_of_avg(short_s, "bs_cash"), share_of_avg(short_s, "bs_othass"),
+    share_of_avg(short_s, "bs_fixed"),
+    share_of_avg(short_s, "bs_lt") + share_of_avg(short_s, "bs_st")))
+kable(two, digits = 3,
+      caption = "A dollar above baseline vs. a dollar below it, 2022-2023 (both as a share of the deviation)")
+```
+
+The expense row is the asymmetry that matters for the index: the share of a
+windfall that is spent in the same year is several times the share of a
+shortfall that is matched by cutting. Good news moves spending; bad news moves
+the balance sheet.
+
+# 12. Robustness
+
+```{r contrasts}
+wins <- list(`2019 (pre-COVID)` = 2019, `2020 (COVID)` = 2020, `2021 (relief year)` = 2021,
+             `2022` = 2022, `2023` = 2023, `2024` = 2024)
+by_year <- rbindlist(lapply(names(wins), function(nm) {
+  s <- windfalls(wins[[nm]])
+  if (nrow(s) < 200) return(NULL)
+  data.table(window = nm, n = nrow(s), spent = share_of_avg(s, "spend"),
+             kept = mean(s$s_keep) / mean(s$s_gain),
+             cash = share_of_avg(s, "bs_cash"),
+             investments = share_of_avg(s, "bs_othass"),
+             property = share_of_avg(s, "bs_fixed"),
+             debt_paid_down = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(by_year, digits = 3, caption = "Allocation by windfall year")
+```
+
+```{r sensitivity}
+sens <- rbindlist(lapply(list(
+  list(nm = "ceiling at +1.0 (as reported)", b = 1.0, t = params$shock_threshold),
+  list(nm = "ceiling at +0.5",               b = 0.5, t = params$shock_threshold),
+  list(nm = "ceiling at +2.0",               b = 2.0, t = params$shock_threshold),
+  list(nm = "no ceiling",                    b = NULL, t = params$shock_threshold),
+  list(nm = "threshold +10%, ceiling +1.0",  b = 1.0, t = 0.10),
+  list(nm = "threshold +50%, ceiling +1.0",  b = 1.0, t = 0.50)), function(a) {
+  s <- trim_sample(p[year %in% 2022:2023 & gap >= a$t], bound = a$b)
+  data.table(definition = a$nm, n = nrow(s), spent = share_of_avg(s, "spend"),
+             kept = mean(s$s_keep) / mean(s$s_gain),
+             cash = share_of_avg(s, "bs_cash"),
+             property = share_of_avg(s, "bs_fixed"))
+}))
+kable(sens, digits = 3, caption = "Sensitivity to the ceiling and the threshold")
+
+alt <- rbindlist(lapply(list(
+  list(nm = "3-year baseline, real (as reported)", v = "gap"),
+  list(nm = "2-year baseline, real",               v = "gap2"),
+  list(nm = "3-year baseline, nominal",            v = "gap_nom"),
+  list(nm = "prior year only, real",               v = "gap_t1")), function(a) {
+  gv  <- p[[a$v]]
+  sel <- p$year %in% 2022:2023 & !is.na(gv) & gv >= params$shock_threshold
+  s <- trim_sample(p[sel])
+  data.table(definition = a$nm, n = nrow(s), spent = share_of_avg(s, "spend"),
+             kept = mean(s$s_keep) / mean(s$s_gain), cash = share_of_avg(s, "bs_cash"))
+}))
+kable(alt, digits = 3, caption = "Sensitivity to how the baseline is built")
+
+untrimmed <- trim_sample(p[year %in% 2022:2023 & windfall == TRUE], trim = FALSE)
+kable(rbindlist(lapply(list(list(nm = "trimmed", s = main_w), list(nm = "untrimmed", s = untrimmed)),
+  function(a) data.table(sample = a$nm, n = nrow(a$s), spent = share_of_avg(a$s, "spend"),
+                         kept = mean(a$s$s_keep) / mean(a$s$s_gain),
+                         cash = share_of_avg(a$s, "bs_cash")))),
+  digits = 3, caption = "Trimmed vs. untrimmed")
+```
+
+# 13. The flow figure
+
+```{r flow-figure, fig.width = 8.8, fig.height = 6.4, fig.retina = 2}
+pal <- c(ink = "#1f2429", ink_mid = "#4d565f", ink_soft = "#6d7681",
+         accent = "#bd5416", accent_ink = "#8f3f10", navy = "#153243",
+         pumpkin = "#dc965a", surface = "#f3f4f6")
+
+flow_figure <- function(sources, uses, use_capacity_label, title, subtitle, dropped = NULL) {
+  op <- par(mar = c(0.4, 0.4, 3.0, 0.4), bg = "white", family = "sans")
+  on.exit(par(op))
+  gap <- 0.045; centre <- 0.5
+  lab_s <- sprintf("%s  %.2f", names(sources), sources)
+  lab_u <- sprintf("%s  %.2f", names(uses), uses)
+  sources_n <- sources / sum(sources); uses_n <- uses / sum(uses)
+  half <- function(v) (sum(v) + gap * (length(v) - 1)) / 2
+  top_max <- centre + max(half(sources_n), half(uses_n), 0.5)
+  bot_min <- centre - max(half(sources_n), half(uses_n), 0.5)
+  head_y <- top_max + 0.085; arrow_y <- bot_min - 0.105
+  legend_y <- arrow_y - 0.075
+  foot_y <- legend_y - (if (length(dropped)) 0.185 else 0.115)
+  plot.new(); plot.window(xlim = c(0, 1), ylim = c(foot_y - 0.02, head_y + 0.06))
+  stack <- function(v) {
+    y <- centre + half(v)
+    out <- lapply(v, function(h) { r <- c(top = y, bot = y - h); y <<- y - h - gap; r })
+    names(out) <- names(v); out
+  }
+  ribbon <- function(x0, x1, t0, b0, t1, b1, col, alpha) {
+    t <- seq(0, 1, length.out = 80); s <- t * t * (3 - 2 * t); xs <- x0 + (x1 - x0) * t
+    polygon(c(xs, rev(xs)), c(t0 + (t1 - t0) * s, rev(b0 + (b1 - b0) * s)),
+            col = adjustcolor(col, alpha), border = NA)
+  }
+  chevron <- function(x, ytop, ybot, col) {
+    ymid <- (ytop + ybot) / 2; h <- min(0.020, (ytop - ybot) / 2.6); w <- 0.012
+    if (h <= 0.003) return(invisible())
+    lines(c(x - w, x, x - w), c(ymid + h, ymid, ymid - h), col = col, lwd = 1.6)
+  }
+  xs <- c(0.250, 0.300); xt <- c(0.487, 0.537); xu <- c(0.700, 0.750)
+  srcb <- stack(sources_n); useb <- stack(uses_n); top <- centre + 0.5
+  place <- function(boxes, minsep) {
+    y <- vapply(boxes, mean, 0); n <- length(y)
+    if (n > 1) for (i in (n - 1):1) if (y[i] - y[i + 1] < minsep) y[i] <- y[i + 1] + minsep
+    y
+  }
+  ys_lab <- place(srcb, 0.052)
+  yu_lab <- place(useb, if (any(nzchar(use_capacity_label))) 0.088 else 0.052)
+  leader <- function(x0, x1, y_bar, y_lab, col) {
+    if (abs(y_lab - y_bar) < 0.004) return(invisible())
+    lines(c(x0, x1), c(y_bar, y_lab), col = adjustcolor(col, 0.45), lwd = 0.7)
+  }
+  cur <- top
+  for (i in seq_along(srcb)) {
+    ribbon(xs[2], xt[1], srcb[[i]][["top"]], srcb[[i]][["bot"]], cur, cur - sources_n[[i]],
+           pal[["navy"]], 0.30)
+    chevron(0.398, srcb[[i]][["top"]], srcb[[i]][["bot"]], adjustcolor(pal[["navy"]], 0.85))
+    cur <- cur - sources_n[[i]]
+  }
+  cur <- top
+  for (i in seq_along(useb)) {
+    ribbon(xt[2], xu[1], cur, cur - uses_n[[i]], useb[[i]][["top"]], useb[[i]][["bot"]],
+           pal[["accent"]], 0.34)
+    chevron(0.632, useb[[i]][["top"]], useb[[i]][["bot"]], adjustcolor(pal[["accent_ink"]], 0.85))
+    cur <- cur - uses_n[[i]]
+  }
+  for (i in seq_along(srcb)) {
+    rect(xs[1], srcb[[i]][["bot"]], xs[2], srcb[[i]][["top"]], col = pal[["navy"]], border = NA)
+    leader(xs[1] - 0.004, xs[1] - 0.012, mean(srcb[[i]]), ys_lab[i], pal[["ink_soft"]])
+    text(xs[1] - 0.016, ys_lab[i], lab_s[i], adj = c(1, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  rect(xt[1], centre - 0.5, xt[2], top, col = pal[["accent"]], border = NA)
+  for (i in seq_along(useb)) {
+    rect(xu[1], useb[[i]][["bot"]], xu[2], useb[[i]][["top"]], col = pal[["pumpkin"]], border = NA)
+    leader(xu[2] + 0.004, xu[2] + 0.012, mean(useb[[i]]), yu_lab[i], pal[["ink_soft"]])
+    ym <- yu_lab[i]
+    if (nzchar(use_capacity_label[i])) {
+      text(xu[2] + 0.016, ym + 0.018, lab_u[i], adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+      text(xu[2] + 0.016, ym - 0.020, use_capacity_label[i], adj = c(0, 0.5), cex = 0.56,
+           col = pal[["ink_soft"]])
+    } else {
+      text(xu[2] + 0.016, ym, lab_u[i], adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+    }
+  }
+  text(xs[2], head_y, "WHERE THE EXTRA MONEY CAME FROM", adj = c(1, 0.5), cex = 0.60,
+       font = 2, col = pal[["navy"]])
+  text(mean(xt), head_y, "$1.00 WINDFALL", adj = c(0.5, 0.5), cex = 0.62, font = 2,
+       col = pal[["accent_ink"]])
+  text(xu[1], head_y, "WHAT IT WAS USED FOR", adj = c(0, 0.5), cex = 0.60, font = 2,
+       col = pal[["accent_ink"]])
+  lines(c(0.250, 0.740), c(arrow_y, arrow_y), col = pal[["ink_soft"]], lwd = 1)
+  polygon(c(0.750, 0.732, 0.732), c(arrow_y, arrow_y + 0.013, arrow_y - 0.013),
+          col = pal[["ink_soft"]], border = NA)
+  text(0.495, arrow_y + 0.022, "read left to right", adj = c(0.5, 0), cex = 0.58,
+       font = 3, col = pal[["ink_soft"]])
+  text(0.495, legend_y,
+       paste0("Every bar is a positive amount of money. On the left it is revenue that arrived above ",
+              "the organization's own\nbaseline. On the right it is spending above baseline, or a ",
+              "balance-sheet stock that grew by more than it\nnormally does. The grey note under each ",
+              "is the same amount as a share of what the organization already had."),
+       adj = c(0.5, 1), cex = 0.57, col = pal[["ink_mid"]])
+  if (length(dropped)) {
+    text(0.495, foot_y + 0.055,
+         paste0("Moved the other way during the windfall year, so not drawn: ",
+                paste(dropped, collapse = "; "), ". The tables above keep the sign."),
+         adj = c(0.5, 1), cex = 0.55, col = pal[["ink_soft"]], font = 3)
+  }
+  mtext(title, side = 3, line = 1.45, adj = 0, cex = 1.0, font = 2, col = pal[["ink"]])
+  mtext(subtitle, side = 3, line = 0.45, adj = 0, cex = 0.64, col = pal[["ink_soft"]])
+}
+
+pick <- function(v) { v <- v[v > 0.005]; sort(v, decreasing = TRUE) }
+src_v  <- setNames(src$cents_per_dollar, src$channel)
+uses_v <- c(`Extra spending` = sp,
+            setNames(bs$cents_per_dollar, bs$channel)[
+              c("Cash", "Investments, other assets", "Receivables, prepaid",
+                "Property and equipment")],
+            `Debt paid down` = bs[channel == "Long-term debt paid down", cents_per_dollar] +
+                               bs[channel == "Short-term liabilities paid down", cents_per_dollar] +
+                               bs[channel == "Other liabilities paid down", cents_per_dollar])
+cap_v <- c(`Extra spending` = pct_capacity(main_w, "spend"),
+           Cash = pct_capacity(main_w, "bs_cash"),
+           `Investments, other assets` = pct_capacity(main_w, "bs_othass"),
+           `Receivables, prepaid` = pct_capacity(main_w, "bs_oca"),
+           `Property and equipment` = pct_capacity(main_w, "bs_fixed"),
+           `Debt paid down` = (sum(main_w$dol_bs_lt) + sum(main_w$dol_bs_st) +
+                               sum(main_w$dol_bs_othli)) /
+                              sum(main_w$boy_lt + main_w$boy_st + main_w$boy_other_liab))
+cap_phrase <- c(`Extra spending` = "its normal budget", Cash = "the cash it held",
+                `Investments, other assets` = "the investments it held",
+                `Receivables, prepaid` = "the receivables it held",
+                `Property and equipment` = "the property it held",
+                `Debt paid down` = "the liabilities it owed")
+sources_p <- pick(src_v); uses_p <- pick(uses_v)
+dropped <- c(names(src_v)[src_v <= 0.005], names(uses_v)[uses_v <= 0.005])
+capk <- cap_v[names(uses_p)]
+flow_figure(
+  sources_p, uses_p,
+  use_capacity_label = ifelse(is.na(capk) | capk <= 0, "",
+                              sprintf("%.0f%% of %s", 100 * capk, cap_phrase[names(uses_p)])),
+  title = "Where a windfall comes from, and what it is used for",
+  subtitle = paste0("cents per dollar of windfall  |  full-990 filers, December year-ends, revenue ",
+                    pct(params$shock_threshold, 0), "+ above a ", BW,
+                    "-year inflation-adjusted baseline, 2022-2023  |  n = ",
+                    format(nrow(main_w), big.mark = ",")),
+  dropped = tolower(dropped))
+```
+
+# 14. Findings
+
+```{r findings, include = FALSE}
+cash_c <- bs[channel == "Cash", cents_per_dollar]
+cash_k <- bs[channel == "Cash", pct_of_capacity]
+```
+
+* **A windfall is mostly spent, and that is the sharpest contrast with H6.**
+  `r fmt(sp)` of each windfall dollar is matched by spending above the
+  organization's own baseline and `r fmt(kp)` is kept. On the loss side only
+  `r fmt(two[channel == "Expenses", per_dollar_of_shortfall])` of a shortfall is
+  matched by lower spending. Organizations adjust spending upward far more
+  readily than downward.
+* **What is kept goes to cash first.** `r fmt(cash_c)` per windfall dollar ends
+  the year as cash, which is `r pct(cash_k)` of the cash the organization was
+  holding when the year began.
+* **A third of the year-over-year "windfalls" are recoveries.**
+  `r pct(ov$t1_only / ov$t1_rule)` of the organization-years the *t-1* rule
+  flags are rejected by the baseline rule; their prior year sat a median
+  `r pct(rec[also_a_baseline_windfall == FALSE, median_prior_year_vs_baseline])`
+  below their own baseline. The contamination is larger on the upside than the
+  the 25% H6 found on the downside.
+* **Windfalls are overwhelmingly concentrated, but concentration is not what
+  drives the response.** The median windfall takes
+  `r pct(median(main_w$top_share, na.rm = TRUE), 0)` of its good news from a
+  single revenue line, and
+  `r pct(mean(main_w$concentration == "single stream", na.rm = TRUE), 0)`
+  of windfall organization-years are single-stream on the
+  `r pct(params$conc_high, 0)` test. Yet the spending share is flat across the
+  three concentration groups
+  (`r fmt(conc[concentration == "single stream", spent])` /
+  `r fmt(conc[concentration == "mostly one stream", spent])` /
+  `r fmt(conc[concentration == "spread across lines", spent])`). Concentration
+  shifts *which* block the kept portion lands in — more cash when it is one
+  stream, more property when it is broad — but not how much is kept.
+* **Which stream it arrives in is what matters.** Per dollar of extra program
+  revenue, `r fmt(comp_alloc[component == "Program revenue", spent])` is spent
+  and `r fmt(comp_alloc[component == "Program revenue", kept])` kept; per dollar
+  of extra unrestricted contributions,
+  `r fmt(comp_alloc[component == "Other contributions", kept])` is kept. That is
+  an order-of-magnitude difference in retention driven entirely by the source,
+  and it mirrors H6's loss-side finding that program revenue falls are absorbed
+  by cutting while contributed falls land on the balance sheet.
+* **Several "windfalls" are substitutions.** Between a fifth and a half of the
+  rise in dues, events, other revenue and government grants is offset by other
+  lines falling in the same year, so it never reaches the bottom line at all.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(gap_distribution = dist, gap_by_size = by_size, upper_tail = tail_tab,
+               recovery = rec, overlap = ov, sources = src, allocation = alloc,
+               spend_split = spl, blocks = bs, identity = ident,
+               concentration = conc, components = comp_alloc, reserves = res,
+               h5_continuity = h5_tab, two_tails = two, by_year = by_year,
+               sensitivity = sens, window_sensitivity = alt,
+               n = nrow(main_w), threshold = params$shock_threshold,
+               max_gain = params$max_gain, base_window = BW, ref_year = params$ref_year),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```
