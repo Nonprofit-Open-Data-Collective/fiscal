@@ -1,0 +1,618 @@
+---
+title: "How Long Does the Response Take?"
+subtitle: "Same-year and following-year responses to a revenue windfall and to a revenue shock, 2022-2023"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  baseline_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2016-2018.rds")
+  results_file: ""
+  seed: 2023
+  shock_threshold: 0.20
+  base_window: 3
+  ref_year: 2023
+  max_dev: 1.0
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+H5 (revisited) and H6 both measure the response to a revenue event **in the same
+tax year as the event**. Revenue arrives above baseline in year *t*, and
+spending in year *t* and the balance-sheet movement during year *t* are what
+gets estimated. That is a real limitation, and it cuts in an obvious direction:
+a grant that lands in November cannot be spent before the year closes, and an
+organization that loses a contract in year *t* may not be able to cut staff
+until year *t+1*. Whatever the same-year estimate reports, some of the response
+has to be somewhere else.
+
+This document asks four things, for the windfall side and the shock side alike:
+
+1. **How much of the response happens in the event year at all?**
+2. **What does the following year look like**, measured against the same
+   pre-event baseline?
+3. **Does the allocation pattern a year later mirror the same-year pattern**, or
+   does money move between channels as time passes?
+4. **What is the two-year total**, pooling the event year and the year after?
+
+**What is held fixed.** The baseline stays the one built from the three years
+*before* the event — tax years `t-1`, `t-2`, `t-3`. Year `t+1` is measured
+against that same pre-event baseline, never against a baseline that has absorbed
+the event. This is the whole point: "expenses in `t+1` were $X above what this
+organization used to spend" is the quantity of interest, and a rolling baseline
+would define it away.
+
+**The confounder that governs everything below.** A revenue event is not a
+one-year impulse. Section 2 shows that most of a windfall is still present a year
+later. Where revenue stays elevated, higher spending in `t+1` is not delayed
+deployment of last year's money — it is an ordinary response to this year's
+money. Sections 5 and 7 separate the two by conditioning on what revenue
+actually did in `t+1`.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+})
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+pct <- function(x, d = 1) paste0(formatC(100 * x, format = "f", digits = d), "%")
+BW  <- as.integer(params$base_window)
+TH  <- params$shock_threshold
+```
+
+# 1. Data, leads, and the sample
+
+The population, deflator and baseline are the ones built in `baseline-prep.R`
+and used by both source documents, so every estimate here is directly
+comparable to theirs.
+
+```{r prep}
+source("baseline-prep.R", local = knitr::knit_global())
+
+LEAD <- c("R", "E", "program_expenses", "admin_expenses", "fundraising_expenses",
+          "unallocated_expenses", "d_cash", "d_other_current", "d_fixed",
+          "d_other_assets", "d_lt", "d_st", "d_other_liab", "d_na")
+setorder(p, EIN2, year)
+p[, f1_year := shift(year, 1, type = "lead"), by = EIN2]
+p[, paste0("f1_", LEAD) := shift(.SD, 1, type = "lead"), by = EIN2, .SDcols = LEAD]
+p[, has_lead := !is.na(f1_year) & f1_year == year + 1L]
+
+# The same extreme-movement guard the source documents use, applied to the
+# following year as well, so one wild year cannot enter through the lead.
+p[, max_abs_blk_f1 := pmax(abs(f1_d_cash - base_d_cash),
+                           abs(f1_d_other_current - base_d_other_current),
+                           abs(f1_d_fixed - base_d_fixed),
+                           abs(f1_d_other_assets - base_d_other_assets),
+                           abs(f1_d_lt - base_d_lt), abs(f1_d_st - base_d_st),
+                           abs(f1_d_other_liab - base_d_other_liab)) / base_E]
+
+kable(p[, .(org_years = .N, with_a_following_year = sum(has_lead),
+            share = round(mean(has_lead), 3)), by = year][order(year)],
+      format.args = list(big.mark = ","),
+      caption = "Availability of the following tax year")
+```
+
+**A selection caveat that has to be stated up front.** The panel requires a
+filing in every year 2019-2023 but treats 2024 as optional, because that file is
+still filling in — fiscal-year returns for FY2025 arrive through 2026. So an
+event in 2022 almost always has its following year
+(`r pct(p[year == 2022, mean(has_lead)], 1)`), while an event in 2023 has one
+only `r pct(p[year == 2023, mean(has_lead)], 1)` of the time, and the
+organizations missing from 2024 are disproportionately late and fiscal-year
+filers. Section 9 re-runs the headline on 2022 events alone, where the
+attrition is negligible.
+
+```{r channels}
+SPEC <- rbindlist(list(
+  data.table(name = "spend",  label = "Extra spending",            actual = "E",                base = "base_E",                    sign = 1),
+  data.table(name = "prog",   label = "of which program services", actual = "program_expenses", base = "base_program_expenses",     sign = 1),
+  data.table(name = "cash",   label = "Cash",                      actual = "d_cash",           base = "base_d_cash",               sign = 1),
+  data.table(name = "oca",    label = "Receivables, prepaid",      actual = "d_other_current",  base = "base_d_other_current",      sign = 1),
+  data.table(name = "fixed",  label = "Property and equipment",    actual = "d_fixed",          base = "base_d_fixed",              sign = 1),
+  data.table(name = "othass", label = "Investments, other assets", actual = "d_other_assets",   base = "base_d_other_assets",       sign = 1),
+  data.table(name = "lt",     label = "Long-term debt paid down",  actual = "d_lt",             base = "base_d_lt",                 sign = -1),
+  data.table(name = "st",     label = "Short-term liab. paid down",actual = "d_st",             base = "base_d_st",                 sign = -1),
+  data.table(name = "othli",  label = "Other liab. paid down",     actual = "d_other_liab",     base = "base_d_other_liab",         sign = -1)
+))
+
+# Deviation of a channel from the organization's own pre-event baseline,
+# DIVIDED BY BASELINE EXPENSES. The scaling is not cosmetic: H5 and H6 report
+# ratios of means of scaled channels, which weights organizations roughly
+# equally. Taking the same ratio on raw dollars instead weights by size and is
+# dominated by the largest filers -- it gave a same-year expense response of
+# 0.42 against H6's published 0.10. Every quantity here is scaled first so the
+# event-year column reproduces the source documents exactly; section 9 checks
+# that it does.
+dev <- function(s, nm, when = c("t", "f1")) {
+  when <- match.arg(when)
+  i <- SPEC[name == nm, which = TRUE]
+  a <- if (when == "t") s[[SPEC$actual[i]]] else s[[paste0("f1_", SPEC$actual[i])]]
+  b <- s[[SPEC$base[i]]]
+  (if (SPEC$sign[i] == 1) a - b else b - a) / s$base_E
+}
+gain <- function(s, when = c("t", "f1")) {
+  when <- match.arg(when)
+  ((if (when == "t") s$R else s$f1_R) - s$base_R) / s$base_E
+}
+keep <- function(s, when = c("t", "f1")) gain(s, when) - dev(s, "spend", when)
+
+# Event samples. `dir` is +1 for windfalls and -1 for shocks; the bound is the
+# matching one from each source document.
+event_sample <- function(dir, years = 2022:2023) {
+  z <- p[year %in% years & has_lead == TRUE &
+         (if (dir > 0) gap >= TH & gap <= params$max_dev
+          else         gap <= -TH & gap >= -params$max_dev)]
+  z[, s_dev := (R - base_R) / base_E]
+  z[, s_na  := (d_na - base_d_na) / base_E]
+  z[, keepf := {
+    qd <- quantile(s_dev, c(0.01, 0.99), na.rm = TRUE)
+    qa <- quantile(s_na,  c(0.01, 0.99), na.rm = TRUE)
+    qb <- quantile(max_abs_blk,    0.99, na.rm = TRUE)
+    qf <- quantile(max_abs_blk_f1, 0.99, na.rm = TRUE)
+    s_dev >= qd[[1]] & s_dev <= qd[[2]] & s_na >= qa[[1]] & s_na <= qa[[2]] &
+      max_abs_blk <= qb & max_abs_blk_f1 <= qf
+  }, by = year]
+  z <- z[keepf == TRUE]; z[, keepf := NULL]
+  z[, gap_f1 := (f1_R - base_R) / base_R]
+  z[]
+}
+wf_ev <- event_sample(+1)
+sh_ev <- event_sample(-1)
+kable(data.table(event = c("windfall", "shock"),
+                 organization_years = c(nrow(wf_ev), nrow(sh_ev)),
+                 organizations = c(uniqueN(wf_ev$EIN2), uniqueN(sh_ev$EIN2))),
+      format.args = list(big.mark = ","),
+      caption = "Event samples with a following year, 2022-2023, trimmed")
+```
+
+# 2. Does the event persist into the following year?
+
+This is the first thing to establish, because it determines what a lagged
+response can mean.
+
+```{r persistence}
+persist_row <- function(s, lab) {
+  data.table(event = lab, n = nrow(s),
+             scaled_deviation_year_t = mean(gain(s, "t")),
+             scaled_deviation_year_t1 = mean(gain(s, "f1")),
+             persistence = mean(gain(s, "f1")) / mean(gain(s, "t")),
+             median_gap_t = median(s$gap),
+             median_gap_t1 = median(s$gap_f1))
+}
+pers <- rbind(persist_row(wf_ev, "windfall"), persist_row(sh_ev, "shock"))
+kable(pers, digits = 3, format.args = list(big.mark = ","),
+      caption = "Revenue in the following year, against the same pre-event baseline")
+```
+
+```{r persistence-groups}
+grp <- function(s, dir) {
+  if (dir > 0)
+    factor(ifelse(s$gap_f1 >= TH, "still a windfall",
+           ifelse(s$gap_f1 > 0,  "partly retained", "back to baseline or below")),
+           levels = c("still a windfall", "partly retained", "back to baseline or below"))
+  else
+    factor(ifelse(s$gap_f1 <= -TH, "still a shock",
+           ifelse(s$gap_f1 < 0,   "partly recovered", "back to baseline or above")),
+           levels = c("still a shock", "partly recovered", "back to baseline or above"))
+}
+# `p` carries a logical column called `shock`, so a data.table named `shock`
+# would be masked inside j. The samples are `wf_ev` / `sh_ev` for that reason,
+# and the group vectors are built outside the j-expression as well.
+pg_w <- grp(wf_ev, +1); wf_ev[, pgroup := pg_w]
+pg_s <- grp(sh_ev, -1); sh_ev[, pgroup := pg_s]
+n_w <- nrow(wf_ev); n_s <- nrow(sh_ev)
+kable(rbind(
+  wf_ev[, .(event = "windfall", n = .N, share = round(.N / n_w, 3)), by = .(group = pgroup)],
+  sh_ev[, .(event = "shock",    n = .N, share = round(.N / n_s, 3)), by = .(group = pgroup)]),
+  format.args = list(big.mark = ","),
+  caption = "Where the following year sits relative to the pre-event baseline")
+```
+
+**Windfalls persist; shocks partly mend.**
+`r pct(pers[event == "windfall", persistence])` of the dollar value of a
+windfall is still there a year later, against
+`r pct(pers[event == "shock", persistence])` of a shortfall. In other words the
+typical "windfall" is not a one-off cheque at all — it is the first year of a
+higher revenue level. That is the single most important thing to hold onto when
+reading the lagged columns below: for most of the sample, year `t+1` brings
+*more money*, not just the memory of last year's money.
+
+# 3. Windfalls: same year, following year, and the two together
+
+Every column below is divided by the **same** denominator — the year-*t* revenue
+deviation — so the first two columns add to the third exactly. A value of 0.30
+in the "following year" column means "an extra 30 cents of this channel moved in
+year *t+1*, per dollar of revenue that arrived above baseline in year *t*".
+
+The top row is the revenue deviation itself, which is 1.00 in the event year by
+construction and equals the persistence ratio a year later. It is the yardstick
+for everything under it: channels cannot be expected to sum to 1 in the lagged
+column, because there is more revenue than 1 to allocate.
+
+```{r timing-table}
+timing_table <- function(s) {
+  d0 <- mean(gain(s, "t"))
+  rows <- rbindlist(lapply(SPEC$name, function(nm) {
+    a <- mean(dev(s, nm, "t")) / d0
+    b <- mean(dev(s, nm, "f1")) / d0
+    data.table(channel = SPEC[name == nm, label], event_year = a,
+               following_year = b, two_year_total = a + b,
+               share_delayed = ifelse(abs(a + b) > 1e-9, b / (a + b), NA_real_))
+  }))
+  head_rows <- rbindlist(list(
+    data.table(channel = "Revenue deviation",
+               event_year = 1, following_year = mean(gain(s, "f1")) / d0,
+               two_year_total = 1 + mean(gain(s, "f1")) / d0, share_delayed = NA_real_),
+    data.table(channel = "Kept (surplus above baseline)",
+               event_year = mean(keep(s, "t")) / d0,
+               following_year = mean(keep(s, "f1")) / d0,
+               two_year_total = (mean(keep(s, "t")) + mean(keep(s, "f1"))) / d0,
+               share_delayed = NA_real_)))
+  rbind(head_rows[1], rows[1:2], head_rows[2], rows[3:nrow(rows)])
+}
+wt <- timing_table(wf_ev)
+kable(wt, digits = 3,
+      caption = "Windfalls: response per dollar of the year-t revenue deviation")
+```
+
+
+```{r timing-checks}
+chk <- function(s, tt) {
+  data.table(
+    check = c("event year: spending + kept = 1",
+              "following year: spending + kept = persistence"),
+    value = c(tt[channel == "Extra spending", event_year] +
+                tt[channel == "Kept (surplus above baseline)", event_year],
+              tt[channel == "Extra spending", following_year] +
+                tt[channel == "Kept (surplus above baseline)", following_year]),
+    should_be = c(1, mean(gain(s, "f1")) / mean(gain(s, "t"))))
+}
+kable(chk(wf_ev, wt), digits = 4, caption = "Identity checks")
+```
+
+The same-year estimate is not missing most of the story, but it is missing a
+meaningful part of it. Spending above baseline runs at
+`r fmt(wt[channel == "Extra spending", event_year])` in the event year and
+`r fmt(wt[channel == "Extra spending", following_year])` in the following year,
+so `r pct(wt[channel == "Extra spending", share_delayed])` of the two-year
+spending response falls outside the window H5 measures. But because
+`r pct(pers[event == "windfall", persistence])` of the revenue is also still
+present, most of that later spending is being paid for by later revenue, not by
+last year's.
+
+# 4. Does the allocation pattern look the same a year later?
+
+The table above holds the denominator fixed to measure *cumulative response*.
+To ask whether organizations **allocate** a windfall differently as time passes,
+each year has to be normalised by its own revenue deviation.
+
+```{r mirror-table}
+mirror_table <- function(s) {
+  d0 <- mean(gain(s, "t")); d1 <- mean(gain(s, "f1"))
+  rbindlist(lapply(SPEC$name, function(nm) {
+    a <- mean(dev(s, nm, "t")) / d0
+    b <- mean(dev(s, nm, "f1")) / d1
+    data.table(channel = SPEC[name == nm, label],
+               allocation_in_event_year = a, allocation_in_following_year = b,
+               difference = b - a)
+  }))
+}
+wm <- mirror_table(wf_ev)
+kable(wm, digits = 3,
+      caption = "Windfalls: allocation of each year's own revenue deviation")
+```
+
+This is the answer to "how much do they mirror the same-year behaviours". The
+spending share moves from `r fmt(wm[channel == "Extra spending", allocation_in_event_year])`
+to `r fmt(wm[channel == "Extra spending", allocation_in_following_year])` — the
+allocation is broadly the same shape, shifted toward spending. The interesting
+movement is in the balance-sheet rows: cash goes from
+`r fmt(wm[channel == "Cash", allocation_in_event_year])` to
+`r fmt(wm[channel == "Cash", allocation_in_following_year])` and property from
+`r fmt(wm[channel == "Property and equipment", allocation_in_event_year])` to
+`r fmt(wm[channel == "Property and equipment", allocation_in_following_year])`,
+which is the pattern you would expect if money is parked in liquid form on
+arrival and committed to longer-lived uses once it is clear it will recur.
+
+# 5. Isolating the one-off windfall
+
+Sections 3 and 4 mix two different organizations: the one that got a single
+large cheque, and the one that stepped up to a permanently higher revenue level.
+Only the first can tell us about delayed deployment. Splitting on what revenue
+did in `t+1` separates them.
+
+```{r windfall-by-persistence}
+by_persist <- function(s, dir) {
+  d <- rbindlist(lapply(levels(s$pgroup), function(lv) {
+    q <- s[pgroup == lv]
+    if (nrow(q) < 200) return(NULL)
+    d0 <- mean(gain(q, "t"))
+    data.table(group = lv, n = nrow(q),
+               median_gap_t1 = median(q$gap_f1),
+               persistence = mean(gain(q, "f1")) / d0,
+               spending_event_year = mean(dev(q, "spend", "t")) / d0,
+               spending_following_year = mean(dev(q, "spend", "f1")) / d0,
+               spending_two_year = (mean(dev(q, "spend", "t")) + mean(dev(q, "spend", "f1"))) / d0,
+               cash_event_year = mean(dev(q, "cash", "t")) / d0,
+               cash_following_year = mean(dev(q, "cash", "f1")) / d0)
+  }))
+  d
+}
+wp <- by_persist(wf_ev, +1)
+kable(wp, digits = 3,
+      caption = "Windfalls split by what revenue did in the following year")
+```
+
+The bottom row is the clean case: organizations whose revenue returned to
+baseline or below. For them the following-year revenue deviation is at or below
+zero, so any spending above baseline in `t+1` is being funded out of what was
+banked in `t`. Read against the cash rows, this is the delayed-deployment
+estimate the same-year model cannot produce.
+
+# 6. The two-year decomposition with the identity intact
+
+For a decomposition whose shares sum to 1 — the form the source documents use —
+both the numerator and the denominator have to run over the same two years. Here
+the denominator is the revenue deviation cumulated over `t` and `t+1`, and the
+baseline is doubled to match.
+
+```{r two-year}
+two_year <- function(s) {
+  den <- mean(gain(s, "t") + gain(s, "f1"))
+  out <- rbindlist(lapply(SPEC$name, function(nm) {
+    data.table(channel = SPEC[name == nm, label],
+               cents_per_two_year_dollar = mean(dev(s, nm, "t") + dev(s, nm, "f1")) / den)
+  }))
+  rbind(out[1:2],
+        data.table(channel = "Kept (surplus above baseline)",
+                   cents_per_two_year_dollar = mean(keep(s, "t") + keep(s, "f1")) / den),
+        out[3:nrow(out)])
+}
+w2 <- two_year(wf_ev)
+kable(w2, digits = 3,
+      caption = "Windfalls: two-year pooled decomposition (shares of the cumulative deviation)")
+cat("spending + kept =",
+    fmt(w2[channel == "Extra spending", cents_per_two_year_dollar] +
+        w2[channel == "Kept (surplus above baseline)", cents_per_two_year_dollar]), "\n")
+```
+
+# 7. Shocks: same year, following year, and the two together
+
+The same three questions on the loss side. The sign convention is unchanged, so
+a positive number is still a use of the deviation: on this sample that means
+spending *below* baseline, or a balance-sheet stock that grew by less than it
+normally does.
+
+```{r shock-timing}
+st <- timing_table(sh_ev)
+kable(st, digits = 3,
+      caption = "Shocks: response per dollar of the year-t revenue deviation")
+kable(chk(sh_ev, st), digits = 4, caption = "Identity checks")
+```
+
+```{r shock-mirror}
+sm <- mirror_table(sh_ev)
+kable(sm, digits = 3,
+      caption = "Shocks: allocation of each year's own revenue deviation")
+```
+
+**The result here is the opposite of the windfall side, and it was not what I
+expected.** The natural hypothesis is that cutting is slow — leases, payroll and
+programme commitments do not unwind inside a tax year — so the same-year model
+should understate it and year two should show the catch-up. It does not. The
+lagged spending response is
+`r fmt(st[channel == "Extra spending", following_year])` per dollar of the
+year-*t* shortfall, against
+`r fmt(st[channel == "Extra spending", event_year])` in the event year, so only
+`r pct(st[channel == "Extra spending", share_delayed])` of the two-year cutting
+response falls outside H6's window. Measured against each year's own revenue
+deviation the picture is the same: the cut share *falls* from
+`r fmt(sm[channel == "Extra spending", allocation_in_event_year])` to
+`r fmt(sm[channel == "Extra spending", allocation_in_following_year])`.
+
+That aggregate hides a composition effect, and the split below is what actually
+answers the question.
+
+```{r shock-by-persistence}
+sp_tab <- by_persist(sh_ev, -1)
+kable(sp_tab, digits = 3,
+      caption = "Shocks split by what revenue did in the following year")
+```
+
+By year two the shocked sample has divided into two populations moving in
+opposite directions. Organizations still below baseline
+(`r pct(sp_tab[group == "still a shock", n] / nrow(sh_ev), 0)` of the sample) do
+cut further — `r fmt(sp_tab[group == "still a shock", spending_following_year])`
+in the following year on top of
+`r fmt(sp_tab[group == "still a shock", spending_event_year])` in the event
+year. Organizations whose revenue recovered spend
+*above* baseline in year two
+(`r fmt(sp_tab[group == "back to baseline or above", spending_following_year])`,
+negative because the sign convention makes cutting positive). The two nearly
+cancel, which is why the pooled lagged figure is close to zero.
+
+So the honest answer to "does cutting catch up?" is: **only for organizations
+whose revenue does not.** There is no evidence of a general lagged retrenchment
+that the same-year model is missing — what looks like delay is recovery.
+
+```{r shock-two-year}
+s2 <- two_year(sh_ev)
+kable(s2, digits = 3,
+      caption = "Shocks: two-year pooled decomposition (shares of the cumulative deviation)")
+cat("spending + kept =",
+    fmt(s2[channel == "Extra spending", cents_per_two_year_dollar] +
+        s2[channel == "Kept (surplus above baseline)", cents_per_two_year_dollar]), "\n")
+```
+
+# 8. The two tails, over two years
+
+```{r both-tails}
+both <- merge(
+  wt[, .(channel, windfall_event_year = event_year, windfall_following = following_year,
+         windfall_two_year = two_year_total)],
+  st[, .(channel, shock_event_year = event_year, shock_following = following_year,
+         shock_two_year = two_year_total)], by = "channel", sort = FALSE)
+kable(both, digits = 3,
+      caption = "Windfall and shock responses side by side, per dollar of the year-t deviation")
+```
+
+**A second year widens the ratchet rather than closing it.** In the event year
+`r fmt(wt[channel == "Extra spending", event_year])` of a windfall is spent
+against `r fmt(st[channel == "Extra spending", event_year])` of a shortfall cut —
+a gap of
+`r fmt(wt[channel == "Extra spending", event_year] - st[channel == "Extra spending", event_year])`.
+On the two-year decomposition, each side scaled by its own cumulative revenue
+deviation so the two are comparable, the figures are
+`r fmt(w2[channel == "Extra spending", cents_per_two_year_dollar])` and
+`r fmt(s2[channel == "Extra spending", cents_per_two_year_dollar])` — a gap of
+`r fmt(w2[channel == "Extra spending", cents_per_two_year_dollar] - s2[channel == "Extra spending", cents_per_two_year_dollar])`.
+Extra revenue keeps being spent in year two; missing revenue keeps being absorbed
+by the balance sheet. Whatever asymmetry the same-year estimate shows, waiting a
+year does not soften it.
+
+The balance-sheet rows say where the difference is warehoused. Over two years a
+windfall leaves essentially nothing extra in cash
+(`r fmt(w2[channel == "Cash", cents_per_two_year_dollar])` per cumulative dollar)
+because what was banked in the event year is spent in the next, while a
+shortfall takes `r fmt(s2[channel == "Cash", cents_per_two_year_dollar])` out of
+cash and `r fmt(s2[channel == "Investments, other assets", cents_per_two_year_dollar])`
+out of investments and does not put it back. Two years after a shock the balance
+sheet is still carrying most of the loss; two years after a windfall it looks
+much as it did before, and the money has gone into the programme.
+
+# 9. Robustness
+
+## Does the event year still reproduce H5 and H6?
+
+The event-year column ought to be the published estimate. It cannot match to the
+digit, because this sample additionally requires a following year to exist and
+trims on that year's block movements, so the check is whether the restriction
+moves the number.
+
+```{r reconcile}
+published <- function(dir) {
+  z <- p[year %in% 2022:2023 &
+         (if (dir > 0) gap >= TH & gap <= params$max_dev
+          else         gap <= -TH & gap >= -params$max_dev)]
+  z[, s_dev := (R - base_R) / base_E][, s_na := (d_na - base_d_na) / base_E]
+  z[, kp := {
+    qd <- quantile(s_dev, c(0.01, 0.99)); qa <- quantile(s_na, c(0.01, 0.99))
+    qb <- quantile(max_abs_blk, 0.99)
+    s_dev >= qd[[1]] & s_dev <= qd[[2]] & s_na >= qa[[1]] & s_na <= qa[[2]] & max_abs_blk <= qb
+  }, by = year]
+  z <- z[kp == TRUE]
+  list(n = nrow(z), b = mean(dev(z, "spend", "t")) / mean(gain(z, "t")))
+}
+pw <- published(+1); ps <- published(-1)
+kable(data.table(
+  sample = c("windfall", "shock"),
+  n_published_sample = c(pw$n, ps$n),
+  published_event_year = c(pw$b, ps$b),
+  n_with_following_year = c(nrow(wf_ev), nrow(sh_ev)),
+  this_document_event_year = c(wt[channel == "Extra spending", event_year],
+                               st[channel == "Extra spending", event_year])),
+  digits = 4, format.args = list(big.mark = ","),
+  caption = "Event-year spending response: the H5/H6 sample vs. the following-year-restricted sample")
+```
+
+## The 2024 attrition
+
+The 2023 events depend on 2024 filings, which are incomplete. Re-running on 2022
+events alone, where essentially every organization has its following year, says
+whether that selection matters.
+
+```{r attrition}
+w22 <- event_sample(+1, 2022); s22 <- event_sample(-1, 2022)
+cmp <- rbindlist(list(
+  data.table(sample = "windfall, 2022-2023", n = nrow(wf_ev),
+             spending_event_year = timing_table(wf_ev)[channel == "Extra spending", event_year],
+             spending_following = timing_table(wf_ev)[channel == "Extra spending", following_year]),
+  data.table(sample = "windfall, 2022 only", n = nrow(w22),
+             spending_event_year = timing_table(w22)[channel == "Extra spending", event_year],
+             spending_following = timing_table(w22)[channel == "Extra spending", following_year]),
+  data.table(sample = "shock, 2022-2023", n = nrow(sh_ev),
+             spending_event_year = timing_table(sh_ev)[channel == "Extra spending", event_year],
+             spending_following = timing_table(sh_ev)[channel == "Extra spending", following_year]),
+  data.table(sample = "shock, 2022 only", n = nrow(s22),
+             spending_event_year = timing_table(s22)[channel == "Extra spending", event_year],
+             spending_following = timing_table(s22)[channel == "Extra spending", following_year])))
+kable(cmp, digits = 3, format.args = list(big.mark = ","),
+      caption = "Headline spending response, full window vs. 2022 events only")
+```
+
+# 10. Findings
+
+* **Yes, everything in H5 and H6 is measured in the event year**, and section 9
+  confirms the event-year column here reproduces both (windfall
+  `r fmt(wt[channel == "Extra spending", event_year])` against H5's published
+  0.676; shock `r fmt(st[channel == "Extra spending", event_year])` against H6's
+  0.104).
+* **The two sides behave completely differently once a year is added.**
+  `r pct(wt[channel == "Extra spending", share_delayed])` of the two-year
+  spending response to a windfall falls outside the event year, against only
+  `r pct(st[channel == "Extra spending", share_delayed])` of the cutting
+  response to a shock. Spending has a long tail; cutting does not.
+* **The lagged windfall response is mostly not delayed deployment, because the
+  windfall itself persists.** `r pct(pers[event == "windfall", persistence])` of
+  a windfall's scaled value is still present a year later, against
+  `r pct(pers[event == "shock", persistence])` of a shortfall's. For the
+  `r format(wp[group == "back to baseline or below", n], big.mark = ",")`
+  organizations whose revenue did revert, year two is genuine deployment: they
+  spend `r fmt(wp[group == "back to baseline or below", spending_following_year])`
+  above baseline while revenue is below it, funded by drawing cash down
+  `r fmt(abs(wp[group == "back to baseline or below", cash_following_year]))`.
+* **"Cutting is slow" is not supported.** The obvious hypothesis — that the
+  same-year model understates retrenchment because commitments take a year to
+  unwind — fails. The aggregate lagged cut is
+  `r fmt(st[channel == "Extra spending", following_year])`. What that conceals is
+  a split: organizations still below baseline in year two cut a further
+  `r fmt(sp_tab[group == "still a shock", spending_following_year])`, while those
+  that recovered expand. Cutting continues only where the revenue loss does.
+* **Two years widens the ratchet.** On each side's own cumulative deviation,
+  `r fmt(w2[channel == "Extra spending", cents_per_two_year_dollar])` of a
+  windfall is spent against
+  `r fmt(s2[channel == "Extra spending", cents_per_two_year_dollar])` of a
+  shortfall cut. Two years after a shock the balance sheet is still carrying
+  `r fmt(s2[channel == "Kept (surplus above baseline)", cents_per_two_year_dollar])`
+  of it.
+* **The windfall's cash bulge is temporary.** Cash takes
+  `r fmt(wt[channel == "Cash", event_year])` per dollar in the event year and
+  gives back `r fmt(abs(wt[channel == "Cash", following_year]))` in the next, for
+  a two-year total of `r fmt(wt[channel == "Cash", two_year_total])`. Property,
+  by contrast, accumulates across both years
+  (`r fmt(wt[channel == "Property and equipment", two_year_total])`). Money is
+  parked liquid on arrival and then either spent or committed.
+* **Caveat.** 2023 events rely on 2024 filings, which are
+  `r pct(p[year == 2023, mean(has_lead)], 0)` complete and skew toward December
+  filers; section 9 shows the 2022-only estimate, which moves the headline by
+  about a point.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(persistence = pers, windfall_timing = wt, windfall_mirror = wm,
+               windfall_by_persistence = wp, windfall_two_year = w2,
+               shock_timing = st, shock_mirror = sm,
+               shock_by_persistence = sp_tab, shock_two_year = s2,
+               both_tails = both, attrition = cmp,
+               n_windfall = nrow(wf_ev), n_shock = nrow(sh_ev),
+               threshold = TH, base_window = BW), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

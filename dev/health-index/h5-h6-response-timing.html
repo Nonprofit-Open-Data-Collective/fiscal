@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>How Long Does the Response Take?</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">How Long Does the Response Take?</h1>
+<h3 class="subtitle">Same-year and following-year responses to a revenue
+windfall and to a revenue shock, 2022-2023</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#data-leads-and-the-sample" id="toc-data-leads-and-the-sample">1. Data, leads, and the
+sample</a></li>
+<li><a href="#does-the-event-persist-into-the-following-year" id="toc-does-the-event-persist-into-the-following-year">2. Does the
+event persist into the following year?</a></li>
+<li><a href="#windfalls-same-year-following-year-and-the-two-together" id="toc-windfalls-same-year-following-year-and-the-two-together">3.
+Windfalls: same year, following year, and the two together</a></li>
+<li><a href="#does-the-allocation-pattern-look-the-same-a-year-later" id="toc-does-the-allocation-pattern-look-the-same-a-year-later">4. Does
+the allocation pattern look the same a year later?</a></li>
+<li><a href="#isolating-the-one-off-windfall" id="toc-isolating-the-one-off-windfall">5. Isolating the one-off
+windfall</a></li>
+<li><a href="#the-two-year-decomposition-with-the-identity-intact" id="toc-the-two-year-decomposition-with-the-identity-intact">6. The
+two-year decomposition with the identity intact</a></li>
+<li><a href="#shocks-same-year-following-year-and-the-two-together" id="toc-shocks-same-year-following-year-and-the-two-together">7. Shocks:
+same year, following year, and the two together</a></li>
+<li><a href="#the-two-tails-over-two-years" id="toc-the-two-tails-over-two-years">8. The two tails, over two
+years</a></li>
+<li><a href="#robustness" id="toc-robustness">9. Robustness</a>
+<ul>
+<li><a href="#does-the-event-year-still-reproduce-h5-and-h6" id="toc-does-the-event-year-still-reproduce-h5-and-h6">Does the event
+year still reproduce H5 and H6?</a></li>
+<li><a href="#the-2024-attrition" id="toc-the-2024-attrition">The 2024
+attrition</a></li>
+</ul></li>
+<li><a href="#findings" id="toc-findings">10. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p>H5 (revisited) and H6 both measure the response to a revenue event
+<strong>in the same tax year as the event</strong>. Revenue arrives
+above baseline in year <em>t</em>, and spending in year <em>t</em> and
+the balance-sheet movement during year <em>t</em> are what gets
+estimated. That is a real limitation, and it cuts in an obvious
+direction: a grant that lands in November cannot be spent before the
+year closes, and an organization that loses a contract in year
+<em>t</em> may not be able to cut staff until year <em>t+1</em>.
+Whatever the same-year estimate reports, some of the response has to be
+somewhere else.</p>
+<p>This document asks four things, for the windfall side and the shock
+side alike:</p>
+<ol style="list-style-type: decimal">
+<li><strong>How much of the response happens in the event year at
+all?</strong></li>
+<li><strong>What does the following year look like</strong>, measured
+against the same pre-event baseline?</li>
+<li><strong>Does the allocation pattern a year later mirror the
+same-year pattern</strong>, or does money move between channels as time
+passes?</li>
+<li><strong>What is the two-year total</strong>, pooling the event year
+and the year after?</li>
+</ol>
+<p><strong>What is held fixed.</strong> The baseline stays the one built
+from the three years <em>before</em> the event — tax years
+<code>t-1</code>, <code>t-2</code>, <code>t-3</code>. Year
+<code>t+1</code> is measured against that same pre-event baseline, never
+against a baseline that has absorbed the event. This is the whole point:
+“expenses in <code>t+1</code> were $X above what this organization used
+to spend” is the quantity of interest, and a rolling baseline would
+define it away.</p>
+<p><strong>The confounder that governs everything below.</strong> A
+revenue event is not a one-year impulse. Section 2 shows that most of a
+windfall is still present a year later. Where revenue stays elevated,
+higher spending in <code>t+1</code> is not delayed deployment of last
+year’s money — it is an ordinary response to this year’s money. Sections
+5 and 7 separate the two by conditioning on what revenue actually did in
+<code>t+1</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>})</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>pct <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">1</span>) <span class="fu">paste0</span>(<span class="fu">formatC</span>(<span class="dv">100</span> <span class="sc">*</span> x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d), <span class="st">&quot;%&quot;</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>BW  <span class="ot">&lt;-</span> <span class="fu">as.integer</span>(params<span class="sc">$</span>base_window)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>TH  <span class="ot">&lt;-</span> params<span class="sc">$</span>shock_threshold</span></code></pre></div>
+</div>
+<div id="data-leads-and-the-sample" class="section level1">
+<h1>1. Data, leads, and the sample</h1>
+<p>The population, deflator and baseline are the ones built in
+<code>baseline-prep.R</code> and used by both source documents, so every
+estimate here is directly comparable to theirs.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;baseline-prep.R&quot;</span>, <span class="at">local =</span> knitr<span class="sc">::</span><span class="fu">knit_global</span>())</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>LEAD <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;program_expenses&quot;</span>, <span class="st">&quot;admin_expenses&quot;</span>, <span class="st">&quot;fundraising_expenses&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>          <span class="st">&quot;unallocated_expenses&quot;</span>, <span class="st">&quot;d_cash&quot;</span>, <span class="st">&quot;d_other_current&quot;</span>, <span class="st">&quot;d_fixed&quot;</span>,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>          <span class="st">&quot;d_other_assets&quot;</span>, <span class="st">&quot;d_lt&quot;</span>, <span class="st">&quot;d_st&quot;</span>, <span class="st">&quot;d_other_liab&quot;</span>, <span class="st">&quot;d_na&quot;</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">setorder</span>(p, EIN2, year)</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>p[, f1_year <span class="sc">:=</span> <span class="fu">shift</span>(year, <span class="dv">1</span>, <span class="at">type =</span> <span class="st">&quot;lead&quot;</span>), by <span class="ot">=</span> EIN2]</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>p[, <span class="fu">paste0</span>(<span class="st">&quot;f1_&quot;</span>, LEAD) <span class="sc">:=</span> <span class="fu">shift</span>(.SD, <span class="dv">1</span>, <span class="at">type =</span> <span class="st">&quot;lead&quot;</span>), by <span class="ot">=</span> EIN2, .SDcols <span class="ot">=</span> LEAD]</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>p[, has_lead <span class="sc">:=</span> <span class="sc">!</span><span class="fu">is.na</span>(f1_year) <span class="sc">&amp;</span> f1_year <span class="sc">==</span> year <span class="sc">+</span> <span class="dv">1</span><span class="dt">L</span>]</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co"># The same extreme-movement guard the source documents use, applied to the</span></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co"># following year as well, so one wild year cannot enter through the lead.</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>p[, max_abs_blk_f1 <span class="sc">:=</span> <span class="fu">pmax</span>(<span class="fu">abs</span>(f1_d_cash <span class="sc">-</span> base_d_cash),</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>                           <span class="fu">abs</span>(f1_d_other_current <span class="sc">-</span> base_d_other_current),</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>                           <span class="fu">abs</span>(f1_d_fixed <span class="sc">-</span> base_d_fixed),</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>                           <span class="fu">abs</span>(f1_d_other_assets <span class="sc">-</span> base_d_other_assets),</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>                           <span class="fu">abs</span>(f1_d_lt <span class="sc">-</span> base_d_lt), <span class="fu">abs</span>(f1_d_st <span class="sc">-</span> base_d_st),</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>                           <span class="fu">abs</span>(f1_d_other_liab <span class="sc">-</span> base_d_other_liab)) <span class="sc">/</span> base_E]</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="fu">kable</span>(p[, .(<span class="at">org_years =</span> .N, <span class="at">with_a_following_year =</span> <span class="fu">sum</span>(has_lead),</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>            <span class="at">share =</span> <span class="fu">round</span>(<span class="fu">mean</span>(has_lead), <span class="dv">3</span>)), <span class="at">by =</span> year][<span class="fu">order</span>(year)],</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Availability of the following tax year&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Availability of the following tax year</caption>
+<thead>
+<tr class="header">
+<th align="right">year</th>
+<th align="right">org_years</th>
+<th align="right">with_a_following_year</th>
+<th align="right">share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">2,019</td>
+<td align="right">92,655</td>
+<td align="right">92,242</td>
+<td align="right">0.996</td>
+</tr>
+<tr class="even">
+<td align="right">2,020</td>
+<td align="right">102,415</td>
+<td align="right">101,862</td>
+<td align="right">0.995</td>
+</tr>
+<tr class="odd">
+<td align="right">2,021</td>
+<td align="right">112,937</td>
+<td align="right">112,382</td>
+<td align="right">0.995</td>
+</tr>
+<tr class="even">
+<td align="right">2,022</td>
+<td align="right">126,147</td>
+<td align="right">125,319</td>
+<td align="right">0.993</td>
+</tr>
+<tr class="odd">
+<td align="right">2,023</td>
+<td align="right">125,856</td>
+<td align="right">110,376</td>
+<td align="right">0.877</td>
+</tr>
+<tr class="even">
+<td align="right">2,024</td>
+<td align="right">111,068</td>
+<td align="right">0</td>
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A selection caveat that has to be stated up front.</strong>
+The panel requires a filing in every year 2019-2023 but treats 2024 as
+optional, because that file is still filling in — fiscal-year returns
+for FY2025 arrive through 2026. So an event in 2022 almost always has
+its following year (99.3%), while an event in 2023 has one only 87.7% of
+the time, and the organizations missing from 2024 are disproportionately
+late and fiscal-year filers. Section 9 re-runs the headline on 2022
+events alone, where the attrition is negligible.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>SPEC <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">list</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;spend&quot;</span>,  <span class="at">label =</span> <span class="st">&quot;Extra spending&quot;</span>,            <span class="at">actual =</span> <span class="st">&quot;E&quot;</span>,                <span class="at">base =</span> <span class="st">&quot;base_E&quot;</span>,                    <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;prog&quot;</span>,   <span class="at">label =</span> <span class="st">&quot;of which program services&quot;</span>, <span class="at">actual =</span> <span class="st">&quot;program_expenses&quot;</span>, <span class="at">base =</span> <span class="st">&quot;base_program_expenses&quot;</span>,     <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;cash&quot;</span>,   <span class="at">label =</span> <span class="st">&quot;Cash&quot;</span>,                      <span class="at">actual =</span> <span class="st">&quot;d_cash&quot;</span>,           <span class="at">base =</span> <span class="st">&quot;base_d_cash&quot;</span>,               <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;oca&quot;</span>,    <span class="at">label =</span> <span class="st">&quot;Receivables, prepaid&quot;</span>,      <span class="at">actual =</span> <span class="st">&quot;d_other_current&quot;</span>,  <span class="at">base =</span> <span class="st">&quot;base_d_other_current&quot;</span>,      <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;fixed&quot;</span>,  <span class="at">label =</span> <span class="st">&quot;Property and equipment&quot;</span>,    <span class="at">actual =</span> <span class="st">&quot;d_fixed&quot;</span>,          <span class="at">base =</span> <span class="st">&quot;base_d_fixed&quot;</span>,              <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;othass&quot;</span>, <span class="at">label =</span> <span class="st">&quot;Investments, other assets&quot;</span>, <span class="at">actual =</span> <span class="st">&quot;d_other_assets&quot;</span>,   <span class="at">base =</span> <span class="st">&quot;base_d_other_assets&quot;</span>,       <span class="at">sign =</span> <span class="dv">1</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;lt&quot;</span>,     <span class="at">label =</span> <span class="st">&quot;Long-term debt paid down&quot;</span>,  <span class="at">actual =</span> <span class="st">&quot;d_lt&quot;</span>,             <span class="at">base =</span> <span class="st">&quot;base_d_lt&quot;</span>,                 <span class="at">sign =</span> <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;st&quot;</span>,     <span class="at">label =</span> <span class="st">&quot;Short-term liab. paid down&quot;</span>,<span class="at">actual =</span> <span class="st">&quot;d_st&quot;</span>,             <span class="at">base =</span> <span class="st">&quot;base_d_st&quot;</span>,                 <span class="at">sign =</span> <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">name =</span> <span class="st">&quot;othli&quot;</span>,  <span class="at">label =</span> <span class="st">&quot;Other liab. paid down&quot;</span>,     <span class="at">actual =</span> <span class="st">&quot;d_other_liab&quot;</span>,     <span class="at">base =</span> <span class="st">&quot;base_d_other_liab&quot;</span>,         <span class="at">sign =</span> <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>))</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co"># Deviation of a channel from the organization&#39;s own pre-event baseline,</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co"># DIVIDED BY BASELINE EXPENSES. The scaling is not cosmetic: H5 and H6 report</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co"># ratios of means of scaled channels, which weights organizations roughly</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co"># equally. Taking the same ratio on raw dollars instead weights by size and is</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co"># dominated by the largest filers -- it gave a same-year expense response of</span></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="co"># 0.42 against H6&#39;s published 0.10. Every quantity here is scaled first so the</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a><span class="co"># event-year column reproduces the source documents exactly; section 9 checks</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a><span class="co"># that it does.</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>dev <span class="ot">&lt;-</span> <span class="cf">function</span>(s, nm, <span class="at">when =</span> <span class="fu">c</span>(<span class="st">&quot;t&quot;</span>, <span class="st">&quot;f1&quot;</span>)) {</span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  when <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(when)</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  i <span class="ot">&lt;-</span> SPEC[name <span class="sc">==</span> nm, which <span class="ot">=</span> <span class="cn">TRUE</span>]</span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="cf">if</span> (when <span class="sc">==</span> <span class="st">&quot;t&quot;</span>) s[[SPEC<span class="sc">$</span>actual[i]]] <span class="cf">else</span> s[[<span class="fu">paste0</span>(<span class="st">&quot;f1_&quot;</span>, SPEC<span class="sc">$</span>actual[i])]]</span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>  b <span class="ot">&lt;-</span> s[[SPEC<span class="sc">$</span>base[i]]]</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>  (<span class="cf">if</span> (SPEC<span class="sc">$</span>sign[i] <span class="sc">==</span> <span class="dv">1</span>) a <span class="sc">-</span> b <span class="cf">else</span> b <span class="sc">-</span> a) <span class="sc">/</span> s<span class="sc">$</span>base_E</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>}</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>gain <span class="ot">&lt;-</span> <span class="cf">function</span>(s, <span class="at">when =</span> <span class="fu">c</span>(<span class="st">&quot;t&quot;</span>, <span class="st">&quot;f1&quot;</span>)) {</span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>  when <span class="ot">&lt;-</span> <span class="fu">match.arg</span>(when)</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>  ((<span class="cf">if</span> (when <span class="sc">==</span> <span class="st">&quot;t&quot;</span>) s<span class="sc">$</span>R <span class="cf">else</span> s<span class="sc">$</span>f1_R) <span class="sc">-</span> s<span class="sc">$</span>base_R) <span class="sc">/</span> s<span class="sc">$</span>base_E</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>}</span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>keep <span class="ot">&lt;-</span> <span class="cf">function</span>(s, <span class="at">when =</span> <span class="fu">c</span>(<span class="st">&quot;t&quot;</span>, <span class="st">&quot;f1&quot;</span>)) <span class="fu">gain</span>(s, when) <span class="sc">-</span> <span class="fu">dev</span>(s, <span class="st">&quot;spend&quot;</span>, when)</span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a><span class="co"># Event samples. `dir` is +1 for windfalls and -1 for shocks; the bound is the</span></span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a><span class="co"># matching one from each source document.</span></span>
+<span id="cb3-36"><a href="#cb3-36" tabindex="-1"></a>event_sample <span class="ot">&lt;-</span> <span class="cf">function</span>(dir, <span class="at">years =</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span>) {</span>
+<span id="cb3-37"><a href="#cb3-37" tabindex="-1"></a>  z <span class="ot">&lt;-</span> p[year <span class="sc">%in%</span> years <span class="sc">&amp;</span> has_lead <span class="sc">==</span> <span class="cn">TRUE</span> <span class="sc">&amp;</span></span>
+<span id="cb3-38"><a href="#cb3-38" tabindex="-1"></a>         (<span class="cf">if</span> (dir <span class="sc">&gt;</span> <span class="dv">0</span>) gap <span class="sc">&gt;=</span> TH <span class="sc">&amp;</span> gap <span class="sc">&lt;=</span> params<span class="sc">$</span>max_dev</span>
+<span id="cb3-39"><a href="#cb3-39" tabindex="-1"></a>          <span class="cf">else</span>         gap <span class="sc">&lt;=</span> <span class="sc">-</span>TH <span class="sc">&amp;</span> gap <span class="sc">&gt;=</span> <span class="sc">-</span>params<span class="sc">$</span>max_dev)]</span>
+<span id="cb3-40"><a href="#cb3-40" tabindex="-1"></a>  z[, s_dev <span class="sc">:=</span> (R <span class="sc">-</span> base_R) <span class="sc">/</span> base_E]</span>
+<span id="cb3-41"><a href="#cb3-41" tabindex="-1"></a>  z[, s_na  <span class="sc">:=</span> (d_na <span class="sc">-</span> base_d_na) <span class="sc">/</span> base_E]</span>
+<span id="cb3-42"><a href="#cb3-42" tabindex="-1"></a>  z[, keepf <span class="sc">:=</span> {</span>
+<span id="cb3-43"><a href="#cb3-43" tabindex="-1"></a>    qd <span class="ot">&lt;-</span> <span class="fu">quantile</span>(s_dev, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-44"><a href="#cb3-44" tabindex="-1"></a>    qa <span class="ot">&lt;-</span> <span class="fu">quantile</span>(s_na,  <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-45"><a href="#cb3-45" tabindex="-1"></a>    qb <span class="ot">&lt;-</span> <span class="fu">quantile</span>(max_abs_blk,    <span class="fl">0.99</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-46"><a href="#cb3-46" tabindex="-1"></a>    qf <span class="ot">&lt;-</span> <span class="fu">quantile</span>(max_abs_blk_f1, <span class="fl">0.99</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-47"><a href="#cb3-47" tabindex="-1"></a>    s_dev <span class="sc">&gt;=</span> qd[[<span class="dv">1</span>]] <span class="sc">&amp;</span> s_dev <span class="sc">&lt;=</span> qd[[<span class="dv">2</span>]] <span class="sc">&amp;</span> s_na <span class="sc">&gt;=</span> qa[[<span class="dv">1</span>]] <span class="sc">&amp;</span> s_na <span class="sc">&lt;=</span> qa[[<span class="dv">2</span>]] <span class="sc">&amp;</span></span>
+<span id="cb3-48"><a href="#cb3-48" tabindex="-1"></a>      max_abs_blk <span class="sc">&lt;=</span> qb <span class="sc">&amp;</span> max_abs_blk_f1 <span class="sc">&lt;=</span> qf</span>
+<span id="cb3-49"><a href="#cb3-49" tabindex="-1"></a>  }, by <span class="ot">=</span> year]</span>
+<span id="cb3-50"><a href="#cb3-50" tabindex="-1"></a>  z <span class="ot">&lt;-</span> z[keepf <span class="sc">==</span> <span class="cn">TRUE</span>]; z[, keepf <span class="sc">:=</span> <span class="cn">NULL</span>]</span>
+<span id="cb3-51"><a href="#cb3-51" tabindex="-1"></a>  z[, gap_f1 <span class="sc">:=</span> (f1_R <span class="sc">-</span> base_R) <span class="sc">/</span> base_R]</span>
+<span id="cb3-52"><a href="#cb3-52" tabindex="-1"></a>  z[]</span>
+<span id="cb3-53"><a href="#cb3-53" tabindex="-1"></a>}</span>
+<span id="cb3-54"><a href="#cb3-54" tabindex="-1"></a>wf_ev <span class="ot">&lt;-</span> <span class="fu">event_sample</span>(<span class="sc">+</span><span class="dv">1</span>)</span>
+<span id="cb3-55"><a href="#cb3-55" tabindex="-1"></a>sh_ev <span class="ot">&lt;-</span> <span class="fu">event_sample</span>(<span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb3-56"><a href="#cb3-56" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">data.table</span>(<span class="at">event =</span> <span class="fu">c</span>(<span class="st">&quot;windfall&quot;</span>, <span class="st">&quot;shock&quot;</span>),</span>
+<span id="cb3-57"><a href="#cb3-57" tabindex="-1"></a>                 <span class="at">organization_years =</span> <span class="fu">c</span>(<span class="fu">nrow</span>(wf_ev), <span class="fu">nrow</span>(sh_ev)),</span>
+<span id="cb3-58"><a href="#cb3-58" tabindex="-1"></a>                 <span class="at">organizations =</span> <span class="fu">c</span>(<span class="fu">uniqueN</span>(wf_ev<span class="sc">$</span>EIN2), <span class="fu">uniqueN</span>(sh_ev<span class="sc">$</span>EIN2))),</span>
+<span id="cb3-59"><a href="#cb3-59" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb3-60"><a href="#cb3-60" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Event samples with a following year, 2022-2023, trimmed&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Event samples with a following year, 2022-2023,
+trimmed</caption>
+<thead>
+<tr class="header">
+<th align="left">event</th>
+<th align="right">organization_years</th>
+<th align="right">organizations</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">windfall</td>
+<td align="right">45,339</td>
+<td align="right">37,332</td>
+</tr>
+<tr class="even">
+<td align="left">shock</td>
+<td align="right">53,724</td>
+<td align="right">42,130</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="does-the-event-persist-into-the-following-year" class="section level1">
+<h1>2. Does the event persist into the following year?</h1>
+<p>This is the first thing to establish, because it determines what a
+lagged response can mean.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>persist_row <span class="ot">&lt;-</span> <span class="cf">function</span>(s, lab) {</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">event =</span> lab, <span class="at">n =</span> <span class="fu">nrow</span>(s),</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>             <span class="at">scaled_deviation_year_t =</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>)),</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>             <span class="at">scaled_deviation_year_t1 =</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>)),</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>             <span class="at">persistence =</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>)),</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>             <span class="at">median_gap_t =</span> <span class="fu">median</span>(s<span class="sc">$</span>gap),</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>             <span class="at">median_gap_t1 =</span> <span class="fu">median</span>(s<span class="sc">$</span>gap_f1))</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>}</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>pers <span class="ot">&lt;-</span> <span class="fu">rbind</span>(<span class="fu">persist_row</span>(wf_ev, <span class="st">&quot;windfall&quot;</span>), <span class="fu">persist_row</span>(sh_ev, <span class="st">&quot;shock&quot;</span>))</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="fu">kable</span>(pers, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Revenue in the following year, against the same pre-event baseline&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Revenue in the following year, against the same pre-event
+baseline</caption>
+<colgroup>
+<col width="8%" />
+<col width="6%" />
+<col width="23%" />
+<col width="24%" />
+<col width="11%" />
+<col width="12%" />
+<col width="13%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">event</th>
+<th align="right">n</th>
+<th align="right">scaled_deviation_year_t</th>
+<th align="right">scaled_deviation_year_t1</th>
+<th align="right">persistence</th>
+<th align="right">median_gap_t</th>
+<th align="right">median_gap_t1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">windfall</td>
+<td align="right">45,339</td>
+<td align="right">0.509</td>
+<td align="right">0.526</td>
+<td align="right">1.034</td>
+<td align="right">0.389</td>
+<td align="right">0.356</td>
+</tr>
+<tr class="even">
+<td align="left">shock</td>
+<td align="right">53,724</td>
+<td align="right">-0.751</td>
+<td align="right">-0.384</td>
+<td align="right">0.512</td>
+<td align="right">-0.385</td>
+<td align="right">-0.296</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>grp <span class="ot">&lt;-</span> <span class="cf">function</span>(s, dir) {</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="cf">if</span> (dir <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>    <span class="fu">factor</span>(<span class="fu">ifelse</span>(s<span class="sc">$</span>gap_f1 <span class="sc">&gt;=</span> TH, <span class="st">&quot;still a windfall&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>           <span class="fu">ifelse</span>(s<span class="sc">$</span>gap_f1 <span class="sc">&gt;</span> <span class="dv">0</span>,  <span class="st">&quot;partly retained&quot;</span>, <span class="st">&quot;back to baseline or below&quot;</span>)),</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>           <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;still a windfall&quot;</span>, <span class="st">&quot;partly retained&quot;</span>, <span class="st">&quot;back to baseline or below&quot;</span>))</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="cf">else</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="fu">factor</span>(<span class="fu">ifelse</span>(s<span class="sc">$</span>gap_f1 <span class="sc">&lt;=</span> <span class="sc">-</span>TH, <span class="st">&quot;still a shock&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>           <span class="fu">ifelse</span>(s<span class="sc">$</span>gap_f1 <span class="sc">&lt;</span> <span class="dv">0</span>,   <span class="st">&quot;partly recovered&quot;</span>, <span class="st">&quot;back to baseline or above&quot;</span>)),</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>           <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;still a shock&quot;</span>, <span class="st">&quot;partly recovered&quot;</span>, <span class="st">&quot;back to baseline or above&quot;</span>))</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>}</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a><span class="co"># `p` carries a logical column called `shock`, so a data.table named `shock`</span></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a><span class="co"># would be masked inside j. The samples are `wf_ev` / `sh_ev` for that reason,</span></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="co"># and the group vectors are built outside the j-expression as well.</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>pg_w <span class="ot">&lt;-</span> <span class="fu">grp</span>(wf_ev, <span class="sc">+</span><span class="dv">1</span>); wf_ev[, pgroup <span class="sc">:=</span> pg_w]</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>pg_s <span class="ot">&lt;-</span> <span class="fu">grp</span>(sh_ev, <span class="sc">-</span><span class="dv">1</span>); sh_ev[, pgroup <span class="sc">:=</span> pg_s]</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>n_w <span class="ot">&lt;-</span> <span class="fu">nrow</span>(wf_ev); n_s <span class="ot">&lt;-</span> <span class="fu">nrow</span>(sh_ev)</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">rbind</span>(</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>  wf_ev[, .(<span class="at">event =</span> <span class="st">&quot;windfall&quot;</span>, <span class="at">n =</span> .N, <span class="at">share =</span> <span class="fu">round</span>(.N <span class="sc">/</span> n_w, <span class="dv">3</span>)), <span class="at">by =</span> .(<span class="at">group =</span> pgroup)],</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>  sh_ev[, .(<span class="at">event =</span> <span class="st">&quot;shock&quot;</span>,    <span class="at">n =</span> .N, <span class="at">share =</span> <span class="fu">round</span>(.N <span class="sc">/</span> n_s, <span class="dv">3</span>)), <span class="at">by =</span> .(<span class="at">group =</span> pgroup)]),</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;Where the following year sits relative to the pre-event baseline&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Where the following year sits relative to the pre-event
+baseline</caption>
+<thead>
+<tr class="header">
+<th align="left">group</th>
+<th align="left">event</th>
+<th align="right">n</th>
+<th align="right">share</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">still a windfall</td>
+<td align="left">windfall</td>
+<td align="right">30,439</td>
+<td align="right">0.671</td>
+</tr>
+<tr class="even">
+<td align="left">partly retained</td>
+<td align="left">windfall</td>
+<td align="right">7,384</td>
+<td align="right">0.163</td>
+</tr>
+<tr class="odd">
+<td align="left">back to baseline or below</td>
+<td align="left">windfall</td>
+<td align="right">7,516</td>
+<td align="right">0.166</td>
+</tr>
+<tr class="even">
+<td align="left">still a shock</td>
+<td align="left">shock</td>
+<td align="right">33,894</td>
+<td align="right">0.631</td>
+</tr>
+<tr class="odd">
+<td align="left">partly recovered</td>
+<td align="left">shock</td>
+<td align="right">9,653</td>
+<td align="right">0.180</td>
+</tr>
+<tr class="even">
+<td align="left">back to baseline or above</td>
+<td align="left">shock</td>
+<td align="right">10,177</td>
+<td align="right">0.189</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Windfalls persist; shocks partly mend.</strong> 103.4% of the
+dollar value of a windfall is still there a year later, against 51.2% of
+a shortfall. In other words the typical “windfall” is not a one-off
+cheque at all — it is the first year of a higher revenue level. That is
+the single most important thing to hold onto when reading the lagged
+columns below: for most of the sample, year <code>t+1</code> brings
+<em>more money</em>, not just the memory of last year’s money.</p>
+</div>
+<div id="windfalls-same-year-following-year-and-the-two-together" class="section level1">
+<h1>3. Windfalls: same year, following year, and the two together</h1>
+<p>Every column below is divided by the <strong>same</strong>
+denominator — the year-<em>t</em> revenue deviation — so the first two
+columns add to the third exactly. A value of 0.30 in the “following
+year” column means “an extra 30 cents of this channel moved in year
+<em>t+1</em>, per dollar of revenue that arrived above baseline in year
+<em>t</em>”.</p>
+<p>The top row is the revenue deviation itself, which is 1.00 in the
+event year by construction and equals the persistence ratio a year
+later. It is the yardstick for everything under it: channels cannot be
+expected to sum to 1 in the lagged column, because there is more revenue
+than 1 to allocate.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>timing_table <span class="ot">&lt;-</span> <span class="cf">function</span>(s) {</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  d0 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>))</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  rows <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(SPEC<span class="sc">$</span>name, <span class="cf">function</span>(nm) {</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>    a <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">dev</span>(s, nm, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> d0</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    b <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">dev</span>(s, nm, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">channel =</span> SPEC[name <span class="sc">==</span> nm, label], <span class="at">event_year =</span> a,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>               <span class="at">following_year =</span> b, <span class="at">two_year_total =</span> a <span class="sc">+</span> b,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>               <span class="at">share_delayed =</span> <span class="fu">ifelse</span>(<span class="fu">abs</span>(a <span class="sc">+</span> b) <span class="sc">&gt;</span> <span class="fl">1e-9</span>, b <span class="sc">/</span> (a <span class="sc">+</span> b), <span class="cn">NA_real_</span>))</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  }))</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  head_rows <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">list</span>(</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">channel =</span> <span class="st">&quot;Revenue deviation&quot;</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>               <span class="at">event_year =</span> <span class="dv">1</span>, <span class="at">following_year =</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>               <span class="at">two_year_total =</span> <span class="dv">1</span> <span class="sc">+</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0, <span class="at">share_delayed =</span> <span class="cn">NA_real_</span>),</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">channel =</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>               <span class="at">event_year =</span> <span class="fu">mean</span>(<span class="fu">keep</span>(s, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>               <span class="at">following_year =</span> <span class="fu">mean</span>(<span class="fu">keep</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>               <span class="at">two_year_total =</span> (<span class="fu">mean</span>(<span class="fu">keep</span>(s, <span class="st">&quot;t&quot;</span>)) <span class="sc">+</span> <span class="fu">mean</span>(<span class="fu">keep</span>(s, <span class="st">&quot;f1&quot;</span>))) <span class="sc">/</span> d0,</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>               <span class="at">share_delayed =</span> <span class="cn">NA_real_</span>)))</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>  <span class="fu">rbind</span>(head_rows[<span class="dv">1</span>], rows[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>], head_rows[<span class="dv">2</span>], rows[<span class="dv">3</span><span class="sc">:</span><span class="fu">nrow</span>(rows)])</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>}</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>wt <span class="ot">&lt;-</span> <span class="fu">timing_table</span>(wf_ev)</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="fu">kable</span>(wt, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Windfalls: response per dollar of the year-t revenue deviation&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Windfalls: response per dollar of the year-t revenue
+deviation</caption>
+<colgroup>
+<col width="35%" />
+<col width="12%" />
+<col width="17%" />
+<col width="17%" />
+<col width="16%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">event_year</th>
+<th align="right">following_year</th>
+<th align="right">two_year_total</th>
+<th align="right">share_delayed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Revenue deviation</td>
+<td align="right">1.000</td>
+<td align="right">1.034</td>
+<td align="right">2.034</td>
+<td align="right"></td>
+</tr>
+<tr class="even">
+<td align="left">Extra spending</td>
+<td align="right">0.673</td>
+<td align="right">0.903</td>
+<td align="right">1.576</td>
+<td align="right">0.573</td>
+</tr>
+<tr class="odd">
+<td align="left">of which program services</td>
+<td align="right">0.536</td>
+<td align="right">0.716</td>
+<td align="right">1.252</td>
+<td align="right">0.572</td>
+</tr>
+<tr class="even">
+<td align="left">Kept (surplus above baseline)</td>
+<td align="right">0.327</td>
+<td align="right">0.131</td>
+<td align="right">0.458</td>
+<td align="right"></td>
+</tr>
+<tr class="odd">
+<td align="left">Cash</td>
+<td align="right">0.064</td>
+<td align="right">-0.069</td>
+<td align="right">-0.005</td>
+<td align="right">13.184</td>
+</tr>
+<tr class="even">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.044</td>
+<td align="right">0.006</td>
+<td align="right">0.050</td>
+<td align="right">0.115</td>
+</tr>
+<tr class="odd">
+<td align="left">Property and equipment</td>
+<td align="right">0.061</td>
+<td align="right">0.074</td>
+<td align="right">0.135</td>
+<td align="right">0.548</td>
+</tr>
+<tr class="even">
+<td align="left">Investments, other assets</td>
+<td align="right">-0.008</td>
+<td align="right">0.070</td>
+<td align="right">0.063</td>
+<td align="right">1.124</td>
+</tr>
+<tr class="odd">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.010</td>
+<td align="right">0.021</td>
+<td align="right">0.031</td>
+<td align="right">0.689</td>
+</tr>
+<tr class="even">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">-0.004</td>
+<td align="right">0.002</td>
+<td align="right">-0.003</td>
+<td align="right">-0.578</td>
+</tr>
+<tr class="odd">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.062</td>
+<td align="right">0.058</td>
+<td align="right">0.120</td>
+<td align="right">0.481</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>chk <span class="ot">&lt;-</span> <span class="cf">function</span>(s, tt) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  <span class="fu">data.table</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>    <span class="at">check =</span> <span class="fu">c</span>(<span class="st">&quot;event year: spending + kept = 1&quot;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>              <span class="st">&quot;following year: spending + kept = persistence&quot;</span>),</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">c</span>(tt[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year] <span class="sc">+</span></span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>                tt[channel <span class="sc">==</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>, event_year],</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>              tt[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, following_year] <span class="sc">+</span></span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>                tt[channel <span class="sc">==</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>, following_year]),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">should_be =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>))))</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>}</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">chk</span>(wf_ev, wt), <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Identity checks&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Identity checks</caption>
+<thead>
+<tr class="header">
+<th align="left">check</th>
+<th align="right">value</th>
+<th align="right">should_be</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">event year: spending + kept = 1</td>
+<td align="right">1.0000</td>
+<td align="right">1.0000</td>
+</tr>
+<tr class="even">
+<td align="left">following year: spending + kept = persistence</td>
+<td align="right">1.0343</td>
+<td align="right">1.0343</td>
+</tr>
+</tbody>
+</table>
+<p>The same-year estimate is not missing most of the story, but it is
+missing a meaningful part of it. Spending above baseline runs at 0.673
+in the event year and 0.903 in the following year, so 57.3% of the
+two-year spending response falls outside the window H5 measures. But
+because 103.4% of the revenue is also still present, most of that later
+spending is being paid for by later revenue, not by last year’s.</p>
+</div>
+<div id="does-the-allocation-pattern-look-the-same-a-year-later" class="section level1">
+<h1>4. Does the allocation pattern look the same a year later?</h1>
+<p>The table above holds the denominator fixed to measure <em>cumulative
+response</em>. To ask whether organizations <strong>allocate</strong> a
+windfall differently as time passes, each year has to be normalised by
+its own revenue deviation.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>mirror_table <span class="ot">&lt;-</span> <span class="cf">function</span>(s) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  d0 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>)); d1 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(SPEC<span class="sc">$</span>name, <span class="cf">function</span>(nm) {</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>    a <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">dev</span>(s, nm, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> d0</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>    b <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">dev</span>(s, nm, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d1</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">channel =</span> SPEC[name <span class="sc">==</span> nm, label],</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>               <span class="at">allocation_in_event_year =</span> a, <span class="at">allocation_in_following_year =</span> b,</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>               <span class="at">difference =</span> b <span class="sc">-</span> a)</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  }))</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>}</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>wm <span class="ot">&lt;-</span> <span class="fu">mirror_table</span>(wf_ev)</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="fu">kable</span>(wm, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Windfalls: allocation of each year&#39;s own revenue deviation&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Windfalls: allocation of each year’s own revenue
+deviation</caption>
+<colgroup>
+<col width="29%" />
+<col width="27%" />
+<col width="31%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">allocation_in_event_year</th>
+<th align="right">allocation_in_following_year</th>
+<th align="right">difference</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Extra spending</td>
+<td align="right">0.673</td>
+<td align="right">0.873</td>
+<td align="right">0.200</td>
+</tr>
+<tr class="even">
+<td align="left">of which program services</td>
+<td align="right">0.536</td>
+<td align="right">0.692</td>
+<td align="right">0.156</td>
+</tr>
+<tr class="odd">
+<td align="left">Cash</td>
+<td align="right">0.064</td>
+<td align="right">-0.067</td>
+<td align="right">-0.131</td>
+</tr>
+<tr class="even">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.044</td>
+<td align="right">0.006</td>
+<td align="right">-0.039</td>
+</tr>
+<tr class="odd">
+<td align="left">Property and equipment</td>
+<td align="right">0.061</td>
+<td align="right">0.072</td>
+<td align="right">0.011</td>
+</tr>
+<tr class="even">
+<td align="left">Investments, other assets</td>
+<td align="right">-0.008</td>
+<td align="right">0.068</td>
+<td align="right">0.076</td>
+</tr>
+<tr class="odd">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.010</td>
+<td align="right">0.020</td>
+<td align="right">0.011</td>
+</tr>
+<tr class="even">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">-0.004</td>
+<td align="right">0.001</td>
+<td align="right">0.006</td>
+</tr>
+<tr class="odd">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.062</td>
+<td align="right">0.056</td>
+<td align="right">-0.006</td>
+</tr>
+</tbody>
+</table>
+<p>This is the answer to “how much do they mirror the same-year
+behaviours”. The spending share moves from 0.673 to 0.873 — the
+allocation is broadly the same shape, shifted toward spending. The
+interesting movement is in the balance-sheet rows: cash goes from 0.064
+to -0.067 and property from 0.061 to 0.072, which is the pattern you
+would expect if money is parked in liquid form on arrival and committed
+to longer-lived uses once it is clear it will recur.</p>
+</div>
+<div id="isolating-the-one-off-windfall" class="section level1">
+<h1>5. Isolating the one-off windfall</h1>
+<p>Sections 3 and 4 mix two different organizations: the one that got a
+single large cheque, and the one that stepped up to a permanently higher
+revenue level. Only the first can tell us about delayed deployment.
+Splitting on what revenue did in <code>t+1</code> separates them.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>by_persist <span class="ot">&lt;-</span> <span class="cf">function</span>(s, dir) {</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  d <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">levels</span>(s<span class="sc">$</span>pgroup), <span class="cf">function</span>(lv) {</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>    q <span class="ot">&lt;-</span> s[pgroup <span class="sc">==</span> lv]</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>    <span class="cf">if</span> (<span class="fu">nrow</span>(q) <span class="sc">&lt;</span> <span class="dv">200</span>) <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>    d0 <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">gain</span>(q, <span class="st">&quot;t&quot;</span>))</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">group =</span> lv, <span class="at">n =</span> <span class="fu">nrow</span>(q),</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>               <span class="at">median_gap_t1 =</span> <span class="fu">median</span>(q<span class="sc">$</span>gap_f1),</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>               <span class="at">persistence =</span> <span class="fu">mean</span>(<span class="fu">gain</span>(q, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>               <span class="at">spending_event_year =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;spend&quot;</span>, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>               <span class="at">spending_following_year =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;spend&quot;</span>, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>               <span class="at">spending_two_year =</span> (<span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;spend&quot;</span>, <span class="st">&quot;t&quot;</span>)) <span class="sc">+</span> <span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;spend&quot;</span>, <span class="st">&quot;f1&quot;</span>))) <span class="sc">/</span> d0,</span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>               <span class="at">cash_event_year =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;cash&quot;</span>, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> d0,</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>               <span class="at">cash_following_year =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(q, <span class="st">&quot;cash&quot;</span>, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> d0)</span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>  }))</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>  d</span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>}</span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>wp <span class="ot">&lt;-</span> <span class="fu">by_persist</span>(wf_ev, <span class="sc">+</span><span class="dv">1</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="fu">kable</span>(wp, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Windfalls split by what revenue did in the following year&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Windfalls split by what revenue did in the following
+year</caption>
+<colgroup>
+<col width="16%" />
+<col width="3%" />
+<col width="8%" />
+<col width="7%" />
+<col width="12%" />
+<col width="15%" />
+<col width="11%" />
+<col width="10%" />
+<col width="12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">group</th>
+<th align="right">n</th>
+<th align="right">median_gap_t1</th>
+<th align="right">persistence</th>
+<th align="right">spending_event_year</th>
+<th align="right">spending_following_year</th>
+<th align="right">spending_two_year</th>
+<th align="right">cash_event_year</th>
+<th align="right">cash_following_year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">still a windfall</td>
+<td align="right">30439</td>
+<td align="right">0.530</td>
+<td align="right">1.591</td>
+<td align="right">0.748</td>
+<td align="right">1.177</td>
+<td align="right">1.925</td>
+<td align="right">0.029</td>
+<td align="right">0.096</td>
+</tr>
+<tr class="even">
+<td align="left">partly retained</td>
+<td align="right">7384</td>
+<td align="right">0.114</td>
+<td align="right">0.288</td>
+<td align="right">0.589</td>
+<td align="right">0.531</td>
+<td align="right">1.120</td>
+<td align="right">0.095</td>
+<td align="right">-0.308</td>
+</tr>
+<tr class="odd">
+<td align="left">back to baseline or below</td>
+<td align="right">7516</td>
+<td align="right">-0.174</td>
+<td align="right">-0.599</td>
+<td align="right">0.438</td>
+<td align="right">0.103</td>
+<td align="right">0.541</td>
+<td align="right">0.178</td>
+<td align="right">-0.541</td>
+</tr>
+</tbody>
+</table>
+<p>The bottom row is the clean case: organizations whose revenue
+returned to baseline or below. For them the following-year revenue
+deviation is at or below zero, so any spending above baseline in
+<code>t+1</code> is being funded out of what was banked in
+<code>t</code>. Read against the cash rows, this is the
+delayed-deployment estimate the same-year model cannot produce.</p>
+</div>
+<div id="the-two-year-decomposition-with-the-identity-intact" class="section level1">
+<h1>6. The two-year decomposition with the identity intact</h1>
+<p>For a decomposition whose shares sum to 1 — the form the source
+documents use — both the numerator and the denominator have to run over
+the same two years. Here the denominator is the revenue deviation
+cumulated over <code>t</code> and <code>t+1</code>, and the baseline is
+doubled to match.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>two_year <span class="ot">&lt;-</span> <span class="cf">function</span>(s) {</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>  den <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">gain</span>(s, <span class="st">&quot;t&quot;</span>) <span class="sc">+</span> <span class="fu">gain</span>(s, <span class="st">&quot;f1&quot;</span>))</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>  out <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(SPEC<span class="sc">$</span>name, <span class="cf">function</span>(nm) {</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>    <span class="fu">data.table</span>(<span class="at">channel =</span> SPEC[name <span class="sc">==</span> nm, label],</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>               <span class="at">cents_per_two_year_dollar =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(s, nm, <span class="st">&quot;t&quot;</span>) <span class="sc">+</span> <span class="fu">dev</span>(s, nm, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> den)</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  }))</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="fu">rbind</span>(out[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>],</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>        <span class="fu">data.table</span>(<span class="at">channel =</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>                   <span class="at">cents_per_two_year_dollar =</span> <span class="fu">mean</span>(<span class="fu">keep</span>(s, <span class="st">&quot;t&quot;</span>) <span class="sc">+</span> <span class="fu">keep</span>(s, <span class="st">&quot;f1&quot;</span>)) <span class="sc">/</span> den),</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>        out[<span class="dv">3</span><span class="sc">:</span><span class="fu">nrow</span>(out)])</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>}</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>w2 <span class="ot">&lt;-</span> <span class="fu">two_year</span>(wf_ev)</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="fu">kable</span>(w2, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Windfalls: two-year pooled decomposition (shares of the cumulative deviation)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Windfalls: two-year pooled decomposition (shares of the
+cumulative deviation)</caption>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">cents_per_two_year_dollar</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Extra spending</td>
+<td align="right">0.775</td>
+</tr>
+<tr class="even">
+<td align="left">of which program services</td>
+<td align="right">0.616</td>
+</tr>
+<tr class="odd">
+<td align="left">Kept (surplus above baseline)</td>
+<td align="right">0.225</td>
+</tr>
+<tr class="even">
+<td align="left">Cash</td>
+<td align="right">-0.003</td>
+</tr>
+<tr class="odd">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.025</td>
+</tr>
+<tr class="even">
+<td align="left">Property and equipment</td>
+<td align="right">0.066</td>
+</tr>
+<tr class="odd">
+<td align="left">Investments, other assets</td>
+<td align="right">0.031</td>
+</tr>
+<tr class="even">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.015</td>
+</tr>
+<tr class="odd">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">-0.001</td>
+</tr>
+<tr class="even">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.059</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;spending + kept =&quot;</span>,</span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>    <span class="fu">fmt</span>(w2[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, cents_per_two_year_dollar] <span class="sc">+</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a>        w2[channel <span class="sc">==</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>, cents_per_two_year_dollar]), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## spending + kept = 1.000</code></pre>
+</div>
+<div id="shocks-same-year-following-year-and-the-two-together" class="section level1">
+<h1>7. Shocks: same year, following year, and the two together</h1>
+<p>The same three questions on the loss side. The sign convention is
+unchanged, so a positive number is still a use of the deviation: on this
+sample that means spending <em>below</em> baseline, or a balance-sheet
+stock that grew by less than it normally does.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>st <span class="ot">&lt;-</span> <span class="fu">timing_table</span>(sh_ev)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">kable</span>(st, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Shocks: response per dollar of the year-t revenue deviation&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Shocks: response per dollar of the year-t revenue
+deviation</caption>
+<colgroup>
+<col width="35%" />
+<col width="12%" />
+<col width="17%" />
+<col width="17%" />
+<col width="16%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">event_year</th>
+<th align="right">following_year</th>
+<th align="right">two_year_total</th>
+<th align="right">share_delayed</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Revenue deviation</td>
+<td align="right">1.000</td>
+<td align="right">0.512</td>
+<td align="right">1.512</td>
+<td align="right"></td>
+</tr>
+<tr class="even">
+<td align="left">Extra spending</td>
+<td align="right">0.107</td>
+<td align="right">0.013</td>
+<td align="right">0.120</td>
+<td align="right">0.111</td>
+</tr>
+<tr class="odd">
+<td align="left">of which program services</td>
+<td align="right">0.086</td>
+<td align="right">0.001</td>
+<td align="right">0.087</td>
+<td align="right">0.013</td>
+</tr>
+<tr class="even">
+<td align="left">Kept (surplus above baseline)</td>
+<td align="right">0.893</td>
+<td align="right">0.498</td>
+<td align="right">1.392</td>
+<td align="right"></td>
+</tr>
+<tr class="odd">
+<td align="left">Cash</td>
+<td align="right">0.437</td>
+<td align="right">0.204</td>
+<td align="right">0.641</td>
+<td align="right">0.318</td>
+</tr>
+<tr class="even">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.046</td>
+<td align="right">0.002</td>
+<td align="right">0.048</td>
+<td align="right">0.043</td>
+</tr>
+<tr class="odd">
+<td align="left">Property and equipment</td>
+<td align="right">0.106</td>
+<td align="right">0.103</td>
+<td align="right">0.209</td>
+<td align="right">0.492</td>
+</tr>
+<tr class="even">
+<td align="left">Investments, other assets</td>
+<td align="right">0.616</td>
+<td align="right">0.067</td>
+<td align="right">0.683</td>
+<td align="right">0.099</td>
+</tr>
+<tr class="odd">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.012</td>
+<td align="right">0.006</td>
+<td align="right">0.018</td>
+<td align="right">0.312</td>
+</tr>
+<tr class="even">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">0.007</td>
+<td align="right">0.007</td>
+<td align="right">0.014</td>
+<td align="right">0.484</td>
+</tr>
+<tr class="odd">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.008</td>
+<td align="right">-0.002</td>
+<td align="right">0.006</td>
+<td align="right">-0.394</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">chk</span>(sh_ev, st), <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Identity checks&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Identity checks</caption>
+<thead>
+<tr class="header">
+<th align="left">check</th>
+<th align="right">value</th>
+<th align="right">should_be</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">event year: spending + kept = 1</td>
+<td align="right">1.0000</td>
+<td align="right">1.0000</td>
+</tr>
+<tr class="even">
+<td align="left">following year: spending + kept = persistence</td>
+<td align="right">0.5117</td>
+<td align="right">0.5117</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a>sm <span class="ot">&lt;-</span> <span class="fu">mirror_table</span>(sh_ev)</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="fu">kable</span>(sm, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Shocks: allocation of each year&#39;s own revenue deviation&quot;</span>)</span></code></pre></div>
+<table style="width:100%;">
+<caption>Shocks: allocation of each year’s own revenue
+deviation</caption>
+<colgroup>
+<col width="29%" />
+<col width="27%" />
+<col width="31%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">allocation_in_event_year</th>
+<th align="right">allocation_in_following_year</th>
+<th align="right">difference</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Extra spending</td>
+<td align="right">0.107</td>
+<td align="right">0.026</td>
+<td align="right">-0.081</td>
+</tr>
+<tr class="even">
+<td align="left">of which program services</td>
+<td align="right">0.086</td>
+<td align="right">0.002</td>
+<td align="right">-0.084</td>
+</tr>
+<tr class="odd">
+<td align="left">Cash</td>
+<td align="right">0.437</td>
+<td align="right">0.398</td>
+<td align="right">-0.039</td>
+</tr>
+<tr class="even">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.046</td>
+<td align="right">0.004</td>
+<td align="right">-0.042</td>
+</tr>
+<tr class="odd">
+<td align="left">Property and equipment</td>
+<td align="right">0.106</td>
+<td align="right">0.201</td>
+<td align="right">0.095</td>
+</tr>
+<tr class="even">
+<td align="left">Investments, other assets</td>
+<td align="right">0.616</td>
+<td align="right">0.132</td>
+<td align="right">-0.484</td>
+</tr>
+<tr class="odd">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.012</td>
+<td align="right">0.011</td>
+<td align="right">-0.001</td>
+</tr>
+<tr class="even">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">0.007</td>
+<td align="right">0.013</td>
+<td align="right">0.006</td>
+</tr>
+<tr class="odd">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.008</td>
+<td align="right">-0.004</td>
+<td align="right">-0.012</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The result here is the opposite of the windfall side, and it
+was not what I expected.</strong> The natural hypothesis is that cutting
+is slow — leases, payroll and programme commitments do not unwind inside
+a tax year — so the same-year model should understate it and year two
+should show the catch-up. It does not. The lagged spending response is
+0.013 per dollar of the year-<em>t</em> shortfall, against 0.107 in the
+event year, so only 11.1% of the two-year cutting response falls outside
+H6’s window. Measured against each year’s own revenue deviation the
+picture is the same: the cut share <em>falls</em> from 0.107 to
+0.026.</p>
+<p>That aggregate hides a composition effect, and the split below is
+what actually answers the question.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>sp_tab <span class="ot">&lt;-</span> <span class="fu">by_persist</span>(sh_ev, <span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="fu">kable</span>(sp_tab, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Shocks split by what revenue did in the following year&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Shocks split by what revenue did in the following
+year</caption>
+<colgroup>
+<col width="16%" />
+<col width="3%" />
+<col width="8%" />
+<col width="7%" />
+<col width="12%" />
+<col width="15%" />
+<col width="11%" />
+<col width="10%" />
+<col width="12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">group</th>
+<th align="right">n</th>
+<th align="right">median_gap_t1</th>
+<th align="right">persistence</th>
+<th align="right">spending_event_year</th>
+<th align="right">spending_following_year</th>
+<th align="right">spending_two_year</th>
+<th align="right">cash_event_year</th>
+<th align="right">cash_following_year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">still a shock</td>
+<td align="right">33894</td>
+<td align="right">-0.454</td>
+<td align="right">1.026</td>
+<td align="right">0.143</td>
+<td align="right">0.181</td>
+<td align="right">0.324</td>
+<td align="right">0.402</td>
+<td align="right">0.333</td>
+</tr>
+<tr class="even">
+<td align="left">partly recovered</td>
+<td align="right">9653</td>
+<td align="right">-0.120</td>
+<td align="right">0.313</td>
+<td align="right">0.058</td>
+<td align="right">-0.079</td>
+<td align="right">-0.021</td>
+<td align="right">0.511</td>
+<td align="right">0.205</td>
+</tr>
+<tr class="odd">
+<td align="left">back to baseline or above</td>
+<td align="right">10177</td>
+<td align="right">0.279</td>
+<td align="right">-1.671</td>
+<td align="right">-0.022</td>
+<td align="right">-0.680</td>
+<td align="right">-0.701</td>
+<td align="right">0.541</td>
+<td align="right">-0.383</td>
+</tr>
+</tbody>
+</table>
+<p>By year two the shocked sample has divided into two populations
+moving in opposite directions. Organizations still below baseline (63%
+of the sample) do cut further — 0.181 in the following year on top of
+0.143 in the event year. Organizations whose revenue recovered spend
+<em>above</em> baseline in year two (-0.680, negative because the sign
+convention makes cutting positive). The two nearly cancel, which is why
+the pooled lagged figure is close to zero.</p>
+<p>So the honest answer to “does cutting catch up?” is: <strong>only for
+organizations whose revenue does not.</strong> There is no evidence of a
+general lagged retrenchment that the same-year model is missing — what
+looks like delay is recovery.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>s2 <span class="ot">&lt;-</span> <span class="fu">two_year</span>(sh_ev)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a><span class="fu">kable</span>(s2, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Shocks: two-year pooled decomposition (shares of the cumulative deviation)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Shocks: two-year pooled decomposition (shares of the cumulative
+deviation)</caption>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">cents_per_two_year_dollar</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Extra spending</td>
+<td align="right">0.079</td>
+</tr>
+<tr class="even">
+<td align="left">of which program services</td>
+<td align="right">0.058</td>
+</tr>
+<tr class="odd">
+<td align="left">Kept (surplus above baseline)</td>
+<td align="right">0.921</td>
+</tr>
+<tr class="even">
+<td align="left">Cash</td>
+<td align="right">0.424</td>
+</tr>
+<tr class="odd">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.032</td>
+</tr>
+<tr class="even">
+<td align="left">Property and equipment</td>
+<td align="right">0.138</td>
+</tr>
+<tr class="odd">
+<td align="left">Investments, other assets</td>
+<td align="right">0.452</td>
+</tr>
+<tr class="even">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.012</td>
+</tr>
+<tr class="odd">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">0.009</td>
+</tr>
+<tr class="even">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.004</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;spending + kept =&quot;</span>,</span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>    <span class="fu">fmt</span>(s2[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, cents_per_two_year_dollar] <span class="sc">+</span></span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>        s2[channel <span class="sc">==</span> <span class="st">&quot;Kept (surplus above baseline)&quot;</span>, cents_per_two_year_dollar]), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<pre><code>## spending + kept = 1.000</code></pre>
+</div>
+<div id="the-two-tails-over-two-years" class="section level1">
+<h1>8. The two tails, over two years</h1>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a>both <span class="ot">&lt;-</span> <span class="fu">merge</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  wt[, .(channel, <span class="at">windfall_event_year =</span> event_year, <span class="at">windfall_following =</span> following_year,</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>         <span class="at">windfall_two_year =</span> two_year_total)],</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>  st[, .(channel, <span class="at">shock_event_year =</span> event_year, <span class="at">shock_following =</span> following_year,</span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>         <span class="at">shock_two_year =</span> two_year_total)], <span class="at">by =</span> <span class="st">&quot;channel&quot;</span>, <span class="at">sort =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="fu">kable</span>(both, <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Windfall and shock responses side by side, per dollar of the year-t deviation&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Windfall and shock responses side by side, per dollar of the
+year-t deviation</caption>
+<colgroup>
+<col width="22%" />
+<col width="14%" />
+<col width="14%" />
+<col width="13%" />
+<col width="12%" />
+<col width="11%" />
+<col width="11%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">channel</th>
+<th align="right">windfall_event_year</th>
+<th align="right">windfall_following</th>
+<th align="right">windfall_two_year</th>
+<th align="right">shock_event_year</th>
+<th align="right">shock_following</th>
+<th align="right">shock_two_year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Revenue deviation</td>
+<td align="right">1.000</td>
+<td align="right">1.034</td>
+<td align="right">2.034</td>
+<td align="right">1.000</td>
+<td align="right">0.512</td>
+<td align="right">1.512</td>
+</tr>
+<tr class="even">
+<td align="left">Extra spending</td>
+<td align="right">0.673</td>
+<td align="right">0.903</td>
+<td align="right">1.576</td>
+<td align="right">0.107</td>
+<td align="right">0.013</td>
+<td align="right">0.120</td>
+</tr>
+<tr class="odd">
+<td align="left">of which program services</td>
+<td align="right">0.536</td>
+<td align="right">0.716</td>
+<td align="right">1.252</td>
+<td align="right">0.086</td>
+<td align="right">0.001</td>
+<td align="right">0.087</td>
+</tr>
+<tr class="even">
+<td align="left">Kept (surplus above baseline)</td>
+<td align="right">0.327</td>
+<td align="right">0.131</td>
+<td align="right">0.458</td>
+<td align="right">0.893</td>
+<td align="right">0.498</td>
+<td align="right">1.392</td>
+</tr>
+<tr class="odd">
+<td align="left">Cash</td>
+<td align="right">0.064</td>
+<td align="right">-0.069</td>
+<td align="right">-0.005</td>
+<td align="right">0.437</td>
+<td align="right">0.204</td>
+<td align="right">0.641</td>
+</tr>
+<tr class="even">
+<td align="left">Receivables, prepaid</td>
+<td align="right">0.044</td>
+<td align="right">0.006</td>
+<td align="right">0.050</td>
+<td align="right">0.046</td>
+<td align="right">0.002</td>
+<td align="right">0.048</td>
+</tr>
+<tr class="odd">
+<td align="left">Property and equipment</td>
+<td align="right">0.061</td>
+<td align="right">0.074</td>
+<td align="right">0.135</td>
+<td align="right">0.106</td>
+<td align="right">0.103</td>
+<td align="right">0.209</td>
+</tr>
+<tr class="even">
+<td align="left">Investments, other assets</td>
+<td align="right">-0.008</td>
+<td align="right">0.070</td>
+<td align="right">0.063</td>
+<td align="right">0.616</td>
+<td align="right">0.067</td>
+<td align="right">0.683</td>
+</tr>
+<tr class="odd">
+<td align="left">Long-term debt paid down</td>
+<td align="right">0.010</td>
+<td align="right">0.021</td>
+<td align="right">0.031</td>
+<td align="right">0.012</td>
+<td align="right">0.006</td>
+<td align="right">0.018</td>
+</tr>
+<tr class="even">
+<td align="left">Short-term liab. paid down</td>
+<td align="right">-0.004</td>
+<td align="right">0.002</td>
+<td align="right">-0.003</td>
+<td align="right">0.007</td>
+<td align="right">0.007</td>
+<td align="right">0.014</td>
+</tr>
+<tr class="odd">
+<td align="left">Other liab. paid down</td>
+<td align="right">0.062</td>
+<td align="right">0.058</td>
+<td align="right">0.120</td>
+<td align="right">0.008</td>
+<td align="right">-0.002</td>
+<td align="right">0.006</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A second year widens the ratchet rather than closing
+it.</strong> In the event year 0.673 of a windfall is spent against
+0.107 of a shortfall cut — a gap of 0.566. On the two-year
+decomposition, each side scaled by its own cumulative revenue deviation
+so the two are comparable, the figures are 0.775 and 0.079 — a gap of
+0.695. Extra revenue keeps being spent in year two; missing revenue
+keeps being absorbed by the balance sheet. Whatever asymmetry the
+same-year estimate shows, waiting a year does not soften it.</p>
+<p>The balance-sheet rows say where the difference is warehoused. Over
+two years a windfall leaves essentially nothing extra in cash (-0.003
+per cumulative dollar) because what was banked in the event year is
+spent in the next, while a shortfall takes 0.424 out of cash and 0.452
+out of investments and does not put it back. Two years after a shock the
+balance sheet is still carrying most of the loss; two years after a
+windfall it looks much as it did before, and the money has gone into the
+programme.</p>
+</div>
+<div id="robustness" class="section level1">
+<h1>9. Robustness</h1>
+<div id="does-the-event-year-still-reproduce-h5-and-h6" class="section level2">
+<h2>Does the event year still reproduce H5 and H6?</h2>
+<p>The event-year column ought to be the published estimate. It cannot
+match to the digit, because this sample additionally requires a
+following year to exist and trims on that year’s block movements, so the
+check is whether the restriction moves the number.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>published <span class="ot">&lt;-</span> <span class="cf">function</span>(dir) {</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>  z <span class="ot">&lt;-</span> p[year <span class="sc">%in%</span> <span class="dv">2022</span><span class="sc">:</span><span class="dv">2023</span> <span class="sc">&amp;</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>         (<span class="cf">if</span> (dir <span class="sc">&gt;</span> <span class="dv">0</span>) gap <span class="sc">&gt;=</span> TH <span class="sc">&amp;</span> gap <span class="sc">&lt;=</span> params<span class="sc">$</span>max_dev</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>          <span class="cf">else</span>         gap <span class="sc">&lt;=</span> <span class="sc">-</span>TH <span class="sc">&amp;</span> gap <span class="sc">&gt;=</span> <span class="sc">-</span>params<span class="sc">$</span>max_dev)]</span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>  z[, s_dev <span class="sc">:=</span> (R <span class="sc">-</span> base_R) <span class="sc">/</span> base_E][, s_na <span class="sc">:=</span> (d_na <span class="sc">-</span> base_d_na) <span class="sc">/</span> base_E]</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a>  z[, kp <span class="sc">:=</span> {</span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a>    qd <span class="ot">&lt;-</span> <span class="fu">quantile</span>(s_dev, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>)); qa <span class="ot">&lt;-</span> <span class="fu">quantile</span>(s_na, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>))</span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a>    qb <span class="ot">&lt;-</span> <span class="fu">quantile</span>(max_abs_blk, <span class="fl">0.99</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a>    s_dev <span class="sc">&gt;=</span> qd[[<span class="dv">1</span>]] <span class="sc">&amp;</span> s_dev <span class="sc">&lt;=</span> qd[[<span class="dv">2</span>]] <span class="sc">&amp;</span> s_na <span class="sc">&gt;=</span> qa[[<span class="dv">1</span>]] <span class="sc">&amp;</span> s_na <span class="sc">&lt;=</span> qa[[<span class="dv">2</span>]] <span class="sc">&amp;</span> max_abs_blk <span class="sc">&lt;=</span> qb</span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a>  }, by <span class="ot">=</span> year]</span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a>  z <span class="ot">&lt;-</span> z[kp <span class="sc">==</span> <span class="cn">TRUE</span>]</span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">nrow</span>(z), <span class="at">b =</span> <span class="fu">mean</span>(<span class="fu">dev</span>(z, <span class="st">&quot;spend&quot;</span>, <span class="st">&quot;t&quot;</span>)) <span class="sc">/</span> <span class="fu">mean</span>(<span class="fu">gain</span>(z, <span class="st">&quot;t&quot;</span>)))</span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a>}</span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a>pw <span class="ot">&lt;-</span> <span class="fu">published</span>(<span class="sc">+</span><span class="dv">1</span>); ps <span class="ot">&lt;-</span> <span class="fu">published</span>(<span class="sc">-</span><span class="dv">1</span>)</span>
+<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">data.table</span>(</span>
+<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a>  <span class="at">sample =</span> <span class="fu">c</span>(<span class="st">&quot;windfall&quot;</span>, <span class="st">&quot;shock&quot;</span>),</span>
+<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a>  <span class="at">n_published_sample =</span> <span class="fu">c</span>(pw<span class="sc">$</span>n, ps<span class="sc">$</span>n),</span>
+<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a>  <span class="at">published_event_year =</span> <span class="fu">c</span>(pw<span class="sc">$</span>b, ps<span class="sc">$</span>b),</span>
+<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a>  <span class="at">n_with_following_year =</span> <span class="fu">c</span>(<span class="fu">nrow</span>(wf_ev), <span class="fu">nrow</span>(sh_ev)),</span>
+<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a>  <span class="at">this_document_event_year =</span> <span class="fu">c</span>(wt[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year],</span>
+<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a>                               st[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year])),</span>
+<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">&quot;Event-year spending response: the H5/H6 sample vs. the following-year-restricted sample&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Event-year spending response: the H5/H6 sample vs. the
+following-year-restricted sample</caption>
+<colgroup>
+<col width="9%" />
+<col width="19%" />
+<col width="21%" />
+<col width="22%" />
+<col width="26%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">sample</th>
+<th align="right">n_published_sample</th>
+<th align="right">published_event_year</th>
+<th align="right">n_with_following_year</th>
+<th align="right">this_document_event_year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">windfall</td>
+<td align="right">48,601</td>
+<td align="right">0.6757</td>
+<td align="right">45,339</td>
+<td align="right">0.6728</td>
+</tr>
+<tr class="even">
+<td align="left">shock</td>
+<td align="right">58,222</td>
+<td align="right">0.1042</td>
+<td align="right">53,724</td>
+<td align="right">0.1065</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="the-2024-attrition" class="section level2">
+<h2>The 2024 attrition</h2>
+<p>The 2023 events depend on 2024 filings, which are incomplete.
+Re-running on 2022 events alone, where essentially every organization
+has its following year, says whether that selection matters.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a>w22 <span class="ot">&lt;-</span> <span class="fu">event_sample</span>(<span class="sc">+</span><span class="dv">1</span>, <span class="dv">2022</span>); s22 <span class="ot">&lt;-</span> <span class="fu">event_sample</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">2022</span>)</span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>cmp <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">list</span>(</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">sample =</span> <span class="st">&quot;windfall, 2022-2023&quot;</span>, <span class="at">n =</span> <span class="fu">nrow</span>(wf_ev),</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>             <span class="at">spending_event_year =</span> <span class="fu">timing_table</span>(wf_ev)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year],</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>             <span class="at">spending_following =</span> <span class="fu">timing_table</span>(wf_ev)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, following_year]),</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">sample =</span> <span class="st">&quot;windfall, 2022 only&quot;</span>, <span class="at">n =</span> <span class="fu">nrow</span>(w22),</span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>             <span class="at">spending_event_year =</span> <span class="fu">timing_table</span>(w22)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year],</span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>             <span class="at">spending_following =</span> <span class="fu">timing_table</span>(w22)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, following_year]),</span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">sample =</span> <span class="st">&quot;shock, 2022-2023&quot;</span>, <span class="at">n =</span> <span class="fu">nrow</span>(sh_ev),</span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>             <span class="at">spending_event_year =</span> <span class="fu">timing_table</span>(sh_ev)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year],</span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a>             <span class="at">spending_following =</span> <span class="fu">timing_table</span>(sh_ev)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, following_year]),</span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">sample =</span> <span class="st">&quot;shock, 2022 only&quot;</span>, <span class="at">n =</span> <span class="fu">nrow</span>(s22),</span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a>             <span class="at">spending_event_year =</span> <span class="fu">timing_table</span>(s22)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, event_year],</span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a>             <span class="at">spending_following =</span> <span class="fu">timing_table</span>(s22)[channel <span class="sc">==</span> <span class="st">&quot;Extra spending&quot;</span>, following_year])))</span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="fu">kable</span>(cmp, <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>),</span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Headline spending response, full window vs. 2022 events only&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Headline spending response, full window vs. 2022 events
+only</caption>
+<thead>
+<tr class="header">
+<th align="left">sample</th>
+<th align="right">n</th>
+<th align="right">spending_event_year</th>
+<th align="right">spending_following</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">windfall, 2022-2023</td>
+<td align="right">45,339</td>
+<td align="right">0.673</td>
+<td align="right">0.903</td>
+</tr>
+<tr class="even">
+<td align="left">windfall, 2022 only</td>
+<td align="right">22,381</td>
+<td align="right">0.662</td>
+<td align="right">0.913</td>
+</tr>
+<tr class="odd">
+<td align="left">shock, 2022-2023</td>
+<td align="right">53,724</td>
+<td align="right">0.107</td>
+<td align="right">0.013</td>
+</tr>
+<tr class="even">
+<td align="left">shock, 2022 only</td>
+<td align="right">30,192</td>
+<td align="right">0.096</td>
+<td align="right">0.008</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="findings" class="section level1">
+<h1>10. Findings</h1>
+<ul>
+<li><strong>Yes, everything in H5 and H6 is measured in the event
+year</strong>, and section 9 confirms the event-year column here
+reproduces both (windfall 0.673 against H5’s published 0.676; shock
+0.107 against H6’s 0.104).</li>
+<li><strong>The two sides behave completely differently once a year is
+added.</strong> 57.3% of the two-year spending response to a windfall
+falls outside the event year, against only 11.1% of the cutting response
+to a shock. Spending has a long tail; cutting does not.</li>
+<li><strong>The lagged windfall response is mostly not delayed
+deployment, because the windfall itself persists.</strong> 103.4% of a
+windfall’s scaled value is still present a year later, against 51.2% of
+a shortfall’s. For the 7,516 organizations whose revenue did revert,
+year two is genuine deployment: they spend 0.103 above baseline while
+revenue is below it, funded by drawing cash down 0.541.</li>
+<li><strong>“Cutting is slow” is not supported.</strong> The obvious
+hypothesis — that the same-year model understates retrenchment because
+commitments take a year to unwind — fails. The aggregate lagged cut is
+0.013. What that conceals is a split: organizations still below baseline
+in year two cut a further 0.181, while those that recovered expand.
+Cutting continues only where the revenue loss does.</li>
+<li><strong>Two years widens the ratchet.</strong> On each side’s own
+cumulative deviation, 0.775 of a windfall is spent against 0.079 of a
+shortfall cut. Two years after a shock the balance sheet is still
+carrying 0.921 of it.</li>
+<li><strong>The windfall’s cash bulge is temporary.</strong> Cash takes
+0.064 per dollar in the event year and gives back 0.069 in the next, for
+a two-year total of -0.005. Property, by contrast, accumulates across
+both years (0.135). Money is parked liquid on arrival and then either
+spent or committed.</li>
+<li><strong>Caveat.</strong> 2023 events rely on 2024 filings, which are
+88% complete and skew toward December filers; section 9 shows the
+2022-only estimate, which moves the headline by about a point.</li>
+</ul>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] digest_0.6.39   R6_2.6.1        fastmap_1.2.0   bit_4.6.0       xfun_0.57       cachem_1.1.0    htmltools_0.5.9
+##  [8] rmarkdown_2.31  lifecycle_1.0.5 cli_3.6.5       sass_0.4.10     jquerylib_0.1.4 compiler_4.5.3  tools_4.5.3    
+## [15] evaluate_1.0.5  bslib_0.10.0    yaml_2.3.12     otel_0.2.0      rlang_1.1.7     jsonlite_2.0.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
