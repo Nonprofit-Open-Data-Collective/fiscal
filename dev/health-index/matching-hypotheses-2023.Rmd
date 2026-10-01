@@ -3,13 +3,15 @@ title: "Asset-Liability Matching and Pecking Order, Tax Year 2023"
 subtitle: "Pre-specified tests of H1-H3 from the ratio-correlation memo"
 output:
   html_document:
+    theme: null
+    highlight: tango
     toc: true
-    toc_depth: 3
-    toc_float: true
-    code_folding: show
+    toc_depth: 2
     df_print: kable
+    self_contained: true
+    css: walkthrough.css
 params:
-  data_dir: !r file.path(tools::R_user_dir("fiscal", "cache"), "efile")
+  data_dir: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "efile")
   efile_file: "efile-2023-bmf-dedup.rds"
   pkg_dir: "../.."
   seed: 2023
@@ -20,7 +22,7 @@ params:
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
                       fig.width = 8, fig.height = 4.5)
-options(width = 120)
+options(width = 120, knitr.kable.NA = "")
 ```
 
 # Purpose

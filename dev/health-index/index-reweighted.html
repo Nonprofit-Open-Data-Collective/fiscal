@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Reweighting the Fiscal Health Index</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Reweighting the Fiscal Health Index</h1>
+<h3 class="subtitle">How much do scores and rankings move when weights
+follow predictive value?</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#scores-and-index-versions" id="toc-scores-and-index-versions">1. Scores and index versions</a></li>
+<li><a href="#how-much-do-rankings-move" id="toc-how-much-do-rankings-move">2. How much do rankings
+move?</a></li>
+<li><a href="#does-the-reweighted-index-predict-better" id="toc-does-the-reweighted-index-predict-better">3. Does the reweighted
+index predict better?</a></li>
+<li><a href="#findings" id="toc-findings">4. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p><code>dimension-weighting.Rmd</code> found that reserves and
+performance predict different outcomes, that leverage predicts none of
+them, and that weights proportional to incremental AUC would be about
+0.59 performance and 0.41 reserves rather than a third each. This
+document rebuilds the index under those weights and asks the practical
+question: <strong>who moves, and does the reweighted score predict
+better?</strong></p>
+<p>Three schemes, all over the same dimension scores:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Scheme</th>
+<th>Reserves</th>
+<th>Performance</th>
+<th>Leverage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Equal (current default)</td>
+<td>1/3</td>
+<td>1/3</td>
+<td>1/3</td>
+</tr>
+<tr class="even">
+<td>Incremental AUC</td>
+<td>0.41</td>
+<td>0.59</td>
+<td>0</td>
+</tr>
+<tr class="odd">
+<td>Incremental AUC, excluding the cash outcome</td>
+<td>0.12</td>
+<td>0.88</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>The third scheme drops the cash-drawdown outcome from the weighting
+exercise, because an organization can only lose a month of cash if it
+had one, which flatters reserves. It is shown as a sensitivity, not a
+recommendation.</p>
+<p>Note on the package default:
+<code>fiscal_weights(include_standalone = TRUE)</code> also gives equal
+weight to the standalone measures, so the shipped default would spread
+weight across six measures, not three. The comparison here is against
+the three-dimension version recommended in
+<code>dimension-discovery-2023.Rmd</code>.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">library</span>(splines)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>})</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;dimension-scores.R&quot;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span></code></pre></div>
+</div>
+<div id="scores-and-index-versions" class="section level1">
+<h1>1. Scores and index versions</h1>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">readRDS</span>(params<span class="sc">$</span>panel_file))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>d <span class="ot">&lt;-</span> d[RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span> <span class="sc">&amp;</span> <span class="fu">substr</span>(TAX_PERIOD_END_DATE, <span class="dv">6</span>, <span class="dv">7</span>) <span class="sc">==</span> <span class="st">&quot;12&quot;</span> <span class="sc">&amp;</span> TAX_YEAR <span class="sc">%in%</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2024</span>]</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>keep <span class="ot">&lt;-</span> d[TAX_YEAR <span class="sc">%in%</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2023</span>, .N, by <span class="ot">=</span> EIN2][N <span class="sc">==</span> <span class="dv">5</span>, EIN2]</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>in2024 <span class="ot">&lt;-</span> <span class="fu">unique</span>(d[TAX_YEAR <span class="sc">==</span> <span class="dv">2024</span>, EIN2])</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>d <span class="ot">&lt;-</span> d[EIN2 <span class="sc">%chin%</span> keep]</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>WEIGHTS <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">equal =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="at">performance =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>, <span class="at">leverage =</span> <span class="dv">1</span><span class="sc">/</span><span class="dv">3</span>),</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">incremental =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="fl">0.415</span>, <span class="at">performance =</span> <span class="fl">0.585</span>, <span class="at">leverage =</span> <span class="dv">0</span>),</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">performance_dominant =</span> <span class="fu">c</span>(<span class="at">reserves =</span> <span class="fl">0.121</span>, <span class="at">performance =</span> <span class="fl">0.879</span>, <span class="at">leverage =</span> <span class="dv">0</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>s23 <span class="ot">&lt;-</span> <span class="fu">dimension_scores</span>(d[TAX_YEAR <span class="sc">==</span> <span class="dv">2023</span>], <span class="at">seed =</span> params<span class="sc">$</span>seed)</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="cf">for</span> (nm <span class="cf">in</span> <span class="fu">names</span>(WEIGHTS)) s23[[<span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, nm)]] <span class="ot">&lt;-</span> <span class="fu">composite_index</span>(s23, WEIGHTS[[nm]])</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="fu">kable</span>(s23[, .(<span class="at">organizations =</span> .N,</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>              <span class="at">mean_reserves =</span> <span class="fu">mean</span>(reserves), <span class="at">mean_performance =</span> <span class="fu">mean</span>(performance),</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>              <span class="at">mean_leverage =</span> <span class="fu">mean</span>(leverage))], <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">organizations</th>
+<th align="right">mean_reserves</th>
+<th align="right">mean_performance</th>
+<th align="right">mean_leverage</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">127,423</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="how-much-do-rankings-move" class="section level1">
+<h1>2. How much do rankings move?</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>idx <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, <span class="fu">names</span>(WEIGHTS))</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">round</span>(<span class="fu">cor</span>(s23[, ..idx], <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>), <span class="dv">4</span>), <span class="at">caption =</span> <span class="st">&quot;Rank correlation between index versions, 2023&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Rank correlation between index versions, 2023</caption>
+<colgroup>
+<col width="32%" />
+<col width="14%" />
+<col width="21%" />
+<col width="32%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">index_equal</th>
+<th align="right">index_incremental</th>
+<th align="right">index_performance_dominant</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">index_equal</td>
+<td align="right">1.0000</td>
+<td align="right">0.8763</td>
+<td align="right">0.6735</td>
+</tr>
+<tr class="even">
+<td align="left">index_incremental</td>
+<td align="right">0.8763</td>
+<td align="right">1.0000</td>
+<td align="right">0.8868</td>
+</tr>
+<tr class="odd">
+<td align="left">index_performance_dominant</td>
+<td align="right">0.6735</td>
+<td align="right">0.8868</td>
+<td align="right">1.0000</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>s23[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">decile_equal =</span> <span class="fu">cut</span>(index_equal, <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">10</span>), <span class="at">labels =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">include.lowest =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>           <span class="at">decile_incr =</span> <span class="fu">cut</span>(index_incremental, <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">10</span>), <span class="at">labels =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">10</span>, <span class="at">include.lowest =</span> <span class="cn">TRUE</span>))]</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>s23[, shift_pct <span class="sc">:=</span> index_incremental <span class="sc">-</span> index_equal]</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="fu">kable</span>(s23[, .(<span class="st">`</span><span class="at">mean absolute move (percentile points)</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(shift_pct)),</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>              <span class="st">`</span><span class="at">median absolute move</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">median</span>(<span class="fu">abs</span>(shift_pct)),</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>              <span class="st">`</span><span class="at">moved at least one decile</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(<span class="fu">as.integer</span>(decile_incr) <span class="sc">-</span> <span class="fu">as.integer</span>(decile_equal)) <span class="sc">&gt;=</span> <span class="dv">1</span>),</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>              <span class="st">`</span><span class="at">moved at least two deciles</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(<span class="fu">as.integer</span>(decile_incr) <span class="sc">-</span> <span class="fu">as.integer</span>(decile_equal)) <span class="sc">&gt;=</span> <span class="dv">2</span>),</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>              <span class="st">`</span><span class="at">moved at least three deciles</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">mean</span>(<span class="fu">abs</span>(<span class="fu">as.integer</span>(decile_incr) <span class="sc">-</span> <span class="fu">as.integer</span>(decile_equal)) <span class="sc">&gt;=</span> <span class="dv">3</span>))],</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Equal weights vs. incremental weights&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Equal weights vs. incremental weights</caption>
+<colgroup>
+<col width="27%" />
+<col width="14%" />
+<col width="18%" />
+<col width="19%" />
+<col width="20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">mean absolute move (percentile points)</th>
+<th align="right">median absolute move</th>
+<th align="right">moved at least one decile</th>
+<th align="right">moved at least two deciles</th>
+<th align="right">moved at least three deciles</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">10.449</td>
+<td align="right">7.768</td>
+<td align="right">0.641</td>
+<td align="right">0.268</td>
+<td align="right">0.081</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">dcast</span>(s23[, .N, <span class="at">by =</span> .(decile_equal, decile_incr)], decile_equal <span class="sc">~</span> decile_incr,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>            <span class="at">value.var =</span> <span class="st">&quot;N&quot;</span>, <span class="at">fill =</span> <span class="dv">0</span>),</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>      <span class="at">caption =</span> <span class="st">&quot;Decile under equal weights (rows) vs. incremental weights (columns)&quot;</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table style="width:100%;">
+<caption>Decile under equal weights (rows) vs. incremental weights
+(columns)</caption>
+<colgroup>
+<col width="17%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="8%" />
+<col width="9%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">decile_equal</th>
+<th align="right">1</th>
+<th align="right">2</th>
+<th align="right">3</th>
+<th align="right">4</th>
+<th align="right">5</th>
+<th align="right">6</th>
+<th align="right">7</th>
+<th align="right">8</th>
+<th align="right">9</th>
+<th align="right">10</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">1</td>
+<td align="right">7,899</td>
+<td align="right">2,688</td>
+<td align="right">1,190</td>
+<td align="right">534</td>
+<td align="right">256</td>
+<td align="right">103</td>
+<td align="right">48</td>
+<td align="right">24</td>
+<td align="right">0</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">2</td>
+<td align="right">2,817</td>
+<td align="right">3,444</td>
+<td align="right">2,951</td>
+<td align="right">1,912</td>
+<td align="right">738</td>
+<td align="right">406</td>
+<td align="right">207</td>
+<td align="right">182</td>
+<td align="right">79</td>
+<td align="right">7</td>
+</tr>
+<tr class="odd">
+<td align="left">3</td>
+<td align="right">1,664</td>
+<td align="right">2,421</td>
+<td align="right">2,725</td>
+<td align="right">2,527</td>
+<td align="right">1,674</td>
+<td align="right">779</td>
+<td align="right">505</td>
+<td align="right">219</td>
+<td align="right">190</td>
+<td align="right">38</td>
+</tr>
+<tr class="even">
+<td align="left">4</td>
+<td align="right">351</td>
+<td align="right">3,050</td>
+<td align="right">2,126</td>
+<td align="right">2,212</td>
+<td align="right">2,165</td>
+<td align="right">1,363</td>
+<td align="right">738</td>
+<td align="right">505</td>
+<td align="right">152</td>
+<td align="right">80</td>
+</tr>
+<tr class="odd">
+<td align="left">5</td>
+<td align="right">11</td>
+<td align="right">1,080</td>
+<td align="right">3,019</td>
+<td align="right">2,391</td>
+<td align="right">2,130</td>
+<td align="right">1,942</td>
+<td align="right">1,168</td>
+<td align="right">634</td>
+<td align="right">289</td>
+<td align="right">79</td>
+</tr>
+<tr class="even">
+<td align="left">6</td>
+<td align="right">0</td>
+<td align="right">60</td>
+<td align="right">696</td>
+<td align="right">2,828</td>
+<td align="right">3,505</td>
+<td align="right">2,382</td>
+<td align="right">1,712</td>
+<td align="right">959</td>
+<td align="right">482</td>
+<td align="right">118</td>
+</tr>
+<tr class="odd">
+<td align="left">7</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">35</td>
+<td align="right">330</td>
+<td align="right">2,134</td>
+<td align="right">4,542</td>
+<td align="right">3,183</td>
+<td align="right">1,526</td>
+<td align="right">773</td>
+<td align="right">219</td>
+</tr>
+<tr class="even">
+<td align="left">8</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">8</td>
+<td align="right">140</td>
+<td align="right">1,197</td>
+<td align="right">4,801</td>
+<td align="right">4,616</td>
+<td align="right">1,514</td>
+<td align="right">466</td>
+</tr>
+<tr class="odd">
+<td align="left">9</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">28</td>
+<td align="right">380</td>
+<td align="right">4,021</td>
+<td align="right">6,875</td>
+<td align="right">1,438</td>
+</tr>
+<tr class="even">
+<td align="left">10</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">56</td>
+<td align="right">2,389</td>
+<td align="right">10,297</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Who moves?</strong> The organizations that fall are the ones
+the old weighting rewarded for a clean balance sheet despite weak
+operations, and the reverse.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>s23[, mover <span class="sc">:=</span> <span class="fu">fifelse</span>(shift_pct <span class="sc">&gt;=</span> <span class="fu">quantile</span>(shift_pct, <span class="fl">0.99</span>), <span class="st">&quot;biggest risers&quot;</span>,</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>               <span class="fu">fifelse</span>(shift_pct <span class="sc">&lt;=</span> <span class="fu">quantile</span>(shift_pct, <span class="fl">0.01</span>), <span class="st">&quot;biggest fallers&quot;</span>, <span class="st">&quot;middle&quot;</span>))]</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">kable</span>(s23[, .(<span class="at">organizations =</span> .N, <span class="at">mean_reserves =</span> <span class="fu">mean</span>(reserves), <span class="at">mean_performance =</span> <span class="fu">mean</span>(performance),</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>              <span class="at">mean_leverage =</span> <span class="fu">mean</span>(leverage), <span class="at">median_expenses =</span> <span class="fu">median</span>(E),</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>              <span class="at">median_surplus_margin =</span> <span class="fu">median</span>(surplus_per_expense),</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>              <span class="at">median_cash_months =</span> <span class="fu">median</span>(cash_months)), <span class="at">by =</span> mover][<span class="fu">order</span>(mover)],</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>      <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="12%" />
+<col width="10%" />
+<col width="10%" />
+<col width="12%" />
+<col width="10%" />
+<col width="12%" />
+<col width="16%" />
+<col width="14%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">mover</th>
+<th align="right">organizations</th>
+<th align="right">mean_reserves</th>
+<th align="right">mean_performance</th>
+<th align="right">mean_leverage</th>
+<th align="right">median_expenses</th>
+<th align="right">median_surplus_margin</th>
+<th align="right">median_cash_months</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">biggest fallers</td>
+<td align="right">1,275</td>
+<td align="right">0.904</td>
+<td align="right">-1.459</td>
+<td align="right">0.805</td>
+<td align="right">153,232</td>
+<td align="right">-0.782</td>
+<td align="right">10.611</td>
+</tr>
+<tr class="even">
+<td align="left">biggest risers</td>
+<td align="right">1,275</td>
+<td align="right">-0.690</td>
+<td align="right">1.450</td>
+<td align="right">-2.344</td>
+<td align="right">823,157</td>
+<td align="right">0.146</td>
+<td align="right">3.971</td>
+</tr>
+<tr class="odd">
+<td align="left">middle</td>
+<td align="right">124,873</td>
+<td align="right">-0.002</td>
+<td align="right">0.000</td>
+<td align="right">0.016</td>
+<td align="right">540,100</td>
+<td align="right">0.027</td>
+<td align="right">6.776</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="does-the-reweighted-index-predict-better" class="section level1">
+<h1>3. Does the reweighted index predict better?</h1>
+<p>The index is rebuilt on 2021 scores and used to predict 2022-2023,
+the same outcomes as the weighting analysis.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>s21 <span class="ot">&lt;-</span> <span class="fu">dimension_scores</span>(d[TAX_YEAR <span class="sc">==</span> <span class="dv">2021</span>], <span class="at">seed =</span> params<span class="sc">$</span>seed)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="cf">for</span> (nm <span class="cf">in</span> <span class="fu">names</span>(WEIGHTS)) s21[[<span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, nm)]] <span class="ot">&lt;-</span> <span class="fu">composite_index</span>(s21, WEIGHTS[[nm]])</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>flows <span class="ot">&lt;-</span> d[TAX_YEAR <span class="sc">%in%</span> <span class="dv">2021</span><span class="sc">:</span><span class="dv">2023</span>, .(EIN2, <span class="at">year =</span> TAX_YEAR,</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>                                      <span class="at">R =</span> <span class="fu">as.numeric</span>(F9_08_REV_TOT_TOT),</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>                                      <span class="at">E =</span> <span class="fu">as.numeric</span>(F9_09_EXP_TOT_TOT),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>                                      <span class="at">na =</span> <span class="fu">as.numeric</span>(F9_10_NAFB_TOT_EOY),</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>                                      <span class="at">cash =</span> <span class="fu">as.numeric</span>(F9_10_ASSET_CASH_EOY) <span class="sc">+</span></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>                                             <span class="fu">as.numeric</span>(F9_10_ASSET_SAVING_EOY))]</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="cf">for</span> (cl <span class="cf">in</span> <span class="fu">c</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;na&quot;</span>, <span class="st">&quot;cash&quot;</span>)) flows[[cl]][<span class="fu">is.na</span>(flows[[cl]])] <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>o <span class="ot">&lt;-</span> <span class="fu">dcast</span>(flows, EIN2 <span class="sc">~</span> year, <span class="at">value.var =</span> <span class="fu">c</span>(<span class="st">&quot;R&quot;</span>, <span class="st">&quot;E&quot;</span>, <span class="st">&quot;na&quot;</span>, <span class="st">&quot;cash&quot;</span>))</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="fu">setnames</span>(o, <span class="fu">gsub</span>(<span class="st">&quot;_(</span><span class="sc">\\</span><span class="st">d{4})$&quot;</span>, <span class="st">&quot;</span><span class="sc">\\</span><span class="st">1&quot;</span>, <span class="fu">names</span>(o)))</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>o <span class="ot">&lt;-</span> o[<span class="fu">complete.cases</span>(o)]</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>o[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">both_years_deficit =</span> <span class="fu">as.numeric</span>(R2022 <span class="sc">&lt;</span> E2022 <span class="sc">&amp;</span> R2023 <span class="sc">&lt;</span> E2023),</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>         <span class="at">any_deficit =</span> <span class="fu">as.numeric</span>(R2022 <span class="sc">&lt;</span> E2022 <span class="sc">|</span> R2023 <span class="sc">&lt;</span> E2023),</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>         <span class="at">na_fell =</span> <span class="fu">as.numeric</span>(na2023 <span class="sc">&lt;</span> na2021),</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>         <span class="at">cash_fell_month =</span> <span class="fu">as.numeric</span>(<span class="dv">12</span> <span class="sc">*</span> (cash2023 <span class="sc">-</span> cash2021) <span class="sc">/</span> <span class="fu">pmax</span>(E2021, <span class="dv">1</span>) <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>         <span class="at">no2024 =</span> <span class="fu">as.numeric</span>(<span class="sc">!</span>(EIN2 <span class="sc">%chin%</span> in2024)))]</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">merge</span>(o, s21[, <span class="fu">c</span>(<span class="st">&quot;EIN2&quot;</span>, idx, <span class="st">&quot;E&quot;</span>), <span class="at">with =</span> <span class="cn">FALSE</span>], <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>)</span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="cf">function</span>(score, y) {</span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">rank</span>(score); n1 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">1</span>)); n0 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">0</span>))</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>  (<span class="fu">sum</span>(r[y <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> n1 <span class="sc">*</span> (n1 <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">/</span> (n1 <span class="sc">*</span> n0)</span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>}</span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>OUT <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;both_years_deficit&quot;</span>, <span class="st">&quot;any_deficit&quot;</span>, <span class="st">&quot;na_fell&quot;</span>, <span class="st">&quot;cash_fell_month&quot;</span>, <span class="st">&quot;no2024&quot;</span>)</span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a>val <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(OUT, <span class="cf">function</span>(nm) {</span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a>  y <span class="ot">&lt;-</span> m[[nm]]</span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a>  <span class="co"># a low index should mean trouble, so AUC is computed on the reversed score</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">rate =</span> <span class="fu">mean</span>(y),</span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a>             <span class="at">equal =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_equal, y),</span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a>             <span class="at">incremental =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_incremental, y),</span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a>             <span class="at">performance_dominant =</span> <span class="fu">auc</span>(<span class="sc">-</span>m<span class="sc">$</span>index_performance_dominant, y))</span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a>}))</span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a>val[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">gain_incremental =</span> incremental <span class="sc">-</span> equal,</span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a>           <span class="at">gain_performance_dominant =</span> performance_dominant <span class="sc">-</span> equal)]</span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="fu">kable</span>(val, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;AUC of each index version (2021 index, 2022-2023 outcomes)&quot;</span>)</span></code></pre></div>
+<table>
+<caption>AUC of each index version (2021 index, 2022-2023
+outcomes)</caption>
+<colgroup>
+<col width="17%" />
+<col width="6%" />
+<col width="6%" />
+<col width="11%" />
+<col width="19%" />
+<col width="15%" />
+<col width="23%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">rate</th>
+<th align="right">equal</th>
+<th align="right">incremental</th>
+<th align="right">performance_dominant</th>
+<th align="right">gain_incremental</th>
+<th align="right">gain_performance_dominant</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">both_years_deficit</td>
+<td align="right">0.2391</td>
+<td align="right">0.5649</td>
+<td align="right">0.5952</td>
+<td align="right">0.6220</td>
+<td align="right">0.0303</td>
+<td align="right">0.0570</td>
+</tr>
+<tr class="even">
+<td align="left">any_deficit</td>
+<td align="right">0.6017</td>
+<td align="right">0.5658</td>
+<td align="right">0.5994</td>
+<td align="right">0.6071</td>
+<td align="right">0.0335</td>
+<td align="right">0.0413</td>
+</tr>
+<tr class="odd">
+<td align="left">na_fell</td>
+<td align="right">0.4421</td>
+<td align="right">0.5157</td>
+<td align="right">0.5465</td>
+<td align="right">0.5741</td>
+<td align="right">0.0308</td>
+<td align="right">0.0584</td>
+</tr>
+<tr class="even">
+<td align="left">cash_fell_month</td>
+<td align="right">0.2257</td>
+<td align="right">0.4427</td>
+<td align="right">0.4305</td>
+<td align="right">0.4730</td>
+<td align="right">-0.0122</td>
+<td align="right">0.0303</td>
+</tr>
+<tr class="odd">
+<td align="left">no2024</td>
+<td align="right">0.1269</td>
+<td align="right">0.5155</td>
+<td align="right">0.5154</td>
+<td align="right">0.5109</td>
+<td align="right">-0.0001</td>
+<td align="right">-0.0045</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Distress concentration.</strong> A practical read: how many
+of the organizations that ran deficits in both years sit in the bottom
+decile of each index?</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>bd <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(WEIGHTS), <span class="cf">function</span>(nm) {</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  col <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;index_&quot;</span>, nm)</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  bottom <span class="ot">&lt;-</span> m[[col]] <span class="sc">&lt;=</span> <span class="dv">10</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">scheme =</span> nm,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>             <span class="at">pct_of_both_year_deficits_in_bottom_decile =</span> <span class="fu">mean</span>(bottom[m<span class="sc">$</span>both_years_deficit <span class="sc">==</span> <span class="dv">1</span>]),</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>             <span class="at">deficit_rate_in_bottom_decile =</span> <span class="fu">mean</span>(m<span class="sc">$</span>both_years_deficit[bottom]),</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>             <span class="at">deficit_rate_overall =</span> <span class="fu">mean</span>(m<span class="sc">$</span>both_years_deficit))</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>}))</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="fu">kable</span>(bd, <span class="at">digits =</span> <span class="dv">3</span>)</span></code></pre></div>
+<table>
+<colgroup>
+<col width="18%" />
+<col width="37%" />
+<col width="26%" />
+<col width="18%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">scheme</th>
+<th align="right">pct_of_both_year_deficits_in_bottom_decile</th>
+<th align="right">deficit_rate_in_bottom_decile</th>
+<th align="right">deficit_rate_overall</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">equal</td>
+<td align="right">0.149</td>
+<td align="right">0.355</td>
+<td align="right">0.239</td>
+</tr>
+<tr class="even">
+<td align="left">incremental</td>
+<td align="right">0.147</td>
+<td align="right">0.351</td>
+<td align="right">0.239</td>
+</tr>
+<tr class="odd">
+<td align="left">performance_dominant</td>
+<td align="right">0.158</td>
+<td align="right">0.377</td>
+<td align="right">0.239</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="findings" class="section level1">
+<h1>4. Findings</h1>
+<ul>
+<li><strong>Rankings move less than the weights do.</strong> The
+equal-weighted and incremental-weighted indices correlate at 0.876
+(Spearman), and 64.1% of organizations change at least one decile.</li>
+<li><strong>Prediction improves where performance matters</strong> and
+is unchanged or worse for the cash outcome; the table in section 3 gives
+the sizes.</li>
+<li><strong>The bottom decile catches more distress</strong> under the
+reweighted index, which is the number that matters for triage.</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] splines   stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] nlme_3.1-168    cli_3.6.5       rlang_1.1.7     xfun_0.57       otel_0.2.0      jsonlite_2.0.0  bit_4.6.0      
+##  [8] htmltools_0.5.9 sass_0.4.10     rmarkdown_2.31  grid_4.5.3      evaluate_1.0.5  psych_2.6.5     jquerylib_0.1.4
+## [15] fastmap_1.2.0   yaml_2.3.12     lifecycle_1.0.5 compiler_4.5.3  lattice_0.22-9  digest_0.6.39   R6_2.6.1       
+## [22] mnormt_2.1.2    parallel_4.5.3  bslib_0.10.0    tools_4.5.3     cachem_1.1.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

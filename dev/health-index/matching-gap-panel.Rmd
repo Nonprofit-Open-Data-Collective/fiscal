@@ -1,0 +1,284 @@
+---
+title: "Does the Matching Gap Predict Anything?"
+subtitle: "Panel validation of the long-term matching gap, 2019 to 2023"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, knitr.kable.NA = "")
+```
+
+# Purpose
+
+`matching-gap-2023.Rmd` built an indicator from the H1 and H2 benchmarks: debt
+beyond what an organization's asset mix and size support. Validated inside a
+single filing, it added almost nothing. The one strong result, cash drawdowns,
+turned out to be a floor effect, and the long-term gap added at most 0.003 AUC
+for deficits and net-asset declines.
+
+That test had three weaknesses the panel fixes:
+
+* **A one-year horizon.** Financial distress plays out over years.
+* **Outcomes measured inside the same filing**, so a gap measured at the start
+  of the year predicted events already partly under way.
+* **No way to ask whether the gap is a passing condition or a standing trait.**
+
+Here the gap is measured in 2019 and used to predict 2020-2023. Three changes
+follow the recommendations from the memo: the Poisson benchmark instead of the
+two-part model, scaling by expenses as well as by assets, and controls for
+starting cash and asset intensity from the outset.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+source("matching-gap.R")
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Sample and gaps
+
+The sample is organizations that filed a full 990 with a December year-end in
+every year 2019-2023. The benchmark is refit within each year, so a gap is
+always relative to peers of the same size and asset mix in that same year.
+
+```{r data}
+d <- as.data.table(readRDS(params$panel_file))
+d <- d[RETURN_TYPE == "990" & substr(TAX_PERIOD_END_DATE, 6, 7) == "12" & TAX_YEAR %in% 2019:2024]
+n_years <- d[TAX_YEAR %in% 2019:2023, .N, by = EIN2]
+keep <- n_years[N == 5, EIN2]
+d <- d[EIN2 %chin% keep]
+in2024 <- unique(d[TAX_YEAR == 2024, EIN2])
+
+gaps_for_year <- function(year) {
+  m <- gap_lines(d[TAX_YEAR == year], "EOY")
+  m <- m[m$E > 0 & m$A > 0, ]
+  g <- matching_gap(m, type = "ppml")$gaps
+  data.table(EIN2 = m$ein, year = year,
+             gap_assets = g$gap_long,                       # scaled by total assets
+             gap_expenses = (m$lt - g$pred_long) / m$E,     # scaled by expenses
+             debt_assets = m$L / m$A, lt = m$lt, A = m$A, E = m$E,
+             cash_months = 12 * m$cash / m$E, assets_exp = m$A / m$E)
+}
+g19 <- gaps_for_year(2019)
+g23 <- gaps_for_year(2023)
+kable(data.frame(organizations = nrow(g19), also_filed_2024 = sum(g19$EIN2 %chin% in2024)),
+      format.args = list(big.mark = ","))
+```
+
+**Is the gap a condition or a trait?** If an organization's gap in 2019 tells
+you its gap in 2023, the indicator is describing a standing financing posture
+rather than a passing strain.
+
+```{r persistence}
+p <- merge(g19[, .(EIN2, gap_assets_2019 = gap_assets, gap_expenses_2019 = gap_expenses,
+                   debt_assets_2019 = debt_assets)],
+           g23[, .(EIN2, gap_assets_2023 = gap_assets, gap_expenses_2023 = gap_expenses,
+                   debt_assets_2023 = debt_assets)], by = "EIN2")
+kable(data.frame(
+  measure = c("gap (scaled by assets)", "gap (scaled by expenses)", "debt_assets"),
+  spearman_2019_vs_2023 = c(cor(p$gap_assets_2019, p$gap_assets_2023, method = "spearman"),
+                            cor(p$gap_expenses_2019, p$gap_expenses_2023, method = "spearman"),
+                            cor(p$debt_assets_2019, p$debt_assets_2023, method = "spearman"))),
+  digits = 3, caption = "Persistence over four years")
+```
+
+# 2. Outcomes, 2020-2023
+
+```{r outcomes}
+num <- function(x) { x <- as.numeric(x); x[is.na(x)] <- 0; x }
+flows <- d[TAX_YEAR %in% 2019:2023, .(
+  EIN2 = EIN2, year = TAX_YEAR,
+  R = num(F9_08_REV_TOT_TOT), E = num(F9_09_EXP_TOT_TOT),
+  na = num(F9_10_NAFB_TOT_EOY), cash = num(F9_10_ASSET_CASH_EOY) + num(F9_10_ASSET_SAVING_EOY))]
+flows[, deficit := as.numeric(R < E)]
+post <- flows[year %in% 2020:2023]
+out <- post[, .(deficit_years = sum(deficit)), by = EIN2]
+run2 <- post[order(EIN2, year), .(two_in_a_row = as.numeric(any(deficit == 1 & shift(deficit, 1) == 1,
+                                                               na.rm = TRUE))), by = EIN2]
+base19 <- flows[year == 2019, .(EIN2, na19 = na, cash19 = cash, E19 = E)]
+end23  <- flows[year == 2023, .(EIN2, na23 = na, cash23 = cash)]
+out <- Reduce(function(a, b) merge(a, b, by = "EIN2"), list(out, run2, base19, end23))
+out[, `:=`(
+  na_change = (na23 - na19) / E19,
+  cash_change = 12 * (cash23 - cash19) / E19,
+  na_fell = as.numeric(na23 < na19),
+  cash_fell_a_month = as.numeric(12 * (cash23 - cash19) / E19 < -1),
+  filed_2024 = as.numeric(EIN2 %chin% in2024),
+  three_plus_deficits = as.numeric(deficit_years >= 3))]
+kable(out[, .(organizations = .N,
+              mean_deficit_years = mean(deficit_years),
+              pct_three_plus_deficits = mean(three_plus_deficits),
+              pct_two_deficits_in_a_row = mean(two_in_a_row),
+              pct_net_assets_fell = mean(na_fell),
+              pct_cash_fell_a_month = mean(cash_fell_a_month),
+              pct_filed_2024 = mean(filed_2024))], digits = 3,
+      format.args = list(big.mark = ","))
+```
+
+# 3. Does the 2019 gap predict 2020-2023?
+
+Each outcome is regressed on the 2019 gap, with `debt_assets`, size, starting
+cash months, and asset intensity held fixed. Gaps and `debt_assets` are
+winsorized at 1/99 and standardized, so coefficients are per standard
+deviation. The comparison of interest is a model with the gap against the same
+model without it.
+
+```{r models}
+wz <- function(x) { q <- quantile(x, c(0.01, 0.99), na.rm = TRUE); as.numeric(scale(pmin(pmax(x, q[[1]]), q[[2]]))) }
+m <- merge(out, g19[, .(EIN2, gap_assets, gap_expenses, debt_assets, E, A, cash_months, assets_exp)],
+           by = "EIN2")
+m[, `:=`(z_gap_assets = wz(gap_assets), z_gap_expenses = wz(gap_expenses),
+         z_debt_assets = wz(debt_assets))]
+controls <- cbind(intercept = 1,
+                  ns(log(m$E), df = 4), ns(log1p(m$A), df = 4),
+                  ns(log1p(pmax(m$cash_months, 0)), df = 4), ns(log(pmax(m$assets_exp, 0.01)), df = 4))
+colnames(controls) <- c("intercept", paste0("size_E", 1:4), paste0("size_A", 1:4),
+                        paste0("cash_months", 1:4), paste0("asset_intensity", 1:4))
+
+ols <- function(y, W) {
+  XtXi <- solve(crossprod(W)); b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  list(coef = data.frame(term = colnames(W), estimate = b, se = sqrt(diag(V)), row.names = NULL),
+       fitted = drop(W %*% b))
+}
+auc <- function(score, y) {
+  r <- rank(score); n1 <- as.numeric(sum(y == 1)); n0 <- as.numeric(sum(y == 0))
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+OUTCOMES <- c(three_plus_deficits = "three_plus_deficits", two_in_a_row = "two_in_a_row",
+              na_fell = "na_fell", cash_fell_a_month = "cash_fell_a_month",
+              did_not_file_2024 = "no2024")
+m[, no2024 := 1 - filed_2024]
+
+results <- rbindlist(lapply(names(OUTCOMES), function(nm) {
+  y <- m[[OUTCOMES[[nm]]]]
+  base <- ols(y, cbind(controls, debt_assets = m$z_debt_assets))
+  wa   <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_assets))
+  we   <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_expenses))
+  pick <- function(f, t) f$coef[f$coef$term == t, ]
+  data.table(outcome = nm, rate = mean(y),
+             debt_assets_alone = pick(base, "debt_assets")$estimate,
+             gap_assets = pick(wa, "gap")$estimate, gap_assets_se = pick(wa, "gap")$se,
+             gap_expenses = pick(we, "gap")$estimate, gap_expenses_se = pick(we, "gap")$se,
+             auc_base = auc(base$fitted, y),
+             auc_gain_assets = auc(wa$fitted, y) - auc(base$fitted, y),
+             auc_gain_expenses = auc(we$fitted, y) - auc(base$fitted, y))
+}))
+kable(results, digits = 4, caption = "Per standard deviation of the 2019 gap; AUC gains over the same model without it")
+```
+
+**Is the relationship linear?** The quintile table below suggests both tails
+carry risk: organizations far above the benchmark are over-borrowed, and those
+far below it tend to have thin balance sheets relative to their spending. A
+linear term averages the two away. These models add quintile dummies for the
+gap, and separately its absolute deviation from the median.
+
+```{r nonlinear}
+qgap <- cut(rank(m$gap_expenses, ties.method = "first"), 5, labels = FALSE)
+qd <- model.matrix(~ factor(qgap))[, -1, drop = FALSE]
+colnames(qd) <- paste0("gap_q", 2:5)
+absdev <- wz(abs(m$gap_expenses - median(m$gap_expenses)))
+
+nonlinear <- rbindlist(lapply(c("three_plus_deficits", "na_fell", "no2024"), function(nm) {
+  y <- m[[nm]]
+  base <- ols(y, cbind(controls, debt_assets = m$z_debt_assets))
+  lin  <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_expenses))
+  quint <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, qd))
+  adev <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_expenses,
+                       abs_deviation = absdev))
+  data.table(outcome = nm, auc_base = auc(base$fitted, y),
+             gain_linear = auc(lin$fitted, y) - auc(base$fitted, y),
+             gain_quintiles = auc(quint$fitted, y) - auc(base$fitted, y),
+             gain_abs_deviation = auc(adev$fitted, y) - auc(base$fitted, y),
+             abs_deviation_coef = adev$coef$estimate[adev$coef$term == "abs_deviation"],
+             abs_deviation_se = adev$coef$se[adev$coef$term == "abs_deviation"])
+}))
+kable(nonlinear, digits = 4, caption = "Linear vs. non-linear treatments of the expense-scaled gap")
+```
+
+**Continuous outcomes.** The same models for the four-year change in net assets
+and in cash, both scaled by 2019 expenses.
+
+```{r continuous}
+cont <- rbindlist(lapply(c("na_change", "cash_change"), function(nm) {
+  y <- wz(m[[nm]])
+  base <- ols(y, cbind(controls, debt_assets = m$z_debt_assets))
+  wa <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_assets))
+  we <- ols(y, cbind(controls, debt_assets = m$z_debt_assets, gap = m$z_gap_expenses))
+  pick <- function(f, t) f$coef[f$coef$term == t, ]
+  data.table(outcome = nm,
+             debt_assets = pick(base, "debt_assets")$estimate,
+             gap_assets = pick(wa, "gap")$estimate, gap_assets_se = pick(wa, "gap")$se,
+             gap_expenses = pick(we, "gap")$estimate, gap_expenses_se = pick(we, "gap")$se)
+}))
+kable(cont, digits = 4, caption = "Standardized outcomes, per standard deviation of the gap")
+```
+
+**Where the gap sits among organizations.** Outcome rates by quintile of the
+2019 gap, within terciles of 2019 `debt_assets`, to see whether the gap
+separates risk at a given leverage level.
+
+```{r quintiles}
+m[, tercile := cut(rank(debt_assets, ties.method = "first"), 3, labels = c("low", "middle", "high"))]
+m[, quintile := ave(gap_expenses, tercile, FUN = function(z) cut(rank(z, ties.method = "first"), 5, labels = FALSE))]
+kable(m[, .(organizations = .N, three_plus_deficits = mean(three_plus_deficits),
+            net_assets_fell = mean(na_fell), did_not_file_2024 = mean(no2024)),
+        by = .(debt_assets_tercile = tercile, gap_quintile = quintile)][
+          order(debt_assets_tercile, gap_quintile)], digits = 3,
+      format.args = list(big.mark = ","))
+```
+
+# 4. Findings
+
+```{r findings, include = FALSE}
+r <- results
+best_gain <- max(c(r$auc_gain_assets, r$auc_gain_expenses))
+```
+
+* **Persistence.** The gap is highly persistent, which makes it a standing
+  financing posture more than a passing strain.
+* **Prediction.** The largest AUC gain from adding the gap to a model that
+  already has `debt_assets`, size, cash months, and asset intensity is
+  `r fmt(best_gain, 4)`.
+* **Direction.** Coefficients per standard deviation appear in the tables
+  above; a positive value means a larger gap goes with a worse outcome.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(results = results, continuous = cont, nonlinear = nonlinear,
+               persistence = cor(p[, .(gap_assets_2019, gap_assets_2023, gap_expenses_2019,
+                                       gap_expenses_2023, debt_assets_2019, debt_assets_2023)],
+                                 method = "spearman"),
+               rates = m[, .(organizations = .N, mean_deficit_years = mean(deficit_years),
+                             pct_three_plus = mean(three_plus_deficits),
+                             pct_na_fell = mean(na_fell), pct_no2024 = mean(no2024))],
+               quintiles = m[, .(n = .N, three_plus_deficits = mean(three_plus_deficits),
+                                 na_fell = mean(na_fell), no2024 = mean(no2024)),
+                             by = .(tercile, quintile)][order(tercile, quintile)],
+               n = nrow(m)), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

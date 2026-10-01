@@ -1,0 +1,211 @@
+---
+title: "Reweighting the Fiscal Health Index"
+subtitle: "How much do scores and rankings move when weights follow predictive value?"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+`dimension-weighting.Rmd` found that reserves and performance predict different
+outcomes, that leverage predicts none of them, and that weights proportional to
+incremental AUC would be about 0.59 performance and 0.41 reserves rather than a
+third each. This document rebuilds the index under those weights and asks the
+practical question: **who moves, and does the reweighted score predict better?**
+
+Three schemes, all over the same dimension scores:
+
+| Scheme | Reserves | Performance | Leverage |
+|---|---|---|---|
+| Equal (current default) | 1/3 | 1/3 | 1/3 |
+| Incremental AUC | 0.41 | 0.59 | 0 |
+| Incremental AUC, excluding the cash outcome | 0.12 | 0.88 | 0 |
+
+The third scheme drops the cash-drawdown outcome from the weighting exercise,
+because an organization can only lose a month of cash if it had one, which
+flatters reserves. It is shown as a sensitivity, not a recommendation.
+
+Note on the package default: `fiscal_weights(include_standalone = TRUE)` also
+gives equal weight to the standalone measures, so the shipped default would
+spread weight across six measures, not three. The comparison here is against
+the three-dimension version recommended in `dimension-discovery-2023.Rmd`.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+source("dimension-scores.R")
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Scores and index versions
+
+```{r scores}
+d <- as.data.table(readRDS(params$panel_file))
+d <- d[RETURN_TYPE == "990" & substr(TAX_PERIOD_END_DATE, 6, 7) == "12" & TAX_YEAR %in% 2019:2024]
+keep <- d[TAX_YEAR %in% 2019:2023, .N, by = EIN2][N == 5, EIN2]
+in2024 <- unique(d[TAX_YEAR == 2024, EIN2])
+d <- d[EIN2 %chin% keep]
+
+WEIGHTS <- list(
+  equal = c(reserves = 1/3, performance = 1/3, leverage = 1/3),
+  incremental = c(reserves = 0.415, performance = 0.585, leverage = 0),
+  performance_dominant = c(reserves = 0.121, performance = 0.879, leverage = 0))
+
+s23 <- dimension_scores(d[TAX_YEAR == 2023], seed = params$seed)
+for (nm in names(WEIGHTS)) s23[[paste0("index_", nm)]] <- composite_index(s23, WEIGHTS[[nm]])
+kable(s23[, .(organizations = .N,
+              mean_reserves = mean(reserves), mean_performance = mean(performance),
+              mean_leverage = mean(leverage))], digits = 3, format.args = list(big.mark = ","))
+```
+
+# 2. How much do rankings move?
+
+```{r rank-correlation}
+idx <- paste0("index_", names(WEIGHTS))
+kable(round(cor(s23[, ..idx], method = "spearman"), 4), caption = "Rank correlation between index versions, 2023")
+```
+
+```{r movement}
+s23[, `:=`(decile_equal = cut(index_equal, breaks = seq(0, 100, 10), labels = 1:10, include.lowest = TRUE),
+           decile_incr = cut(index_incremental, breaks = seq(0, 100, 10), labels = 1:10, include.lowest = TRUE))]
+s23[, shift_pct := index_incremental - index_equal]
+kable(s23[, .(`mean absolute move (percentile points)` = mean(abs(shift_pct)),
+              `median absolute move` = median(abs(shift_pct)),
+              `moved at least one decile` = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 1),
+              `moved at least two deciles` = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 2),
+              `moved at least three deciles` = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 3))],
+      digits = 3, caption = "Equal weights vs. incremental weights")
+kable(dcast(s23[, .N, by = .(decile_equal, decile_incr)], decile_equal ~ decile_incr,
+            value.var = "N", fill = 0),
+      caption = "Decile under equal weights (rows) vs. incremental weights (columns)",
+      format.args = list(big.mark = ","))
+```
+
+**Who moves?** The organizations that fall are the ones the old weighting
+rewarded for a clean balance sheet despite weak operations, and the reverse.
+
+```{r movers}
+s23[, mover := fifelse(shift_pct >= quantile(shift_pct, 0.99), "biggest risers",
+               fifelse(shift_pct <= quantile(shift_pct, 0.01), "biggest fallers", "middle"))]
+kable(s23[, .(organizations = .N, mean_reserves = mean(reserves), mean_performance = mean(performance),
+              mean_leverage = mean(leverage), median_expenses = median(E),
+              median_surplus_margin = median(surplus_per_expense),
+              median_cash_months = median(cash_months)), by = mover][order(mover)],
+      digits = 3, format.args = list(big.mark = ","))
+```
+
+# 3. Does the reweighted index predict better?
+
+The index is rebuilt on 2021 scores and used to predict 2022-2023, the same
+outcomes as the weighting analysis.
+
+```{r validation}
+s21 <- dimension_scores(d[TAX_YEAR == 2021], seed = params$seed)
+for (nm in names(WEIGHTS)) s21[[paste0("index_", nm)]] <- composite_index(s21, WEIGHTS[[nm]])
+
+flows <- d[TAX_YEAR %in% 2021:2023, .(EIN2, year = TAX_YEAR,
+                                      R = as.numeric(F9_08_REV_TOT_TOT),
+                                      E = as.numeric(F9_09_EXP_TOT_TOT),
+                                      na = as.numeric(F9_10_NAFB_TOT_EOY),
+                                      cash = as.numeric(F9_10_ASSET_CASH_EOY) +
+                                             as.numeric(F9_10_ASSET_SAVING_EOY))]
+for (cl in c("R", "E", "na", "cash")) flows[[cl]][is.na(flows[[cl]])] <- 0
+o <- dcast(flows, EIN2 ~ year, value.var = c("R", "E", "na", "cash"))
+setnames(o, gsub("_(\\d{4})$", "\\1", names(o)))
+o <- o[complete.cases(o)]
+o[, `:=`(both_years_deficit = as.numeric(R2022 < E2022 & R2023 < E2023),
+         any_deficit = as.numeric(R2022 < E2022 | R2023 < E2023),
+         na_fell = as.numeric(na2023 < na2021),
+         cash_fell_month = as.numeric(12 * (cash2023 - cash2021) / pmax(E2021, 1) < -1),
+         no2024 = as.numeric(!(EIN2 %chin% in2024)))]
+m <- merge(o, s21[, c("EIN2", idx, "E"), with = FALSE], by = "EIN2")
+
+auc <- function(score, y) {
+  r <- rank(score); n1 <- as.numeric(sum(y == 1)); n0 <- as.numeric(sum(y == 0))
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+OUT <- c("both_years_deficit", "any_deficit", "na_fell", "cash_fell_month", "no2024")
+val <- rbindlist(lapply(OUT, function(nm) {
+  y <- m[[nm]]
+  # a low index should mean trouble, so AUC is computed on the reversed score
+  data.table(outcome = nm, rate = mean(y),
+             equal = auc(-m$index_equal, y),
+             incremental = auc(-m$index_incremental, y),
+             performance_dominant = auc(-m$index_performance_dominant, y))
+}))
+val[, `:=`(gain_incremental = incremental - equal,
+           gain_performance_dominant = performance_dominant - equal)]
+kable(val, digits = 4, caption = "AUC of each index version (2021 index, 2022-2023 outcomes)")
+```
+
+**Distress concentration.** A practical read: how many of the organizations
+that ran deficits in both years sit in the bottom decile of each index?
+
+```{r bottom-decile}
+bd <- rbindlist(lapply(names(WEIGHTS), function(nm) {
+  col <- paste0("index_", nm)
+  bottom <- m[[col]] <= 10
+  data.table(scheme = nm,
+             pct_of_both_year_deficits_in_bottom_decile = mean(bottom[m$both_years_deficit == 1]),
+             deficit_rate_in_bottom_decile = mean(m$both_years_deficit[bottom]),
+             deficit_rate_overall = mean(m$both_years_deficit))
+}))
+kable(bd, digits = 3)
+```
+
+# 4. Findings
+
+```{r findings, include = FALSE}
+rk <- cor(s23$index_equal, s23$index_incremental, method = "spearman")
+mv <- mean(abs(as.integer(s23$decile_incr) - as.integer(s23$decile_equal)) >= 1)
+```
+
+* **Rankings move less than the weights do.** The equal-weighted and
+  incremental-weighted indices correlate at `r fmt(rk, 3)` (Spearman), and
+  `r fmt(100 * mv, 1)`% of organizations change at least one decile.
+* **Prediction improves where performance matters** and is unchanged or worse
+  for the cash outcome; the table in section 3 gives the sizes.
+* **The bottom decile catches more distress** under the reweighted index, which
+  is the number that matters for triage.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(weights = WEIGHTS,
+               rank_cor = cor(s23[, ..idx], method = "spearman"),
+               movement = s23[, .(mean_abs = mean(abs(shift_pct)), median_abs = median(abs(shift_pct)),
+                                  one_decile = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 1),
+                                  two_deciles = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 2),
+                                  three_deciles = mean(abs(as.integer(decile_incr) - as.integer(decile_equal)) >= 3))],
+               movers = s23[, .(n = .N, reserves = mean(reserves), performance = mean(performance),
+                                leverage = mean(leverage), median_E = median(E),
+                                median_margin = median(surplus_per_expense),
+                                median_cash_months = median(cash_months)), by = mover],
+               validation = val, bottom_decile = bd, n = nrow(m)), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

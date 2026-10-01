@@ -1,0 +1,1119 @@
+---
+title: "H6: How Is a Sudden Revenue Loss Absorbed?"
+subtitle: "Expense cuts and balance-sheet drawdown after revenue falls below a three-year baseline, 2019-2024"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  baseline_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2016-2018.rds")
+  results_file: ""
+  seed: 2023
+  shock_threshold: 0.20
+  base_window: 3
+  ref_year: 2023
+  max_shock: 1.0
+  comp_share: 0.3333333
+  comp_material: 0.10
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+H5 asked where a surplus goes. This document asks the mirror question about the
+loss side: **when revenue falls sharply, what absorbs the loss?**
+
+Every dollar of revenue an organization does not receive has to be found
+somewhere. It comes out of expenses, or it comes out of the balance sheet as a
+worse surplus — and that worse surplus is itself drawn from cash, receivables,
+property, investments, or new borrowing. The accounting identity pins the split
+down exactly, so the estimate is the split itself, not whether it exists.
+
+## What changed in this version, and why
+
+The first version of this document defined a shock as revenue falling at least
+20% **below the prior year**. That measure cannot tell a shock apart from the
+second half of a windfall. An organization that lands a large capital grant, a
+bequest, or a one-off capital campaign in year *t-1* and returns to its normal
+level in year *t* records a >20% "drop" while nothing whatever has gone wrong.
+The v1 estimates were visibly contaminated by this: the headline said
+organizations *raised* expenses by 9 cents per dollar "lost", which is what you
+would expect if a large share of the sample were spending down last year's
+windfall rather than absorbing a loss.
+
+Three changes follow from that diagnosis.
+
+1. **The baseline is a trailing three-year average, not year *t-1*.** A single
+   windfall year moves a three-year average by about a third as much as it moves
+   the prior-year level, so reversion to normal no longer registers as a shock.
+   Section 3 measures how much of the v1 sample was reversion.
+2. **Everything is in constant dollars.** Over 2016-2024 the price level rose
+   about 31%. A nominal baseline built from three older years is mechanically
+   *low*, which biases the shock measure toward finding fewer shocks and
+   understates each one. All dollar quantities are deflated to
+   `r params$ref_year` dollars by the CPI-U before any baseline is formed.
+3. **Every channel is reported twice**: as cents per dollar of shortfall, and as
+   a share of what that channel had to give. Losing 25 cents from cash and 25
+   cents from investments is the same number twice, but it may be half the cash
+   on hand and 3% of the investments. The second column is where absorptive
+   capacity shows up.
+
+Sections 6-9 keep the v1 estimands on the new shock definition. Section 10 is
+new: it isolates shocks to a single revenue component.
+
+**A shock** is an organization-year in which total real revenue falls at least
+`r sprintf("%.0f%%", params$shock_threshold * 100)` below the organization's own
+inflation-adjusted average of the `r params$base_window` prior tax years.
+
+**Window.** Shocks landing in tax years 2022 and 2023, December year-ends,
+organizations that filed a full 990 in every year 2019-2023. Because a baseline
+needs three prior filings, the panel was extended back to tax year 2016
+(`dev/panel/panel_build_baseline.R`); that extension is what lets shock years
+2019, 2020 and 2021 appear in the contrast table with a clean pre-COVID
+baseline.
+
+**Scaling.** Everything is divided by **baseline expenses** — the same trailing
+three-year real average, applied to total expenses. Current-year expenses are
+one of the outcomes here, so an organization that responds by cutting deeply
+would shrink its own denominator and bias its expense-cut share toward zero.
+The baseline is fixed before the shock lands.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+})
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+pct <- function(x, d = 1) paste0(formatC(100 * x, format = "f", digits = d), "%")
+BW  <- as.integer(params$base_window)
+```
+
+# 1. Data, inflation adjustment, and the baseline
+
+Balance-sheet blocks follow H5 exactly: end-of-year minus beginning-of-year,
+both from the same filing's Part X, so the two dates share one accounting
+basis.
+
+| Block | Part X lines |
+|---|---|
+| Cash | cash + savings |
+| Other current assets | pledges, accounts receivable, inventories, prepaid |
+| Fixed assets | land, buildings, equipment (net) |
+| Other assets | total assets minus the three above (investments, intangibles, notes receivable) |
+| Long-term debt | tax-exempt bonds + mortgages + unsecured notes |
+| Short-term liabilities | accounts payable + grants payable + deferred revenue |
+| Other liabilities | total liabilities minus the two above |
+
+Revenue is split into seven components that partition the Part VIII total
+exactly. The seventh is a residual, so the partition holds by construction.
+
+| Component | Part VIII lines |
+|---|---|
+| Government grants | 1e |
+| Membership dues | 1b |
+| Fundraising events | 1c (contributions portion) + 8c (net event income) + 9c (net gaming) |
+| Other contributions | 1h minus government grants, dues and the 1c events portion (federated campaigns, related organizations, all other) |
+| Program revenue | 2g |
+| Investments | 3 + 4 (investment and tax-exempt bond income) + 7d (net gain on asset sales) |
+| Other revenue | total minus the six above (royalties, net rent, net inventory sales, miscellaneous) |
+
+```{r prep}
+# Loading, deflating and baseline construction are shared with
+# h5-windfall-allocation.Rmd, which measures the other tail of the same
+# distribution. If the two documents built their baselines separately they could
+# drift apart and stop being comparable, so the construction lives in one file.
+source("baseline-prep.R", local = knitr::knit_global())
+
+kable(cpi_table,
+      caption = paste0("Deflator applied to every dollar quantity (constant ",
+                       params$ref_year, " dollars)"))
+kable(filings_by_year, format.args = list(big.mark = ","),
+      caption = "Full-990 December filings available by tax year, after the extension back to 2016")
+```
+
+**The baseline is a trailing mean, not a centred one.** `panel990::panel_smooth()`
+smooths with an odd, centred window, so a three-year smooth of revenue would
+include the shock year itself and the shock would partly define its own
+baseline. The baseline here is built only from tax years strictly before the
+shock, and only when all `r params$base_window` of them are present as
+consecutive full-990 filings.
+
+```{r baseline-coverage}
+kable(p[, .(org_years = .N, organizations = uniqueN(EIN2)), by = year][order(year)],
+      format.args = list(big.mark = ","),
+      caption = "Organization-years with a complete three-year baseline")
+```
+
+# 2. What a shock looks like against a smoothed baseline
+
+```{r gap-distribution}
+qs <- c(0.001, 0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.99)
+g  <- p$gap   # iqr_sd(), size_band and max_abs_blk all come from baseline-prep.R
+dist <- data.table(
+  statistic = c("mean", "standard deviation", "median", "robust SD (IQR/1.349)",
+                paste0("p", qs * 100)),
+  gap = round(c(mean(g), sd(g), median(g), iqr_sd(g), quantile(g, qs)), 4))
+kable(dist, caption = "Revenue relative to a three-year inflation-adjusted baseline (0 = exactly on baseline)")
+```
+
+**The ordinary standard deviation is not usable here, and that is itself worth
+knowing.** It comes out at `r fmt(sd(g), 1)` because the ratio has a baseline in
+its denominator: an organization whose three prior years averaged a few thousand
+dollars and which then receives one large grant produces a gap in the hundreds
+or thousands. Those cases are real filings, not errors, and they say nothing
+about the loss side. Every spread statistic below is therefore the robust one,
+`IQR/1.349`, which equals the standard deviation for a normal distribution and
+ignores the tail.
+
+```{r gap-by-size}
+by_size <- p[, .(organization_years = .N,
+                 median = median(gap),
+                 robust_sd = iqr_sd(gap),
+                 p10 = quantile(gap, 0.10),
+                 sd_of_a_20pct_shortfall = (-params$shock_threshold - median(gap)) / iqr_sd(gap),
+                 share_shocked = mean(shock)),
+             by = size_band][order(size_band)]
+kable(by_size, digits = 3, format.args = list(big.mark = ","),
+      caption = "The same 20% rule means very different things at different sizes (baseline revenue bands)")
+
+z20 <- (-params$shock_threshold - median(g)) / iqr_sd(g)
+```
+
+Three things follow, and they matter for how the threshold should be set.
+
+* **A 20% shortfall is not a rare event.** It sits `r fmt(z20, 2)` robust
+  standard deviations below the median and selects
+  `r pct(mean(p$shock), 1)` of all organization-years — roughly one year in
+  four. Revenue at this population is simply very volatile relative to a
+  three-year mean.
+* **The threshold is not size-neutral.** Volatility falls steeply with size:
+  the robust SD is `r fmt(by_size[size_band == "under $100k", robust_sd])` for
+  organizations under $100k and
+  `r fmt(by_size[size_band == "$10m+", robust_sd])` for those above $10m. The
+  same 20% rule is
+  `r fmt(abs(by_size[size_band == "under $100k", sd_of_a_20pct_shortfall]), 2)`
+  SDs for the smallest band and
+  `r fmt(abs(by_size[size_band == "$10m+", sd_of_a_20pct_shortfall]), 2)` SDs
+  for the largest, so it flags
+  `r pct(by_size[size_band == "under $100k", share_shocked], 0)` of the smallest
+  organizations against
+  `r pct(by_size[size_band == "$10m+", share_shocked], 0)` of the largest. A
+  fixed percentage cut point is, in effect, a small-organization filter.
+* **What to do about it.** Section 10 shows the absorption split is stable from
+  a 10% threshold to a 50% one, so nothing in this document turns on the choice.
+  But if the index is going to call something a "shock", 20% against a
+  three-year baseline is too weak a claim on its own, and a size-relative cut
+  point — a fixed number of the organization's own robust SDs — would flag a
+  comparable share in every size band. That is a change to the index
+  definition, not to this estimate, so it is flagged here rather than made.
+
+## Was the old rule picking up windfall reversions?
+
+```{r reversion}
+rev_tab <- p[shock_t1 == TRUE,
+  .(n = .N,
+    median_prior_year_vs_baseline = median(prior_windfall),
+    share_prior_year_20pct_above_baseline = mean(prior_windfall > 0.20),
+    median_current_vs_baseline = median(gap)),
+  by = .(also_a_baseline_shock = shock)][order(-also_a_baseline_shock)]
+kable(rev_tab, digits = 3,
+      caption = "Organization-years the prior-year rule calls a shock, split by whether the baseline rule agrees")
+
+both <- p[, .(t1_rule = sum(shock_t1), baseline_rule = sum(shock),
+              both = sum(shock & shock_t1),
+              t1_only = sum(shock_t1 & !shock), baseline_only = sum(shock & !shock_t1))]
+kable(both, format.args = list(big.mark = ","),
+      caption = "Overlap of the two shock definitions, all years")
+```
+
+This is the diagnostic that motivated the rewrite. Of the organization-years the
+prior-year rule flags, `r pct(both$t1_only / both$t1_rule)` are **rejected** by
+the baseline rule, and that rejected group is exactly what the windfall story
+predicts: their prior year was far above their own baseline
+(median `r fmt(rev_tab[also_a_baseline_shock == FALSE, median_prior_year_vs_baseline])`),
+and their current year is close to it
+(median `r fmt(rev_tab[also_a_baseline_shock == FALSE, median_current_vs_baseline])`).
+These organizations did not lose anything. They had one big year and went back
+to normal. The baseline rule also *adds* `r format(both$baseline_only, big.mark = ",")`
+organization-years the prior-year rule missed — organizations in a second or
+third year of sustained decline, where each year-over-year step is small but the
+level is far below normal. Those are the cases a shock measure should catch.
+
+## Should there be a maximum?
+
+```{r tail}
+tail_tab <- data.table(
+  bound = c(0.50, 0.75, 0.90, 1.00, 1.50),
+  organization_years_below = vapply(c(0.50, 0.75, 0.90, 1.00, 1.50),
+                                    function(b) sum(p$gap < -b), 0L))
+tail_tab[, share_of_all := organization_years_below / nrow(p)]
+tail_tab[, share_of_shocks := organization_years_below / sum(p$shock)]
+kable(tail_tab, digits = 5,
+      caption = "How many organization-years fall further than a given bound below baseline")
+cat("minimum gap observed:", fmt(min(p$gap), 2),
+    " | organization-years with revenue below zero:", sum(p$R < 0), "\n")
+```
+
+**Yes, and it should be at `r fmt(params$max_shock, 2)`.** Total revenue on Part
+VIII is a *net* figure: a large realized loss on an asset sale enters negatively
+and can push reported total revenue below zero, which makes the gap smaller than
+-1 without the organization having lost a single dollar of operating income. A
+gap of exactly -1 means "revenue this year was zero"; anything beyond that is an
+accounting artefact rather than a deeper shock, and because the gap is the
+denominator of every share in this document, those rows have unbounded
+leverage. Capping at -1 removes `r format(sum(p$gap < -params$max_shock), big.mark = ",")`
+organization-years (`r pct(mean(p$gap < -params$max_shock), 3)` of the sample).
+The 1st/99th percentile trim in section 3 does most of the work in practice; the
+bound is a guard against the pathological tail rather than a live constraint.
+
+# 3. Sample and trimming
+
+Outliers are handled by **dropping organization-years, not by clipping values**
+— the same rule H5 arrived at. Winsorizing each component separately breaks the
+identity the whole design rests on: the clipped parts stop summing to the
+clipped total and the coefficients stop adding up.
+
+```{r channels}
+# Every channel is a DEVIATION FROM THE ORGANIZATION'S OWN BASELINE, signed so
+# that a positive number always means "this is where a dollar of the shortfall
+# came from". For revenue lines and assets that is baseline minus actual (the
+# line came in below normal; the asset grew less than normal, or shrank). For
+# liabilities it is actual minus baseline (debt grew more than normal).
+# `capacity` is the stock or flow the channel is drawn from.
+CH <- rbindlist(list(
+  data.table(name="gov",       label="Government grants",         actual="gov",       base="base_gov",       capacity="base_gov",       sign=1, group="revenue"),
+  data.table(name="dues",      label="Membership dues",           actual="dues",      base="base_dues",      capacity="base_dues",      sign=1, group="revenue"),
+  data.table(name="events",    label="Fundraising events",        actual="events",    base="base_events",    capacity="base_events",    sign=1, group="revenue"),
+  data.table(name="contr_oth", label="Other contributions",       actual="contr_oth", base="base_contr_oth", capacity="base_contr_oth", sign=1, group="revenue"),
+  data.table(name="program",   label="Program revenue",           actual="program",   base="base_program",   capacity="base_program",   sign=1, group="revenue"),
+  data.table(name="invest",    label="Investments",               actual="invest",    base="base_invest",    capacity="base_invest",    sign=1, group="revenue"),
+  data.table(name="other",     label="Other revenue",             actual="other",     base="base_other",     capacity="base_other",     sign=1, group="revenue"),
+  data.table(name="cut_E",     label="Expense cuts",              actual="E",         base="base_E",         capacity="base_E",         sign=1, group="absorption"),
+  data.table(name="cut_prog",  label="Program services",          actual="program_expenses",     base="base_program_expenses",     capacity="base_program_expenses",     sign=1, group="expense"),
+  data.table(name="cut_admin", label="Management and general",    actual="admin_expenses",       base="base_admin_expenses",       capacity="base_admin_expenses",       sign=1, group="expense"),
+  data.table(name="cut_fund",  label="Fundraising",               actual="fundraising_expenses", base="base_fundraising_expenses", capacity="base_fundraising_expenses", sign=1, group="expense"),
+  data.table(name="cut_unall", label="Unallocated",               actual="unallocated_expenses", base="base_unallocated_expenses", capacity="base_unallocated_expenses", sign=1, group="expense"),
+  data.table(name="bs_cash",   label="Cash",                      actual="d_cash",          base="base_d_cash",          capacity="boy_cash",          sign=1,  group="block"),
+  data.table(name="bs_oca",    label="Receivables, prepaid",      actual="d_other_current", base="base_d_other_current", capacity="boy_other_current", sign=1,  group="block"),
+  data.table(name="bs_fixed",  label="Property and equipment",    actual="d_fixed",         base="base_d_fixed",         capacity="boy_fixed",         sign=1,  group="block"),
+  data.table(name="bs_othass", label="Investments, other assets", actual="d_other_assets",  base="base_d_other_assets",  capacity="boy_other_assets",  sign=1,  group="block"),
+  data.table(name="bs_lt",     label="Long-term debt",            actual="d_lt",            base="base_d_lt",            capacity="boy_lt",            sign=-1, group="block"),
+  data.table(name="bs_st",     label="Short-term liabilities",    actual="d_st",            base="base_d_st",            capacity="boy_st",            sign=-1, group="block"),
+  data.table(name="bs_othli",  label="Other liabilities",         actual="d_other_liab",    base="base_d_other_liab",    capacity="boy_other_liab",    sign=-1, group="block")
+))
+CAP_PHRASE <- c(cut_E = "its normal budget", bs_cash = "the cash it held",
+                bs_oca = "the receivables it held", bs_fixed = "the property it held",
+                bs_othass = "the investments it held", bs_lt = "the long-term debt it owed",
+                bs_st = "the short-term liabilities it owed", bs_othli = "the other liabilities it owed")
+
+build_channels <- function(z) {
+  z <- copy(z)
+  z[, dol_loss := base_R - R][, s_loss := dol_loss / base_E]
+  for (i in seq_len(nrow(CH))) {
+    r <- CH[i]
+    d <- if (r$sign == 1) z[[r$base]] - z[[r$actual]] else z[[r$actual]] - z[[r$base]]
+    z[[paste0("dol_", r$name)]] <- d
+    z[[paste0("s_",   r$name)]] <- d / z$base_E
+    z[[paste0("cap_", r$name)]] <- z[[r$capacity]]
+  }
+  z[, dol_surp := dol_loss - dol_cut_E][, s_surp := dol_surp / base_E]
+  z[, dol_na := base_d_na - d_na][, s_na := dol_na / base_E]
+  z[]
+}
+p <- build_channels(p)
+
+kable(data.table(
+  check = c("revenue components sum to the shortfall",
+            "expense lines sum to the expense cut",
+            "balance-sheet blocks sum to the net-assets shortfall"),
+  max_abs_error_dollars = c(
+    p[, max(abs(dol_gov + dol_dues + dol_events + dol_contr_oth + dol_program + dol_invest + dol_other - dol_loss))],
+    p[, max(abs(dol_cut_prog + dol_cut_admin + dol_cut_fund + dol_cut_unall - dol_cut_E))],
+    p[, max(abs(dol_bs_cash + dol_bs_oca + dol_bs_fixed + dol_bs_othass + dol_bs_lt + dol_bs_st + dol_bs_othli - dol_na))])),
+  digits = 6, caption = "Adding-up checks, before any trimming (constant dollars)")
+```
+
+A third rule is needed beyond the two H5 used. Trimming on the shortfall and on
+the *net* balance-sheet movement is not enough, because the blocks can offset
+each other: an organization-year with a colossal swing into investments and an
+equal swing out of cash has a small net movement and survives both filters while
+carrying enormous leverage over any single block's coefficient. The scaled block
+channels reach six figures at their extremes. So organization-years in the top
+1% of the largest absolute block movement are dropped as well. On the headline
+2022-2023 estimate this changes almost nothing (it removes 79 rows and moves the
+expense-cut share by 0.002), but it is what makes the early shock years in
+section 10 readable at all — the 2019 investments channel goes from -14.0 to
+-0.12 once the handful of extreme rows are gone.
+
+```{r sample}
+trim_sample <- function(z, trim = TRUE, bound = params$max_shock) {
+  if (!is.null(bound)) z <- z[gap >= -bound]
+  if (!trim) return(z[])
+  # `:=` by group assigns back to the right rows; a grouped select would return
+  # the flags in group order and misalign them when years are interleaved.
+  z[, keep := {
+    ql <- quantile(s_loss, c(0.01, 0.99), na.rm = TRUE)
+    qa <- quantile(s_na,   c(0.01, 0.99), na.rm = TRUE)
+    qb <- quantile(max_abs_blk, 0.99, na.rm = TRUE)
+    s_loss >= ql[[1]] & s_loss <= ql[[2]] & s_na >= qa[[1]] & s_na <= qa[[2]] &
+      max_abs_blk <= qb
+  }, by = year]
+  z <- z[keep == TRUE]; z[, keep := NULL]; z[]
+}
+shocked <- function(years) trim_sample(p[year %in% years & shock == TRUE])
+main_s  <- shocked(2022:2023)
+cat("shocked organization-years, 2022-2023:", format(nrow(main_s), big.mark = ","),
+    " organizations:", format(uniqueN(main_s$EIN2), big.mark = ","), "\n")
+```
+
+Trimming is applied *after* selecting shocked organization-years, so the
+percentiles are those of the shocked distribution, not of all filers.
+
+# 4. Three ways to read the numbers
+
+Three estimands answer different questions, and this document reports all three
+because they can disagree.
+
+* **Cents per dollar of shortfall (the headline).** The total dollars that
+  flowed through a channel across the shocked sample, divided by the total
+  dollars of shortfall. Because each channel is a component of the shortfall row
+  by row, these shares sum to exactly 1. This is the quantity the figure shows.
+* **Per cent of its own capacity.** The same dollars, divided by what that
+  channel had to give: the stock at the start of the year for a balance-sheet
+  block, the baseline level for a revenue or expense line. This is the column
+  that separates "drew a lot because it had a lot" from "drew down most of what
+  it had".
+* **Marginal response (OLS).** The slope of the channel on the size of the
+  shortfall, within the shocked sample. This answers "a deeper shock is absorbed
+  how differently", which is not the same as "the average shock is absorbed how".
+  Standard errors are HC1.
+
+```{r estimands}
+# ols() is defined in baseline-prep.R (HC1 standard errors).
+share_of_avg <- function(s, nm) mean(s[[paste0("s_", nm)]]) / mean(s$s_loss)
+pct_capacity <- function(s, nm) {
+  cap <- sum(s[[paste0("cap_", nm)]])
+  if (!is.finite(cap) || cap <= 0) return(NA_real_)
+  sum(s[[paste0("dol_", nm)]]) / cap
+}
+marginal <- function(s, nm) {
+  f <- ols(s[[paste0("s_", nm)]], cbind(intercept = 1, loss = s$s_loss))
+  c(b = f$b[["loss"]], se = f$se[["loss"]])
+}
+channel_table <- function(s, names_vec) {
+  rbindlist(lapply(names_vec, function(nm) {
+    m <- marginal(s, nm)
+    data.table(channel = CH[name == nm, label],
+               cents_per_dollar = share_of_avg(s, nm),
+               pct_of_capacity  = pct_capacity(s, nm),
+               marginal = m[["b"]], se = m[["se"]])
+  }))
+}
+```
+
+# 5. Where the shortfall came from
+
+Which revenue lines came in below baseline. The seven components sum to the
+total shortfall by construction, so the shares sum to 1. A **negative** entry
+means that line came in *above* its own baseline during the shock year — it
+partly offset the loss rather than causing it.
+
+```{r sources}
+src <- channel_table(main_s, CH[group == "revenue", name])
+kable(src, digits = 3,
+      caption = "Which revenue lines fell short, 2022-2023 shocks (positive = a source of the shortfall)")
+cat("sum of shares:", fmt(sum(src$cents_per_dollar)), "\n")
+```
+
+# 6. First-line absorption: expenses or the balance sheet
+
+The identity `revenue - expenses = surplus` means a shortfall in revenue must
+show up either as expenses coming in below their own baseline, or as a surplus
+below its own baseline. These two shares sum to exactly 1. That is a check on
+the code, not a finding — if it fails, something upstream is wrong.
+
+**How to read the sign.** Both columns are positive numbers, and both describe
+money that did not move as it normally would:
+
+* **Expense cuts** = baseline expenses minus actual expenses. Positive means
+  the organization spent **less** than its own three-year norm — it cut.
+  Negative would mean it spent *more* than normal despite the shortfall.
+* **Shortfall run through the surplus** = the rest. Positive means the surplus
+  came in below its norm, which is to say the gap was carried on the balance
+  sheet rather than closed by spending less.
+
+A split of 0.60 / 0.40 therefore reads: of each dollar that did not arrive, 60
+cents was matched by spending that did not happen, and 40 cents was absorbed by
+the balance sheet.
+
+```{r absorption}
+ec <- share_of_avg(main_s, "cut_E")
+ws <- mean(main_s$s_surp) / mean(main_s$s_loss)
+mE <- marginal(main_s, "cut_E")
+absorb <- data.table(
+  channel = c("Expense cuts (spending below its own baseline)",
+              "Shortfall run through the surplus (carried on the balance sheet)"),
+  cents_per_dollar = c(ec, ws),
+  pct_of_capacity  = c(pct_capacity(main_s, "cut_E"), NA_real_),
+  marginal = c(mE[["b"]], 1 - mE[["b"]]),
+  se = c(mE[["se"]], mE[["se"]]))
+kable(absorb, digits = 3,
+      caption = "Of each dollar of revenue shortfall, how much is matched by lower spending vs. carried on the balance sheet")
+cat("identity check, shares sum to:", fmt(ec + ws), "\n")
+```
+
+The `pct_of_capacity` column on the first row is the expense cut measured
+against the organization's own normal budget: it says how big a retrenchment
+this is in the only units that matter to a manager.
+
+## Which expenses are cut
+
+The four functional lines sum to the total expense cut.
+
+```{r expense-split}
+excut <- channel_table(main_s, CH[group == "expense", name])
+kable(excut, digits = 3,
+      caption = "Where the expense cut falls (positive = that line came in below its baseline)")
+cat("sums to the expense-cut share:", fmt(sum(excut$cents_per_dollar)),
+    " vs. ", fmt(ec), "\n")
+```
+
+Program services carry most of the cut in cents-per-dollar terms simply because
+they are most of the budget. The `pct_of_capacity` column is the more
+informative quantity: it is the cut relative to each line's own baseline, which
+says whether administration and fundraising are protected or cut harder than
+programs.
+
+# 7. Where the balance sheet absorbs it
+
+The surplus shortfall has to be drawn from somewhere, and the same identity as
+H5 applies: asset-side changes minus liability-side changes equal the change in
+net assets. Signs are set so that **a positive number is a source of funds**: an
+asset that grew less than normal (or shrank), or a liability that grew more than
+normal.
+
+Each block enters as its movement during the shock year measured against *its
+own baseline movement*. An organization that normally adds $40k to cash a year
+and this year added nothing has found $40k, even though its cash did not fall.
+Comparing the movement to zero instead of to its baseline would miss that
+entirely.
+
+```{r blocks}
+bs <- channel_table(main_s, CH[group == "block", name])
+blk_side <- setNames(ifelse(CH[group == "block", sign] == 1, "asset", "liability"),
+                     CH[group == "block", label])
+bs[, side := blk_side[channel]]
+kable(bs[, .(channel, side, cents_per_dollar, pct_of_capacity, marginal, se)], digits = 3,
+      caption = "Which balance-sheet blocks fund the shortfall (positive = a source of funds)")
+
+# Needed for the revaluation note below; section 10 recomputes these as part of
+# the full year-by-year table.
+inv_22 <- share_of_avg(shocked(2022), "bs_othass")
+inv_23 <- share_of_avg(shocked(2023), "bs_othass")
+
+ident <- data.table(
+  blocks_net = sum(bs$cents_per_dollar),
+  net_assets_direct = mean(main_s$s_na) / mean(main_s$s_loss),
+  surplus_shortfall = ws,
+  n = nrow(main_s))
+kable(ident, digits = 3,
+      caption = "Identity check: blocks net vs. the direct net-assets shortfall vs. the surplus shortfall")
+```
+
+The first two columns must agree: they are the same quantity computed two ways.
+The third need not — net assets also move with unrealized investment gains,
+prior-period adjustments, and donated capital, none of which pass through the
+surplus. The gap between them is that non-operating drift, and it is worth
+reading rather than dismissing.
+
+The `pct_of_capacity` column is where the absorptive-capacity reading lives. Two
+blocks can contribute the same cents per dollar while one has given up a large
+fraction of its stock and the other a trivial one; only the second column
+distinguishes a block that is nearly exhausted from a block that has barely been
+touched. Cash and investments illustrate the point directly: they contribute
+roughly comparable cents per dollar, but cash gives up
+`r pct(bs[channel == "Cash", pct_of_capacity])` of the stock it started with
+against `r pct(bs[channel == "Investments, other assets", pct_of_capacity])` for
+investments. Cash is doing far more of the work relative to what there is of it.
+
+**The two columns weight organizations differently.** `cents_per_dollar` is a
+ratio of means of *scaled* channels, so organizations enter roughly alike
+regardless of size; `pct_of_capacity` is a ratio of raw dollar totals and is
+therefore dominated by the largest organizations in the sample. On this table
+they agree in sign everywhere except other liabilities, where both figures are
+near zero, but the distinction matters when reading any single row: the
+cents-per-dollar column is the behavioural estimate and the capacity column is
+the sector aggregate. The companion document `h5-windfall-allocation.Rmd` has a
+case where the two genuinely disagree in sign.
+
+**One caveat on the investments block, which the year-by-year table in section
+10 makes unavoidable.** Part X reports assets at fair value, so the movement in
+"investments, other assets" mixes two different things: deliberate liquidation
+to cover a shortfall, and market revaluation that would have happened anyway.
+The sign convention cannot tell them apart, and in a year when markets fall, a
+portfolio that was never touched still registers as a large source of funds.
+That is most of why this channel swings from
+`r fmt(inv_22)` in 2022 — a year markets fell sharply — to `r fmt(inv_23)` in
+2023. Read cash,
+receivables and borrowing as behaviour; read the investments row as behaviour
+plus the market, and prefer its `pct_of_capacity` column, which at least scales
+the movement by the portfolio it came from.
+
+# 8. Do reserves buffer the cut?
+
+This is the question the memo singled out. The reserves dimension of the index
+is interpreted as a buffer, which is a claim about behaviour *within*
+organizations: an organization with more months of cash on hand should be able
+to absorb a shock without cutting programs as deeply. If high- and low-reserve
+organizations cut the same way, the dimension is measuring size or sector, not
+resilience.
+
+Reserves are measured at the beginning of the shock year — months of cash on
+hand against **baseline** expenses — so the grouping is fixed before the shock
+lands.
+
+```{r reserves}
+# Rank-based terciles: quantile breaks collapse when many organizations report
+# the same months of cash (zero, most often), which a cut() on values cannot survive.
+main_s[, reserve_group := factor(c("low", "middle", "high")[
+  pmin(3L, 1L + floor(3 * (frank(months_cash_boy, ties.method = "first") - 1) / .N))],
+  levels = c("low", "middle", "high"))]
+res <- rbindlist(lapply(levels(main_s$reserve_group), function(g) {
+  s <- main_s[reserve_group == g]
+  data.table(reserves = g, n = nrow(s),
+             median_months_cash = median(s$months_cash_boy),
+             expense_cut = share_of_avg(s, "cut_E"),
+             program_cut = share_of_avg(s, "cut_prog"),
+             cash_drawdown = share_of_avg(s, "bs_cash"),
+             cash_pct_of_capacity = pct_capacity(s, "bs_cash"),
+             borrowing = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(res, digits = 3,
+      caption = "Absorption by beginning-of-year reserves (cents per dollar of shortfall)")
+```
+
+**Holding the comparison together.** The table above compares different
+organizations, so a reserve difference could be a size or sector difference. A
+shocked organization rarely appears twice, so organization fixed effects are not
+available on the shocked sample alone; instead the shock indicator is interacted
+with reserves on *all* 2022-2023 organization-years with a baseline, which keeps
+organizations that had a shock in one year and not the other in the comparison.
+
+```{r reserves-interaction}
+all_p <- trim_sample(p[year %in% 2022:2023])
+all_p[, high_reserve := as.numeric(months_cash_boy > median(months_cash_boy))]
+all_p[, big_loss := as.numeric(shock)]
+W <- cbind(intercept = 1, big_loss = all_p$big_loss, high = all_p$high_reserve,
+           big_x_high = all_p$big_loss * all_p$high_reserve)
+inter <- rbindlist(lapply(c("s_cut_E", "s_cut_prog", "s_bs_cash"), function(v) {
+  f <- ols(all_p[[v]], W)
+  data.table(outcome = CH[name == sub("^s_", "", v), label],
+             shock_effect = f$b[["big_loss"]], se = f$se[["big_loss"]],
+             extra_if_high_reserve = f$b[["big_x_high"]], se_interaction = f$se[["big_x_high"]])
+}))
+kable(inter, digits = 4,
+      caption = "Shock effect and its interaction with high reserves, all 2022-2023 organization-years")
+```
+
+# 9. Shocks to a single revenue component
+
+The sections above treat a shock as a fall in total revenue, whatever its
+source. But a government grant that ends, a membership base that erodes, and an
+investment portfolio that turns down are different events, and there is no
+reason to expect them to be absorbed the same way. This section isolates them.
+
+**Definition.** A component shock is an organization-year in which one component
+falls at least `r pct(params$comp_share, 0)` below **its own** three-year
+baseline, *and* that fall is worth at least `r pct(params$comp_material, 0)` of
+the organization's baseline **total** revenue. The first condition makes it a
+real disruption to that revenue stream; the second keeps it material to the
+organization overall. The total-revenue threshold is deliberately looser here
+(`r pct(params$comp_material, 0)` rather than
+`r pct(params$shock_threshold, 0)`): requiring a 20% total-revenue shock as well
+would throw away every organization that lost a major funder and partly replaced
+it, which is precisely the interesting case.
+
+```{r component-flags}
+COMPS <- CH[group == "revenue"]
+comp_flag <- function(z, nm) {
+  base_c <- z[[paste0("base_", nm)]]
+  drop   <- z[[paste0("dol_", nm)]]          # baseline minus actual, in dollars
+  ok <- is.finite(base_c) & is.finite(drop) & base_c > 0
+  ok & (drop / base_c) >= params$comp_share & (drop / z$base_R) >= params$comp_material
+}
+pool  <- p[year %in% 2022:2023]
+flags <- vapply(COMPS$name, function(nm) comp_flag(pool, nm), logical(nrow(pool)))
+pool[, nflags := rowSums(flags)]
+
+kable(pool[, .(organization_years = .N), by = .(component_shocks = nflags)][order(component_shocks)],
+      format.args = list(big.mark = ","),
+      caption = "How many revenue components are shocked in the same organization-year")
+kable(data.table(
+  any_component_shock = sum(pool$nflags > 0),
+  total_revenue_shock = sum(pool$shock),
+  both = sum(pool$nflags > 0 & pool$shock),
+  component_only = sum(pool$nflags > 0 & !pool$shock),
+  total_only = sum(pool$shock & pool$nflags == 0)),
+  format.args = list(big.mark = ","),
+  caption = "Component shocks against the total-revenue shock, 2022-2023")
+```
+
+The flags are not mutually exclusive — an organization can lose a government
+grant and its program revenue in the same year — and the table above says how
+often that happens. The estimates below therefore describe "organization-years
+in which this component was shocked", not a partition of the sample.
+
+## The denominator has to change
+
+Everywhere above, channels are expressed per dollar of *total* revenue
+shortfall. That denominator does not survive here, and the reason is the most
+interesting thing in this section: **when one revenue line collapses, total
+revenue often does not fall.** Organizations that lose a third or more of their
+membership dues make almost all of it up elsewhere, and organizations that lose
+their fundraising events end the year with total revenue *above* baseline on
+average. Dividing by a mean shortfall that is near zero, or negative, produces
+ratios that are arithmetically correct and completely meaningless — an early
+version of this table reported a -1.03 expense-cut share for event losses for
+exactly that reason.
+
+So each component is scaled by **its own dollar fall**, and the first question
+asked is how much of that fall ever reached the bottom line:
+
+* **Replaced by other revenue** — the share of the lost dollars offset by other
+  lines coming in above their own baselines.
+* **Expense cuts** — the share matched by spending below baseline.
+* **Run through the surplus** — the remainder, carried on the balance sheet.
+
+These three sum to exactly 1 by the same identity used throughout, and the
+balance-sheet columns are on the same per-dollar-of-line-lost scale.
+
+```{r component-absorption}
+comp_abs <- rbindlist(lapply(seq_len(nrow(COMPS)), function(i) {
+  nm <- COMPS$name[i]
+  s  <- trim_sample(pool[flags[, nm]])
+  if (nrow(s) < 200)
+    return(data.table(component = COMPS$label[i], n = nrow(s)))
+  fall <- mean(s[[paste0("dol_", nm)]])      # average dollars lost from this line
+  data.table(
+    component = COMPS$label[i], n = nrow(s), orgs = uniqueN(s$EIN2),
+    median_line_fall = median(s[[paste0("dol_", nm)]] / s[[paste0("base_", nm)]]),
+    replaced_by_other_revenue = 1 - mean(s$dol_loss) / fall,
+    expense_cut = mean(s$dol_cut_E) / fall,
+    surplus     = mean(s$dol_surp)  / fall,
+    program_cut = mean(s$dol_cut_prog) / fall,
+    cash        = mean(s$dol_bs_cash) / fall,
+    cash_pct_cap = pct_capacity(s, "bs_cash"),
+    borrowing   = (mean(s$dol_bs_lt) + mean(s$dol_bs_st)) / fall)
+}), fill = TRUE)
+kable(comp_abs, digits = 3,
+      caption = "How a shock to each revenue component is absorbed (per dollar lost from that line)")
+cat("replaced + expense cut + surplus = ",
+    paste(fmt(comp_abs$replaced_by_other_revenue + comp_abs$expense_cut + comp_abs$surplus),
+          collapse = ", "), "\n")
+```
+
+The heterogeneity here is the finding, and it is much larger than anything in
+the pooled estimate.
+
+* **Program revenue behaves completely differently from everything else.** Of a
+  dollar of lost program revenue,
+  `r fmt(comp_abs[component == "Program revenue", expense_cut])` is matched by
+  lower spending — against
+  `r fmt(comp_abs[component == "Program revenue", replaced_by_other_revenue])`
+  replaced and only
+  `r fmt(comp_abs[component == "Program revenue", surplus])` carried on the
+  balance sheet. That is what you would expect if program revenue and program
+  cost are two sides of the same activity: serve fewer clients, bill less, spend
+  less. It is the one component where a revenue fall is genuinely a scale
+  decision rather than a financing problem.
+* **Small contributed lines are absorbed by substitution, not by retrenchment.**
+  Membership dues
+  (`r fmt(comp_abs[component == "Membership dues", replaced_by_other_revenue])`
+  replaced) and fundraising events
+  (`r fmt(comp_abs[component == "Fundraising events", replaced_by_other_revenue])`)
+  are almost entirely made up elsewhere. A replacement share above 1 means the
+  organizations that lost these lines were, on average, growing other revenue
+  faster than they lost them.
+* **Government grants sit in between**:
+  `r fmt(comp_abs[component == "Government grants", replaced_by_other_revenue])`
+  replaced, `r fmt(comp_abs[component == "Government grants", expense_cut])`
+  cut, `r fmt(comp_abs[component == "Government grants", surplus])` on the
+  balance sheet — a genuine three-way split, and the case where the buffer
+  question in section 8 bites hardest.
+* **Investment falls barely touch operations.**
+  `r fmt(comp_abs[component == "Investments", surplus])` runs straight through
+  the surplus, which is what should happen: a portfolio that lost value does not
+  change what the organization can deliver this year, and the expense-cut share
+  is correspondingly small.
+
+```{r component-sensitivity}
+# The materiality rule can be read two ways: the FALL is worth 10% of baseline
+# revenue (used above), or the LINE is worth 10% of baseline revenue. The second
+# is a weaker condition, so it admits more organization-years.
+comp_alt <- rbindlist(lapply(seq_len(nrow(COMPS)), function(i) {
+  nm <- COMPS$name[i]
+  base_c <- pool[[paste0("base_", nm)]]
+  drop   <- pool[[paste0("dol_", nm)]]
+  ok  <- is.finite(base_c) & is.finite(drop) & base_c > 0
+  sel <- ok & (drop / base_c) >= params$comp_share &
+    (base_c / pool$base_R) >= params$comp_material
+  s <- trim_sample(pool[sel])
+  if (nrow(s) < 200) return(data.table(component = COMPS$label[i], n = nrow(s)))
+  fall <- mean(s[[paste0("dol_", nm)]])
+  data.table(component = COMPS$label[i], n = nrow(s),
+             replaced_by_other_revenue = 1 - mean(s$dol_loss) / fall,
+             expense_cut = mean(s$dol_cut_E) / fall,
+             surplus     = mean(s$dol_surp)  / fall,
+             cash        = mean(s$dol_bs_cash) / fall,
+             borrowing   = (mean(s$dol_bs_lt) + mean(s$dol_bs_st)) / fall)
+}), fill = TRUE)
+kable(comp_alt, digits = 3,
+      caption = "Alternative materiality rule: the line (not the fall) is worth 10%+ of baseline revenue")
+```
+
+# 10. Contrasts and robustness
+
+```{r contrasts}
+windows <- list(`2019 (pre-COVID)` = 2019, `2020 (COVID shock)` = 2020,
+                `2021 (relief year)` = 2021, `2022` = 2022, `2023` = 2023, `2024` = 2024)
+by_year <- rbindlist(lapply(names(windows), function(nm) {
+  s <- shocked(windows[[nm]])
+  if (nrow(s) < 200) return(NULL)
+  data.table(window = nm, n = nrow(s),
+             expense_cut = share_of_avg(s, "cut_E"),
+             surplus = mean(s$s_surp) / mean(s$s_loss),
+             cash = share_of_avg(s, "bs_cash"),
+             cash_pct_cap = pct_capacity(s, "bs_cash"),
+             investments = share_of_avg(s, "bs_othass"),
+             property = share_of_avg(s, "bs_fixed"),
+             borrowing = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(by_year, digits = 3, caption = "Absorption by shock year")
+```
+
+The 2019 row is the cleanest case in the table and the one the panel extension
+was built to produce: a shock year with a fully pre-COVID baseline (2016-2018),
+no relief funding in either the baseline or the shock year. The 2022 and 2023
+rows carry a caveat in the other direction — their baselines include 2020 and
+2021, when relief funding inflated many organizations' revenue, so a 2022
+shortfall is measured partly against a relief-inflated norm. Where the 2019 and
+2022-2023 rows agree, the pattern is not an artefact of the relief window.
+
+**Threshold sensitivity.** The 20% cut point is a convention. If the split is a
+real behavioural pattern it should not turn on the threshold.
+
+```{r thresholds}
+thr <- rbindlist(lapply(c(0.10, 0.20, 0.30, 0.50), function(t) {
+  s <- trim_sample(p[year %in% 2022:2023 & gap <= -t])
+  data.table(threshold = t, n = nrow(s),
+             expense_cut = share_of_avg(s, "cut_E"),
+             surplus = mean(s$s_surp) / mean(s$s_loss),
+             cash = share_of_avg(s, "bs_cash"),
+             borrowing = share_of_avg(s, "bs_lt") + share_of_avg(s, "bs_st"))
+}))
+kable(thr, digits = 3, caption = "Sensitivity to the shock threshold, 2022-2023")
+```
+
+**Baseline window and the deflator.** Two more conventions worth testing: the
+length of the baseline, and whether deflating matters at all.
+
+```{r window-sensitivity}
+alt <- rbindlist(lapply(list(
+  list(nm = "3-year baseline, real (as reported)", v = "gap"),
+  list(nm = "2-year baseline, real",              v = "gap2"),
+  list(nm = "3-year baseline, nominal",           v = "gap_nom"),
+  list(nm = "prior year only, real (the v1 rule)", v = "gap_t1")), function(a) {
+  gv  <- p[[a$v]]
+  sel <- p$year %in% 2022:2023 & !is.na(gv) & gv <= -params$shock_threshold
+  s <- trim_sample(p[sel])
+  data.table(definition = a$nm, n = nrow(s),
+             expense_cut = share_of_avg(s, "cut_E"),
+             surplus = mean(s$s_surp) / mean(s$s_loss),
+             cash = share_of_avg(s, "bs_cash"))
+}))
+kable(alt, digits = 3, caption = "Sensitivity to how the baseline is built")
+```
+
+**Trimming.** The untrimmed sample keeps every shocked organization-year.
+
+```{r trimming}
+untrimmed <- trim_sample(p[year %in% 2022:2023 & shock == TRUE], trim = FALSE)
+trimcmp <- rbindlist(lapply(list(list(nm = "trimmed", s = main_s),
+                                 list(nm = "untrimmed", s = untrimmed)), function(a)
+  data.table(sample = a$nm, n = nrow(a$s),
+             expense_cut = share_of_avg(a$s, "cut_E"),
+             surplus = mean(a$s$s_surp) / mean(a$s$s_loss),
+             cash = share_of_avg(a$s, "bs_cash"))))
+kable(trimcmp, digits = 3, caption = "Trimmed vs. untrimmed")
+```
+
+**The gain side, for comparison.** The same computation on organizations whose
+real revenue came in at least `r pct(params$shock_threshold, 0)` *above* their
+baseline says whether absorbing a loss is the mirror image of deploying a gain.
+
+```{r gains}
+gain_s <- trim_sample(p[year %in% 2022:2023 & gap >= params$shock_threshold], bound = NULL)
+gshare <- function(nm) -mean(gain_s[[paste0("s_", nm)]]) / mean(-gain_s$s_loss)
+mirror <- data.table(
+  channel = c("Expenses", "Surplus", "Cash", "Investments, other assets", "Borrowing"),
+  per_dollar_short = c(ec, ws, share_of_avg(main_s, "bs_cash"),
+                       share_of_avg(main_s, "bs_othass"),
+                       share_of_avg(main_s, "bs_lt") + share_of_avg(main_s, "bs_st")),
+  per_dollar_extra = c(gshare("cut_E"), -mean(gain_s$s_surp) / mean(-gain_s$s_loss),
+                       gshare("bs_cash"), gshare("bs_othass"),
+                       gshare("bs_lt") + gshare("bs_st")))
+kable(mirror, digits = 3,
+      caption = "A dollar short of baseline vs. a dollar above it, 2022-2023")
+```
+
+# 11. The flow figure
+
+```{r flow-figure, fig.width = 8.8, fig.height = 6.4, fig.retina = 2}
+pal <- c(ink = "#1f2429", ink_mid = "#4d565f", ink_soft = "#6d7681",
+         accent = "#bd5416", accent_ink = "#8f3f10", navy = "#153243",
+         pumpkin = "#dc965a", surface = "#f3f4f6")
+
+flow_figure <- function(sources, uses, use_capacity_label, title, subtitle, dropped = NULL) {
+  op <- par(mar = c(0.4, 0.4, 3.0, 0.4), bg = "white", family = "sans")
+  on.exit(par(op))
+  gap <- 0.045; centre <- 0.5
+  lab_s <- sprintf("%s  %.2f", names(sources), sources)
+  lab_u <- sprintf("%s  %.2f", names(uses), uses)
+  sources_n <- sources / sum(sources); uses_n <- uses / sum(uses)
+
+  half <- function(v) (sum(v) + gap * (length(v) - 1)) / 2
+  top_max <- centre + max(half(sources_n), half(uses_n), 0.5)
+  bot_min <- centre - max(half(sources_n), half(uses_n), 0.5)
+  head_y  <- top_max + 0.085
+  arrow_y <- bot_min - 0.105
+  legend_y <- arrow_y - 0.075
+  foot_y  <- legend_y - (if (length(dropped)) 0.185 else 0.115)
+  plot.new(); plot.window(xlim = c(0, 1), ylim = c(foot_y - 0.02, head_y + 0.06))
+
+  stack <- function(v) {
+    y <- centre + half(v)
+    out <- lapply(v, function(h) { r <- c(top = y, bot = y - h); y <<- y - h - gap; r })
+    names(out) <- names(v); out
+  }
+  ribbon <- function(x0, x1, t0, b0, t1, b1, col, alpha) {
+    t <- seq(0, 1, length.out = 80); s <- t * t * (3 - 2 * t); xs <- x0 + (x1 - x0) * t
+    polygon(c(xs, rev(xs)), c(t0 + (t1 - t0) * s, rev(b0 + (b1 - b0) * s)),
+            col = adjustcolor(col, alpha), border = NA)
+  }
+  # a chevron riding each ribbon, so the direction of travel is on the page
+  chevron <- function(x, ytop, ybot, col) {
+    ymid <- (ytop + ybot) / 2; h <- min(0.020, (ytop - ybot) / 2.6); w <- 0.012
+    if (h <= 0.003) return(invisible())
+    lines(c(x - w, x, x - w), c(ymid + h, ymid, ymid - h), col = col, lwd = 1.6)
+  }
+  xs <- c(0.250, 0.300); xt <- c(0.487, 0.537); xu <- c(0.700, 0.750)
+  srcb <- stack(sources_n); useb <- stack(uses_n); top <- centre + 0.5
+
+  # Thin bars sit closer together than their labels do, so the last few labels
+  # in a stack collide. Push them apart from the bottom up and draw a leader
+  # line back to the bar whenever a label has been moved off its own centre.
+  place <- function(boxes, minsep) {
+    y <- vapply(boxes, mean, 0); n <- length(y)
+    if (n > 1) for (i in (n - 1):1) if (y[i] - y[i + 1] < minsep) y[i] <- y[i + 1] + minsep
+    y
+  }
+  ys_lab <- place(srcb, 0.052)
+  yu_lab <- place(useb, if (any(nzchar(use_capacity_label))) 0.088 else 0.052)
+  leader <- function(x0, x1, y_bar, y_lab, col) {
+    if (abs(y_lab - y_bar) < 0.004) return(invisible())
+    lines(c(x0, x1), c(y_bar, y_lab), col = adjustcolor(col, 0.45), lwd = 0.7)
+  }
+
+  cur <- top
+  for (i in seq_along(srcb)) {
+    ribbon(xs[2], xt[1], srcb[[i]][["top"]], srcb[[i]][["bot"]], cur, cur - sources_n[[i]],
+           pal[["navy"]], 0.30)
+    chevron(0.398, srcb[[i]][["top"]], srcb[[i]][["bot"]], adjustcolor(pal[["navy"]], 0.85))
+    cur <- cur - sources_n[[i]]
+  }
+  cur <- top
+  for (i in seq_along(useb)) {
+    ribbon(xt[2], xu[1], cur, cur - uses_n[[i]], useb[[i]][["top"]], useb[[i]][["bot"]],
+           pal[["accent"]], 0.34)
+    chevron(0.632, useb[[i]][["top"]], useb[[i]][["bot"]], adjustcolor(pal[["accent_ink"]], 0.85))
+    cur <- cur - uses_n[[i]]
+  }
+  for (i in seq_along(srcb)) {
+    rect(xs[1], srcb[[i]][["bot"]], xs[2], srcb[[i]][["top"]], col = pal[["navy"]], border = NA)
+    leader(xs[1] - 0.004, xs[1] - 0.012, mean(srcb[[i]]), ys_lab[i], pal[["ink_soft"]])
+    text(xs[1] - 0.016, ys_lab[i], lab_s[i], adj = c(1, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  rect(xt[1], centre - 0.5, xt[2], top, col = pal[["accent"]], border = NA)
+  for (i in seq_along(useb)) {
+    rect(xu[1], useb[[i]][["bot"]], xu[2], useb[[i]][["top"]], col = pal[["pumpkin"]], border = NA)
+    leader(xu[2] + 0.004, xu[2] + 0.012, mean(useb[[i]]), yu_lab[i], pal[["ink_soft"]])
+    ym <- yu_lab[i]
+    if (nzchar(use_capacity_label[i])) {
+      text(xu[2] + 0.016, ym + 0.018, lab_u[i], adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+      text(xu[2] + 0.016, ym - 0.020, use_capacity_label[i], adj = c(0, 0.5), cex = 0.56,
+           col = pal[["ink_soft"]])
+    } else {
+      text(xu[2] + 0.016, ym, lab_u[i], adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+    }
+  }
+  text(xs[2], head_y, "WHERE THE MONEY DID NOT ARRIVE", adj = c(1, 0.5), cex = 0.60,
+       font = 2, col = pal[["navy"]])
+  text(mean(xt), head_y, "$1.00 SHORTFALL", adj = c(0.5, 0.5), cex = 0.62, font = 2,
+       col = pal[["accent_ink"]])
+  text(xu[1], head_y, "WHAT PAID FOR IT", adj = c(0, 0.5), cex = 0.60, font = 2,
+       col = pal[["accent_ink"]])
+  lines(c(0.250, 0.740), c(arrow_y, arrow_y), col = pal[["ink_soft"]], lwd = 1)
+  polygon(c(0.750, 0.732, 0.732), c(arrow_y, arrow_y + 0.013, arrow_y - 0.013),
+          col = pal[["ink_soft"]], border = NA)
+  text(0.495, arrow_y + 0.022, "read left to right", adj = c(0.5, 0), cex = 0.58,
+       font = 3, col = pal[["ink_soft"]])
+  text(0.495, legend_y,
+       paste0("Every bar is a positive amount of money. On the left it is revenue that did not come in. ",
+              "On the right it is\nspending that did not happen, or a balance-sheet stock that was run down, ",
+              "measured against what that\nline normally does. The grey note under each is the same draw ",
+              "as a share of what the organization had."),
+       adj = c(0.5, 1), cex = 0.57, col = pal[["ink_mid"]])
+  if (length(dropped)) {
+    text(0.495, foot_y + 0.055,
+         paste0("Came in above baseline during the shock, so not drawn: ",
+                paste(dropped, collapse = "; "), ". The tables above keep the sign."),
+         adj = c(0.5, 1), cex = 0.55, col = pal[["ink_soft"]], font = 3)
+  }
+  mtext(title, side = 3, line = 1.45, adj = 0, cex = 1.0, font = 2, col = pal[["ink"]])
+  mtext(subtitle, side = 3, line = 0.45, adj = 0, cex = 0.64, col = pal[["ink_soft"]])
+}
+
+pick <- function(v) { v <- v[v > 0.005]; sort(v, decreasing = TRUE) }
+src_v  <- setNames(src$cents_per_dollar, src$channel)
+uses_v <- c(`Expense cuts` = ec,
+            setNames(bs$cents_per_dollar, bs$channel)[
+              c("Cash", "Investments, other assets", "Receivables, prepaid", "Property and equipment")],
+            Borrowing = bs[channel == "Long-term debt", cents_per_dollar] +
+                        bs[channel == "Short-term liabilities", cents_per_dollar] +
+                        bs[channel == "Other liabilities", cents_per_dollar])
+cap_v <- c(`Expense cuts` = pct_capacity(main_s, "cut_E"),
+           Cash = pct_capacity(main_s, "bs_cash"),
+           `Investments, other assets` = pct_capacity(main_s, "bs_othass"),
+           `Receivables, prepaid` = pct_capacity(main_s, "bs_oca"),
+           `Property and equipment` = pct_capacity(main_s, "bs_fixed"),
+           Borrowing = (sum(main_s$dol_bs_lt) + sum(main_s$dol_bs_st) + sum(main_s$dol_bs_othli)) /
+                       sum(main_s$boy_lt + main_s$boy_st + main_s$boy_other_liab))
+cap_phrase <- c(`Expense cuts` = "its normal budget", Cash = "the cash it held",
+                `Investments, other assets` = "the investments it held",
+                `Receivables, prepaid` = "the receivables it held",
+                `Property and equipment` = "the property it held",
+                Borrowing = "the liabilities it owed")
+
+sources_p <- pick(src_v); uses_p <- pick(uses_v)
+dropped <- c(names(src_v)[src_v <= 0.005], names(uses_v)[uses_v <= 0.005])
+
+# The capacity ratio weights organizations by dollars while the cents-per-dollar
+# share weights them by the scaled channel, so the two can disagree in sign when
+# a handful of very large organizations move one way and the many move the other.
+# Borrowing does exactly that. A negative capacity note under a positive bar
+# reads as an error rather than as the weighting difference it is, so it is left
+# off the figure; the signed value stays in the section 7 table.
+capk <- cap_v[names(uses_p)]
+flow_figure(
+  sources_p, uses_p,
+  use_capacity_label = ifelse(is.na(capk) | capk <= 0, "",
+                              sprintf("%.0f%% of %s", 100 * capk,
+                                      cap_phrase[names(uses_p)])),
+  title = "Where a sudden revenue shortfall comes from, and what pays for it",
+  subtitle = paste0("cents per dollar of shortfall  |  full-990 filers, December year-ends, revenue ",
+                    pct(params$shock_threshold, 0), "+ below a ", BW,
+                    "-year inflation-adjusted baseline, 2022-2023  |  n = ",
+                    format(nrow(main_s), big.mark = ",")),
+  dropped = tolower(dropped))
+```
+
+Labels carry the true cents-per-dollar values; the bars are normalised to each
+side's own total so the ribbons meet the centre exactly. The grey line under
+each right-hand label is that same draw as a share of what the organization
+had — the absorptive-capacity reading. Any channel that moved the other way is
+named under the figure and keeps its sign in the tables above.
+
+# 12. Findings
+
+```{r findings, include = FALSE}
+cash_c <- bs[channel == "Cash", cents_per_dollar]
+cash_k <- bs[channel == "Cash", pct_of_capacity]
+borrow <- bs[channel == "Long-term debt", cents_per_dollar] +
+          bs[channel == "Short-term liabilities", cents_per_dollar]
+```
+
+* **The split.** Of each dollar of revenue that failed to arrive relative to a
+  three-year inflation-adjusted baseline, `r fmt(ec)` is matched by spending
+  that did not happen and `r fmt(ws)` is carried on the balance sheet.
+* **What the old rule was measuring.** `r pct(both$t1_only / both$t1_rule)` of
+  the organization-years the prior-year rule called a shock are rejected by the
+  baseline rule, and their median prior year sat
+  `r pct(rev_tab[also_a_baseline_shock == FALSE, median_prior_year_vs_baseline])`
+  above their own baseline. The v1 sample was substantially a windfall-reversion
+  sample.
+* **Cash.** `r fmt(cash_c)` per dollar short comes out of cash, which is
+  `r pct(cash_k)` of the cash these organizations were holding when the year
+  began.
+* **Borrowing.** `r fmt(borrow)` per dollar short is funded by new identified
+  debt.
+* **Reserves buffer the cut, and the effect is large.** The expense-cut share
+  for low-reserve organizations is `r fmt(res[reserves == "low", expense_cut])`
+  against `r fmt(res[reserves == "high", expense_cut])` for high-reserve
+  organizations, which spend *above* baseline through the shock and draw
+  `r fmt(res[reserves == "high", cash_drawdown])` per dollar from cash instead
+  — `r pct(res[reserves == "high", cash_pct_of_capacity])` of the cash they
+  held. Within organizations the interaction agrees: a shock cuts expenses by
+  `r fmt(inter[outcome == "Expense cuts", shock_effect])`, but high-reserve
+  organizations cut `r fmt(abs(inter[outcome == "Expense cuts", extra_if_high_reserve]))`
+  less and draw `r fmt(inter[outcome == "Cash", extra_if_high_reserve])` more
+  from cash. This is the behavioural claim the reserves dimension of the index
+  rests on, and it holds.
+* **Which line is lost matters far more than how much is lost.** Of a dollar of
+  lost program revenue, `r fmt(comp_abs[component == "Program revenue", expense_cut])`
+  is matched by lower spending; of a dollar of lost membership dues,
+  `r fmt(comp_abs[component == "Membership dues", replaced_by_other_revenue])` is
+  simply replaced from other sources and the expense response is essentially
+  zero. A single "revenue shock" dimension in the index averages over a genuine
+  four-to-one difference in how organizations respond.
+* **The 20% threshold is weaker than it sounds.** A 20% shortfall against a
+  three-year baseline is `r fmt(abs(z20), 2)` robust standard deviations from the
+  median and occurs in `r pct(mean(p$shock), 0)` of organization-years, and
+  because volatility falls steeply with size it flags
+  `r pct(by_size[size_band == "under $100k", share_shocked], 0)` of the smallest
+  organizations against `r pct(by_size[size_band == "$10m+", share_shocked], 0)`
+  of the largest. The absorption split is stable across thresholds, so no
+  estimate here depends on it, but a size-relative cut point would be a better
+  definition for the index.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(gap_distribution = dist, gap_by_size = by_size,
+               reversion = rev_tab, overlap = both,
+               tail = tail_tab, sources = src, absorption = absorb,
+               expense_split = excut, blocks = bs, identity = ident,
+               reserves = res, reserves_interaction = inter,
+               components = comp_abs, components_alt = comp_alt,
+               by_year = by_year, thresholds = thr, window_sensitivity = alt,
+               trimming = trimcmp, mirror = mirror,
+               n = nrow(main_s), threshold = params$shock_threshold,
+               base_window = BW, ref_year = params$ref_year),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

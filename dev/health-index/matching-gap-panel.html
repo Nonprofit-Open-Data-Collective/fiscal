@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Does the Matching Gap Predict Anything?</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ background-color: #f8f8f8; }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ef2929; } 
+code span.an { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.at { color: #204a87; } 
+code span.bn { color: #0000cf; } 
+code span.cf { color: #204a87; font-weight: bold; } 
+code span.ch { color: #4e9a06; } 
+code span.cn { color: #8f5902; } 
+code span.co { color: #8f5902; font-style: italic; } 
+code span.cv { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.do { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.dt { color: #204a87; } 
+code span.dv { color: #0000cf; } 
+code span.er { color: #a40000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #0000cf; } 
+code span.fu { color: #204a87; font-weight: bold; } 
+code span.im { } 
+code span.in { color: #8f5902; font-weight: bold; font-style: italic; } 
+code span.kw { color: #204a87; font-weight: bold; } 
+code span.op { color: #ce5c00; font-weight: bold; } 
+code span.ot { color: #8f5902; } 
+code span.pp { color: #8f5902; font-style: italic; } 
+code span.sc { color: #ce5c00; font-weight: bold; } 
+code span.ss { color: #4e9a06; } 
+code span.st { color: #4e9a06; } 
+code span.va { color: #000000; } 
+code span.vs { color: #4e9a06; } 
+code span.wa { color: #8f5902; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">
+:root{
+--ground:#ffffff;
+--surface:#f3f4f6;
+--ink:#1f2429;
+--ink-mid:#4d565f;
+--ink-soft:#6d7681;
+--rule:#dcdfe4;
+--rule-strong:#c3c8cf;
+--accent:#bd5416;
+--accent-ink:#8f3f10;
+--accent-wash:#fbf0e7;
+--navy:#153243;
+--pumpkin:#dc965a;
+--font-display:"Zilla Slab",Georgia,"Times New Roman",serif;
+--font-body:"Source Sans 3","Segoe UI",Helvetica,Arial,sans-serif;
+--font-code:"Source Code Pro",Consolas,"Courier New",monospace;
+--measure:40rem;
+}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{
+margin:0;
+background:var(--ground);
+color:var(--ink);
+font-family:var(--font-body);
+font-size:1.0625rem;
+line-height:1.62;
+max-width:52rem;
+margin:0 auto;
+padding:0 1.5rem 5rem;
+}
+
+h1.title{
+font-family:var(--font-display);
+font-weight:700;
+font-size:2.75rem;
+line-height:1.06;
+letter-spacing:-.015em;
+margin:0;
+padding-top:3.5rem;
+}
+h1.title::before{
+content:"Nonprofit Fiscal Health · R walkthrough";
+display:block;
+font-family:var(--font-body);
+font-size:.8125rem;
+line-height:1.4;
+letter-spacing:.12em;
+text-transform:uppercase;
+font-weight:600;
+color:var(--accent-ink);
+margin-bottom:.9rem;
+}
+h3.subtitle{
+font-family:var(--font-body);
+font-weight:400;
+font-size:1.25rem;
+line-height:1.5;
+color:var(--ink-mid);
+margin:.9rem 0 0;
+padding-bottom:2rem;
+border-bottom:1px solid var(--rule);
+max-width:none;
+}
+
+#TOC{
+background:var(--surface);
+border-radius:10px;
+padding:1.25rem 1.5rem;
+margin:2rem 0 1rem;
+}
+#TOC::before{
+content:"Contents";
+display:block;
+font-size:.8125rem;
+letter-spacing:.14em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+margin-bottom:.5rem;
+}
+#TOC ul{list-style:none;margin:0;padding:0;columns:2 16rem;column-gap:2rem;}
+#TOC li{margin:.2rem 0;break-inside:avoid;}
+#TOC ul ul{display:none;}
+#TOC a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem;}
+#TOC a:hover{color:var(--accent-ink);}
+
+h2{
+font-family:var(--font-display);
+font-weight:600;
+font-size:2rem;
+line-height:1.14;
+margin:3.5rem 0 1rem;
+padding-top:1.5rem;
+border-top:1px solid var(--rule);
+}
+h3{
+font-family:var(--font-display);
+font-weight:600;
+font-size:1.45rem;
+line-height:1.24;
+margin:2.25rem 0 .75rem;
+}
+h4{font-family:var(--font-body);font-weight:700;font-size:1.05rem;margin:1.75rem 0 .5rem;}
+p,ul,ol{max-width:var(--measure);}
+p{margin:0 0 1.05rem;}
+ul,ol{margin:0 0 1.05rem;padding-left:1.35rem;}
+li{margin-bottom:.4rem;}
+li::marker{color:var(--accent);font-weight:600;}
+strong{font-weight:700;color:var(--ink);}
+a{color:var(--accent-ink);text-underline-offset:2px;}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+hr{border:0;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+blockquote{
+background:var(--accent-wash);
+border:0;
+border-radius:3px;
+padding:1.1rem 1.3rem;
+margin:1.5rem 0;
+max-width:var(--measure);
+font-size:1rem;
+}
+blockquote p:last-child{margin-bottom:0;}
+
+.concepts{
+background:var(--navy);
+color:#fff;
+border-radius:10px;
+padding:1.75rem 2rem 1.5rem;
+margin:1.5rem 0 2rem;
+}
+.concepts p,.concepts li{color:rgba(255,255,255,.9);}
+.concepts strong{color:var(--pumpkin);}
+.concepts li::marker{color:var(--pumpkin);}
+.concepts code{background:rgba(255,255,255,.12);color:#fff;}
+
+code{font-family:var(--font-code);font-size:.88em;}
+p code,li code,td code{background:var(--surface);padding:.08em .32em;border-radius:3px;color:var(--accent-ink);}
+pre{
+font-family:var(--font-code);
+font-size:.85rem;
+line-height:1.5;
+background:var(--surface);
+border:0;
+border-radius:3px;
+padding:.9rem 1.1rem;
+margin:1rem 0 1.25rem;
+overflow-x:auto;
+}
+pre code{background:none;padding:0;color:inherit;font-size:inherit;}
+pre.r{border-left:3px solid var(--accent);}
+pre:not(.r){background:var(--ground);border:1px solid var(--rule);color:var(--ink-mid);}
+
+.math.display{display:block;overflow-x:auto;margin:1rem 0;}
+
+table{
+border-collapse:collapse;
+font-size:.9rem;
+margin:1.25rem 0 1.75rem;
+display:block;
+max-width:100%;
+overflow-x:auto;
+}
+th,td{text-align:left;padding:.5rem .75rem;border-bottom:1px solid var(--rule);vertical-align:top;}
+thead th{
+font-size:.75rem;
+letter-spacing:.09em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+border-bottom:1.5px solid var(--rule-strong);
+white-space:nowrap;
+}
+td{font-variant-numeric:tabular-nums;}
+caption{
+caption-side:top;
+text-align:left;
+font-size:.8rem;
+letter-spacing:.1em;
+text-transform:uppercase;
+font-weight:700;
+color:var(--ink-soft);
+padding-bottom:.6rem;
+}
+
+img{max-width:100%;height:auto;display:block;margin:1.25rem auto;}
+p.caption{text-align:center;font-size:.9rem;color:var(--ink-soft);font-style:italic;}
+@media (max-width:640px){
+h1.title{font-size:2.1rem;}
+h2{font-size:1.65rem;}
+h3{font-size:1.3rem;}
+body{padding:0 1rem 3.5rem;}
+.concepts{padding:1.35rem 1.25rem;}
+}
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Does the Matching Gap Predict
+Anything?</h1>
+<h3 class="subtitle">Panel validation of the long-term matching gap,
+2019 to 2023</h3>
+
+
+<div id="TOC">
+<ul>
+<li><a href="#purpose" id="toc-purpose">Purpose</a></li>
+<li><a href="#sample-and-gaps" id="toc-sample-and-gaps">1. Sample and
+gaps</a></li>
+<li><a href="#outcomes-2020-2023" id="toc-outcomes-2020-2023">2.
+Outcomes, 2020-2023</a></li>
+<li><a href="#does-the-2019-gap-predict-2020-2023" id="toc-does-the-2019-gap-predict-2020-2023">3. Does the 2019 gap
+predict 2020-2023?</a></li>
+<li><a href="#findings" id="toc-findings">4. Findings</a></li>
+</ul>
+</div>
+
+<div id="purpose" class="section level1">
+<h1>Purpose</h1>
+<p><code>matching-gap-2023.Rmd</code> built an indicator from the H1 and
+H2 benchmarks: debt beyond what an organization’s asset mix and size
+support. Validated inside a single filing, it added almost nothing. The
+one strong result, cash drawdowns, turned out to be a floor effect, and
+the long-term gap added at most 0.003 AUC for deficits and net-asset
+declines.</p>
+<p>That test had three weaknesses the panel fixes:</p>
+<ul>
+<li><strong>A one-year horizon.</strong> Financial distress plays out
+over years.</li>
+<li><strong>Outcomes measured inside the same filing</strong>, so a gap
+measured at the start of the year predicted events already partly under
+way.</li>
+<li><strong>No way to ask whether the gap is a passing condition or a
+standing trait.</strong></li>
+</ul>
+<p>Here the gap is measured in 2019 and used to predict 2020-2023. Three
+changes follow the recommendations from the memo: the Poisson benchmark
+instead of the two-part model, scaling by expenses as well as by assets,
+and controls for starting cash and asset intensity from the outset.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">suppressMessages</span>({</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  <span class="fu">library</span>(data.table)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="fu">library</span>(bit64)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="fu">library</span>(knitr)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="fu">library</span>(splines)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>})</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">source</span>(<span class="st">&quot;matching-gap.R&quot;</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">set.seed</span>(params<span class="sc">$</span>seed)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>fmt <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">d =</span> <span class="dv">3</span>) <span class="fu">formatC</span>(x, <span class="at">format =</span> <span class="st">&quot;f&quot;</span>, <span class="at">digits =</span> d)</span></code></pre></div>
+</div>
+<div id="sample-and-gaps" class="section level1">
+<h1>1. Sample and gaps</h1>
+<p>The sample is organizations that filed a full 990 with a December
+year-end in every year 2019-2023. The benchmark is refit within each
+year, so a gap is always relative to peers of the same size and asset
+mix in that same year.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="fu">as.data.table</span>(<span class="fu">readRDS</span>(params<span class="sc">$</span>panel_file))</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>d <span class="ot">&lt;-</span> d[RETURN_TYPE <span class="sc">==</span> <span class="st">&quot;990&quot;</span> <span class="sc">&amp;</span> <span class="fu">substr</span>(TAX_PERIOD_END_DATE, <span class="dv">6</span>, <span class="dv">7</span>) <span class="sc">==</span> <span class="st">&quot;12&quot;</span> <span class="sc">&amp;</span> TAX_YEAR <span class="sc">%in%</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2024</span>]</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>n_years <span class="ot">&lt;-</span> d[TAX_YEAR <span class="sc">%in%</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2023</span>, .N, by <span class="ot">=</span> EIN2]</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>keep <span class="ot">&lt;-</span> n_years[N <span class="sc">==</span> <span class="dv">5</span>, EIN2]</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>d <span class="ot">&lt;-</span> d[EIN2 <span class="sc">%chin%</span> keep]</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>in2024 <span class="ot">&lt;-</span> <span class="fu">unique</span>(d[TAX_YEAR <span class="sc">==</span> <span class="dv">2024</span>, EIN2])</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>gaps_for_year <span class="ot">&lt;-</span> <span class="cf">function</span>(year) {</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">gap_lines</span>(d[TAX_YEAR <span class="sc">==</span> year], <span class="st">&quot;EOY&quot;</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  m <span class="ot">&lt;-</span> m[m<span class="sc">$</span>E <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> m<span class="sc">$</span>A <span class="sc">&gt;</span> <span class="dv">0</span>, ]</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  g <span class="ot">&lt;-</span> <span class="fu">matching_gap</span>(m, <span class="at">type =</span> <span class="st">&quot;ppml&quot;</span>)<span class="sc">$</span>gaps</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">EIN2 =</span> m<span class="sc">$</span>ein, <span class="at">year =</span> year,</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>             <span class="at">gap_assets =</span> g<span class="sc">$</span>gap_long,                       <span class="co"># scaled by total assets</span></span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>             <span class="at">gap_expenses =</span> (m<span class="sc">$</span>lt <span class="sc">-</span> g<span class="sc">$</span>pred_long) <span class="sc">/</span> m<span class="sc">$</span>E,     <span class="co"># scaled by expenses</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>             <span class="at">debt_assets =</span> m<span class="sc">$</span>L <span class="sc">/</span> m<span class="sc">$</span>A, <span class="at">lt =</span> m<span class="sc">$</span>lt, <span class="at">A =</span> m<span class="sc">$</span>A, <span class="at">E =</span> m<span class="sc">$</span>E,</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>             <span class="at">cash_months =</span> <span class="dv">12</span> <span class="sc">*</span> m<span class="sc">$</span>cash <span class="sc">/</span> m<span class="sc">$</span>E, <span class="at">assets_exp =</span> m<span class="sc">$</span>A <span class="sc">/</span> m<span class="sc">$</span>E)</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>}</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>g19 <span class="ot">&lt;-</span> <span class="fu">gaps_for_year</span>(<span class="dv">2019</span>)</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>g23 <span class="ot">&lt;-</span> <span class="fu">gaps_for_year</span>(<span class="dv">2023</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">data.frame</span>(<span class="at">organizations =</span> <span class="fu">nrow</span>(g19), <span class="at">also_filed_2024 =</span> <span class="fu">sum</span>(g19<span class="sc">$</span>EIN2 <span class="sc">%chin%</span> in2024)),</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="right">organizations</th>
+<th align="right">also_filed_2024</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">126,746</td>
+<td align="right">110,696</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Is the gap a condition or a trait?</strong> If an
+organization’s gap in 2019 tells you its gap in 2023, the indicator is
+describing a standing financing posture rather than a passing
+strain.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>p <span class="ot">&lt;-</span> <span class="fu">merge</span>(g19[, .(EIN2, <span class="at">gap_assets_2019 =</span> gap_assets, <span class="at">gap_expenses_2019 =</span> gap_expenses,</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>                   <span class="at">debt_assets_2019 =</span> debt_assets)],</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>           g23[, .(EIN2, <span class="at">gap_assets_2023 =</span> gap_assets, <span class="at">gap_expenses_2023 =</span> gap_expenses,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>                   <span class="at">debt_assets_2023 =</span> debt_assets)], <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">data.frame</span>(</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>  <span class="at">measure =</span> <span class="fu">c</span>(<span class="st">&quot;gap (scaled by assets)&quot;</span>, <span class="st">&quot;gap (scaled by expenses)&quot;</span>, <span class="st">&quot;debt_assets&quot;</span>),</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>  <span class="at">spearman_2019_vs_2023 =</span> <span class="fu">c</span>(<span class="fu">cor</span>(p<span class="sc">$</span>gap_assets_2019, p<span class="sc">$</span>gap_assets_2023, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>                            <span class="fu">cor</span>(p<span class="sc">$</span>gap_expenses_2019, p<span class="sc">$</span>gap_expenses_2023, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>),</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>                            <span class="fu">cor</span>(p<span class="sc">$</span>debt_assets_2019, p<span class="sc">$</span>debt_assets_2023, <span class="at">method =</span> <span class="st">&quot;spearman&quot;</span>))),</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  <span class="at">digits =</span> <span class="dv">3</span>, <span class="at">caption =</span> <span class="st">&quot;Persistence over four years&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Persistence over four years</caption>
+<thead>
+<tr class="header">
+<th align="left">measure</th>
+<th align="right">spearman_2019_vs_2023</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gap (scaled by assets)</td>
+<td align="right">0.644</td>
+</tr>
+<tr class="even">
+<td align="left">gap (scaled by expenses)</td>
+<td align="right">0.713</td>
+</tr>
+<tr class="odd">
+<td align="left">debt_assets</td>
+<td align="right">0.777</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="outcomes-2020-2023" class="section level1">
+<h1>2. Outcomes, 2020-2023</h1>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>num <span class="ot">&lt;-</span> <span class="cf">function</span>(x) { x <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(x); x[<span class="fu">is.na</span>(x)] <span class="ot">&lt;-</span> <span class="dv">0</span>; x }</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>flows <span class="ot">&lt;-</span> d[TAX_YEAR <span class="sc">%in%</span> <span class="dv">2019</span><span class="sc">:</span><span class="dv">2023</span>, .(</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="at">EIN2 =</span> EIN2, <span class="at">year =</span> TAX_YEAR,</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="at">R =</span> <span class="fu">num</span>(F9_08_REV_TOT_TOT), <span class="at">E =</span> <span class="fu">num</span>(F9_09_EXP_TOT_TOT),</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>  <span class="at">na =</span> <span class="fu">num</span>(F9_10_NAFB_TOT_EOY), <span class="at">cash =</span> <span class="fu">num</span>(F9_10_ASSET_CASH_EOY) <span class="sc">+</span> <span class="fu">num</span>(F9_10_ASSET_SAVING_EOY))]</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>flows[, deficit <span class="sc">:=</span> <span class="fu">as.numeric</span>(R <span class="sc">&lt;</span> E)]</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>post <span class="ot">&lt;-</span> flows[year <span class="sc">%in%</span> <span class="dv">2020</span><span class="sc">:</span><span class="dv">2023</span>]</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>out <span class="ot">&lt;-</span> post[, .(<span class="at">deficit_years =</span> <span class="fu">sum</span>(deficit)), by <span class="ot">=</span> EIN2]</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>run2 <span class="ot">&lt;-</span> post[<span class="fu">order</span>(EIN2, year), .(<span class="at">two_in_a_row =</span> <span class="fu">as.numeric</span>(<span class="fu">any</span>(deficit <span class="sc">==</span> <span class="dv">1</span> <span class="sc">&amp;</span> <span class="fu">shift</span>(deficit, <span class="dv">1</span>) <span class="sc">==</span> <span class="dv">1</span>,</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>                                                               <span class="at">na.rm =</span> <span class="cn">TRUE</span>))), by <span class="ot">=</span> EIN2]</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>base19 <span class="ot">&lt;-</span> flows[year <span class="sc">==</span> <span class="dv">2019</span>, .(EIN2, <span class="at">na19 =</span> na, <span class="at">cash19 =</span> cash, <span class="at">E19 =</span> E)]</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>end23  <span class="ot">&lt;-</span> flows[year <span class="sc">==</span> <span class="dv">2023</span>, .(EIN2, <span class="at">na23 =</span> na, <span class="at">cash23 =</span> cash)]</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">Reduce</span>(<span class="cf">function</span>(a, b) <span class="fu">merge</span>(a, b, <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>), <span class="fu">list</span>(out, run2, base19, end23))</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>out[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  <span class="at">na_change =</span> (na23 <span class="sc">-</span> na19) <span class="sc">/</span> E19,</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  <span class="at">cash_change =</span> <span class="dv">12</span> <span class="sc">*</span> (cash23 <span class="sc">-</span> cash19) <span class="sc">/</span> E19,</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="at">na_fell =</span> <span class="fu">as.numeric</span>(na23 <span class="sc">&lt;</span> na19),</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>  <span class="at">cash_fell_a_month =</span> <span class="fu">as.numeric</span>(<span class="dv">12</span> <span class="sc">*</span> (cash23 <span class="sc">-</span> cash19) <span class="sc">/</span> E19 <span class="sc">&lt;</span> <span class="sc">-</span><span class="dv">1</span>),</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>  <span class="at">filed_2024 =</span> <span class="fu">as.numeric</span>(EIN2 <span class="sc">%chin%</span> in2024),</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>  <span class="at">three_plus_deficits =</span> <span class="fu">as.numeric</span>(deficit_years <span class="sc">&gt;=</span> <span class="dv">3</span>))]</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a><span class="fu">kable</span>(out[, .(<span class="at">organizations =</span> .N,</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>              <span class="at">mean_deficit_years =</span> <span class="fu">mean</span>(deficit_years),</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>              <span class="at">pct_three_plus_deficits =</span> <span class="fu">mean</span>(three_plus_deficits),</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>              <span class="at">pct_two_deficits_in_a_row =</span> <span class="fu">mean</span>(two_in_a_row),</span>
+<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>              <span class="at">pct_net_assets_fell =</span> <span class="fu">mean</span>(na_fell),</span>
+<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>              <span class="at">pct_cash_fell_a_month =</span> <span class="fu">mean</span>(cash_fell_a_month),</span>
+<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>              <span class="at">pct_filed_2024 =</span> <span class="fu">mean</span>(filed_2024))], <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="10%" />
+<col width="13%" />
+<col width="17%" />
+<col width="18%" />
+<col width="14%" />
+<col width="15%" />
+<col width="10%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="right">organizations</th>
+<th align="right">mean_deficit_years</th>
+<th align="right">pct_three_plus_deficits</th>
+<th align="right">pct_two_deficits_in_a_row</th>
+<th align="right">pct_net_assets_fell</th>
+<th align="right">pct_cash_fell_a_month</th>
+<th align="right">pct_filed_2024</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">128,374</td>
+<td align="right">1.467</td>
+<td align="right">0.208</td>
+<td align="right">0.343</td>
+<td align="right">0.285</td>
+<td align="right"></td>
+<td align="right">0.873</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="does-the-2019-gap-predict-2020-2023" class="section level1">
+<h1>3. Does the 2019 gap predict 2020-2023?</h1>
+<p>Each outcome is regressed on the 2019 gap, with
+<code>debt_assets</code>, size, starting cash months, and asset
+intensity held fixed. Gaps and <code>debt_assets</code> are winsorized
+at 1/99 and standardized, so coefficients are per standard deviation.
+The comparison of interest is a model with the gap against the same
+model without it.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>wz <span class="ot">&lt;-</span> <span class="cf">function</span>(x) { q <span class="ot">&lt;-</span> <span class="fu">quantile</span>(x, <span class="fu">c</span>(<span class="fl">0.01</span>, <span class="fl">0.99</span>), <span class="at">na.rm =</span> <span class="cn">TRUE</span>); <span class="fu">as.numeric</span>(<span class="fu">scale</span>(<span class="fu">pmin</span>(<span class="fu">pmax</span>(x, q[[<span class="dv">1</span>]]), q[[<span class="dv">2</span>]]))) }</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>m <span class="ot">&lt;-</span> <span class="fu">merge</span>(out, g19[, .(EIN2, gap_assets, gap_expenses, debt_assets, E, A, cash_months, assets_exp)],</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>           <span class="at">by =</span> <span class="st">&quot;EIN2&quot;</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>m[, <span class="st">`</span><span class="at">:=</span><span class="st">`</span>(<span class="at">z_gap_assets =</span> <span class="fu">wz</span>(gap_assets), <span class="at">z_gap_expenses =</span> <span class="fu">wz</span>(gap_expenses),</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>         <span class="at">z_debt_assets =</span> <span class="fu">wz</span>(debt_assets))]</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>controls <span class="ot">&lt;-</span> <span class="fu">cbind</span>(<span class="at">intercept =</span> <span class="dv">1</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>                  <span class="fu">ns</span>(<span class="fu">log</span>(m<span class="sc">$</span>E), <span class="at">df =</span> <span class="dv">4</span>), <span class="fu">ns</span>(<span class="fu">log1p</span>(m<span class="sc">$</span>A), <span class="at">df =</span> <span class="dv">4</span>),</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>                  <span class="fu">ns</span>(<span class="fu">log1p</span>(<span class="fu">pmax</span>(m<span class="sc">$</span>cash_months, <span class="dv">0</span>)), <span class="at">df =</span> <span class="dv">4</span>), <span class="fu">ns</span>(<span class="fu">log</span>(<span class="fu">pmax</span>(m<span class="sc">$</span>assets_exp, <span class="fl">0.01</span>)), <span class="at">df =</span> <span class="dv">4</span>))</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="fu">colnames</span>(controls) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;intercept&quot;</span>, <span class="fu">paste0</span>(<span class="st">&quot;size_E&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="fu">paste0</span>(<span class="st">&quot;size_A&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>),</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>                        <span class="fu">paste0</span>(<span class="st">&quot;cash_months&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>), <span class="fu">paste0</span>(<span class="st">&quot;asset_intensity&quot;</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">4</span>))</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>ols <span class="ot">&lt;-</span> <span class="cf">function</span>(y, W) {</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  XtXi <span class="ot">&lt;-</span> <span class="fu">solve</span>(<span class="fu">crossprod</span>(W)); b <span class="ot">&lt;-</span> <span class="fu">drop</span>(XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W, y))</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  e <span class="ot">&lt;-</span> <span class="fu">drop</span>(y <span class="sc">-</span> W <span class="sc">%*%</span> b)</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  V <span class="ot">&lt;-</span> XtXi <span class="sc">%*%</span> <span class="fu">crossprod</span>(W <span class="sc">*</span> e) <span class="sc">%*%</span> XtXi <span class="sc">*</span> <span class="fu">nrow</span>(W) <span class="sc">/</span> (<span class="fu">nrow</span>(W) <span class="sc">-</span> <span class="fu">ncol</span>(W))</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">coef =</span> <span class="fu">data.frame</span>(<span class="at">term =</span> <span class="fu">colnames</span>(W), <span class="at">estimate =</span> b, <span class="at">se =</span> <span class="fu">sqrt</span>(<span class="fu">diag</span>(V)), <span class="at">row.names =</span> <span class="cn">NULL</span>),</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>       <span class="at">fitted =</span> <span class="fu">drop</span>(W <span class="sc">%*%</span> b))</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>}</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="cf">function</span>(score, y) {</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  r <span class="ot">&lt;-</span> <span class="fu">rank</span>(score); n1 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">1</span>)); n0 <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">sum</span>(y <span class="sc">==</span> <span class="dv">0</span>))</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  (<span class="fu">sum</span>(r[y <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> n1 <span class="sc">*</span> (n1 <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">/</span> (n1 <span class="sc">*</span> n0)</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>}</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>OUTCOMES <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="at">three_plus_deficits =</span> <span class="st">&quot;three_plus_deficits&quot;</span>, <span class="at">two_in_a_row =</span> <span class="st">&quot;two_in_a_row&quot;</span>,</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>              <span class="at">na_fell =</span> <span class="st">&quot;na_fell&quot;</span>, <span class="at">cash_fell_a_month =</span> <span class="st">&quot;cash_fell_a_month&quot;</span>,</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>              <span class="at">did_not_file_2024 =</span> <span class="st">&quot;no2024&quot;</span>)</span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>m[, no2024 <span class="sc">:=</span> <span class="dv">1</span> <span class="sc">-</span> filed_2024]</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">names</span>(OUTCOMES), <span class="cf">function</span>(nm) {</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>  y <span class="ot">&lt;-</span> m[[OUTCOMES[[nm]]]]</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>  base <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets))</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>  wa   <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_assets))</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>  we   <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_expenses))</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>  pick <span class="ot">&lt;-</span> <span class="cf">function</span>(f, t) f<span class="sc">$</span>coef[f<span class="sc">$</span>coef<span class="sc">$</span>term <span class="sc">==</span> t, ]</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">rate =</span> <span class="fu">mean</span>(y),</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>             <span class="at">debt_assets_alone =</span> <span class="fu">pick</span>(base, <span class="st">&quot;debt_assets&quot;</span>)<span class="sc">$</span>estimate,</span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>             <span class="at">gap_assets =</span> <span class="fu">pick</span>(wa, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>estimate, <span class="at">gap_assets_se =</span> <span class="fu">pick</span>(wa, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>se,</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>             <span class="at">gap_expenses =</span> <span class="fu">pick</span>(we, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>estimate, <span class="at">gap_expenses_se =</span> <span class="fu">pick</span>(we, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>se,</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a>             <span class="at">auc_base =</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>             <span class="at">auc_gain_assets =</span> <span class="fu">auc</span>(wa<span class="sc">$</span>fitted, y) <span class="sc">-</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a>             <span class="at">auc_gain_expenses =</span> <span class="fu">auc</span>(we<span class="sc">$</span>fitted, y) <span class="sc">-</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y))</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a>}))</span>
+<span id="cb5-42"><a href="#cb5-42" tabindex="-1"></a><span class="fu">kable</span>(results, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Per standard deviation of the 2019 gap; AUC gains over the same model without it&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Per standard deviation of the 2019 gap; AUC gains over the same
+model without it</caption>
+<colgroup>
+<col width="14%" />
+<col width="4%" />
+<col width="12%" />
+<col width="7%" />
+<col width="9%" />
+<col width="9%" />
+<col width="11%" />
+<col width="6%" />
+<col width="11%" />
+<col width="12%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">rate</th>
+<th align="right">debt_assets_alone</th>
+<th align="right">gap_assets</th>
+<th align="right">gap_assets_se</th>
+<th align="right">gap_expenses</th>
+<th align="right">gap_expenses_se</th>
+<th align="right">auc_base</th>
+<th align="right">auc_gain_assets</th>
+<th align="right">auc_gain_expenses</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">three_plus_deficits</td>
+<td align="right">0.2079</td>
+<td align="right">0.0274</td>
+<td align="right">-0.0011</td>
+<td align="right">0.0023</td>
+<td align="right">0.0203</td>
+<td align="right">0.0017</td>
+<td align="right">0.6003</td>
+<td align="right">0e+00</td>
+<td align="right">1e-04</td>
+</tr>
+<tr class="even">
+<td align="left">two_in_a_row</td>
+<td align="right">0.3438</td>
+<td align="right">0.0228</td>
+<td align="right">0.0004</td>
+<td align="right">0.0027</td>
+<td align="right">0.0156</td>
+<td align="right">0.0018</td>
+<td align="right">0.5697</td>
+<td align="right">0e+00</td>
+<td align="right">2e-04</td>
+</tr>
+<tr class="odd">
+<td align="left">na_fell</td>
+<td align="right">0.2858</td>
+<td align="right">0.0165</td>
+<td align="right">-0.0084</td>
+<td align="right">0.0026</td>
+<td align="right">0.0167</td>
+<td align="right">0.0018</td>
+<td align="right">0.5642</td>
+<td align="right">5e-04</td>
+<td align="right">5e-04</td>
+</tr>
+<tr class="even">
+<td align="left">cash_fell_a_month</td>
+<td align="right">0.2284</td>
+<td align="right">0.0096</td>
+<td align="right">-0.0030</td>
+<td align="right">0.0012</td>
+<td align="right">-0.0019</td>
+<td align="right">0.0016</td>
+<td align="right">0.7387</td>
+<td align="right">0e+00</td>
+<td align="right">0e+00</td>
+</tr>
+<tr class="odd">
+<td align="left">did_not_file_2024</td>
+<td align="right">0.1266</td>
+<td align="right">0.0019</td>
+<td align="right">0.0018</td>
+<td align="right">0.0021</td>
+<td align="right">0.0010</td>
+<td align="right">0.0013</td>
+<td align="right">0.5399</td>
+<td align="right">1e-04</td>
+<td align="right">1e-04</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Is the relationship linear?</strong> The quintile table below
+suggests both tails carry risk: organizations far above the benchmark
+are over-borrowed, and those far below it tend to have thin balance
+sheets relative to their spending. A linear term averages the two away.
+These models add quintile dummies for the gap, and separately its
+absolute deviation from the median.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>qgap <span class="ot">&lt;-</span> <span class="fu">cut</span>(<span class="fu">rank</span>(m<span class="sc">$</span>gap_expenses, <span class="at">ties.method =</span> <span class="st">&quot;first&quot;</span>), <span class="dv">5</span>, <span class="at">labels =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>qd <span class="ot">&lt;-</span> <span class="fu">model.matrix</span>(<span class="sc">~</span> <span class="fu">factor</span>(qgap))[, <span class="sc">-</span><span class="dv">1</span>, drop <span class="ot">=</span> <span class="cn">FALSE</span>]</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="fu">colnames</span>(qd) <span class="ot">&lt;-</span> <span class="fu">paste0</span>(<span class="st">&quot;gap_q&quot;</span>, <span class="dv">2</span><span class="sc">:</span><span class="dv">5</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>absdev <span class="ot">&lt;-</span> <span class="fu">wz</span>(<span class="fu">abs</span>(m<span class="sc">$</span>gap_expenses <span class="sc">-</span> <span class="fu">median</span>(m<span class="sc">$</span>gap_expenses)))</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>nonlinear <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">c</span>(<span class="st">&quot;three_plus_deficits&quot;</span>, <span class="st">&quot;na_fell&quot;</span>, <span class="st">&quot;no2024&quot;</span>), <span class="cf">function</span>(nm) {</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  y <span class="ot">&lt;-</span> m[[nm]]</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  base <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets))</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  lin  <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_expenses))</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  quint <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, qd))</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  adev <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_expenses,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>                       <span class="at">abs_deviation =</span> absdev))</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm, <span class="at">auc_base =</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>             <span class="at">gain_linear =</span> <span class="fu">auc</span>(lin<span class="sc">$</span>fitted, y) <span class="sc">-</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>             <span class="at">gain_quintiles =</span> <span class="fu">auc</span>(quint<span class="sc">$</span>fitted, y) <span class="sc">-</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>             <span class="at">gain_abs_deviation =</span> <span class="fu">auc</span>(adev<span class="sc">$</span>fitted, y) <span class="sc">-</span> <span class="fu">auc</span>(base<span class="sc">$</span>fitted, y),</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>             <span class="at">abs_deviation_coef =</span> adev<span class="sc">$</span>coef<span class="sc">$</span>estimate[adev<span class="sc">$</span>coef<span class="sc">$</span>term <span class="sc">==</span> <span class="st">&quot;abs_deviation&quot;</span>],</span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>             <span class="at">abs_deviation_se =</span> adev<span class="sc">$</span>coef<span class="sc">$</span>se[adev<span class="sc">$</span>coef<span class="sc">$</span>term <span class="sc">==</span> <span class="st">&quot;abs_deviation&quot;</span>])</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>}))</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="fu">kable</span>(nonlinear, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Linear vs. non-linear treatments of the expense-scaled gap&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Linear vs. non-linear treatments of the expense-scaled
+gap</caption>
+<colgroup>
+<col width="18%" />
+<col width="8%" />
+<col width="10%" />
+<col width="13%" />
+<col width="17%" />
+<col width="17%" />
+<col width="15%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">auc_base</th>
+<th align="right">gain_linear</th>
+<th align="right">gain_quintiles</th>
+<th align="right">gain_abs_deviation</th>
+<th align="right">abs_deviation_coef</th>
+<th align="right">abs_deviation_se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">three_plus_deficits</td>
+<td align="right">0.6003</td>
+<td align="right">1e-04</td>
+<td align="right">0.0010</td>
+<td align="right">0.0009</td>
+<td align="right">0.0252</td>
+<td align="right">0.0020</td>
+</tr>
+<tr class="even">
+<td align="left">na_fell</td>
+<td align="right">0.5642</td>
+<td align="right">5e-04</td>
+<td align="right">0.0016</td>
+<td align="right">0.0029</td>
+<td align="right">0.0294</td>
+<td align="right">0.0021</td>
+</tr>
+<tr class="odd">
+<td align="left">no2024</td>
+<td align="right">0.5399</td>
+<td align="right">1e-04</td>
+<td align="right">0.0008</td>
+<td align="right">0.0002</td>
+<td align="right">0.0015</td>
+<td align="right">0.0015</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Continuous outcomes.</strong> The same models for the
+four-year change in net assets and in cash, both scaled by 2019
+expenses.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>cont <span class="ot">&lt;-</span> <span class="fu">rbindlist</span>(<span class="fu">lapply</span>(<span class="fu">c</span>(<span class="st">&quot;na_change&quot;</span>, <span class="st">&quot;cash_change&quot;</span>), <span class="cf">function</span>(nm) {</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>  y <span class="ot">&lt;-</span> <span class="fu">wz</span>(m[[nm]])</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  base <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets))</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  wa <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_assets))</span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  we <span class="ot">&lt;-</span> <span class="fu">ols</span>(y, <span class="fu">cbind</span>(controls, <span class="at">debt_assets =</span> m<span class="sc">$</span>z_debt_assets, <span class="at">gap =</span> m<span class="sc">$</span>z_gap_expenses))</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  pick <span class="ot">&lt;-</span> <span class="cf">function</span>(f, t) f<span class="sc">$</span>coef[f<span class="sc">$</span>coef<span class="sc">$</span>term <span class="sc">==</span> t, ]</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="fu">data.table</span>(<span class="at">outcome =</span> nm,</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>             <span class="at">debt_assets =</span> <span class="fu">pick</span>(base, <span class="st">&quot;debt_assets&quot;</span>)<span class="sc">$</span>estimate,</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>             <span class="at">gap_assets =</span> <span class="fu">pick</span>(wa, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>estimate, <span class="at">gap_assets_se =</span> <span class="fu">pick</span>(wa, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>se,</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>             <span class="at">gap_expenses =</span> <span class="fu">pick</span>(we, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>estimate, <span class="at">gap_expenses_se =</span> <span class="fu">pick</span>(we, <span class="st">&quot;gap&quot;</span>)<span class="sc">$</span>se)</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>}))</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="fu">kable</span>(cont, <span class="at">digits =</span> <span class="dv">4</span>, <span class="at">caption =</span> <span class="st">&quot;Standardized outcomes, per standard deviation of the gap&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Standardized outcomes, per standard deviation of the
+gap</caption>
+<colgroup>
+<col width="15%" />
+<col width="15%" />
+<col width="14%" />
+<col width="17%" />
+<col width="16%" />
+<col width="20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">outcome</th>
+<th align="right">debt_assets</th>
+<th align="right">gap_assets</th>
+<th align="right">gap_assets_se</th>
+<th align="right">gap_expenses</th>
+<th align="right">gap_expenses_se</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">na_change</td>
+<td align="right">-0.0177</td>
+<td align="right">0.0012</td>
+<td align="right">0.0068</td>
+<td align="right">-0.0688</td>
+<td align="right">0.0097</td>
+</tr>
+<tr class="even">
+<td align="left">cash_change</td>
+<td align="right">-0.0016</td>
+<td align="right">0.0069</td>
+<td align="right">0.0058</td>
+<td align="right">-0.0078</td>
+<td align="right">0.0091</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Where the gap sits among organizations.</strong> Outcome
+rates by quintile of the 2019 gap, within terciles of 2019
+<code>debt_assets</code>, to see whether the gap separates risk at a
+given leverage level.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>m[, tercile <span class="sc">:=</span> <span class="fu">cut</span>(<span class="fu">rank</span>(debt_assets, <span class="at">ties.method =</span> <span class="st">&quot;first&quot;</span>), <span class="dv">3</span>, <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">&quot;low&quot;</span>, <span class="st">&quot;middle&quot;</span>, <span class="st">&quot;high&quot;</span>))]</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>m[, quintile <span class="sc">:=</span> <span class="fu">ave</span>(gap_expenses, tercile, <span class="at">FUN =</span> <span class="cf">function</span>(z) <span class="fu">cut</span>(<span class="fu">rank</span>(z, <span class="at">ties.method =</span> <span class="st">&quot;first&quot;</span>), <span class="dv">5</span>, <span class="at">labels =</span> <span class="cn">FALSE</span>))]</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="fu">kable</span>(m[, .(<span class="at">organizations =</span> .N, <span class="at">three_plus_deficits =</span> <span class="fu">mean</span>(three_plus_deficits),</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>            <span class="at">net_assets_fell =</span> <span class="fu">mean</span>(na_fell), <span class="at">did_not_file_2024 =</span> <span class="fu">mean</span>(no2024)),</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>        <span class="at">by =</span> .(<span class="at">debt_assets_tercile =</span> tercile, <span class="at">gap_quintile =</span> quintile)][</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>          <span class="fu">order</span>(debt_assets_tercile, gap_quintile)], <span class="at">digits =</span> <span class="dv">3</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>      <span class="at">format.args =</span> <span class="fu">list</span>(<span class="at">big.mark =</span> <span class="st">&quot;,&quot;</span>))</span></code></pre></div>
+<table>
+<colgroup>
+<col width="19%" />
+<col width="12%" />
+<col width="13%" />
+<col width="19%" />
+<col width="15%" />
+<col width="17%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">debt_assets_tercile</th>
+<th align="right">gap_quintile</th>
+<th align="right">organizations</th>
+<th align="right">three_plus_deficits</th>
+<th align="right">net_assets_fell</th>
+<th align="right">did_not_file_2024</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">low</td>
+<td align="right">1</td>
+<td align="right">8,450</td>
+<td align="right">0.227</td>
+<td align="right">0.304</td>
+<td align="right">0.135</td>
+</tr>
+<tr class="even">
+<td align="left">low</td>
+<td align="right">2</td>
+<td align="right">8,450</td>
+<td align="right">0.226</td>
+<td align="right">0.305</td>
+<td align="right">0.122</td>
+</tr>
+<tr class="odd">
+<td align="left">low</td>
+<td align="right">3</td>
+<td align="right">8,449</td>
+<td align="right">0.194</td>
+<td align="right">0.295</td>
+<td align="right">0.124</td>
+</tr>
+<tr class="even">
+<td align="left">low</td>
+<td align="right">4</td>
+<td align="right">8,450</td>
+<td align="right">0.202</td>
+<td align="right">0.303</td>
+<td align="right">0.109</td>
+</tr>
+<tr class="odd">
+<td align="left">low</td>
+<td align="right">5</td>
+<td align="right">8,450</td>
+<td align="right">0.189</td>
+<td align="right">0.290</td>
+<td align="right">0.124</td>
+</tr>
+<tr class="even">
+<td align="left">middle</td>
+<td align="right">1</td>
+<td align="right">8,450</td>
+<td align="right">0.271</td>
+<td align="right">0.331</td>
+<td align="right">0.127</td>
+</tr>
+<tr class="odd">
+<td align="left">middle</td>
+<td align="right">2</td>
+<td align="right">8,449</td>
+<td align="right">0.199</td>
+<td align="right">0.278</td>
+<td align="right">0.126</td>
+</tr>
+<tr class="even">
+<td align="left">middle</td>
+<td align="right">3</td>
+<td align="right">8,450</td>
+<td align="right">0.186</td>
+<td align="right">0.260</td>
+<td align="right">0.127</td>
+</tr>
+<tr class="odd">
+<td align="left">middle</td>
+<td align="right">4</td>
+<td align="right">8,449</td>
+<td align="right">0.171</td>
+<td align="right">0.242</td>
+<td align="right">0.136</td>
+</tr>
+<tr class="even">
+<td align="left">middle</td>
+<td align="right">5</td>
+<td align="right">8,450</td>
+<td align="right">0.176</td>
+<td align="right">0.258</td>
+<td align="right">0.127</td>
+</tr>
+<tr class="odd">
+<td align="left">high</td>
+<td align="right">1</td>
+<td align="right">8,450</td>
+<td align="right">0.211</td>
+<td align="right">0.290</td>
+<td align="right">0.128</td>
+</tr>
+<tr class="even">
+<td align="left">high</td>
+<td align="right">2</td>
+<td align="right">8,450</td>
+<td align="right">0.193</td>
+<td align="right">0.273</td>
+<td align="right">0.127</td>
+</tr>
+<tr class="odd">
+<td align="left">high</td>
+<td align="right">3</td>
+<td align="right">8,449</td>
+<td align="right">0.183</td>
+<td align="right">0.264</td>
+<td align="right">0.133</td>
+</tr>
+<tr class="even">
+<td align="left">high</td>
+<td align="right">4</td>
+<td align="right">8,450</td>
+<td align="right">0.166</td>
+<td align="right">0.230</td>
+<td align="right">0.129</td>
+</tr>
+<tr class="odd">
+<td align="left">high</td>
+<td align="right">5</td>
+<td align="right">8,450</td>
+<td align="right">0.324</td>
+<td align="right">0.365</td>
+<td align="right">0.127</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="findings" class="section level1">
+<h1>4. Findings</h1>
+<ul>
+<li><strong>Persistence.</strong> The gap is highly persistent, which
+makes it a standing financing posture more than a passing strain.</li>
+<li><strong>Prediction.</strong> The largest AUC gain from adding the
+gap to a model that already has <code>debt_assets</code>, size, cash
+months, and asset intensity is 0.0005.</li>
+<li><strong>Direction.</strong> Coefficients per standard deviation
+appear in the tables above; a positive value means a larger gap goes
+with a worse outcome.</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code></pre></div>
+<pre><code>## R version 4.5.3 (2026-03-11 ucrt)
+## Platform: x86_64-w64-mingw32/x64
+## Running under: Windows 11 x64 (build 26200)
+## 
+## Matrix products: default
+##   LAPACK version 3.12.1
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.utf8  LC_CTYPE=English_United States.utf8    LC_MONETARY=English_United States.utf8
+## [4] LC_NUMERIC=C                           LC_TIME=English_United States.utf8    
+## 
+## time zone: America/Phoenix
+## tzcode source: internal
+## 
+## attached base packages:
+## [1] splines   stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] knitr_1.51          bit64_4.8.0         data.table_1.18.2.1
+## 
+## loaded via a namespace (and not attached):
+##  [1] digest_0.6.39   R6_2.6.1        fastmap_1.2.0   bit_4.6.0       xfun_0.57       cachem_1.1.0    htmltools_0.5.9
+##  [8] rmarkdown_2.31  lifecycle_1.0.5 cli_3.6.5       sass_0.4.10     jquerylib_0.1.4 compiler_4.5.3  tools_4.5.3    
+## [15] evaluate_1.0.5  bslib_0.10.0    yaml_2.3.12     otel_0.2.0      rlang_1.1.7     jsonlite_2.0.0</code></pre>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

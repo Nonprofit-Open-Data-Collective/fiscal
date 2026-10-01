@@ -1,0 +1,274 @@
+---
+title: "H4: Does Earned Revenue Replace Fundraising?"
+subtitle: "Pre-specified cross-section, plus the COVID earned-revenue shock"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+  perms: 200
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 120, knitr.kable.NA = "")
+```
+
+# Purpose
+
+H4 from the ratio-correlation memo: **organizations that earn their revenue
+spend less on raising it.** The correlation that motivated it is
+`self_suff` x `fundr_exp` = -0.21, which is -0.24 beyond the conditional
+construction null, one of the few relationships in the 14-ratio set that
+survives that benchmark.
+
+Two tests:
+
+* **A. Pre-specified cross-section.** Fundraising expense on program service
+  revenue, holding contributions and size. Written in the memo before
+  estimation and repeated below unchanged.
+* **B. The COVID shock (exploratory).** Program service revenue fell from 16.5%
+  of revenue in 2019 to 10.6% in 2020 and recovered by 2023. If earned revenue
+  and fundraising are substitutes, organizations that lost the most earned
+  revenue should have raised fundraising effort afterwards. This design was not
+  pre-specified; it is labeled exploratory throughout.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Pre-specification (test A)
+
+| Outcome | Coefficient that carries the test | Support if | Reject if |
+|---|---|---|---|
+| Any fundraising expense; log fundraising expense | log program service revenue, holding log contributions and size | < 0 in both parts, with the contributions coefficient > 0 | >= 0 |
+
+* **Sample.** Pooled tax years 2022 and 2023, December year-ends,
+  organizations that filed a full 990 every year 2019-2023.
+* **Models.** Linear probability model for any fundraising expense; OLS on log
+  fundraising expense among filers reporting a positive amount. Predictors
+  enter as log(1 + x) plus an indicator for x > 0. Size controls: 4-df natural
+  splines of log expenses and log(1 + total assets).
+* **Evidence rule.** Same as H1-H3: the estimate must have the predicted sign
+  and lie beyond the 0.5th or 99.5th percentile of `r params$perms` refits in
+  which the program-revenue block is shuffled within cells of expenses x assets
+  per dollar of expenses.
+
+# 2. Data
+
+```{r data}
+d <- as.data.table(readRDS(params$panel_file))
+num <- function(x) { x <- as.numeric(x); x[is.na(x)] <- 0; x }
+forms <- d[, .(n990 = sum(RETURN_TYPE == "990"), nez = sum(RETURN_TYPE == "990EZ")), by = EIN2]
+x <- d[EIN2 %chin% forms[n990 >= 5 & nez == 0, EIN2] & RETURN_TYPE == "990" &
+       substr(TAX_PERIOD_END_DATE, 6, 7) == "12"]
+rm(d); invisible(gc())
+
+v <- data.table(
+  EIN2 = x$EIN2, year = x$TAX_YEAR,
+  subsector = ifelse(is.na(x$nteev2_subsector) | x$nteev2_subsector == "", "unknown",
+                     as.character(x$nteev2_subsector)),
+  E = num(x$F9_09_EXP_TOT_TOT), A = num(x$F9_10_ASSET_TOT_EOY), R = num(x$F9_08_REV_TOT_TOT),
+  fundr = pmax(num(x$F9_09_EXP_TOT_FUNDR), 0),
+  prog  = pmax(num(x$F9_08_REV_PROG_TOT_TOT), 0),
+  contr = pmax(num(x$F9_08_REV_CONTR_TOT), 0))
+rm(x); invisible(gc())
+v <- v[E > 0 & A > 0]
+kable(v[, .(org_years = .N, any_fundraising = mean(fundr > 0), any_program_revenue = mean(prog > 0),
+            median_program_share = median(prog / pmax(R, 1))), by = year][order(year)], digits = 3,
+      format.args = list(big.mark = ","))
+```
+
+# 3. Test A: the pre-specified cross-section
+
+```{r functions}
+size_cells <- function(E, A, bins = 20) {
+  eb <- cut(rank(E, ties.method = "first"), bins, labels = FALSE)
+  ab <- ave(A / E, eb, FUN = function(z) cut(rank(z, ties.method = "first"), bins, labels = FALSE))
+  (eb - 1) * bins + ab
+}
+permute_within <- function(cells) {
+  n <- length(cells); p <- integer(n)
+  p[order(cells, seq_len(n))] <- order(cells, runif(n))
+  p
+}
+robust_fit <- function(y, W) {
+  XtXi <- solve(crossprod(W))
+  b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  data.frame(term = colnames(W), estimate = b, se = sqrt(diag(V)), row.names = NULL)
+}
+# Coefficient on the first column of a block, everything else held fixed (FWL).
+perm_block <- function(block, others, models, cells, B) {
+  prep <- lapply(models, function(md) {
+    q <- qr(others[md$rows, , drop = FALSE]); list(q = q, ry = qr.resid(q, md$y))
+  })
+  coef_for <- function(Bf) sapply(names(models), function(nm) {
+    R <- qr.resid(prep[[nm]]$q, Bf[models[[nm]]$rows, , drop = FALSE])
+    solve(crossprod(R), crossprod(R, prep[[nm]]$ry))[1]
+  })
+  list(observed = coef_for(block),
+       perms = do.call(rbind, lapply(seq_len(B), function(i)
+         coef_for(block[permute_within(cells), , drop = FALSE]))))
+}
+```
+
+```{r test-a}
+a <- v[year %in% 2022:2023]
+blocks <- list(
+  program = cbind(log_program = log1p(a$prog), any_program = as.numeric(a$prog > 0)),
+  contributions = cbind(log_contributions = log1p(a$contr), any_contributions = as.numeric(a$contr > 0)))
+sE <- ns(log(a$E), df = 4); colnames(sE) <- paste0("size_E", 1:4)
+sA <- ns(log1p(a$A), df = 4); colnames(sA) <- paste0("size_A", 1:4)
+Z <- cbind(intercept = 1, sE, sA, year2023 = as.numeric(a$year == 2023))
+W <- cbind(do.call(cbind, blocks), Z)
+
+models <- list(any_fundraising = list(rows = rep(TRUE, nrow(a)), y = as.numeric(a$fundr > 0)),
+               log_fundraising = list(rows = a$fundr > 0, y = log(a$fundr[a$fundr > 0])))
+coefs <- rbindlist(lapply(names(models), function(nm) {
+  f <- robust_fit(models[[nm]]$y, W[models[[nm]]$rows, , drop = FALSE])
+  data.table(model = nm, n = sum(models[[nm]]$rows),
+             f[f$term %in% c("log_program", "log_contributions"), ])
+}))
+
+cells <- size_cells(a$E, a$A)
+pp <- perm_block(blocks$program, cbind(blocks$contributions, Z), models, cells, params$perms)
+pc <- perm_block(blocks$contributions, cbind(blocks$program, Z), models, cells, params$perms)
+qs <- function(m, nm) quantile(m[, nm], c(0.005, 0.995))
+coefs[, perm_lo := c(qs(pp$perms, "any_fundraising")[1], qs(pc$perms, "any_fundraising")[1],
+                     qs(pp$perms, "log_fundraising")[1], qs(pc$perms, "log_fundraising")[1])]
+coefs[, perm_hi := c(qs(pp$perms, "any_fundraising")[2], qs(pc$perms, "any_fundraising")[2],
+                     qs(pp$perms, "log_fundraising")[2], qs(pc$perms, "log_fundraising")[2])]
+coefs[, meets_rule := ifelse(term == "log_program", estimate < 0 & estimate < perm_lo,
+                             estimate > 0 & estimate > perm_hi)]
+kable(coefs, digits = 4, caption = "Test A: program revenue and contributions in both parts")
+
+verdict_a <- if (all(coefs[term == "log_program", meets_rule])) "supported" else
+             if (any(coefs[term == "log_program", estimate] >= 0)) "rejected" else "inconclusive"
+```
+
+The pre-specified verdict for H4 is **`r verdict_a`**.
+
+**Within organizations.** The cross-section compares different organizations.
+The panel also asks whether one organization's fundraising moves when its own
+earned revenue moves, using 2019, 2022, and 2023 and removing each
+organization's mean.
+
+```{r fixed-effects}
+fe <- v[year %in% c(2019, 2022, 2023)]
+dm <- function(z, g) z - ave(z, g, FUN = mean)
+g <- fe$EIN2
+Wfe <- cbind(log_program = dm(log1p(fe$prog), g), log_contributions = dm(log1p(fe$contr), g),
+             log_expenses = dm(log(fe$E), g), log_assets = dm(log1p(fe$A), g),
+             y2022 = dm(as.numeric(fe$year == 2022), g), y2023 = dm(as.numeric(fe$year == 2023), g))
+fe_fit <- robust_fit(dm(log1p(fe$fundr), g), Wfe)
+kable(fe_fit[fe_fit$term %in% c("log_program", "log_contributions"), ], digits = 4,
+      caption = "Within-organization (2019, 2022, 2023)")
+```
+
+# 4. Test B: the COVID earned-revenue shock (exploratory)
+
+If the two are substitutes, an organization that lost earned revenue in the
+pandemic should have leaned harder on fundraising afterwards. The shock is the
+change in program revenue from 2019 to 2021; the response is the change in
+fundraising expense from 2019 to 2023. Both are log changes. Subsector fixed
+effects absorb the fact that the shock hit arts, education, and health
+differently, and the 2019 levels of fundraising and contributions allow for
+mean reversion.
+
+```{r shock}
+w <- dcast(v[year %in% c(2019, 2021, 2023)], EIN2 + subsector ~ year,
+           value.var = c("fundr", "prog", "contr", "E", "A"))
+setnames(w, gsub("_(\\d{4})$", "\\1", names(w)))
+# Organizations that moved their fiscal year end drop out of the December
+# filter in some years, leaving gaps in the reshape; those rows cannot be used.
+need <- setdiff(names(w), c("EIN2", "subsector"))
+complete <- complete.cases(w[, ..need])
+cat(format(sum(!complete), big.mark = ","), "of", format(nrow(w), big.mark = ","),
+    "organizations dropped for a missing December filing in 2019, 2021, or 2023\n")
+w <- w[complete][prog2019 > 0 & E2019 > 0 & A2019 > 0]
+w[, `:=`(shock = log1p(prog2021) - log1p(prog2019),
+         d_fundraising = log1p(fundr2023) - log1p(fundr2019),
+         d_contributions = log1p(contr2023) - log1p(contr2019))]
+kable(w[, .(organizations = .N, median_shock = median(shock),
+            pct_lost_earned_revenue = mean(shock < 0),
+            median_change_fundraising = median(d_fundraising))], digits = 3,
+      format.args = list(big.mark = ","))
+
+sub <- model.matrix(~ subsector, data = as.data.frame(w))[, -1, drop = FALSE]
+Zs <- cbind(intercept = 1, ns(log(w$E2019), df = 4), ns(log1p(w$A2019), df = 4),
+            log_fundraising_2019 = log1p(w$fundr2019), any_fundraising_2019 = as.numeric(w$fundr2019 > 0),
+            log_contributions_2019 = log1p(w$contr2019), sub)
+colnames(Zs) <- make.unique(colnames(Zs))
+shock_fit <- function(y) {
+  f <- robust_fit(y, cbind(shock = w$shock, Zs))
+  f[f$term == "shock", ]
+}
+shock_res <- rbind(
+  cbind(outcome = "change in fundraising expense, 2019-2023", shock_fit(w$d_fundraising)),
+  cbind(outcome = "change in contributions, 2019-2023", shock_fit(w$d_contributions)))
+shock_res$per_sd <- shock_res$estimate * sd(w$shock)
+kable(shock_res, digits = 4,
+      caption = "Exploratory: response to the 2019-2021 earned-revenue shock")
+
+# Extensive margin: did organizations with no fundraising in 2019 start by 2023?
+started <- w[fundr2019 == 0]
+start_fit <- robust_fit(as.numeric(started$fundr2023 > 0),
+                        cbind(shock = started$shock,
+                              intercept = 1, ns(log(started$E2019), df = 4),
+                              model.matrix(~ subsector, data = as.data.frame(started))[, -1, drop = FALSE]))
+kable(start_fit[start_fit$term == "shock", ], digits = 4,
+      caption = paste0("Started fundraising by 2023, among the ",
+                       format(nrow(started), big.mark = ","), " with none in 2019"))
+```
+
+# 5. Findings
+
+```{r findings, include = FALSE}
+cp <- coefs[term == "log_program"]
+cc <- coefs[term == "log_contributions"]
+sh <- shock_res[1, ]
+```
+
+* **Cross-section.** The program-revenue coefficient is
+  `r fmt(cp$estimate[1], 4)` for having any fundraising expense and
+  `r fmt(cp$estimate[2], 4)` for the amount, against shuffle bounds of
+  `r fmt(cp$perm_lo[1], 4)` and `r fmt(cp$perm_lo[2], 4)`. The contributions
+  coefficients are `r fmt(cc$estimate[1], 4)` and `r fmt(cc$estimate[2], 4)`.
+  The pre-specified verdict is **`r verdict_a`**.
+* **Within organizations.** A 1-unit change in log program revenue goes with a
+  `r fmt(fe_fit$estimate[fe_fit$term == "log_program"], 4)` change in log
+  fundraising expense.
+* **The shock.** A one-standard-deviation loss of earned revenue between 2019
+  and 2021 is followed by a `r fmt(-sh$per_sd, 3)` change in log fundraising
+  expense by 2023 (coefficient `r fmt(sh$estimate, 4)`, SE
+  `r fmt(sh$se, 4)`); a negative coefficient means substitution.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(coefs = coefs, verdict_a = verdict_a, fe = fe_fit, shock = shock_res,
+               start = start_fit, n_shock = nrow(w), n_started = nrow(started),
+               years = v[, .N, by = year][order(year)]), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

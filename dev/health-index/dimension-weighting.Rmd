@@ -1,0 +1,283 @@
+---
+title: "Should Reserves and Performance Carry Separate Weight?"
+subtitle: "Accumulation, overlap, and incremental validity of the health dimensions"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# The question
+
+H5 showed that about 69 cents of every surplus dollar ends the year in cash or
+investments. Reserves are therefore largely the running total of past
+performance. `fiscal_weights()` weights dimensions equally by default, so an
+index that scores reserves and performance separately counts the same history
+twice: once as the stock, once as this year's increment to it.
+
+Three things decide whether that is a problem:
+
+1. **Accumulation.** How much of today's reserves is explained by past reserves
+   plus the surpluses since?
+2. **Overlap.** How correlated are the dimension scores in a given year?
+3. **Incremental validity.** Does performance predict later trouble *beyond*
+   reserves, and does reserves predict beyond performance? Weights should
+   follow the answer, not the count of dimensions.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+  library(splines)
+})
+source("build-ratio-frame.R")   # the measurement model: rules, imputation, winsorize + normalize
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Dimension scores by year
+
+Scores use the retained indicator sets from `dimension-discovery-2023.Rmd`,
+each member winsorized and normalized, then averaged. All three are oriented so
+that **higher is healthier**, which means leverage enters with its sign
+flipped.
+
+```{r scores}
+d <- as.data.table(readRDS(params$panel_file))
+d <- d[RETURN_TYPE == "990" & substr(TAX_PERIOD_END_DATE, 6, 7) == "12" & TAX_YEAR %in% 2019:2024]
+keep <- d[TAX_YEAR %in% 2019:2023, .N, by = EIN2][N == 5, EIN2]
+in2024 <- unique(d[TAX_YEAR == 2024, EIN2])
+d <- d[EIN2 %chin% keep]
+
+MEMBERS <- list(reserves = c("months_cash", "liquid_months", "assets_rev", "current"),
+                performance = c("surplus_margin", "return_assets", "na_growth"),
+                leverage = c("debt_assets", "payables_una"))
+
+year_scores <- function(y) {
+  built <- build_ratio_frame(d[TAX_YEAR == y], seed = params$seed)
+  z <- as.data.frame(lapply(built$frame[unlist(MEMBERS)], winsor_normalize))
+  out <- data.table(EIN2 = built$ein, year = y)
+  for (nm in names(MEMBERS)) {
+    s <- rowMeans(z[, MEMBERS[[nm]], drop = FALSE])
+    out[[nm]] <- as.numeric(scale(if (nm == "leverage") -s else s))
+  }
+  k <- built$components
+  out[, `:=`(surplus_per_expense = (k$R - k$E) / k$E, E = k$E, A = k$A,
+             cash_months = 12 * (k$cash + k$recv) / pmax(k$E, 1))]
+  out[]
+}
+S <- rbindlist(lapply(2019:2023, year_scores))
+kable(S[, .(organizations = .N, mean_reserves = mean(reserves), mean_performance = mean(performance),
+            mean_leverage = mean(leverage)), by = year][order(year)], digits = 3,
+      format.args = list(big.mark = ","))
+```
+
+# 2. Overlap between the dimensions
+
+```{r overlap}
+wide <- dcast(S, EIN2 ~ year, value.var = c("reserves", "performance", "leverage",
+                                            "surplus_per_expense", "cash_months", "E"))
+setnames(wide, gsub("_(\\d{4})$", "\\1", names(wide)))
+wide <- wide[complete.cases(wide)]
+kable(round(cor(S[year == 2023, .(reserves, performance, leverage)], method = "spearman"), 3),
+      caption = "Dimension scores, 2023")
+kable(data.frame(
+  comparison = c("reserves 2023 vs. performance 2023",
+                 "reserves 2023 vs. mean performance 2019-2022",
+                 "reserves 2023 vs. reserves 2019",
+                 "performance 2023 vs. performance 2019"),
+  spearman = c(cor(wide$reserves2023, wide$performance2023, method = "spearman"),
+               cor(wide$reserves2023, rowMeans(wide[, .(performance2019, performance2020,
+                                                        performance2021, performance2022)]),
+                   method = "spearman"),
+               cor(wide$reserves2023, wide$reserves2019, method = "spearman"),
+               cor(wide$performance2023, wide$performance2019, method = "spearman"))),
+  digits = 3)
+```
+
+A single year's performance is nearly uncorrelated with the stock it feeds, and
+performance barely persists while reserves persist strongly. That is the shape
+of a flow feeding a slow-moving stock.
+
+# 3. Accumulation: is reserves the running total?
+
+```{r accumulation}
+ols <- function(y, W) {
+  XtXi <- solve(crossprod(W)); b <- drop(XtXi %*% crossprod(W, y))
+  e <- drop(y - W %*% b)
+  V <- XtXi %*% crossprod(W * e) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  list(coef = data.table(term = colnames(W), estimate = b, se = sqrt(diag(V))),
+       fitted = drop(W %*% b), r2 = 1 - var(e) / var(y))
+}
+wz <- function(x) { q <- quantile(x, c(0.01, 0.99), na.rm = TRUE)
+                    as.numeric(scale(pmin(pmax(x, q[[1]]), q[[2]]))) }
+wide[, cum_surplus := wz(surplus_per_expense2020 + surplus_per_expense2021 +
+                         surplus_per_expense2022 + surplus_per_expense2023)]
+acc <- rbind(
+  data.table(model = "reserves 2019 only",
+             r2 = ols(wide$reserves2023, cbind(1, r19 = wide$reserves2019))$r2),
+  data.table(model = "cumulative surplus only",
+             r2 = ols(wide$reserves2023, cbind(1, cum = wide$cum_surplus))$r2),
+  data.table(model = "both",
+             r2 = ols(wide$reserves2023, cbind(1, r19 = wide$reserves2019, cum = wide$cum_surplus))$r2))
+kable(acc, digits = 4, caption = "Explaining the 2023 reserves score")
+both <- ols(wide$reserves2023, cbind(1, reserves_2019 = wide$reserves2019,
+                                     cumulative_surplus = wide$cum_surplus))
+kable(both$coef[term != ""], digits = 4, caption = "Coefficients (standardized)")
+
+# In natural units: months of cash gained per dollar of cumulative surplus.
+# Months of cash and surplus ratios are heavy-tailed, so both are winsorized at
+# 1/99 before this regression; untrimmed, a handful of filers dominate it.
+wins <- function(x) { q <- quantile(x, c(0.01, 0.99), na.rm = TRUE); pmin(pmax(x, q[[1]]), q[[2]]) }
+cum_raw <- wins(wide$surplus_per_expense2020 + wide$surplus_per_expense2021 +
+                wide$surplus_per_expense2022 + wide$surplus_per_expense2023)
+mc <- ols(wins(wide$cash_months2023), cbind(1, cash_months_2019 = wins(wide$cash_months2019),
+                                            cumulative_surplus_per_expense = cum_raw))
+kable(mc$coef, digits = 3,
+      caption = "Months of cash in 2023 (winsorized), per dollar of cumulative surplus per dollar of expenses")
+```
+
+# 4. Incremental validity
+
+Scores are measured in 2021 and used to predict 2022-2023. The question for
+weighting is not whether each dimension predicts on its own, but how much each
+adds to the others.
+
+```{r validity}
+flows <- d[TAX_YEAR %in% 2021:2023, .(EIN2, year = TAX_YEAR,
+                                      R = as.numeric(F9_08_REV_TOT_TOT),
+                                      E = as.numeric(F9_09_EXP_TOT_TOT),
+                                      na = as.numeric(F9_10_NAFB_TOT_EOY),
+                                      cash = as.numeric(F9_10_ASSET_CASH_EOY) +
+                                             as.numeric(F9_10_ASSET_SAVING_EOY))]
+for (cl in c("R", "E", "na", "cash")) flows[[cl]][is.na(flows[[cl]])] <- 0
+o <- dcast(flows, EIN2 ~ year, value.var = c("R", "E", "na", "cash"))
+setnames(o, gsub("_(\\d{4})$", "\\1", names(o)))
+o <- o[complete.cases(o)]
+o[, `:=`(both_years_deficit = as.numeric(R2022 < E2022 & R2023 < E2023),
+         any_deficit = as.numeric(R2022 < E2022 | R2023 < E2023),
+         na_fell = as.numeric(na2023 < na2021),
+         cash_fell_month = as.numeric(12 * (cash2023 - cash2021) / pmax(E2021, 1) < -1),
+         no2024 = as.numeric(!(EIN2 %chin% in2024)))]
+m <- merge(o, S[year == 2021, .(EIN2, reserves, performance, leverage, E, A)], by = "EIN2")
+
+auc <- function(score, y) {
+  r <- rank(score); n1 <- as.numeric(sum(y == 1)); n0 <- as.numeric(sum(y == 0))
+  (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
+}
+ctrl <- cbind(intercept = 1, ns(log(pmax(m$E, 1)), df = 4))
+OUT <- c(both_years_deficit = "both_years_deficit", any_deficit = "any_deficit",
+         na_fell = "na_fell", cash_fell_month = "cash_fell_month", no2024 = "no2024")
+race <- rbindlist(lapply(names(OUT), function(nm) {
+  y <- m[[OUT[[nm]]]]
+  fit <- function(cols) {
+    W <- if (length(cols)) cbind(ctrl, as.matrix(m[, ..cols])) else ctrl
+    f <- ols(y, W); list(auc = auc(f$fitted, y), coef = f$coef)
+  }
+  base <- fit(character()); res <- fit("reserves"); per <- fit("performance")
+  lev <- fit("leverage"); all3 <- fit(c("reserves", "performance", "leverage"))
+  cf <- all3$coef
+  data.table(outcome = nm, rate = mean(y),
+             auc_size_only = base$auc, auc_reserves = res$auc, auc_performance = per$auc,
+             auc_leverage = lev$auc, auc_all_three = all3$auc,
+             gain_performance_over_reserves = all3$auc - fit(c("reserves", "leverage"))$auc,
+             gain_reserves_over_performance = all3$auc - fit(c("performance", "leverage"))$auc,
+             beta_reserves = cf[term == "reserves", estimate],
+             beta_performance = cf[term == "performance", estimate],
+             beta_leverage = cf[term == "leverage", estimate])
+}))
+kable(race[, .(outcome, rate, auc_size_only, auc_reserves, auc_performance, auc_leverage,
+               auc_all_three)], digits = 4, caption = "AUC by predictor set (2021 scores, 2022-2023 outcomes)")
+kable(race[, .(outcome, gain_performance_over_reserves, gain_reserves_over_performance,
+               beta_reserves, beta_performance, beta_leverage)], digits = 4,
+      caption = "Incremental AUC and coefficients in the joint model (per SD, higher score = healthier)")
+```
+
+**Level or change?** If performance is simply the annual increment to reserves,
+the change in the reserves score should carry the same information. This
+compares performance against the two-year change in reserves.
+
+```{r level-change}
+mm <- merge(m, wide[, .(EIN2, reserves2019, reserves2021)], by = "EIN2")
+mm[, d_reserves := wz(reserves2021 - reserves2019)]
+lc <- rbindlist(lapply(names(OUT), function(nm) {
+  y <- mm[[OUT[[nm]]]]
+  c0 <- cbind(intercept = 1, ns(log(pmax(mm$E, 1)), df = 4))
+  f_r  <- ols(y, cbind(c0, reserves = mm$reserves))
+  f_rp <- ols(y, cbind(c0, reserves = mm$reserves, performance = mm$performance))
+  f_rd <- ols(y, cbind(c0, reserves = mm$reserves, change_in_reserves = mm$d_reserves))
+  f_all <- ols(y, cbind(c0, reserves = mm$reserves, performance = mm$performance,
+                        change_in_reserves = mm$d_reserves))
+  data.table(outcome = nm, auc_reserves = auc(f_r$fitted, y),
+             auc_plus_performance = auc(f_rp$fitted, y),
+             auc_plus_change = auc(f_rd$fitted, y),
+             auc_plus_both = auc(f_all$fitted, y),
+             beta_performance = f_all$coef[term == "performance", estimate],
+             beta_change = f_all$coef[term == "change_in_reserves", estimate])
+}))
+kable(lc, digits = 4, caption = "Performance vs. the change in reserves")
+```
+
+# 5. Implied weights
+
+If weights should track how much each dimension contributes to predicting
+trouble, one defensible rule is to set them proportional to each dimension's
+incremental AUC, averaged across outcomes, rather than to give each an equal
+share.
+
+```{r weights}
+gains <- rbindlist(lapply(names(OUT), function(nm) {
+  y <- m[[OUT[[nm]]]]
+  fit_auc <- function(cols) {
+    W <- if (length(cols)) cbind(ctrl, as.matrix(m[, ..cols])) else ctrl
+    auc(ols(y, W)$fitted, y)
+  }
+  all3 <- fit_auc(c("reserves", "performance", "leverage"))
+  data.table(outcome = nm,
+             reserves = all3 - fit_auc(c("performance", "leverage")),
+             performance = all3 - fit_auc(c("reserves", "leverage")),
+             leverage = all3 - fit_auc(c("reserves", "performance")))
+}))
+avg <- colMeans(gains[, .(reserves, performance, leverage)])
+kable(rbind(gains, data.table(outcome = "average", t(avg))), digits = 4,
+      caption = "Incremental AUC by dimension")
+kable(data.frame(dimension = names(avg),
+                 equal_weight = rep(1 / 3, 3),
+                 incremental_weight = pmax(avg, 0) / sum(pmax(avg, 0))),
+      digits = 3, caption = "Equal weights vs. weights proportional to incremental AUC")
+```
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(scores = S[, .(n = .N, reserves = mean(reserves), performance = mean(performance),
+                              leverage = mean(leverage)), by = year][order(year)],
+               overlap_2023 = cor(S[year == 2023, .(reserves, performance, leverage)], method = "spearman"),
+               persistence = c(reserves = cor(wide$reserves2023, wide$reserves2019, method = "spearman"),
+                               performance = cor(wide$performance2023, wide$performance2019, method = "spearman"),
+                               reserves_vs_performance = cor(wide$reserves2023, wide$performance2023,
+                                                             method = "spearman")),
+               accumulation = acc, accumulation_coef = both$coef, months = mc$coef,
+               race = race, level_change = lc, gains = gains, implied = avg, n = nrow(m)),
+          params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

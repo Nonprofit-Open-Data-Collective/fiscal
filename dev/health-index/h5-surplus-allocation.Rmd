@@ -1,0 +1,417 @@
+---
+title: "H5: Where Does a Surplus Go?"
+subtitle: "Allocation of the annual surplus across the balance sheet, 2019-2023"
+output:
+  html_document:
+    theme: null
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    df_print: kable
+    self_contained: true
+    css: walkthrough.css
+params:
+  panel_file: !r file.path(Sys.getenv("FISCAL_DATA_DIR", unset = file.path(path.expand("~"), "Documents", "fiscal-data")), "PANEL", "panel-2019-2024-imputed.rds")
+  results_file: ""
+  seed: 2023
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+                      fig.width = 8, fig.height = 4.5)
+options(width = 130, knitr.kable.NA = "")
+```
+
+# Purpose
+
+H5 from the ratio-correlation memo: **a surplus has to go somewhere**. Every
+dollar of revenue not spent ends the year as more cash, more receivables, more
+property, more investments, or less debt. This document estimates that split.
+
+The accounting identity is the check on the estimates. Writing the year's
+change in each balance-sheet block as a share of the same denominator, the
+asset-side coefficients minus the liability-side coefficients must equal the
+coefficient for the change in net assets, and that in turn should be close to 1
+if the surplus is what drives net assets.
+
+Unlike H1-H3, this hypothesis makes no prediction about which component wins.
+The split itself is the estimate.
+
+**Window.** Pooled tax years 2022 and 2023, December year-ends, organizations
+that filed a full 990 in every year 2019-2023. Tax years 2020 and 2021 are
+excluded from the main estimate: relief funding pushed the median surplus
+margin to 0.113 in 2021 against 0.027 in 2023, and median cash from 5.1 to 7.6
+months. 2019 and 2021 are estimated separately as contrasts.
+
+```{r packages}
+suppressMessages({
+  library(data.table)
+  library(bit64)
+  library(knitr)
+})
+set.seed(params$seed)
+fmt <- function(x, d = 3) formatC(x, format = "f", digits = d)
+```
+
+# 1. Data and components
+
+Each block is the end-of-year balance minus the beginning-of-year balance, both
+from the same filing's Part X, so the two dates share one accounting basis.
+
+| Block | Part X lines |
+|---|---|
+| Cash | cash + savings |
+| Other current assets | pledges, accounts receivable, inventories, prepaid |
+| Fixed assets | land, buildings, equipment (net) |
+| Other assets | total assets minus the three above (investments, intangibles, notes receivable) |
+| Long-term debt | tax-exempt bonds + mortgages + unsecured notes |
+| Short-term liabilities | accounts payable + grants payable + deferred revenue |
+| Other liabilities | total liabilities minus the two above |
+
+```{r data}
+d <- as.data.table(readRDS(params$panel_file))
+num <- function(x) { x <- as.numeric(x); x[is.na(x)] <- 0; x }
+
+forms <- d[, .(n990 = sum(RETURN_TYPE == "990"), nez = sum(RETURN_TYPE == "990EZ")), by = EIN2]
+stable990 <- forms[n990 >= 5 & nez == 0, EIN2]
+
+x <- d[EIN2 %chin% stable990 & RETURN_TYPE == "990" &
+       substr(TAX_PERIOD_END_DATE, 6, 7) == "12"]
+rm(d); invisible(gc())
+
+blk <- function(when) {
+  s <- function(f) num(x[[paste0(f, "_", when)]])
+  data.table(
+    cash   = s("F9_10_ASSET_CASH") + s("F9_10_ASSET_SAVING"),
+    oca    = s("F9_10_ASSET_PLEDGE_NET") + s("F9_10_ASSET_ACC_NET") +
+             s("F9_10_ASSET_INV_SALE") + s("F9_10_ASSET_EXP_PREPAID"),
+    fixed  = s("F9_10_ASSET_LAND_BLDG_NET"),
+    assets = s("F9_10_ASSET_TOT"),
+    lt     = s("F9_10_LIAB_TAX_EXEMPT_BOND") + s("F9_10_LIAB_MTG_NOTE") + s("F9_10_LIAB_NOTE_UNSEC"),
+    st     = s("F9_10_LIAB_ACC_PAYABLE") + s("F9_10_LIAB_GRANT_PAYABLE") + s("F9_10_LIAB_REV_DEFERRED"),
+    liab   = s("F9_10_LIAB_TOT"),
+    na     = s("F9_10_NAFB_TOT"))
+}
+b <- blk("BOY"); e <- blk("EOY")
+b[, `:=`(other_assets = assets - cash - oca - fixed, other_liab = liab - lt - st)]
+e[, `:=`(other_assets = assets - cash - oca - fixed, other_liab = liab - lt - st)]
+
+dat <- data.table(
+  EIN2 = x$EIN2, year = x$TAX_YEAR,
+  E = num(x$F9_09_EXP_TOT_TOT), R = num(x$F9_08_REV_TOT_TOT),
+  assets_boy = b$assets,
+  # revenue lines (Part VIII) and functional expenses (Part IX), for section 6
+  contributions = num(x$F9_08_REV_CONTR_TOT),
+  program_revenue = num(x$F9_08_REV_PROG_TOT_TOT),
+  investment_income = num(x$F9_08_REV_OTH_INVEST_INCOME_TOT) + num(x$F9_08_REV_OTH_INVEST_BOND_TOT),
+  gains_on_sales = num(x$F9_08_REV_OTH_SALE_GAIN_NET_TOT),
+  program_expenses = num(x$F9_09_EXP_TOT_PROG),
+  admin_expenses = num(x$F9_09_EXP_TOT_MGMT),
+  fundraising_expenses = num(x$F9_09_EXP_TOT_FUNDR))
+dat[, surplus := R - E]
+dat[, other_revenue := R - contributions - program_revenue - investment_income - gains_on_sales]
+dat[, unallocated_expenses := E - program_expenses - admin_expenses - fundraising_expenses]
+for (v in c("cash", "oca", "fixed", "other_assets", "lt", "st", "other_liab", "assets", "liab", "na")) {
+  dat[[paste0("d_", v)]] <- e[[v]] - b[[v]]
+}
+setnames(dat, "d_oca", "d_other_current")
+
+dat <- dat[E > 0 & assets_boy > 0]
+kable(dat[, .(org_years = .N, organizations = uniqueN(EIN2)), by = year][order(year)],
+      format.args = list(big.mark = ","))
+```
+
+# 2. Does the identity hold in the data?
+
+```{r identity}
+dat[, resid_assets := d_assets - (d_cash + d_other_current + d_fixed + d_other_assets)]
+dat[, resid_liab   := d_liab - (d_lt + d_st + d_other_liab)]
+dat[, resid_na     := d_na - (d_assets - d_liab)]
+kable(dat[, .(
+  `assets = sum of blocks` = mean(abs(resid_assets) < 1),
+  `liabilities = sum of blocks` = mean(abs(resid_liab) < 1),
+  `net assets = assets - liabilities` = mean(abs(resid_na) < 1)), by = year][order(year)],
+  digits = 4, caption = "Share of filings where the blocks add up exactly")
+```
+
+A surplus is not the only thing that moves net assets: unrealized investment
+gains, prior-period adjustments, and donated capital also land there. The
+regression below estimates how much of the surplus is traceable, not whether
+net assets equal the surplus.
+
+# 3. The allocation regressions
+
+Every quantity is divided by the year's total expenses, so a coefficient reads
+as "cents of each surplus dollar".
+
+**Outliers are handled by dropping rows, not by clipping values.** Winsorizing
+each component separately would break the very identity this test relies on:
+the clipped parts no longer sum to the clipped total, and the coefficients stop
+adding up. (A first version of this document did exactly that, and the identity
+check caught it.) Instead, organization-years outside the 1st/99th percentile
+of the surplus ratio or of the change in total assets are dropped, within year.
+Whatever survives keeps its raw values, so the blocks still add up and OLS
+coefficients add up with them.
+
+Standard errors are HC1. Each row is one organization-year, and the pooled
+window holds two years per organization, so the robustness section repeats the
+estimate with organization fixed effects.
+
+```{r fit-functions}
+SCALED <- c("surplus", "d_cash", "d_other_current", "d_fixed", "d_other_assets",
+            "d_lt", "d_st", "d_other_liab", "d_assets", "d_liab", "d_na",
+            "contributions", "program_revenue", "investment_income", "gains_on_sales",
+            "other_revenue", "program_expenses", "admin_expenses", "fundraising_expenses",
+            "unallocated_expenses")
+
+scale_vars <- function(z, trim = TRUE) {
+  out <- copy(z)
+  for (v in SCALED) out[[v]] <- out[[v]] / out$E
+  if (!trim) return(out)
+  # `:=` by group assigns back to the right rows; a grouped select would return
+  # the flags in group order and misalign them when years are interleaved.
+  out[, keep := {
+    qs <- quantile(surplus, c(0.01, 0.99), na.rm = TRUE)
+    qa <- quantile(d_assets, c(0.01, 0.99), na.rm = TRUE)
+    surplus >= qs[[1]] & surplus <= qs[[2]] & d_assets >= qa[[1]] & d_assets <= qa[[2]]
+  }, by = year]
+  out <- out[keep == TRUE]
+  out[, keep := NULL]
+  out[]
+}
+
+ols <- function(y, W) {
+  XtXi <- solve(crossprod(W))
+  bhat <- drop(XtXi %*% crossprod(W, y))
+  res <- drop(y - W %*% bhat)
+  V <- XtXi %*% crossprod(W * res) %*% XtXi * nrow(W) / (nrow(W) - ncol(W))
+  list(b = bhat, se = sqrt(diag(V)))
+}
+
+BLOCKS <- c(cash = "d_cash", other_current_assets = "d_other_current", fixed_assets = "d_fixed",
+            other_assets = "d_other_assets", long_term_debt = "d_lt",
+            short_term_liabilities = "d_st", other_liabilities = "d_other_liab")
+
+allocate <- function(z, label, trim = TRUE) {
+  s <- scale_vars(z, trim = trim)
+  W <- cbind(intercept = 1, surplus = s$surplus)
+  out <- rbindlist(lapply(names(BLOCKS), function(nm) {
+    f <- ols(s[[BLOCKS[[nm]]]], W)
+    data.table(window = label, block = nm, cents_per_surplus_dollar = f$b[["surplus"]],
+               se = f$se[["surplus"]])
+  }))
+  side <- c(cash = 1, other_current_assets = 1, fixed_assets = 1, other_assets = 1,
+            long_term_debt = -1, short_term_liabilities = -1, other_liabilities = -1)
+  out[, side := ifelse(side[block] > 0, "asset", "liability")]
+  attr(out, "identity") <- data.table(
+    window = label,
+    assets_minus_liabilities = sum(out$cents_per_surplus_dollar * side[out$block]),
+    net_assets_direct = ols(s$d_na, W)$b[["surplus"]],
+    n = nrow(s))
+  out
+}
+
+main <- allocate(dat[year %in% 2022:2023], "2022-2023")
+kable(main[, .(block, side, cents_per_surplus_dollar = round(cents_per_surplus_dollar, 3),
+               se = round(se, 4))],
+      caption = "Where each dollar of surplus lands, 2022-2023")
+kable(attr(main, "identity"), digits = 3,
+      caption = "Identity check: asset coefficients minus liability coefficients vs. the direct net-assets regression")
+
+untrimmed <- allocate(dat[year %in% 2022:2023], "2022-2023, no trimming", trim = FALSE)
+kable(merge(main[, .(block, trimmed = cents_per_surplus_dollar)],
+            untrimmed[, .(block, untrimmed = cents_per_surplus_dollar)], by = "block"),
+      digits = 3, caption = "Trimmed vs. untrimmed")
+kable(rbind(attr(main, "identity"), attr(untrimmed, "identity")), digits = 3,
+      caption = "Identity check, both samples")
+```
+
+# 4. Contrasts and robustness
+
+```{r contrasts}
+windows <- list(`2019 (pre-COVID)` = dat[year == 2019],
+                `2021 (relief year)` = dat[year == 2021],
+                `2022` = dat[year == 2022], `2023` = dat[year == 2023])
+contrasts <- rbindlist(lapply(names(windows), function(nm) allocate(windows[[nm]], nm)))
+kable(dcast(rbind(contrasts, main), block + side ~ window, value.var = "cents_per_surplus_dollar"),
+      digits = 3, caption = "Allocation by year")
+ident <- rbindlist(lapply(c(list(main), lapply(names(windows), function(nm) allocate(windows[[nm]], nm))),
+                          function(z) attr(z, "identity")))
+kable(ident, digits = 3, caption = "Identity check by window")
+```
+
+**Surpluses versus deficits.** A deficit has to be funded from the same blocks.
+Splitting the predictor at zero asks whether the two are mirror images.
+
+```{r asymmetry}
+s <- scale_vars(dat[year %in% 2022:2023])
+s[, `:=`(surplus_pos = pmax(surplus, 0), surplus_neg = pmin(surplus, 0))]
+W <- cbind(intercept = 1, surplus_pos = s$surplus_pos, surplus_neg = s$surplus_neg)
+asym <- rbindlist(lapply(names(BLOCKS), function(nm) {
+  f <- ols(s[[BLOCKS[[nm]]]], W)
+  data.table(block = nm, surplus_cents = f$b[["surplus_pos"]], surplus_se = f$se[["surplus_pos"]],
+             deficit_cents = f$b[["surplus_neg"]], deficit_se = f$se[["surplus_neg"]])
+}))
+kable(asym, digits = 3, caption = "Allocation of surpluses vs. funding of deficits, 2022-2023")
+cat("share of organization-years with a deficit:",
+    fmt(mean(dat[year %in% 2022:2023, surplus < 0]), 3), "\n")
+```
+
+**Organization fixed effects.** The pooled estimate mixes differences between
+organizations with differences within one organization across years. Demeaning
+by organization over 2019, 2022, and 2023 keeps only the within variation.
+
+```{r fixed-effects}
+fe_dat <- scale_vars(dat[year %in% c(2019, 2022, 2023)])
+demean <- function(v, g) v - ave(v, g, FUN = mean)
+g <- fe_dat$EIN2
+W <- cbind(surplus = demean(fe_dat$surplus, g))
+fe <- rbindlist(lapply(names(BLOCKS), function(nm) {
+  f <- ols(demean(fe_dat[[BLOCKS[[nm]]]], g), W)
+  data.table(block = nm, within_org_cents = f$b[["surplus"]], se = f$se[["surplus"]])
+}))
+kable(merge(fe, main[, .(block, pooled_cents = cents_per_surplus_dollar)], by = "block"),
+      digits = 3, caption = "Within-organization vs. pooled allocation")
+```
+
+# 5. Where the surplus comes from
+
+The allocation above answers where a surplus goes. The same sample answers
+where it comes from, in the same units. Because the surplus is revenue minus
+expenses, and both are sums of reported lines, the covariance of each line with
+the surplus, divided by the variance of the surplus, gives shares that add to
+exactly 1. A share of 0.64 for contributions means that of a one-dollar
+difference in surplus, 64 cents co-move with contributions.
+
+```{r inflow}
+si <- scale_vars(dat[year %in% 2022:2023])
+vs <- var(si$surplus)
+share <- function(v, sign = 1) sign * cov(si[[v]], si$surplus) / vs
+inflow <- c(contributions = share("contributions"), program_revenue = share("program_revenue"),
+            investment_income = share("investment_income"), gains_on_sales = share("gains_on_sales"),
+            other_revenue = share("other_revenue"),
+            program_expenses = share("program_expenses", -1),
+            admin_expenses = share("admin_expenses", -1),
+            fundraising_expenses = share("fundraising_expenses", -1),
+            unallocated_expenses = share("unallocated_expenses", -1))
+kable(data.frame(line = names(inflow), side = c(rep("revenue", 5), rep("expense", 4)),
+                 share_of_surplus_variation = round(inflow, 3), row.names = NULL),
+      caption = "Shares add to 1 by construction")
+cat("revenue lines:", fmt(sum(inflow[1:5])), " expense lines:", fmt(sum(inflow[6:9])),
+    " total:", fmt(sum(inflow)), "\n")
+```
+
+Surpluses are revenue events. The five revenue lines account for the whole of
+the variation, and the four expense lines net to about zero: organizations with
+unusually good years are not the ones that spent unusually little.
+
+```{r flow-figure, fig.width = 8.8, fig.height = 5.3, fig.retina = 2}
+pal <- c(ink = "#1f2429", ink_mid = "#4d565f", ink_soft = "#6d7681",
+         accent = "#bd5416", accent_ink = "#8f3f10", navy = "#153243", pumpkin = "#dc965a")
+a <- setNames(main$cents_per_surplus_dollar, main$block)
+sources <- c(Contributions = inflow[["contributions"]],
+             `Investment income` = inflow[["investment_income"]],
+             `Other revenue` = inflow[["other_revenue"]],
+             `Gains on asset sales` = inflow[["gains_on_sales"]],
+             `Program revenue` = inflow[["program_revenue"]])
+uses <- c(Cash = a[["cash"]], `Investments, other assets` = a[["other_assets"]],
+          `Property and equipment` = a[["fixed_assets"]],
+          `Debt paid down` = -(a[["long_term_debt"]] + a[["short_term_liabilities"]] +
+                               a[["other_liabilities"]]),
+          `Receivables, prepaid` = a[["other_current_assets"]])
+
+flow_figure <- function(sources, uses, expense_net, subtitle) {
+  op <- par(mar = c(0.4, 0.4, 2.6, 0.4), bg = "white", family = "sans")
+  on.exit(par(op))
+  plot.new(); plot.window(xlim = c(0, 1), ylim = c(-0.14, 1.30))
+  gap <- 0.045; centre <- 0.56
+  stack <- function(v) {
+    y <- centre + (sum(v) + gap * (length(v) - 1)) / 2
+    out <- lapply(v, function(h) { r <- c(top = y, bot = y - h); y <<- y - h - gap; r })
+    names(out) <- names(v); out
+  }
+  ribbon <- function(x0, x1, t0, b0, t1, b1, col, alpha) {
+    t <- seq(0, 1, length.out = 80); s <- t * t * (3 - 2 * t); xs <- x0 + (x1 - x0) * t
+    polygon(c(xs, rev(xs)), c(t0 + (t1 - t0) * s, rev(b0 + (b1 - b0) * s)),
+            col = adjustcolor(col, alpha), border = NA)
+  }
+  xs <- c(0.275, 0.325); xt <- c(0.495, 0.545); xu <- c(0.715, 0.765)
+  src <- stack(sources); use <- stack(uses)
+  top <- centre + 0.5
+  cur <- top
+  for (i in seq_along(src)) {
+    ribbon(xs[2], xt[1], src[[i]][["top"]], src[[i]][["bot"]], cur, cur - sources[[i]],
+           pal[["navy"]], 0.34); cur <- cur - sources[[i]]
+  }
+  cur <- top
+  for (i in seq_along(use)) {
+    ribbon(xt[2], xu[1], cur, cur - uses[[i]], use[[i]][["top"]], use[[i]][["bot"]],
+           if (names(uses)[i] == "Debt paid down") pal[["ink_mid"]] else pal[["accent"]], 0.40)
+    cur <- cur - uses[[i]]
+  }
+  for (i in seq_along(src)) {
+    rect(xs[1], src[[i]][["bot"]], xs[2], src[[i]][["top"]], col = pal[["navy"]], border = NA)
+    text(xs[1] - 0.014, mean(src[[i]]), sprintf("%s  %.2f", names(sources)[i], sources[[i]]),
+         adj = c(1, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  rect(xt[1], centre - 0.5, xt[2], top, col = pal[["accent"]], border = NA)
+  text(mean(xt), top + 0.045, "$1 of surplus", adj = c(0.5, 0), cex = 0.78, font = 2,
+       col = pal[["accent_ink"]])
+  for (i in seq_along(use)) {
+    rect(xu[1], use[[i]][["bot"]], xu[2], use[[i]][["top"]],
+         col = if (names(uses)[i] == "Debt paid down") pal[["ink_mid"]] else pal[["pumpkin"]],
+         border = NA)
+    text(xu[2] + 0.014, mean(use[[i]]), sprintf("%s  %.2f", names(uses)[i], uses[[i]]),
+         adj = c(0, 0.5), cex = 0.68, col = pal[["ink"]])
+  }
+  text(xs[1] - 0.014, centre - 0.72, "revenue lines that move the surplus", adj = c(1, 0.5),
+       cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  text(mean(xt), centre - 0.72, sprintf("expense lines net %+.2f", expense_net),
+       adj = c(0.5, 0.5), cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  text(xu[2] + 0.014, centre - 0.72, "where the dollar lands", adj = c(0, 0.5),
+       cex = 0.6, col = pal[["ink_soft"]], font = 3)
+  mtext("Where a surplus comes from, and where it goes", side = 3, line = 1.1, adj = 0,
+        cex = 1.0, font = 2, col = pal[["ink"]])
+  mtext(subtitle, side = 3, line = 0.1, adj = 0, cex = 0.66, col = pal[["ink_soft"]])
+}
+
+flow_figure(sources, uses, sum(inflow[6:9]),
+            paste0("cents per dollar of surplus  |  full-990 filers, December year-ends, 2022-2023  |  n = ",
+                   format(nrow(si), big.mark = ",")))
+```
+
+The two sides are not symmetric. Surpluses arrive mostly as contributions and
+investment returns, and they leave mostly as cash and investments. Property
+absorbs a seventh, and debt repayment a smaller share still.
+
+# 6. Findings
+
+```{r findings, include = FALSE}
+m <- setNames(main$cents_per_surplus_dollar, main$block)
+id <- attr(main, "identity")
+```
+
+* **Traceable share.** The asset-side minus liability-side coefficients sum to
+  `r fmt(id$assets_minus_liabilities)`, against
+  `r fmt(id$net_assets_direct)` from regressing the change in net assets
+  directly on the surplus. The identity holds in the estimates.
+* **Cash.** `r fmt(m[["cash"]])` of each surplus dollar ends the year as cash.
+* **Property.** `r fmt(m[["fixed_assets"]])` goes into land, buildings, and
+  equipment.
+* **Other assets.** `r fmt(m[["other_assets"]])`, mostly investments.
+* **Debt.** Long-term debt changes by
+  `r fmt(m[["long_term_debt"]])` and short-term liabilities by
+  `r fmt(m[["short_term_liabilities"]])` per surplus dollar; negative
+  coefficients mean surpluses coincide with paying debt down.
+
+```{r save, include = FALSE}
+if (nzchar(params$results_file)) {
+  saveRDS(list(main = main, inflow = inflow, untrimmed = untrimmed, identity_untrimmed = attr(untrimmed, "identity"), identity = attr(main, "identity"), contrasts = contrasts,
+               identity_windows = ident, asymmetry = asym, fixed_effects = fe,
+               years = dat[, .N, by = year][order(year)]), params$results_file)
+}
+```
+
+```{r session}
+sessionInfo()
+```

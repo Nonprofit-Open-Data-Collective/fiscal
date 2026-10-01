@@ -5,3 +5,13 @@
 
 # Office temp lock files
 ~$*
+
+# Panel caches: efile CSVs, DuckDB files, and built panels. These live under
+# ~/Documents/fiscal-data (see dev/panel/panel_build.R); the entries below keep
+# them out of the repo if a build is ever run with the working directory here.
+# Anchored to the repo root on purpose: unanchored "PANEL/" also matches
+# dev/panel/ on Windows, where git ignores case.
+/PANEL/
+/PANEL990/
+*.duckdb
+*.duckdb.wal
