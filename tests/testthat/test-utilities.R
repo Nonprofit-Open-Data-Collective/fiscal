@@ -131,6 +131,12 @@ test_that( "get_industry: B40-B43 → UNI, E20-E24 → HOS", {
   expect_equal( get_industry("A12"), "ART" )
 })
 
+test_that( "get_industry: last-two-digits rule applies only to specialty codes", {
+  expect_equal( get_industry("B0140"), "UNI" )   # specialty B01 -> B40
+  expect_equal( get_industry("B8340"), "EDU" )   # B83 fraternity, not B40
+  expect_equal( get_nteev2("B8340"), "EDU-B83-RG" )
+})
+
 test_that( "get_org_type: correct codes for standard types", {
   expect_equal( get_org_type("B01"), "AA" )   # alliance
   expect_equal( get_org_type("B29"), "RG" )   # regular
