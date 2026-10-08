@@ -10,7 +10,9 @@ articles:
   normalization: normalization.html
   panel-smoothing: panel-smoothing.html
   panel-workflow: panel-workflow.html
-last_built: 2026-09-16T22:48Z
+  ratio-correlation-artifacts: ratio-correlation-artifacts.html
+  variance-preserving-normalization: variance-preserving-normalization.html
+last_built: 2026-10-08T23:22Z
 urls:
   reference: https://nonprofit-open-data-collective.github.io/fiscal/reference
   article: https://nonprofit-open-data-collective.github.io/fiscal/articles

@@ -44,6 +44,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
+    <li><a class="dropdown-item" href="../articles/variance-preserving-normalization.html">Variance-preserving normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/ratio-correlation-artifacts.html">Construction-induced correlation among ratios</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
@@ -137,9 +139,9 @@ with <code><a href="../reference/get_pc_fields.html">get_pc_fields()</a></code>.
 </ul>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_pz_fields.html">get_pz_fields</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>   <span class="co"># available to both forms</span></span>
-<span><span class="co">#&gt; [1] 74</span></span>
+<span><span class="co">#&gt; [1] 31</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="../reference/get_pc_fields.html">get_pc_fields</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>   <span class="co"># full-990 only</span></span>
-<span><span class="co">#&gt; [1] 253</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] 283</span></span></code></pre></div>
 <p>This scope split is exactly why each metric’s help entry (and the
 catalog) states a <strong>Calculated For</strong> scope: a ratio built
 only from PZ fields works for <em>990 + 990-EZ</em> filers, while one

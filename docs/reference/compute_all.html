@@ -39,6 +39,8 @@ missing from df) is skipped with a warning."></head><body>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
+    <li><a class="dropdown-item" href="../articles/variance-preserving-normalization.html">Variance-preserving normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/ratio-correlation-artifacts.html">Construction-induced correlation among ratios</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
@@ -133,13 +135,12 @@ of <code>"ratio"</code>, <code>"w"</code>, <code>"z"</code>, <code>"p"</code>. D
 <span class="r-msg co"><span class="r-pr">#&gt;</span> }} Computing get_cash_on_hand ...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> }} Computing get_cash_burn_ratio ...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Beginning-of-year cash equal to zero :: 4,595 case(s) replaced with NaN</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Beginning-of-year cash equal to zero :: 646 case(s) replaced with NaN</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> }} Computing get_days_cash_operations ...</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 63 case(s) replaced with NaN</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> }} Computing get_days_cash_investments ...</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,305 case(s) use total net assets</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>    :: Daily operating expenses equal to zero :: 63 case(s) replaced with NaN</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> }} Computing get_months_cash_operations ...</span>

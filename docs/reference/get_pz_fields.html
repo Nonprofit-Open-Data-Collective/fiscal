@@ -33,6 +33,8 @@ sanitize_financials() is applied to these fields for all filers."></head><body>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="../articles/normalization.html">Normalization &amp; transformations</a></li>
+    <li><a class="dropdown-item" href="../articles/variance-preserving-normalization.html">Variance-preserving normalization</a></li>
+    <li><a class="dropdown-item" href="../articles/ratio-correlation-artifacts.html">Construction-induced correlation among ratios</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
     <li><a class="dropdown-item" href="../articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="../articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
@@ -72,43 +74,22 @@ sanitize_financials() is applied to these fields for all filers."></head><body>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">get_pz_fields</span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "F9_01_EXP_BEN_PAID_MEMB_CY"       "F9_01_EXP_GRANT_SIMILAR_CY"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "F9_01_EXP_OTH_CY"                 "F9_01_EXP_OTH_CY_V2"             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "F9_01_EXP_REV_LESS_EXP_CY"        "F9_01_EXP_SAL_ETC_CY"            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "F9_01_EXP_TOT_CY"                 "F9_01_NAFB_ASSET_TOT_BOY"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "F9_01_NAFB_ASSET_TOT_EOY"         "F9_01_NAFB_LIAB_TOT_BOY"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [11] "F9_01_NAFB_LIAB_TOT_EOY"          "F9_01_NAFB_TOT_BOY"              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "F9_01_NAFB_TOT_EOY"               "F9_01_REV_CONTR_TOT_CY"          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "F9_01_REV_CONTR_TOT_CY_V2"        "F9_01_REV_INVEST_TOT_CY"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [17] "F9_01_REV_OTH_CY"                 "F9_01_REV_PROG_TOT_CY"           </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [19] "F9_01_REV_TOT_CY"                 "F9_08_REV_CONTR_MEMBSHIP_DUE"    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [21] "F9_08_REV_MISC_TOT_TOT"           "F9_08_REV_OTH_EVNT_DIRECT_EXP"   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [23] "F9_08_REV_OTH_EVNT_NET_TOT"       "F9_08_REV_OTH_FUNDR_DIRECT_EXP"  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [25] "F9_08_REV_OTH_FUNDR_EVNT_0"       "F9_08_REV_OTH_FUNDR_EVNT_1"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [27] "F9_08_REV_OTH_FUNDR_NET_TOT"      "F9_08_REV_OTH_GAMING"            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [29] "F9_08_REV_OTH_GAMING_DIRECT_EXP"  "F9_08_REV_OTH_GAMING_NET_TOT"    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [31] "F9_08_REV_OTH_INV_COST_GOODS"     "F9_08_REV_OTH_INV_GRO_SALE"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [33] "F9_08_REV_OTH_INV_NET_TOT"        "F9_08_REV_OTH_INVEST_INCOME_TOT" </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [35] "F9_08_REV_OTH_SALE_ASSET"         "F9_08_REV_OTH_SALE_ASSET_OTH"    </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [37] "F9_08_REV_OTH_SALE_ASSET_SEC"     "F9_08_REV_OTH_SALE_GAIN_NET_TOT" </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [39] "F9_08_REV_OTH_SALE_LESS_COST"     "F9_08_REV_OTH_SALE_LESS_COST_OTH"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [41] "F9_08_REV_OTH_SALE_LESS_COST_SEC" "F9_09_EXP_BEN_PAID_MEMB_TOT"     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [43] "F9_09_EXP_GRANT_US_ORG_TOT"       "F9_09_EXP_OCCUPANCY_TOT"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [45] "F9_09_EXP_OFFICE_TOT"             "F9_09_EXP_OFFICE_TOT_V2"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [47] "F9_10_ASSET_CASH_BOY"             "F9_10_ASSET_CASH_EOY"            </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [49] "F9_10_ASSET_CASH_SAVING_BOY"      "F9_10_ASSET_CASH_SAVING_EOY"     </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [51] "F9_10_ASSET_INVEST_PROG_RLTD_BOY" "F9_10_ASSET_INVEST_PROG_RLTD_EOY"</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [53] "F9_10_ASSET_INVEST_SEC_BOY"       "F9_10_ASSET_INVEST_SEC_EOY"      </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [55] "F9_10_ASSET_INVEST_SEC_OTH_BOY"   "F9_10_ASSET_INVEST_SEC_OTH_EOY"  </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [57] "F9_10_ASSET_LAND_BLDG"            "F9_10_ASSET_LAND_BLDG_BOY"       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [59] "F9_10_ASSET_LAND_BLDG_EOY"        "F9_10_ASSET_LAND_BLDG_NET_BOY"   </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [61] "F9_10_ASSET_LAND_BLDG_NET_EOY"    "F9_10_ASSET_OTH_BOY"             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [63] "F9_10_ASSET_OTH_BOY_V2"           "F9_10_ASSET_OTH_EOY"             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [65] "F9_10_ASSET_OTH_EOY_V2"           "F9_10_ASSET_SAVING_BOY"          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [67] "F9_10_ASSET_SAVING_EOY"           "F9_10_ASSET_TOT_BOY"             </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [69] "F9_10_ASSET_TOT_EOY"              "F9_10_LIAB_TOT_BOY"              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [71] "F9_10_LIAB_TOT_EOY"               "F9_10_NAFB_TOT_BOY"              </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [73] "F9_10_NAFB_TOT_EOY"               "F9_11_RECO_OTH_CHANGE_NAFB"      </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "F9_01_EXP_BEN_PAID_MEMB_CY"      "F9_01_EXP_GRANT_SIMILAR_CY"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [3] "F9_01_EXP_REV_LESS_EXP_CY"       "F9_01_EXP_SAL_ETC_CY"           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "F9_01_EXP_TOT_CY"                "F9_01_NAFB_ASSET_TOT_BOY"       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [7] "F9_01_NAFB_LIAB_TOT_BOY"         "F9_01_NAFB_TOT_BOY"             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "F9_01_NAFB_TOT_EOY"              "F9_01_REV_INVEST_TOT_CY"        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [11] "F9_01_REV_PROG_TOT_CY"           "F9_01_REV_TOT_CY"               </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "F9_08_REV_CONTR_MEMBSHIP_DUE"    "F9_08_REV_MISC_TOT_TOT"         </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [15] "F9_08_REV_OTH_FUNDR_EVNT_1"      "F9_08_REV_OTH_GAMING"           </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [17] "F9_08_REV_OTH_INV_COST_GOODS"    "F9_08_REV_OTH_INV_GRO_SALE"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [19] "F9_08_REV_OTH_INV_NET_TOT"       "F9_08_REV_OTH_INVEST_INCOME_TOT"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [21] "F9_08_REV_OTH_SALE_GAIN_NET_TOT" "F9_09_EXP_OCCUPANCY_TOT"        </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [23] "F9_10_ASSET_LAND_BLDG_NET_BOY"   "F9_10_ASSET_LAND_BLDG_NET_EOY"  </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [25] "F9_10_ASSET_TOT_BOY"             "F9_10_ASSET_TOT_EOY"            </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [27] "F9_10_LIAB_TOT_BOY"              "F9_10_LIAB_TOT_EOY"             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [29] "F9_10_NAFB_TOT_BOY"              "F9_10_NAFB_TOT_EOY"             </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [31] "F9_11_RECO_OTH_CHANGE_NAFB"     </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

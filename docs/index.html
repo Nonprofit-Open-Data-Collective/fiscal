@@ -48,6 +48,8 @@
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Methods</h6></li>
     <li><a class="dropdown-item" href="articles/normalization.html">Normalization &amp; transformations</a></li>
+    <li><a class="dropdown-item" href="articles/variance-preserving-normalization.html">Variance-preserving normalization</a></li>
+    <li><a class="dropdown-item" href="articles/ratio-correlation-artifacts.html">Construction-induced correlation among ratios</a></li>
     <li><a class="dropdown-item" href="articles/fiscal-health-index.html">Building a fiscal health index: a measurement approach</a></li>
     <li><a class="dropdown-item" href="articles/fiscal-health-workflow.html">The fiscal health workflow</a></li>
     <li><a class="dropdown-item" href="articles/form-scope.html">990 vs 990-EZ — form scope &amp; sanitization</a></li>
@@ -692,13 +694,13 @@
 <h2 id="get_days_cash_investments">get_days_cash_investments()<a class="anchor" aria-label="anchor" href="#get_days_cash_investments"></a>
 </h2>
 <p><strong>Ratio:</strong> Days of Cash and Investments</p>
-<p><strong>Definition:</strong> Days of operating coverage including investment assets net of related debt.</p>
+<p><strong>Definition:</strong> Days of operating coverage from liquid assets plus investment securities. Adds investments to the numerator of <code><a href="reference/get_days_cash_operations.html">get_days_cash_operations()</a></code>, so the difference between the two metrics is the coverage investments provide.</p>
 <p><strong>Formula:</strong></p>
-<pre><code><span><span class="va">days_cash_inv</span> <span class="op">=</span> <span class="va">liquid_and_investment_assets</span> <span class="op">/</span> <span class="va">daily_expenses</span></span>
+<pre><code><span><span class="va">days_cash_inv</span> <span class="op">=</span> <span class="op">(</span> <span class="va">liquid_assets</span> <span class="op">+</span> <span class="va">investments</span> <span class="op">)</span> <span class="op">/</span> <span class="va">daily_expenses</span></span>
 <span></span>
-<span><span class="va">liquid_and_investment_assets</span> <span class="op">=</span> <span class="va">unrestricted_net_assets</span> <span class="op">+</span> <span class="va">investments</span></span>
-<span>                               <span class="op">-</span> <span class="op">(</span> <span class="va">land_buildings</span> <span class="op">+</span> <span class="va">mortgages_payable</span> <span class="op">)</span></span>
-<span><span class="va">daily_expenses</span>               <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
+<span><span class="va">liquid_assets</span>  <span class="op">=</span> <span class="va">cash</span> <span class="op">+</span> <span class="va">savings</span> <span class="op">+</span> <span class="va">pledges_receivable</span> <span class="op">+</span> <span class="va">accounts_receivable</span></span>
+<span><span class="va">investments</span>    <span class="op">=</span> <span class="va">publicly_traded_securities</span> <span class="op">+</span> <span class="va">other_securities</span></span>
+<span><span class="va">daily_expenses</span> <span class="op">=</span> <span class="op">(</span> <span class="va">total_expenses</span> <span class="op">-</span> <span class="va">depreciation</span> <span class="op">)</span> <span class="op">/</span> <span class="fl">365</span></span></code></pre>
 <table class="table">
 <colgroup>
 <col width="26%">
@@ -712,19 +714,24 @@
 </tr></thead>
 <tbody>
 <tr>
-<td><code>net_assets</code></td>
-<td><code>F9_10_NAFB_UNRESTRICT_EOY</code></td>
-<td>Unrestricted net assets, EOY</td>
+<td><code>cash</code></td>
+<td><code>F9_10_ASSET_CASH_EOY</code></td>
+<td>Cash on hand, EOY</td>
 </tr>
 <tr>
-<td><code>restricted_net_assets</code></td>
-<td><code>F9_10_NAFB_RESTRICT_EOY</code></td>
-<td>Restricted net assets, EOY (non-SFAS 117 check)</td>
+<td><code>savings</code></td>
+<td><code>F9_10_ASSET_SAVING_EOY</code></td>
+<td>Savings and temporary cash investments</td>
 </tr>
 <tr>
-<td><code>total_net_assets</code></td>
-<td><code>F9_10_NAFB_TOT_EOY</code></td>
-<td>Total net assets, EOY; replaces unrestricted net assets when lines 27 and 28 are both zero (non-SFAS 117 filers)</td>
+<td><code>pledges_receivable</code></td>
+<td><code>F9_10_ASSET_PLEDGE_NET_EOY</code></td>
+<td>Net pledges receivable</td>
+</tr>
+<tr>
+<td><code>accounts_receivable</code></td>
+<td><code>F9_10_ASSET_ACC_NET_EOY</code></td>
+<td>Accounts receivable, net</td>
 </tr>
 <tr>
 <td><code>investments</code></td>
@@ -732,16 +739,6 @@
 <code>F9_10_ASSET_INVEST_SEC_EOY</code> + <code>F9_10_ASSET_INVEST_SEC_OTH_EOY</code>
 </td>
 <td>Investments in publicly traded and other securities (Part X lines 11 + 12)</td>
-</tr>
-<tr>
-<td><code>land_buildings</code></td>
-<td><code>F9_10_ASSET_LAND_BLDG_NET_EOY</code></td>
-<td>Net land, buildings, and equipment</td>
-</tr>
-<tr>
-<td><code>mortgages_payable</code></td>
-<td><code>F9_10_LIAB_MTG_NOTE_EOY</code></td>
-<td>Mortgages and notes payable</td>
 </tr>
 <tr>
 <td><code>total_expenses</code></td>
