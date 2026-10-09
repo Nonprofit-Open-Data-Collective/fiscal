@@ -8,7 +8,10 @@
 #' @param include_bmf Attach current geocoded BMF fields.
 #' @param bmf_vars Native BMF fields to retain; `NULL` retains all available.
 #' @param join_1xm Join one-to-many and supplemental tables.
-#' @param efile_root Efile URL or local source directory.
+#' @param efile_root Efile URL or local source directory. `NULL` (default)
+#'   reads panel990's current release (see [panel990::efile_version()]).
+#' @param format Source file format, `"parquet"` or `"csv"`. `NULL` (default)
+#'   uses panel990's default: parquet when a reader is installed, else CSV.
 #' @param bmf_url BMF URL, path, or data frame.
 #' @param timeout Download timeout.
 #' @param retry_max Download attempts.
@@ -30,7 +33,8 @@ retrieve_efile_data <- function(
     include_bmf = TRUE,
     bmf_vars = .BMF_VARS,
     join_1xm = FALSE,
-    efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+    efile_root = NULL,
+    format = NULL,
     bmf_url = .BMF_URL,
     timeout = 300,
     retry_max = 3L,
@@ -53,7 +57,7 @@ retrieve_efile_data <- function(
   # attached explicitly so the caller's `bmf_url`/`bmf_vars` still apply.
   p <- panel990::panelize(
     tables = tables, years = as.integer(year),
-    source = panel990::data_source(efile_root), bmf = FALSE, path = path,
+    source = .efile_source(efile_root, format), bmf = FALSE, path = path,
     cache = cache, backend = backend, filters = filters, columns = columns,
     include_many = join_1xm, collision = collision, overwrite = overwrite,
     retry_max = retry_max, timeout = timeout, verbose = verbose
@@ -72,4 +76,13 @@ retrieve_efile_data <- function(
   attr(out, "join_manifest") <- p$join_manifest
   attr(out, "bmf_status") <- bmf_diagnostics
   out
+}
+
+# panel990 source for a root (NULL: panel990's current release) and format
+# (NULL: panel990's default format)
+#' @keywords internal
+#' @noRd
+.efile_source <- function(efile_root = NULL, format = NULL) {
+  if (is.null(format)) panel990::data_source(efile_root)
+  else panel990::data_source(efile_root, format = format)
 }

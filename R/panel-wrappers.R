@@ -147,7 +147,10 @@ panel_smooth <- function(
 #' @param years Tax years.
 #' @param tables Aliases or literal table names.
 #' @param include_bmf Attach BMF fields.
-#' @param efile_root Efile URL or local fixture directory.
+#' @param efile_root Efile URL or local fixture directory. `NULL` (default)
+#'   reads panel990's current release (see [panel990::efile_version()]).
+#' @param format Source file format, `"parquet"` or `"csv"`. `NULL` (default)
+#'   uses panel990's default: parquet when a reader is installed, else CSV.
 #' @param bmf_url BMF URL, local path, or in-memory data frame.
 #' @param timeout Download timeout.
 #' @param retry_max Download attempts.
@@ -166,7 +169,8 @@ get_panel <- function(
     years,
     tables = c("P00", "P01", "P08", "P09", "P10", "P11", "P12", "A01"),
     include_bmf = TRUE,
-    efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+    efile_root = NULL,
+    format = NULL,
     bmf_url = .BMF_URL,
     timeout = 300,
     retry_max = 3L,
@@ -186,7 +190,7 @@ get_panel <- function(
   # BMF is attached explicitly below so the caller's `bmf_url` still applies.
   p <- panel990::panelize(
     tables = tables, years = years,
-    source = panel990::data_source(efile_root),
+    source = .efile_source(efile_root, format),
     bmf = FALSE, path = path, cache = cache, filters = filters,
     columns = columns, include_many = include_many, collision = collision,
     overwrite = overwrite, retry_max = retry_max, timeout = timeout,

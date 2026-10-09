@@ -14,5 +14,8 @@ efile_tables(cardinality = "all")
 Character vector of known canonical table names.
 }
 \description{
-List known efile table names
+The Form 990 / 990EZ tables of panel990's catalog
+(\code{\link[panel990:table_catalog]{panel990::table_catalog()}}), which follows the concordance990 tables of
+the current efile release. Cardinality comes from the T-number: T00 is
+one-to-one, T01-T98 one-to-many, and T99 supplemental text.
 }
