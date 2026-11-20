@@ -1,0 +1,105 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--surface-1:#ffffff;--surface-2:#f4f4f2;--border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.25);--border-stronger:rgba(0,0,0,.45);--text-primary:#1f1f1e;--text-secondary:#4a4a47;--text-muted:#7a7a75;--text-danger:#b3261e}
+body{background:var(--surface-1);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:900px;margin:24px auto;padding:0 16px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style></head><body>
+<h2 class="sr-only">Efficiency frontier: combinations of asset drawdown and expense cut that absorb the same shock, from all reserves to all program cuts, with index scores for each.</h2>
+<style>
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);margin:0 0 8px;flex-wrap:wrap}
+.row label{min-width:92px}
+.seg button{font-size:13px;padding:4px 10px}
+.seg button.on{background:var(--surface-1);border-color:var(--border-stronger);color:var(--text-primary)}
+.g2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:560px){.g2{grid-template-columns:minmax(0,1fr)}}
+.g2{display:block!important}.g2>div:nth-child(2){display:none}body{max-width:620px!important}
+.lg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary);margin-top:4px}
+.lg span{display:flex;align-items:center;gap:5px}
+.sr{display:grid;grid-template-columns:92px minmax(0,1fr) 50px;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);height:23px}
+.vo{font-size:12px;min-width:34px;font-variant-numeric:tabular-nums;color:var(--text-primary)}
+</style>
+<div style="padding:0.5rem 0">
+<div class="row seg" style="display:none"><span style="min-width:92px">Weighting</span><button data-m="raw">Raw % changes</button><button data-m="std" class="on">Standardized (÷ SD)</button><button data-m="fa">First factor from data</button></div>
+<div class="row" style="display:none"><label for="curv">Frontier bow</label><input type="range" id="curv" min="0" max="100" step="1" value="45" style="flex:1;min-width:120px"><span class="vo" id="curvOut"></span></div>
+<div class="row" style="display:none"><label for="ineff">Inefficiency</label><input type="range" id="ineff" min="0" max="100" step="1" value="40" style="flex:1;min-width:120px"><span class="vo" id="ineffOut"></span></div>
+<div class="row" style="display:none"><label for="disp">Choice spread</label><input type="range" id="disp" min="0" max="100" step="1" value="35" style="flex:1;min-width:120px"><span class="vo" id="dispOut"></span></div>
+<div id="statOut" style="display:none;font-size:12px;color:var(--text-muted);margin:0 0 8px;font-variant-numeric:tabular-nums"></div>
+<div class="g2">
+<div>
+<svg id="plot" viewBox="0 0 400 335" width="100%" role="img" aria-label="Asset drawdown versus expense cut with an efficiency frontier, organizations on or outside it, and iso-index lines"></svg>
+<div class="lg">
+<span><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#b8541a" stroke-width="2.5"/></svg>efficient frontier, $1 shock</span>
+<span><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#2a78d6" stroke-width="1.5" stroke-dasharray="4 3"/></svg>iso-index line</span>
+</div>
+</div>
+<div>
+<div style="font-size:13px;color:var(--text-primary);font-weight:500;margin-bottom:2px">Index score, same $1 shock</div>
+<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">assets / expenses absorbed (%)</div>
+<div id="scores"></div>
+<div id="spread" style="font-size:13px;margin-top:10px;color:var(--text-secondary);line-height:1.5"></div>
+</div>
+</div>
+</div>
+<script>
+const N=300;
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(11);
+const nrm=()=>{let u=R()||1e-9,v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const base=[];for(let i=0;i<N;i++){base.push({z:Math.max(-2.2,Math.min(2.2,nrm())),u:R(),x:-Math.log(R()||1e-9)})}
+const TS=[1,5/6,4/6,3/6,2/6,1/6,0];
+let mode='std';
+const X=a=>50+a/40*335, Y=e=>300-e/80*280;
+function pt(t,s,p){return[25*s*Math.pow(t,1/p),50*s*Math.pow(1-t,1/p)]}
+function sim(d,k,p){
+ const A=[],E=[];
+ base.forEach(b=>{const s=Math.exp(0.2*b.z);const t=Math.min(1,Math.max(0,0.5+d*(b.u-0.5)));const m=1+k*b.x;const q=pt(t,s,p);A.push(q[0]*m);E.push(q[1]*m)});
+ const mn=v=>v.reduce((a,b)=>a+b,0)/v.length,mA=mn(A),mE=mn(E);
+ let sa=0,se=0,c=0;for(let i=0;i<N;i++){sa+=(A[i]-mA)**2;se+=(E[i]-mE)**2;c+=(A[i]-mA)*(E[i]-mE)}
+ const sdA=Math.sqrt(sa/N),sdE=Math.sqrt(se/N);return{A,E,sdA,sdE,r:c/N/(sdA*sdE)};
+}
+function render(){
+ const d=+document.getElementById('disp').value/100,k=+document.getElementById('ineff').value/100*0.6,cv=+document.getElementById('curv').value/100,p=1-0.45*cv;
+ document.getElementById('curvOut').textContent=cv<0.02?'linear':'p='+p.toFixed(2);
+ document.getElementById('ineffOut').textContent='+'+Math.round(k*100)+'%';
+ document.getElementById('dispOut').textContent=Math.round(d*100)+'%';
+ const S=sim(d,k,p);
+ let wA,wE,u;
+ if(mode==='raw'){wA=1;wE=1;u=''}else if(mode==='std'){wA=1/S.sdA;wE=1/S.sdE;u=''}else{wA=1/S.sdA;wE=(S.r>=0?1:-1)/S.sdE;u=''}
+ document.getElementById('statOut').textContent='SD assets '+S.sdA.toFixed(1)+' · SD expenses '+S.sdE.toFixed(1)+' · ratio '+(S.sdE/S.sdA).toFixed(2)+' · corr '+(S.r>=0?'+':'')+S.r.toFixed(2);
+ const I=(a,e)=>wA*a+wE*e;
+ const curve=s=>{let q='';for(let i=0;i<=120;i++){const c=pt(i/120,s,p);q+=(i?'L':'M')+X(c[0]).toFixed(1)+' '+Y(c[1]).toFixed(1)}return q};
+ let g='<defs><clipPath id="cp"><rect x="50" y="20" width="335" height="280"/></clipPath></defs>';
+ for(let t=0;t<=40;t+=10)g+='<line x1="'+X(t)+'" y1="20" x2="'+X(t)+'" y2="300" style="stroke:var(--border)" stroke-width="0.5"/><text x="'+X(t)+'" y="315" text-anchor="middle" style="font-size:11px;fill:var(--text-muted)">'+t+'%</text>';
+ for(let t=0;t<=80;t+=20)g+='<line x1="50" y1="'+Y(t)+'" x2="385" y2="'+Y(t)+'" style="stroke:var(--border)" stroke-width="0.5"/><text x="44" y="'+(Y(t)+4)+'" text-anchor="end" style="font-size:11px;fill:var(--text-muted)">'+t+'%</text>';
+ g+='<text x="217" y="333" text-anchor="middle" style="font-size:12px;fill:var(--text-secondary)">Asset drawdown</text><text x="12" y="160" text-anchor="middle" transform="rotate(-90 12 160)" style="font-size:12px;fill:var(--text-secondary)">Expense cut</text>';
+ g+='<g clip-path="url(#cp)">';
+ g+='<path d="'+curve(1)+'L'+X(0)+' '+Y(0)+'Z" fill="#b8541a" opacity="0.07"/>';
+ if(0)for(let i=0;i<N;i++)g+='<circle cx="'+X(S.A[i]).toFixed(1)+'" cy="'+Y(S.E[i]).toFixed(1)+'" r="2.2" style="fill:var(--text-muted)" opacity="0.4"/>';
+ [0.7,1.35].forEach(s=>{g+='<path d="'+curve(s)+'" fill="none" stroke="#b8541a" stroke-width="1.1" opacity="0.4"/>'});
+ g+='<path d="'+curve(1)+'" fill="none" stroke="#b8541a" stroke-width="2.5"/>';
+ const mid=pt(0.5,1,p),c0=I(mid[0],mid[1]),dl=8*wA;
+ [-1,0,1].forEach(j=>{const c=c0+j*dl;g+='<line x1="'+X(-20)+'" y1="'+Y((c+20*wA)/wE)+'" x2="'+X(60)+'" y2="'+Y((c-wA*60)/wE)+'" stroke="#2a78d6" stroke-width="1.5" stroke-dasharray="5 4"/>'});
+ g+='</g>';
+ g+='<text x="'+(X(0)+6)+'" y="'+(Y(0)-8)+'" style="font-size:11px;fill:#b8541a">doesn\'t cover the shock</text>';
+ const ineffPt=[mid[0]*(1+Math.max(k,0.15)*1.2),mid[1]*(1+Math.max(k,0.15)*1.2)];
+ const F=[{n:'Reserves',t:1,c:'#dc955a'},{n:'Mix',t:0.5,c:'#b8541a'},{n:'Programs',t:0,c:'#4f7394'}];
+ TS.forEach(t=>{if(t%0.5!==0){const c=pt(t,1,p);g+='<circle cx="'+X(c[0])+'" cy="'+Y(c[1])+'" r="3.5" style="fill:var(--surface-2);stroke:#b8541a" stroke-width="1.5"/>'}});
+ F.forEach(f=>{const c=pt(f.t,1,p);g+='<circle cx="'+X(c[0])+'" cy="'+Y(c[1])+'" r="6.5" fill="'+f.c+'" style="stroke:var(--surface-2)" stroke-width="2"/>';const lx=f.t===1?X(c[0])+2:f.t===0.5?X(c[0])-10:X(c[0])+10,ly=f.t===1?Y(c[1])-12:f.t===0.5?Y(c[1])+16:Y(c[1])+4;g+='<text x="'+lx+'" y="'+ly+'" text-anchor="'+(f.t===0.5?'end':'start')+'" style="font-size:12px;font-weight:500;fill:var(--text-primary)">'+f.n+'</text>'});
+ document.getElementById('plot').innerHTML=g;
+ const rows=TS.map(t=>{const c=pt(t,1,p);const f=F.find(x=>x.t===t);return{a:c[0],e:c[1],f,v:I(c[0],c[1])}});
+ const mx=Math.max(...rows.map(r=>Math.abs(r.v))),neg=rows.some(r=>r.v<0);
+ let h='';
+ rows.forEach(r=>{const w=Math.abs(r.v)/mx*(neg?50:100),left=neg?(r.v<0?50-w:50):0,f=r.f;
+  const bar=f?(f.hollow?'border:1.5px solid #b8541a;box-sizing:border-box;':'background:'+f.c+';'):'background:var(--border-strong);';
+  h+='<div class="sr"><span style="color:'+(f?'var(--text-primary)':'var(--text-muted)')+';white-space:nowrap">'+Math.round(r.a)+' / '+Math.round(r.e)+(f?' <span style="color:var(--text-muted)">'+f.n+'</span>':'')+'</span><div style="position:relative;height:14px">'+(neg?'<div style="position:absolute;left:50%;top:-4px;bottom:-4px;border-left:0.5px solid var(--border-strong)"></div>':'')+'<div style="position:absolute;left:'+left+'%;width:'+Math.max(w,0.5)+'%;height:14px;border-radius:'+(r.v<0?'4px 0 0 4px':'0 4px 4px 0')+';'+bar+'"></div></div><span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--text-primary)">'+(mode==='raw'?r.v.toFixed(0):r.v.toFixed(1))+'</span></div>'});
+ document.getElementById('scores').innerHTML=h;
+ const sp=document.getElementById('spread');
+ if(neg||(mode==='fa'&&S.r<0)){sp.innerHTML='<span style="color:var(--text-danger)">Choices dominate the covariance, so factor 1 contrasts assets against expenses. It ranks coping strategy, not damage.</span>'}
+ else{const fr=rows.slice(0,TS.length).map(r=>r.v),lo=Math.min(...fr),hi=Math.max(...fr);
+  sp.innerHTML='Spread along the frontier: <span style="color:var(--text-primary);font-weight:500">'+((hi-lo)/hi*100).toFixed(0)+'%</span>'}
+}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.m;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));render()}));
+['disp','ineff','curv'].forEach(id=>document.getElementById(id).addEventListener('input',render));
+render();
+</script></body></html>
