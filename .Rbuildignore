@@ -12,3 +12,4 @@
 ^archive$
 ^data-raw$
 ^\.agents$
+^figures$
