@@ -1,0 +1,90 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--surface-1:#ffffff;--surface-2:#f4f4f2;--border:rgba(0,0,0,.12);--border-strong:rgba(0,0,0,.25);--border-stronger:rgba(0,0,0,.45);--text-primary:#1f1f1e;--text-secondary:#4a4a47;--text-muted:#7a7a75;--text-danger:#b3261e}
+body{background:var(--surface-1);color:var(--text-primary);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;max-width:900px;margin:24px auto;padding:0 16px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style></head><body>
+<h2 class="sr-only">Interactive chart: organizations absorb the same shock by trading off asset drawdowns against expense cuts; raw equal weights score them differently, while standardized weights make iso-index lines parallel to the shock frontier so equal shocks get equal scores.</h2>
+<style>
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-secondary);margin:0 0 10px;flex-wrap:wrap}
+.seg button{font-size:13px;padding:4px 10px}
+.seg button.on{background:var(--surface-1);border-color:var(--border-stronger);color:var(--text-primary)}
+.g2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:560px){.g2{grid-template-columns:minmax(0,1fr)}}
+.lg{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text-secondary);margin-top:4px}
+.lg span{display:flex;align-items:center;gap:5px}
+.sr{display:grid;grid-template-columns:78px minmax(0,1fr) 52px;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);height:24px}
+</style>
+<div style="padding:0.5rem 0">
+<div class="row seg"><span style="min-width:74px">Weighting</span><button data-m="raw">Raw % changes</button><button data-m="std" class="on">Standardized (÷ SD)</button><button data-m="fa">First factor from data</button></div>
+<div class="row"><label for="disp" style="min-width:74px">Choice spread</label><input type="range" id="disp" min="0" max="100" step="1" value="35" style="flex:1;min-width:140px"><span id="dispOut" style="font-size:12px;min-width:250px;font-variant-numeric:tabular-nums"></span></div>
+<div class="g2">
+<div>
+<svg id="plot" viewBox="0 0 400 335" width="100%" role="img" aria-label="Asset drawdown versus expense cut with shock frontiers and iso-index lines"></svg>
+<div class="lg">
+<span><svg width="18" height="8"><circle cx="9" cy="4" r="2.5" style="fill:var(--text-muted)"/></svg>simulated orgs</span>
+<span><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#b8541a" stroke-width="2.5"/></svg>shock frontier</span>
+<span><svg width="22" height="8"><line x1="0" y1="4" x2="22" y2="4" stroke="#2a78d6" stroke-width="1.5" stroke-dasharray="4 3"/></svg>iso-index line</span>
+</div>
+</div>
+<div>
+<div style="font-size:13px;color:var(--text-primary);font-weight:500;margin-bottom:2px">Index score, same $1 shock</div>
+<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">assets / expenses absorbed</div>
+<div id="scores"></div>
+<div id="spread" style="font-size:13px;margin-top:10px;color:var(--text-secondary)"></div>
+</div>
+</div>
+</div>
+<script>
+const N=280;
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const R=rng(7);
+const nrm=()=>{let u=R()||1e-9,v=R();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const base=[];for(let i=0;i<N;i++){base.push({z:Math.max(-2.2,Math.min(2.2,nrm())),u:R(),n1:nrm(),n2:nrm()})}
+const MENU=[[0,50],[5,40],[10,30],[15,20],[20,10],[25,0]];
+const FIRMS={'25,0':{n:'Reserves',c:'#dc955a'},'10,30':{n:'Mix',c:'#b8541a'},'0,50':{n:'Programs',c:'#4f7394'}};
+let mode='std';
+const X=a=>50+a/40*335, Y=e=>300-e/80*280;
+function stats(d){
+ const A=[],E=[];
+ base.forEach(b=>{const s=Math.exp(0.38*b.z);const th=0.5+d*(b.u-0.5);A.push(Math.max(0,25*s*th*(1+0.1*b.n1)));E.push(Math.max(0,50*s*(1-th)*(1+0.1*b.n2)))});
+ const m=v=>v.reduce((p,q)=>p+q,0)/v.length;const mA=m(A),mE=m(E);
+ let sa=0,se=0,c=0;for(let i=0;i<N;i++){sa+=(A[i]-mA)**2;se+=(E[i]-mE)**2;c+=(A[i]-mA)*(E[i]-mE)}
+ const sdA=Math.sqrt(sa/N),sdE=Math.sqrt(se/N);return{A,E,sdA,sdE,r:c/N/(sdA*sdE)};
+}
+function render(){
+ const d=+document.getElementById('disp').value/100;const S=stats(d);
+ let wA,wE,u;
+ if(mode==='raw'){wA=1;wE=1;u=' pts'}else if(mode==='std'){wA=1/S.sdA;wE=1/S.sdE;u=' SD'}else{wA=1/S.sdA;wE=(S.r>=0?1:-1)/S.sdE;u=' SD'}
+ document.getElementById('dispOut').textContent='SD assets '+S.sdA.toFixed(1)+' · SD expenses '+S.sdE.toFixed(1)+' · corr '+(S.r>=0?'+':'')+S.r.toFixed(2);
+ const I=(a,e)=>wA*a+wE*e;
+ let g='<defs><clipPath id="cp"><rect x="50" y="20" width="335" height="280"/></clipPath></defs>';
+ for(let t=0;t<=40;t+=10)g+='<line x1="'+X(t)+'" y1="20" x2="'+X(t)+'" y2="300" style="stroke:var(--border)" stroke-width="0.5"/><text x="'+X(t)+'" y="315" text-anchor="middle" style="font-size:11px;fill:var(--text-muted)">'+t+'%</text>';
+ for(let t=0;t<=80;t+=20)g+='<line x1="50" y1="'+Y(t)+'" x2="385" y2="'+Y(t)+'" style="stroke:var(--border)" stroke-width="0.5"/><text x="44" y="'+(Y(t)+4)+'" text-anchor="end" style="font-size:11px;fill:var(--text-muted)">'+t+'%</text>';
+ g+='<text x="217" y="333" text-anchor="middle" style="font-size:12px;fill:var(--text-secondary)">Asset drawdown</text><text x="12" y="160" text-anchor="middle" transform="rotate(-90 12 160)" style="font-size:12px;fill:var(--text-secondary)">Expense cut</text>';
+ g+='<g clip-path="url(#cp)">';
+ for(let i=0;i<N;i++)g+='<circle cx="'+X(S.A[i]).toFixed(1)+'" cy="'+Y(S.E[i]).toFixed(1)+'" r="2.2" style="fill:var(--text-muted)" opacity="0.35"/>';
+ [0.6,1.4].forEach(s=>{g+='<line x1="'+X(25*s)+'" y1="'+Y(0)+'" x2="'+X(0)+'" y2="'+Y(50*s)+'" stroke="#b8541a" stroke-width="1.2" opacity="0.45"/>'});
+ g+='<line x1="'+X(25)+'" y1="'+Y(0)+'" x2="'+X(0)+'" y2="'+Y(50)+'" stroke="#b8541a" stroke-width="2.5"/>';
+ const c0=I(10,30),dl=10*wA;
+ [-1,0,1].forEach(k=>{const c=c0+k*dl;g+='<line x1="'+X(-20)+'" y1="'+Y((c-wA*-20)/wE)+'" x2="'+X(60)+'" y2="'+Y((c-wA*60)/wE)+'" stroke="#2a78d6" stroke-width="1.5" stroke-dasharray="5 4"/>'});
+ g+='</g>';
+ g+='<text x="'+(X(0)+5)+'" y="'+(Y(30)-4)+'" style="font-size:11px;fill:var(--text-muted)">smaller shock</text><text x="'+(X(0)+5)+'" y="'+(Y(70)-4)+'" style="font-size:11px;fill:var(--text-muted)">larger shock</text>';
+ MENU.forEach(([a,e])=>{const f=FIRMS[a+','+e];if(!f)g+='<circle cx="'+X(a)+'" cy="'+Y(e)+'" r="3.5" style="fill:var(--surface-2);stroke:#b8541a" stroke-width="1.5"/>'});
+ MENU.forEach(([a,e])=>{const f=FIRMS[a+','+e];if(f){g+='<circle cx="'+X(a)+'" cy="'+Y(e)+'" r="6.5" fill="'+f.c+'" style="stroke:var(--surface-2)" stroke-width="2"/>';const lx=a===25?X(a)+2:X(a)+10,ly=a===25?Y(e)-12:Y(e)+4;g+='<text x="'+lx+'" y="'+ly+'" style="font-size:12px;font-weight:500;fill:var(--text-primary)">'+f.n+'</text>'}});
+ document.getElementById('plot').innerHTML=g;
+ const sc=MENU.map(([a,e])=>I(a,e)),mx=Math.max(...sc.map(Math.abs)),neg=sc.some(v=>v<0);
+ let h='';
+ MENU.slice().reverse().forEach(([a,e])=>{const v=I(a,e),f=FIRMS[a+','+e],col=f?f.c:'var(--text-muted)';
+  const w=Math.abs(v)/mx*(neg?50:100),left=neg?(v<0?50-w:50):0;
+  h+='<div class="sr"><span style="color:'+(f?'var(--text-primary)':'var(--text-muted)')+'">'+a+' / '+e+(f?' <span style="color:var(--text-muted)">'+f.n+'</span>':'')+'</span><div style="position:relative;height:14px">'+(neg?'<div style="position:absolute;left:50%;top:-4px;bottom:-4px;border-left:0.5px solid var(--border-strong)"></div>':'')+'<div style="position:absolute;left:'+left+'%;width:'+Math.max(w,0.5)+'%;height:14px;border-radius:'+(v<0?'4px 0 0 4px':'0 4px 4px 0')+';background:'+(f?col:'')+';'+(f?'':'background:var(--border-strong)')+'"></div></div><span style="text-align:right;font-variant-numeric:tabular-nums;color:var(--text-primary)">'+(mode==='raw'?v.toFixed(0):v.toFixed(1))+u+'</span></div>'});
+ document.getElementById('scores').innerHTML=h;
+ const fs=[I(25,0),I(10,30),I(0,50)];const sp=document.getElementById('spread');
+ if(neg||(mode==='fa'&&S.r<0)){sp.innerHTML='<span style="color:var(--text-danger)">Choices dominate the covariance, so factor 1 contrasts assets against expenses. It ranks coping strategy, not shock size.</span>'}
+ else{const p=(Math.max(...fs)-Math.min(...fs))/Math.max(...fs)*100;sp.innerHTML='Gap between firms facing the same shock: <span style="color:var(--text-primary);font-weight:500">'+p.toFixed(0)+'%</span>'}
+}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.m;document.querySelectorAll('.seg button').forEach(x=>x.classList.toggle('on',x===b));render()}));
+document.getElementById('disp').addEventListener('input',render);
+render();
+</script></body></html>
