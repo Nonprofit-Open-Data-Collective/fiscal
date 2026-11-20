@@ -12,7 +12,7 @@ test_that("fiscal get_panel delegates to efileR and returns manifests", {
     )
   }
   out <- get_panel(
-    2021:2022, tables = "P00", include_bmf = FALSE, efile_root = root,
+    2021:2022, tables = "P00", include_bmf = FALSE, efile_root = root, format = "csv",
     path = cache, verbose = FALSE
   )
   expect_s3_class(out, "data.frame")

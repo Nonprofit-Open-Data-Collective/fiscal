@@ -30,7 +30,7 @@ test_that("single-year wrapper returns data and structured manifests", {
   on.exit(unlink(c(root, cache), recursive = TRUE), add = TRUE)
   out <- retrieve_efile_data(
     2022, tables = c("P00", "P01"), include_bmf = FALSE,
-    efile_root = root, path = cache, verbose = FALSE
+    efile_root = root, format = "csv", path = cache, verbose = FALSE
   )
   expect_s3_class(out, "data.frame")
   expect_equal(nrow(out), 2L)
@@ -46,7 +46,7 @@ test_that("single-year wrapper pushes source filters", {
   on.exit(unlink(c(root, cache), recursive = TRUE), add = TRUE)
   out <- retrieve_efile_data(
     2022, tables = c("P00", "P01"), include_bmf = FALSE,
-    efile_root = root, path = cache,
+    efile_root = root, format = "csv", path = cache,
     filters = list(EIN2 = "EIN-12-3456789"), verbose = FALSE
   )
   expect_equal(nrow(out), 1L)
@@ -60,11 +60,11 @@ test_that("single-year wrapper gates one-to-many joins", {
   on.exit(unlink(c(root, cache), recursive = TRUE), add = TRUE)
   safe <- retrieve_efile_data(
     2022, tables = c("P00", "CUSTOM-P01-T01-ROWS"), include_bmf = FALSE,
-    efile_root = root, path = cache, verbose = FALSE
+    efile_root = root, format = "csv", path = cache, verbose = FALSE
   )
   expanded <- retrieve_efile_data(
     2022, tables = c("P00", "CUSTOM-P01-T01-ROWS"), include_bmf = FALSE,
-    efile_root = root, path = cache, join_1xm = TRUE, verbose = FALSE
+    efile_root = root, format = "csv", path = cache, join_1xm = TRUE, verbose = FALSE
   )
   expect_equal(nrow(safe), 2L)
   expect_equal(nrow(expanded), 3L)
@@ -82,7 +82,7 @@ test_that("single-year wrapper attaches native BMF fields", {
   out <- suppressWarnings(retrieve_efile_data(
     2022, tables = "P00", include_bmf = TRUE,
     bmf_vars = c("org_name_display", "bmf_source", "bmf_vintage_ym"),
-    bmf_url = bmf, efile_root = root, path = cache, verbose = FALSE
+    bmf_url = bmf, efile_root = root, format = "csv", path = cache, verbose = FALSE
   ))
   expect_equal(out$org_name_display[out$EIN2 == "EIN-12-3456789"], "Alpha Org")
   expect_true(is.list(attr(out, "bmf_status")))

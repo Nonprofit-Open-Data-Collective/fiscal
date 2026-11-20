@@ -11,6 +11,7 @@ retrieve_efile_data(
   bmf_vars = .BMF_VARS,
   join_1xm = FALSE,
   efile_root = NULL,
+  format = NULL,
   bmf_url = .BMF_URL,
   timeout = 300,
   retry_max = 3L,
@@ -37,8 +38,10 @@ retrieve_efile_data(
 \item{join_1xm}{Join one-to-many and supplemental tables.}
 
 \item{efile_root}{Efile URL or local source directory. \code{NULL} (default)
-uses the most recent efile release published through panel990 (see
-\code{\link[panel990:efile_version]{panel990::efile_version()}}; currently \code{v3_1}).}
+reads panel990's current release (see \code{\link[panel990:efile_version]{panel990::efile_version()}}).}
+
+\item{format}{Source file format, \code{"parquet"} or \code{"csv"}. \code{NULL} (default)
+uses panel990's default: parquet when a reader is installed, else CSV.}
 
 \item{bmf_url}{BMF URL, path, or data frame.}
 

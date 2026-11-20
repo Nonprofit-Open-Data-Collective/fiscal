@@ -22,7 +22,7 @@ test_that("efile table catalog partitions cleanly by cardinality", {
 test_that("known table cardinalities remain stable", {
   expect_true("F9-P00-T00-HEADER" %in% efile_tables("1x1"))
   expect_true("F9-P07-T01-COMPENSATION" %in% efile_tables("1xm"))
-  expect_true("SO-T99-SUPPLEMENTAL-INFO" %in% efile_tables("supplemental"))
+  expect_true("SO-P00-T99-SUPPLEMENTAL-INFO" %in% efile_tables("supplemental"))
 })
 
 test_that("efile_tables rejects unknown cardinality labels", {

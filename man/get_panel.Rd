@@ -9,6 +9,7 @@ get_panel(
   tables = c("P00", "P01", "P08", "P09", "P10", "P11", "P12", "A01"),
   include_bmf = TRUE,
   efile_root = NULL,
+  format = NULL,
   bmf_url = .BMF_URL,
   timeout = 300,
   retry_max = 3L,
@@ -31,8 +32,10 @@ get_panel(
 \item{include_bmf}{Attach BMF fields.}
 
 \item{efile_root}{Efile URL or local fixture directory. \code{NULL} (default)
-uses the most recent efile release published through panel990 (see
-\code{\link[panel990:efile_version]{panel990::efile_version()}}; currently \code{v3_1}).}
+reads panel990's current release (see \code{\link[panel990:efile_version]{panel990::efile_version()}}).}
+
+\item{format}{Source file format, \code{"parquet"} or \code{"csv"}. \code{NULL} (default)
+uses panel990's default: parquet when a reader is installed, else CSV.}
 
 \item{bmf_url}{BMF URL, local path, or in-memory data frame.}
 
