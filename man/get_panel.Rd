@@ -8,7 +8,7 @@ get_panel(
   years,
   tables = c("P00", "P01", "P08", "P09", "P10", "P11", "P12", "A01"),
   include_bmf = TRUE,
-  efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+  efile_root = NULL,
   bmf_url = .BMF_URL,
   timeout = 300,
   retry_max = 3L,
@@ -30,7 +30,9 @@ get_panel(
 
 \item{include_bmf}{Attach BMF fields.}
 
-\item{efile_root}{Efile URL or local fixture directory.}
+\item{efile_root}{Efile URL or local fixture directory. \code{NULL} (default)
+uses the most recent efile release published through panel990 (see
+\code{\link[panel990:efile_version]{panel990::efile_version()}}; currently \code{v3_1}).}
 
 \item{bmf_url}{BMF URL, local path, or in-memory data frame.}
 

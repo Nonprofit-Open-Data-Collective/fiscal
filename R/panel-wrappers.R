@@ -147,7 +147,9 @@ panel_smooth <- function(
 #' @param years Tax years.
 #' @param tables Aliases or literal table names.
 #' @param include_bmf Attach BMF fields.
-#' @param efile_root Efile URL or local fixture directory.
+#' @param efile_root Efile URL or local fixture directory. `NULL` (default)
+#'   uses the most recent efile release published through panel990 (see
+#'   [panel990::efile_version()]; currently `v3_1`).
 #' @param bmf_url BMF URL, local path, or in-memory data frame.
 #' @param timeout Download timeout.
 #' @param retry_max Download attempts.
@@ -166,7 +168,7 @@ get_panel <- function(
     years,
     tables = c("P00", "P01", "P08", "P09", "P10", "P11", "P12", "A01"),
     include_bmf = TRUE,
-    efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+    efile_root = NULL,
     bmf_url = .BMF_URL,
     timeout = 300,
     retry_max = 3L,

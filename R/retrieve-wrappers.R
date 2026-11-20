@@ -8,7 +8,9 @@
 #' @param include_bmf Attach current geocoded BMF fields.
 #' @param bmf_vars Native BMF fields to retain; `NULL` retains all available.
 #' @param join_1xm Join one-to-many and supplemental tables.
-#' @param efile_root Efile URL or local source directory.
+#' @param efile_root Efile URL or local source directory. `NULL` (default)
+#'   uses the most recent efile release published through panel990 (see
+#'   [panel990::efile_version()]; currently `v3_1`).
 #' @param bmf_url BMF URL, path, or data frame.
 #' @param timeout Download timeout.
 #' @param retry_max Download attempts.
@@ -30,7 +32,7 @@ retrieve_efile_data <- function(
     include_bmf = TRUE,
     bmf_vars = .BMF_VARS,
     join_1xm = FALSE,
-    efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+    efile_root = NULL,
     bmf_url = .BMF_URL,
     timeout = 300,
     retry_max = 3L,

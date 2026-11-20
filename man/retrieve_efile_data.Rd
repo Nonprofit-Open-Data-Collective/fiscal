@@ -10,7 +10,7 @@ retrieve_efile_data(
   include_bmf = TRUE,
   bmf_vars = .BMF_VARS,
   join_1xm = FALSE,
-  efile_root = "https://nccs-efile.s3.us-east-1.amazonaws.com/public/efile_v2_1/",
+  efile_root = NULL,
   bmf_url = .BMF_URL,
   timeout = 300,
   retry_max = 3L,
@@ -36,7 +36,9 @@ retrieve_efile_data(
 
 \item{join_1xm}{Join one-to-many and supplemental tables.}
 
-\item{efile_root}{Efile URL or local source directory.}
+\item{efile_root}{Efile URL or local source directory. \code{NULL} (default)
+uses the most recent efile release published through panel990 (see
+\code{\link[panel990:efile_version]{panel990::efile_version()}}; currently \code{v3_1}).}
 
 \item{bmf_url}{BMF URL, path, or data frame.}
 
