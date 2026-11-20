@@ -208,13 +208,40 @@ panel_smoothed <- panel_smooth(panel_clean, vars = "PZ", window = 3)
 panel_ratios <- compute_all_panel(panel_smoothed)
 ```
 
+## Trailing windows
+
+The default window is centred, so the smoothed value for year `t` borrows from
+`t + 1`. When smoothed values feed a baseline or covariate measured before some
+event (a merger, a grant, a policy change), that leaks the future into the
+past. `align = "right"` uses a trailing window instead: calendar years
+`t - (window - 1)` through `t`, never anything later, and a missing filing year
+is left as a hole rather than bridged:
+
+```{r}
+gappy <- data.frame(
+  EIN2     = "A",
+  TAX_YEAR = c(2015, 2016, 2019, 2020, 2021),
+  x        = c(10, 20, 30, 40, 50)
+)
+data.frame(
+  year     = gappy$TAX_YEAR,
+  centered = panel_smooth(gappy, vars = "x", window = 3, verbose = FALSE)$x,
+  trailing = panel_smooth(gappy, vars = "x", window = 3, align = "right",
+                          verbose = FALSE)$x
+)
+```
+
+The cost is lag: a real change is spread over `window` years. `align = "left"`
+is the forward-looking mirror.
+
 ## Summary
 
 `panel_smooth()`:
 
 * preserves panel dimensions and column names,
 * handles the beginning and end of each series without dropping observations,
-* supports equal, half, and decay weighting, and
+* supports equal, half, and decay weighting,
+* offers centred, trailing (`"right"`), and forward (`"left"`) windows, and
 * re-normalizes weights around missing values.
 
 It is particularly useful for stabilizing noisy longitudinal financial measures

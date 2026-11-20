@@ -106,17 +106,23 @@ panel_impute <- function(
 #'
 #' @param df Panel data frame.
 #' @param vars `"PZ"`, `"PC"`, `"ALL"`, or numeric field names.
-#' @param window Odd rolling-window width.
+#' @param window Rolling-window width: odd for `align = "center"`, any
+#'   positive integer otherwise.
 #' @param time Panel-time column.
 #' @param id Panel-ID column.
 #' @param weights Weighting mode.
 #' @param verbose Print progress.
 #' @param engine Must currently be `"memory"`.
+#' @param align Window alignment, passed to `panel990::panel_smooth()`:
+#'   `"center"` (default) averages the rows centred on each year;
+#'   `"right"` is a trailing window of calendar years `t - (window - 1)`
+#'   through `t` that never uses future values or bridges filing gaps;
+#'   `"left"` is the forward-looking mirror.
 #' @return Smoothed panel data.
 #' @export
 panel_smooth <- function(
     df, vars = "PZ", window = 3, time = "TAX_YEAR", id = "EIN2",
-    weights = "equal", verbose = TRUE, engine = "memory"
+    weights = "equal", verbose = TRUE, engine = "memory", align = "center"
 ) {
   if (!identical(engine, "memory"))
     stop('`engine` must currently be "memory".')
@@ -133,9 +139,11 @@ panel_smooth <- function(
     stop("Variable(s) not found in df: ", paste(missing_vars, collapse = ", "))
   if (!weights %in% c("equal", "half", "decay"))
     stop("`weights` must be one of: equal, half, decay")
+  if (length(align) != 1L || !align %in% c("center", "left", "right"))
+    stop("`align` must be one of: center, left, right")
   panel990::panel_smooth(
     data = df, vars = resolved, window = window, weights = weights,
-    time = time, id = id, verbose = verbose
+    align = align, time = time, id = id, verbose = verbose
   )
 }
 

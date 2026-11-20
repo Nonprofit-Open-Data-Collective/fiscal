@@ -309,3 +309,37 @@ test_that( "panel_smooth: invalid weights rejected", {
     regexp = "weights"
   )
 })
+
+test_that( "panel_smooth: align is forwarded to panel990", {
+  # 2017-2018 missing: the trailing window must not bridge the gap
+  df <- data.frame(
+    EIN2     = rep( c("A","B"), c(5, 3) ),
+    TAX_YEAR = c( 2015, 2016, 2019, 2020, 2021,  2019, 2020, 2021 ),
+    x        = c( 10, 20, 30, 40, 50,  1, NA, 3 ),
+    stringsAsFactors = FALSE
+  )
+  for ( al in c("center", "left", "right") ) for ( wt in c("equal", "half", "decay") ) {
+    expect_equal(
+      panel_smooth( df, vars = "x", window = 3, weights = wt, align = al,
+                    verbose = FALSE ),
+      panel990::panel_smooth( df, vars = "x", window = 3, weights = wt,
+                              align = al, verbose = FALSE )
+    )
+  }
+  right <- panel_smooth( df, vars = "x", window = 3, align = "right",
+                         verbose = FALSE )
+  expect_equal( right$x[1:5], c( 10, 15, 30, 35, 40 ) )
+  # default is unchanged (centred)
+  expect_equal(
+    panel_smooth( df, vars = "x", window = 3, verbose = FALSE ),
+    panel_smooth( df, vars = "x", window = 3, align = "center", verbose = FALSE )
+  )
+})
+
+test_that( "panel_smooth: invalid align rejected", {
+  df <- make_smooth_panel()
+  expect_error(
+    panel_smooth( df, vars = "x", align = "trailing" ),
+    regexp = "align"
+  )
+})
