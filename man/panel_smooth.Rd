@@ -12,7 +12,8 @@ panel_smooth(
   id = "EIN2",
   weights = "equal",
   verbose = TRUE,
-  engine = "memory"
+  engine = "memory",
+  align = "center"
 )
 }
 \arguments{
@@ -20,7 +21,8 @@ panel_smooth(
 
 \item{vars}{\code{"PZ"}, \code{"PC"}, \code{"ALL"}, or numeric field names.}
 
-\item{window}{Odd rolling-window width.}
+\item{window}{Rolling-window width: odd for \code{align = "center"}, any
+positive integer otherwise.}
 
 \item{time}{Panel-time column.}
 
@@ -31,6 +33,12 @@ panel_smooth(
 \item{verbose}{Print progress.}
 
 \item{engine}{Must currently be \code{"memory"}.}
+
+\item{align}{Window alignment, passed to \code{panel990::panel_smooth()}:
+\code{"center"} (default) averages the rows centred on each year;
+\code{"right"} is a trailing window of calendar years \code{t - (window - 1)}
+through \code{t} that never uses future values or bridges filing gaps;
+\code{"left"} is the forward-looking mirror.}
 }
 \value{
 Smoothed panel data.

@@ -18,7 +18,7 @@ BugReports: https://github.com/Nonprofit-Open-Data-Collective/fiscal/issues
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 4.1.0)
-Imports: bit64, data.table, dplyr, magrittr, panel990, scales, stringr
+Imports: bit64, data.table, dplyr, magrittr, panel990 (>= 0.0.0.9001), scales, stringr
 Suggests: testthat (>= 3.0.0), knitr, rmarkdown, psych, GPArotation, callr, corrplot
 Remotes: Nonprofit-Open-Data-Collective/panel990
 VignetteBuilder: knitr
