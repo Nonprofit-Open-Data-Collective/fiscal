@@ -3,9 +3,7 @@ url: https://nonprofit-open-data-collective.github.io/fiscal/
 destination: docs
 
 template:
-  bootstrap: 5
-  bslib:
-    primary: "#1f6f78"
+  package: pkgstyle
 
 home:
   title: fiscal • Nonprofit Fiscal Health Metrics
@@ -15,11 +13,10 @@ home:
 
 navbar:
   structure:
-    left:  [intro, reference, articles, news]
-    right: [search, github]
+    left:  [intro, guides, methods, reference, news]
   components:
-    articles:
-      text: Articles
+    guides:
+      text: Guides
       menu:
       - text: "Getting started"
       - text: Getting started with fiscal
@@ -32,8 +29,9 @@ navbar:
         href: articles/panel-workflow.html
       - text: Panel smoothing
         href: articles/panel-smoothing.html
-      - text: "-------"
-      - text: "Methods"
+    methods:
+      text: Methods
+      menu:
       - text: Normalization & transformations
         href: articles/normalization.html
       - text: Variance-preserving normalization

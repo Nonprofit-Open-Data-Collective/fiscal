@@ -1,0 +1,177 @@
+# 990 vs 990-EZ: form scope & sanitization
+
+Nonprofits file one of two forms depending on size: the full **Form
+990** or the shorter **Form 990-EZ**. They report *different fields* —
+the 990-EZ has only short revenue, expense, and balance-sheet sections,
+so most of the detailed Part VIII revenue, Part IX functional-expense,
+and Part X balance-sheet lines have no EZ counterpart. A dataset of real
+filers therefore mixes two field vocabularies, and a metric that blindly
+divides two 990-only columns would produce nonsense (or silent `NA`s)
+for every EZ filer.
+
+`fiscal` handles this with three coordinated pieces:
+
+1.  **[`detect_ez_rows()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/detect_ez_rows.md)**
+    — which rows are EZ filers.
+2.  **field scopes**
+    ([`get_pz_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pz_fields.md),
+    [`get_pc_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pc_fields.md))
+    — which fields exist on which form.
+3.  **[`sanitize_financials()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/sanitize_financials.md)**
+    — form-aware imputation of blank financials, plus a two-column
+    *coalescing* pattern in the metrics themselves.
+
+The bundled `dat10k` mixes both forms:
+
+``` r
+
+table(dat10k$RETURN_TYPE)
+#> 
+#>   990 990EZ 
+#>  6051  3949
+```
+
+## Identifying EZ filers
+
+[`detect_ez_rows()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/detect_ez_rows.md)
+returns a logical vector marking the 990-EZ rows. It prefers the
+`RETURN_TYPE` column and falls back to a structural test (rows with Part
+I revenue but no Part VIII total revenue are almost certainly EZ
+filers):
+
+``` r
+
+ez <- detect_ez_rows(dat10k)
+table(ez)
+#> ez
+#> FALSE  TRUE 
+#>  6051  3949
+```
+
+## Field scopes: PZ vs PC
+
+Fields are grouped by the forms they appear on:
+
+- **PZ-scope** — fields available on **both** 990 and 990-EZ: the Part I
+  summary lines plus the revenue, expense, and balance-sheet lines that
+  have an EZ counterpart (total assets, total liabilities, total net
+  assets, …). Retrieved with
+  [`get_pz_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pz_fields.md).
+- **PC-scope** — fields available on the **full 990 only** (the rest of
+  the Parts VIII, IX, and X detail). Retrieved with
+  [`get_pc_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pc_fields.md).
+
+``` r
+
+length(get_pz_fields())   # available to both forms
+#> [1] 32
+length(get_pc_fields())   # full-990 only
+#> [1] 285
+```
+
+This scope split is exactly why each metric’s help entry (and the
+catalog) states a **Calculated For** scope: a ratio built only from PZ
+fields works for *990 + 990-EZ* filers, while one that needs any PC
+field is *990 filers only*.
+
+## Sanitizing blank financials
+
+On a 990, a blank financial line almost always means “zero”, not
+“unknown” — an organization with no grants payable simply leaves the
+line empty. Treating those blanks as `NA` would drop otherwise-valid
+organizations from a ratio.
+[`sanitize_financials()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/sanitize_financials.md)
+imputes zero for blank financial fields, but **respects form scope** so
+it never invents data a form doesn’t collect.
+
+By default (no arguments) it delegates to
+[`panel990::panel_normalize()`](https://nonprofit-open-data-collective.github.io/panel990/reference/panel_normalize.html),
+so `fiscal` and `panel990` share a single imputation engine and
+field-scope source of truth:
+
+``` r
+
+clean <- sanitize_financials(dat10k)   # form-aware, uses the shared panel990 engine
+```
+
+Every `get_*()` function calls this internally (controlled by its
+`sanitize` argument, `TRUE` by default), so you rarely call it yourself.
+
+### The scope-aware rule, made concrete
+
+The imputation follows three rules. Passing explicit field sets uses the
+transparent local imputer, which makes the behavior easy to see:
+
+``` r
+
+df <- data.frame(
+  EIN2                = c("990org", "EZorg", "nonfiler"),
+  RETURN_TYPE         = c("990",    "990EZ", "990"),
+  F9_01_REV_TOT_CY    = c(500000,   300000,  NA),   # PZ: both forms
+  F9_08_REV_TOT_TOT   = c(NA,       NA,      NA),    # PC: full 990 only
+  F9_08_REV_CONTR_TOT = c(NA,       NA,      NA),    # PC: full 990 only
+  stringsAsFactors    = FALSE
+)
+
+sanitize_financials(
+  df,
+  pz_vars = "F9_01_REV_TOT_CY",
+  pc_vars = c("F9_08_REV_TOT_TOT", "F9_08_REV_CONTR_TOT")
+)
+#>       EIN2 RETURN_TYPE F9_01_REV_TOT_CY F9_08_REV_TOT_TOT F9_08_REV_CONTR_TOT
+#> 1   990org         990            5e+05                 0                   0
+#> 2    EZorg       990EZ            3e+05                NA                  NA
+#> 3 nonfiler         990               NA                NA                  NA
+```
+
+Reading the result:
+
+- **`990org`** — its PC fields are imputed to `0` (a full-990 filer that
+  left Part VIII blank really did report zero).
+- **`EZorg`** — its PC fields stay `NA`: the 990-EZ never collects Part
+  VIII, so zero would be a fabrication. PZ fields *would* be imputed for
+  EZ filers.
+- **`nonfiler`** — every financial field is `NA`, so the row is left
+  completely untouched (a record with no financial data is not silently
+  turned into zeros).
+
+## Coalescing 990 / 990-EZ fields
+
+Some metrics have a genuine equivalent on both forms — total revenue is
+Part VIII line 12 on the 990 but Part I line 9 on the 990-EZ. Those
+metrics accept **two** column names and coalesce them, preferring the
+full-990 value and falling back to the EZ line:
+
+``` r
+
+# default arguments show the coalescing pattern (990 first, EZ fallback second)
+get_debt_assets_ratio(
+  dat10k,
+  debt   = c("F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"),
+  assets = c("F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY")
+)
+```
+
+Coalesced fallbacks and PZ-scope inputs are why metrics like the
+debt-to-asset ratio, equity ratio, and surplus margin can be
+**Calculated For** *990 + 990-EZ* filers, while metrics that need a
+PC-scope field with no EZ equivalent (the overhead ratio, for example,
+which needs Part IX functional expenses) are *990 filers only*. The
+catalog
+([`vignette("metrics-catalog")`](https://nonprofit-open-data-collective.github.io/fiscal/articles/metrics-catalog.md))
+lists the scope for every metric.
+
+## Summary
+
+| Piece | Role |
+|----|----|
+| [`detect_ez_rows()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/detect_ez_rows.md) | flag which rows are 990-EZ filers |
+| [`get_pz_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pz_fields.md) / [`get_pc_fields()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_pc_fields.md) | which fields exist on both forms vs full-990 only |
+| [`sanitize_financials()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/sanitize_financials.md) | impute blank financials to zero, respecting form scope and never touching all-NA rows |
+| two-column arguments | coalesce a 990 field with its 990-EZ fallback |
+
+Together they let a single call to
+[`compute_all()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/compute_all.md)
+score a mixed panel of 990 and 990-EZ filers correctly — see
+[`vignette("fiscal")`](https://nonprofit-open-data-collective.github.io/fiscal/articles/fiscal.md)
+to get started.

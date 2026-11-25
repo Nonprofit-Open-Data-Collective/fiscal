@@ -1,5 +1,5 @@
-pandoc: 3.6.3
-pkgdown: 2.2.0
+pandoc: '3.10'
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   fiscal-health-index: fiscal-health-index.html
@@ -12,7 +12,7 @@ articles:
   panel-workflow: panel-workflow.html
   ratio-correlation-artifacts: ratio-correlation-artifacts.html
   variance-preserving-normalization: variance-preserving-normalization.html
-last_built: 2026-10-08T23:22Z
+last_built: 2026-11-25T02:07Z
 urls:
   reference: https://nonprofit-open-data-collective.github.io/fiscal/reference
   article: https://nonprofit-open-data-collective.github.io/fiscal/articles

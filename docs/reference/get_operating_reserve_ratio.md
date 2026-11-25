@@ -1,0 +1,208 @@
+# Operating Reserves Ratio
+
+Liquid unrestricted net assets available to cover operating expenses,
+expressed as a multiple of total annual expenses.
+
+**Formula:**
+
+    orr = operating_reserves / total_expenses
+
+    operating_reserves = unrestricted_net_assets - net_fixed_assets
+
+**Definitional Range**
+
+Unbounded in both directions, expressed as a multiple of annual expenses
+(multiply by 12 to convert to months). Negative values occur when
+unrestricted net assets are negative or when net fixed assets exceed
+unrestricted net assets. Values above 2.0 (24 months) are uncommon for
+operating organizations and may indicate accumulation beyond what is
+needed for operating risk management.
+
+**Benchmarks and rules of thumb**
+
+- **Less than 0.083 (1 month)**: Acute vulnerability.
+
+- **0.083-0.25 (1-3 months)**: Below the commonly recommended minimum.
+
+- **0.25-0.50 (3-6 months)**: Generally adequate for most operating
+  nonprofits.
+
+- **0.50-1.0 (6-12 months)**: Strong; appropriate for volatile-revenue
+  or capital-intensive organizations.
+
+- The Nonprofit Finance Fund recommends a minimum of 3 months (0.25).
+
+**Calculated For:** 990 filers only.
+
+## Usage
+
+``` r
+get_operating_reserve_ratio( df,
+  unrestricted_net_assets = "F9_10_NAFB_UNRESTRICT_EOY",
+  net_fixed_assets        = "F9_10_ASSET_LAND_BLDG_NET_EOY",
+  total_expenses          = "F9_09_EXP_TOT_TOT",
+  restricted_net_assets   = "F9_10_NAFB_RESTRICT_EOY",
+  total_net_assets        = "F9_10_NAFB_TOT_EOY",
+  winsorize = 0.98 ,
+  range     = "np",
+  sanitize  = TRUE,
+  summarize = FALSE )
+```
+
+## Arguments
+
+- df:
+
+  A `data.frame` containing the fields required for computing the
+  metric.
+
+- unrestricted_net_assets:
+
+  Unrestricted net assets, EOY.
+
+- net_fixed_assets:
+
+  Net land, buildings, and equipment, EOY.
+
+- total_expenses:
+
+  Total functional expenses.
+
+- restricted_net_assets:
+
+  Restricted net assets, EOY. Used with `total_net_assets` to detect
+  filers that do not follow SFAS 117; see
+  [`resolve_unrestricted_net_assets()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/resolve_unrestricted_net_assets.md).
+
+- total_net_assets:
+
+  Total net assets, EOY. Substituted for unrestricted net assets when
+  unrestricted and restricted net assets are both zero. Set to `NULL` to
+  disable the fallback.
+
+- winsorize:
+
+  The winsorization value (between 0 and 1), defaults to 0.98, which
+  winsorizes at the 1st and 99th percentiles.
+
+- range:
+
+  Character string specifying the theoretical range of the ratio, used
+  to set winsorization bounds. Default `"np"`. Options: `"np"` (negative
+  to positive), `"zp"` (zero to positive), `"zo"` (zero to one), `"nz"`
+  (negative to zero), or a custom `"lo;hi"` pair (e.g. `"0;10"`).
+
+- sanitize:
+
+  Logical (default `TRUE`). If `TRUE`, NA values in the financial input
+  columns are imputed to zero before the ratio is computed, respecting
+  form scope: Part X and VIII/IX fields (990 only) are imputed only for
+  990 filers; Part I summary fields (990 + 990EZ) are imputed for all
+  filers. The returned dataframe always contains the original unmodified
+  input columns.
+
+- summarize:
+
+  Logical. If `TRUE`, prints a
+  [`summary()`](https://rdrr.io/r/base/summary.html) of the results and
+  plots density curves for all four output columns (raw, winsorized,
+  z-score, percentile). Defaults to `FALSE`.
+
+## Value
+
+Object of class `data.frame`: the original dataframe appended with four
+new columns:
+
+    - `op_reserve`   - operating reserves ratio (raw)
+    - `op_reserve_w` - winsorized version
+    - `op_reserve_z` - standardized z-score (based on winsorized values)
+    - `op_reserve_p` - percentile rank (1-100)
+
+## Details
+
+### Primary uses and key insights
+
+The operating reserve ratio answers a key sustainability question: what
+share of a year of operations can the organization fund from its
+unrestricted liquid assets, excluding illiquid fixed property? It is the
+recommended primary reserve adequacy metric of the Nonprofit Finance
+Fund and is widely used in financial health assessments, lender due
+diligence, and board reporting.
+
+Unlike days/months of cash measures
+([`get_days_cash_operations()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_days_cash_operations.md),
+[`get_months_cash_operations()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_months_cash_operations.md)),
+which count only cash and receivables, the operating reserve ratio
+starts from the full unrestricted equity base and removes fixed assets -
+giving a broader picture of the liquid reserves available to sustain
+operations.
+
+### Formula variations and their sources
+
+(Unrestricted net assets - net fixed assets) / total expenses. This
+implementation follows the Nonprofit Finance Fund and Zietlow et al.
+(2007) definition but expresses the result as a multiple of annual
+expenses rather than in months (multiply by 12 for months). An
+alternative adds back mortgage debt to fixed assets and divides by
+monthly expenses
+([`get_liquid_assets_months()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/get_liquid_assets_months.md))
+to more precisely isolate the unencumbered value of fixed property. Some
+formulations use unrestricted net assets alone (without subtracting
+fixed assets), which produces higher values.
+
+### Canonical citations
+
+- Nonprofit Finance Fund. *Operating Reserve Policy Toolkit for
+  Nonprofits*.
+
+  - Primary source for the operating reserve ratio definition and
+    benchmarks.
+
+- Zietlow, J., Hankin, J.A. & Seidner, A. (2007). *Financial Management
+  for Nonprofit Organizations*. Wiley.
+
+- Calabrese, T.D. (2013). Running on empty. *Nonprofit Management and
+  Leadership*, 23(3), 281-302. - Empirical analysis of operating reserve
+  levels across the U.S. nonprofit sector.
+
+### Variables used:
+
+- `F9_10_NAFB_UNRESTRICT_EOY`: Unrestricted net assets, EOY
+  (`unrestricted_net_assets`)
+
+- `F9_10_ASSET_LAND_BLDG_NET_EOY`: Net land, buildings, and equipment
+  (`net_fixed_assets`)
+
+- `F9_09_EXP_TOT_TOT`: Total functional expenses (`total_expenses`)
+
+- `F9_10_NAFB_RESTRICT_EOY`: Restricted net assets, EOY
+  (`restricted_net_assets`)
+
+- `F9_10_NAFB_TOT_EOY`: Total net assets, EOY (`total_net_assets`)
+
+### Filers that do not follow SFAS 117
+
+Organizations that do not follow SFAS 117 report equity on Part X lines
+30-32 and leave lines 27-28 blank, so their unrestricted net assets read
+as zero. When unrestricted and restricted net assets are both zero,
+total net assets are used instead (see
+[`resolve_unrestricted_net_assets()`](https://nonprofit-open-data-collective.github.io/fiscal/reference/resolve_unrestricted_net_assets.md)).
+
+## Examples
+
+``` r
+library( fiscal )
+data( dat10k )
+
+d <- get_operating_reserve_ratio( df = dat10k )
+#>    :: Unrestricted and restricted net assets both zero (non-SFAS 117) :: 1,305 case(s) use total net assets
+#>    :: Total expenses equal to zero :: 56 case(s) replaced with NaN
+head( d[ , c( "op_reserve", "op_reserve_w", "op_reserve_z", "op_reserve_p" ) ] )
+#>   op_reserve op_reserve_w op_reserve_z op_reserve_p
+#> 1         NA           NA           NA           NA
+#> 2 3.44386532   3.44386532    1.0829625           86
+#> 3         NA           NA           NA           NA
+#> 4 0.03999141   0.03999141   -0.7835859           22
+#> 5         NA           NA           NA           NA
+#> 6 1.97333333   1.97333333    0.8193256           80
+```
