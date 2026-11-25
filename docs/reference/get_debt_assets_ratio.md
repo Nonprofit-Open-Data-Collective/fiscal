@@ -1,0 +1,182 @@
+# Debt to Asset Ratio
+
+Proportion of total assets financed through liabilities.
+
+**Formula:**
+
+    dar = total_liabilities / total_assets
+
+**Definitional Range**
+
+Theoretically bounded \[0, 1\] when net assets are positive: zero means
+no debt; one means liabilities equal total assets (zero net assets).
+Values above 1.0 occur when total liabilities exceed total assets, i.e.,
+the organization has negative net assets (accumulated deficits exceed
+equity). This is a distress indicator but not uncommon in
+capital-intensive nonprofits (hospitals, housing) carrying large
+long-term debt.
+
+**Benchmarks and rules of thumb**
+
+- **Below 0.50**: Generally considered financially stable.
+
+- **0.50-0.70**: Moderate leverage; manageable but warrants monitoring.
+
+- **Above 0.70**: High leverage; common vulnerability threshold (Tuckman
+  & Chang 1991).
+
+- **Above 1.0**: Negative net assets; acute financial risk.
+
+**Calculated For:** 990 + 990EZ filers.
+
+## Usage
+
+``` r
+get_debt_assets_ratio( df,
+  debt   = c( "F9_10_LIAB_TOT_EOY",  "F9_01_NAFB_LIAB_TOT_EOY"  ),
+  assets = c( "F9_10_ASSET_TOT_EOY", "F9_01_NAFB_ASSET_TOT_EOY" ),
+  winsorize = 0.98 ,
+  range     = "zo",
+  sanitize  = TRUE,
+  summarize = FALSE )
+```
+
+## Arguments
+
+- df:
+
+  A `data.frame` containing the fields required for computing the
+  metric.
+
+- debt:
+
+  Total liabilities, EOY. Accepts one or two column names; if two are
+  provided they are coalesced with the 990 value taking priority over
+  990EZ.
+
+- assets:
+
+  Total assets, EOY. Accepts one or two column names.
+
+- winsorize:
+
+  The winsorization value (between 0 and 1), defaults to 0.98, which
+  winsorizes at the 1st and 99th percentiles.
+
+- range:
+
+  Character string specifying the theoretical range of the ratio, used
+  to set winsorization bounds. Default `"zo"`. Options: `"np"` (negative
+  to positive), `"zp"` (zero to positive), `"zo"` (zero to one), `"nz"`
+  (negative to zero), or a custom `"lo;hi"` pair (e.g. `"0;10"`).
+
+- sanitize:
+
+  Logical (default `TRUE`). If `TRUE`, NA values in the financial input
+  columns are imputed to zero before the ratio is computed, respecting
+  form scope: Part X and VIII/IX fields (990 only) are imputed only for
+  990 filers; Part I summary fields (990 + 990EZ) are imputed for all
+  filers. The returned dataframe always contains the original unmodified
+  input columns.
+
+- summarize:
+
+  Logical. If `TRUE`, prints a
+  [`summary()`](https://rdrr.io/r/base/summary.html) of the results and
+  plots density curves for all four output columns (raw, winsorized,
+  z-score, percentile). Defaults to `FALSE`.
+
+## Value
+
+Object of class `data.frame`: the original dataframe appended with four
+new columns:
+
+    - `debt_assets`   - debt to asset ratio (raw)
+    - `debt_assets_w` - winsorized version
+    - `debt_assets_z` - standardized z-score (based on winsorized values)
+    - `debt_assets_p` - percentile rank (1-100)
+
+## Details
+
+### Primary uses and key insights
+
+The debt to asset ratio (also called the leverage ratio or debt ratio)
+measures what fraction of total assets is financed by liabilities rather
+than equity (net assets). It is the most fundamental solvency indicator
+in both commercial and nonprofit finance: a ratio approaching 1.0 means
+the organization is almost entirely debt-financed and has minimal equity
+cushion; a ratio near 0 means assets are almost entirely owned free of
+debt.
+
+For nonprofits this ratio is particularly important because: (1) they
+cannot raise equity capital by issuing stock, so debt is the primary
+external financing mechanism; and (2) funders, lenders, and rating
+agencies commonly use this ratio to assess creditworthiness and
+organizational stability.
+
+### Formula variations and their sources
+
+The commercial formula is identical: total liabilities / total assets.
+Nonprofit applications use the same ratio but may define "total
+liabilities" differently. This implementation uses total liabilities
+from the 990 Part X (line 26B; 990EZ Part II line 26), falling back to
+the 990 Part I summary field (line 21), which includes all short- and
+long-term obligations reported on the balance sheet.
+
+Some studies use only long-term debt in the numerator to focus on
+structural leverage rather than near-term obligations. The full
+liabilities version is used here as the most comprehensive and commonly
+cited measure.
+
+### Why this formula was chosen
+
+Total liabilities / total assets is the most universally understood and
+reported leverage measure. Using total liabilities rather than a subset
+avoids definitional ambiguity about which obligations to include. The PZ
+scope (both 990 and 990EZ) maximizes coverage across all filing types.
+
+### Canonical citations
+
+- Tuckman, H.P. & Chang, C.F. (1991). A methodology for measuring the
+  financial vulnerability of charitable nonprofit organizations.
+  *Nonprofit and Voluntary Sector Quarterly*, 20(4), 445-460.
+
+- Greenlee, J.S. & Trussel, J.M. (2000). Predicting the financial
+  vulnerability of charitable organizations. *Nonprofit Management and
+  Leadership*, 11(2), 199-210.
+
+- Keating, E.K., Fischer, M., Gordon, T.P. & Greenlee, J. (2005).
+  Assessing financial vulnerability in the nonprofit sector. *Harvard
+  Business School Working Paper 04-016*.
+
+### Variables used:
+
+- `F9_10_LIAB_TOT_EOY`: Total liabilities, EOY (`debt`; 990 Part X line
+  26, 990EZ Part II line 26)
+
+- `F9_01_NAFB_LIAB_TOT_EOY`: Total liabilities from Part I line 21
+  (`debt`, fallback)
+
+- `F9_10_ASSET_TOT_EOY`: Total assets, EOY (`assets`; 990 Part X line
+  16, 990EZ Part II line 25)
+
+- `F9_01_NAFB_ASSET_TOT_EOY`: Total assets from Part I line 20
+  (`assets`, fallback)
+
+## Examples
+
+``` r
+library( fiscal )
+data( dat10k )
+
+d <- get_debt_assets_ratio( df = dat10k )
+#>    :: Assets equal to zero :: 346 case(s) replaced with NaN
+head( d[ , c( "debt_assets", "debt_assets_w", "debt_assets_z", "debt_assets_p" ) ] )
+#>   debt_assets debt_assets_w debt_assets_z debt_assets_p
+#> 1   0.1016725     0.1016725  -0.074172138            72
+#> 2   0.0000000     0.0000000  -0.758550952             1
+#> 3   0.0000000     0.0000000  -0.758550952             1
+#> 4   0.1146878     0.1146878  -0.003320409            73
+#> 5         NaN           NaN           NaN            NA
+#> 6   0.1912568     0.1912568   0.342739771            78
+```
